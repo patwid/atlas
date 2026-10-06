@@ -452,3 +452,72 @@ test("an athlete adds a coach by e-mail, the coach assigns a plan, and the athle
   assert.equal(bobsView.status, 404, "the coach can no longer see the grant")
   w.close()
 })
+
+// Entering an activity by hand ----------------------------------------------------------------------------
+
+test("a user adds, edits and deletes an activity by hand; the start is stored in UTC and shown in local time; Strava rows are read-only", { skip: !built && "frontend not built" }, async () => {
+  await h.world()
+  const alice = h.people.alice
+  await setup(h.create("admin", "activities", {
+    id: "stravarow000001", owner: alice.id, source: "strava", external_id: "42",
+    started_at: "2026-09-20 06:00:00.000Z", sport: "run", name: "Lunch run", distance_m: 5000, moving_time_s: 1500,
+  }))
+  const w = startApp("/activities", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
+  const d = w.document
+  const activities = async () => (await h.api("GET", "collections/activities/records?perPage=50&sort=started_at", { token: alice.token })).body.items
+
+  await waitFor("the Strava activity", () => d.body.textContent.includes("Lunch run"))
+  const stravaCard = [...d.querySelectorAll(".cards li")].find((li) => li.textContent.includes("Lunch run"))
+  assert.ok(stravaCard.textContent.includes("Strava"))
+  assert.equal([...stravaCard.querySelectorAll("button")].length, 0, "Strava activities cannot be changed here")
+
+  click(w, button(w, "Add activity"))
+  await waitFor("the form", () => d.querySelector("#activity-date"))
+  typeInto(w, d.querySelector("#activity-date"), "2026-10-05")
+  typeInto(w, d.querySelector("#activity-time"), "07:30")
+  submit(w, d.querySelector(".activity-form"))
+  await waitFor("a distance or time error", () => d.querySelector(".error")?.textContent === "Enter a distance or a time, or both.")
+  assert.equal((await activities()).length, 1, "nothing is sent for an invalid form")
+  choose(w, d.querySelector("#activity-sport"), "trail_run")
+  typeInto(w, d.querySelector("#activity-name"), "Morning loop")
+  typeInto(w, d.querySelector("#activity-distance"), "8,5")
+  typeInto(w, d.querySelector("#activity-duration"), "1:05")
+  typeInto(w, d.querySelector("#activity-elevation"), "120")
+  typeInto(w, d.querySelector("#activity-hr"), "152")
+  submit(w, d.querySelector(".activity-form"))
+  const created = await waitFor("the activity on the server", async () => (await activities()).find((a) => a.name === "Morning loop"))
+  assert.equal(created.owner, alice.id)
+  assert.equal(created.source, "manual")
+  assert.equal(created.sport, "trail_run")
+  assert.equal(created.distance_m, 8500)
+  assert.equal(created.moving_time_s, 3900)
+  assert.equal(created.elevation_gain_m, 120)
+  assert.equal(created.avg_hr, 152)
+  // 07:30 local time on 5 October 2026, converted by the browser's own time zone rules.
+  const expectedUtc = new Date(2026, 9, 5, 7, 30).toISOString().replace("T", " ")
+  assert.equal(created.started_at, expectedUtc)
+  await waitFor("it on screen in local time", () => d.body.textContent.includes("Mon 5 Oct 2026, 07:30") && d.body.textContent.includes("8.50 km"))
+
+  // Edit: only the name changes.
+  const card = () => [...d.querySelectorAll(".cards li")].find((li) => li.textContent.includes("Morning loop") || li.textContent.includes("Easy loop"))
+  click(w, [...card().querySelectorAll("button")].find((b) => b.textContent === "Edit"))
+  await waitFor("the edit form with local values", () => d.querySelector("#activity-time")?.value === "07:30" && d.querySelector("#activity-date")?.value === "2026-10-05")
+  assert.equal(d.querySelector("#activity-distance").value, "8.5")
+  assert.equal(d.querySelector("#activity-duration").value, "1:05")
+  typeInto(w, d.querySelector("#activity-name"), "Easy loop")
+  submit(w, d.querySelector(".activity-form"))
+  await waitFor("the new name on the server", async () => (await activities()).some((a) => a.id === created.id && a.name === "Easy loop"))
+  const after = (await activities()).find((a) => a.id === created.id)
+  assert.equal(after.started_at, expectedUtc, "the start is untouched")
+  assert.equal(after.distance_m, 8500)
+
+  // Delete, after the question.
+  click(w, [...card().querySelectorAll("button")].find((b) => b.textContent === "Delete"))
+  await waitFor("the question", () => d.body.textContent.includes("Delete this activity?"))
+  assert.equal((await activities()).find((a) => a.id === created.id).deleted, false)
+  click(w, button(w, "Yes, delete it"))
+  await waitFor("deleted on the server", async () => (await activities()).find((a) => a.id === created.id)?.deleted === true)
+  await waitFor("gone from the list", () => !d.body.textContent.includes("Easy loop"))
+  assert.ok(d.body.textContent.includes("Lunch run"), "the Strava activity is still there")
+  w.close()
+})

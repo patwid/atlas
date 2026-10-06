@@ -12,3 +12,20 @@ pub fn utc_offset_minutes() -> Int
 pub fn today() -> date.Date {
   date.from_unix_seconds(now_seconds(), utc_offset_minutes())
 }
+
+@external(javascript, "./clock.ffi.mjs", "utcOffsetAtLocal")
+fn do_offset_at_local(
+  year: Int,
+  month: Int,
+  day: Int,
+  hour: Int,
+  minute: Int,
+) -> Int
+
+@external(javascript, "./clock.ffi.mjs", "utcOffsetAtUtc")
+pub fn utc_offset_at_utc(timestamp: String) -> Int
+
+/// The UTC offset in minutes that applies at a local date and time on this device.
+pub fn utc_offset_at_local(day: date.Date, hour: Int, minute: Int) -> Int {
+  do_offset_at_local(day.year, day.month, day.day, hour, minute)
+}

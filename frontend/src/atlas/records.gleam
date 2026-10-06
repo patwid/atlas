@@ -3,6 +3,7 @@
 //// added values this client does not know yet.
 
 import atlas/activity.{type Activity, Activity}
+import atlas/activity_form
 import atlas/assignment_form
 import atlas/date
 import atlas/grants.{type Grant, Grant}
@@ -100,6 +101,33 @@ pub fn assignment(record: Dynamic) -> Result(Assignment, Nil) {
     use start <- decode.field("start_date", date_decoder())
     decode.success(Assignment(id, plan_id, athlete, start))
   })
+}
+
+/// An activity with the fields only the screens need.
+pub fn activity_row(record: Dynamic) -> Result(activity_form.Row, Nil) {
+  case activity(record) {
+    Error(Nil) -> Error(Nil)
+    Ok(found) ->
+      run(record, {
+        use owner <- decode.optional_field("owner", "", decode.string)
+        use name <- decode.optional_field("name", "", decode.string)
+        use elevation <- decode.optional_field(
+          "elevation_gain_m",
+          0.0,
+          number(),
+        )
+        use heart_rate <- decode.optional_field("avg_hr", 0, whole_number())
+        use updated <- decode.optional_field("updated", "", decode.string)
+        decode.success(activity_form.Row(
+          found,
+          owner,
+          name,
+          elevation,
+          heart_rate,
+          updated,
+        ))
+      })
+  }
 }
 
 /// An assignment with the fields only the screens need.

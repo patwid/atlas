@@ -1,6 +1,7 @@
 //// Atlas: an offline-capable PWA for running training. This is the app shell (ADR 0013) with
 //// sign-in (ADR 0017): routing, the page frame, the online indicator and the session.
 
+import atlas/activities_page
 import atlas/api
 import atlas/assignments_page
 import atlas/auth.{type Session}
@@ -49,6 +50,7 @@ pub type Model {
     workouts: workouts_page.Model,
     assignments: assignments_page.Model,
     coaches: coaches_page.Model,
+    activities: activities_page.Model,
   )
 }
 
@@ -66,6 +68,7 @@ pub type Msg {
   WorkoutsPage(workouts_page.Msg)
   AssignmentsPage(assignments_page.Msg)
   CoachesPage(coaches_page.Msg)
+  ActivitiesPage(activities_page.Msg)
   ProblemsDismissed
 }
 
@@ -98,6 +101,7 @@ fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
       workouts: workouts_page.new(),
       assignments: assignments_page.new(),
       coaches: coaches_page.new(),
+      activities: activities_page.new(),
     ),
     effect.batch([
       modem.init(RouteChanged),
@@ -187,6 +191,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               workouts: workouts_page.new(),
               assignments: assignments_page.new(),
               coaches: coaches_page.new(),
+              activities: activities_page.new(),
             ),
             effect.batch([remember(session), load]),
           )
@@ -227,6 +232,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         workouts: workouts_page.new(),
         assignments: assignments_page.new(),
         coaches: coaches_page.new(),
+        activities: activities_page.new(),
       ),
       forget(),
     )
@@ -260,6 +266,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
                 effect.map(workouts_page.refresh(), WorkoutsPage),
                 effect.map(assignments_page.refresh(), AssignmentsPage),
                 effect.map(coaches_page.refresh(), CoachesPage),
+                effect.map(activities_page.refresh(), ActivitiesPage),
               ])
             False -> effect.none()
           }
@@ -374,6 +381,28 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         SignedOut(_) -> #(model, effect.none())
       }
 
+    ActivitiesPage(inner) ->
+      case model.auth {
+        SignedIn(session) -> {
+          let #(page_model, page_effect, actions) =
+            activities_page.update(
+              model.activities,
+              inner,
+              activities_context(session),
+            )
+          let #(state, action_effects) =
+            perform_activities(model.syncing, actions)
+          #(
+            Model(..model, activities: page_model, syncing: state),
+            effect.batch([
+              effect.map(page_effect, ActivitiesPage),
+              effect.map(effect.batch(action_effects), Syncing),
+            ]),
+          )
+        }
+        SignedOut(_) -> #(model, effect.none())
+      }
+
     ProblemsDismissed -> #(
       Model(..model, syncing: syncing.dismiss_problems(model.syncing)),
       effect.none(),
@@ -423,6 +452,36 @@ fn assignments_context(
       }
     _ -> assignments_page.Context("", session.user_id, [], today, False)
   }
+}
+
+/// What the activities screen needs from the browser: today, and the UTC offset for any moment
+/// (it changes with daylight saving, so one number for the whole year would be wrong).
+fn activities_context(session: Session) -> activities_page.Context {
+  activities_page.Context(
+    session.user_id,
+    clock.today(),
+    clock.utc_offset_at_local,
+    clock.utc_offset_at_utc,
+  )
+}
+
+/// Carries out what the user did with their activities.
+fn perform_activities(
+  state: syncing.State,
+  actions: List(activities_page.Action),
+) -> #(syncing.State, List(Effect(syncing.Msg))) {
+  list.fold(actions, #(state, []), fn(acc, action) {
+    let #(current, effects) = acc
+    let #(next, effect) = case action {
+      activities_page.Create(id, fields) ->
+        syncing.create(current, collection.Activities, id, fields)
+      activities_page.Edit(id, fields, base) ->
+        syncing.edit(current, collection.Activities, id, fields, base)
+      activities_page.Delete(id, base) ->
+        syncing.delete(current, collection.Activities, id, base)
+    }
+    #(next, list.append(effects, [effect]))
+  })
 }
 
 /// Carries out what the user did with their coaches. (A lookup is not a record; the caller sends it.)
@@ -543,6 +602,7 @@ fn session_ended(model: Model) -> #(Model, Effect(Msg)) {
         workouts: workouts_page.new(),
         assignments: assignments_page.new(),
         coaches: coaches_page.new(),
+        activities: activities_page.new(),
       ),
       forget(),
     )
@@ -655,9 +715,9 @@ fn page(model: Model, session: Session) -> Element(Msg) {
       }
     }
     route.Activities ->
-      shell.empty(
-        "No activities yet",
-        "Connect Strava or import a FIT file to see your runs.",
+      element.map(
+        activities_page.view(model.activities, activities_context(session)),
+        ActivitiesPage,
       )
     route.Settings ->
       html.div([], [

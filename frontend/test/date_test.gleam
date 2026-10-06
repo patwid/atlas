@@ -128,3 +128,67 @@ pub fn format_for_people_test() {
   assert date.format(Date(2027, 1, 1)) == "Fri 1 Jan 2027"
   assert date.format(Date(2026, 12, 31)) == "Thu 31 Dec 2026"
 }
+
+pub fn local_datetime_gives_date_and_clock_test() {
+  assert date.local_datetime("2026-10-01 07:05:00.000Z", 0)
+    == Ok(#(Date(2026, 10, 1), 7, 5))
+  assert date.local_datetime("2026-10-01 23:30:00.000Z", 120)
+    == Ok(#(Date(2026, 10, 2), 1, 30))
+  assert date.local_datetime("2026-10-01 00:30:00.000Z", -300)
+    == Ok(#(Date(2026, 9, 30), 19, 30))
+  assert date.local_datetime("2026-12-31T23:00:00Z", 60)
+    == Ok(#(Date(2027, 1, 1), 0, 0))
+  assert date.local_datetime("2026-10-01", 0) == Error(Nil)
+  assert date.local_datetime("2026-10-01 25:00:00Z", 0) == Error(Nil)
+}
+
+pub fn utc_timestamp_converts_local_time_test() {
+  assert date.utc_timestamp(Date(2026, 10, 1), 7, 0, 0)
+    == "2026-10-01 07:00:00.000Z"
+  // 07:00 in UTC+2 is 05:00 UTC; 00:30 in UTC+2 is the evening before in UTC.
+  assert date.utc_timestamp(Date(2026, 10, 1), 7, 0, 120)
+    == "2026-10-01 05:00:00.000Z"
+  assert date.utc_timestamp(Date(2026, 10, 1), 0, 30, 120)
+    == "2026-09-30 22:30:00.000Z"
+  // 22:00 in UTC-5 is already the next day in UTC.
+  assert date.utc_timestamp(Date(2026, 10, 1), 22, 0, -300)
+    == "2026-10-02 03:00:00.000Z"
+  assert date.utc_timestamp(Date(2026, 1, 1), 0, 0, 60)
+    == "2025-12-31 23:00:00.000Z"
+  assert date.utc_timestamp(Date(2024, 2, 29), 23, 59, -60)
+    == "2024-03-01 00:59:00.000Z"
+}
+
+pub fn local_and_utc_are_inverse_test() {
+  // Every quarter hour of a day, in several offsets, survives a round trip.
+  assert round_trips_through_utc([0, 60, 120, -300, 330, -570])
+}
+
+fn round_trips_through_utc(offsets: List(Int)) -> Bool {
+  case offsets {
+    [] -> True
+    [offset, ..rest] -> all_minutes(offset, 0) && round_trips_through_utc(rest)
+  }
+}
+
+fn all_minutes(offset: Int, minute_of_day: Int) -> Bool {
+  case minute_of_day >= 1440 {
+    True -> True
+    False -> {
+      let stamp =
+        date.utc_timestamp(
+          Date(2026, 3, 29),
+          minute_of_day / 60,
+          minute_of_day % 60,
+          offset,
+        )
+      case date.local_datetime(stamp, offset) {
+        Ok(#(Date(2026, 3, 29), h, m)) ->
+          h == minute_of_day / 60
+          && m == minute_of_day % 60
+          && all_minutes(offset, minute_of_day + 15)
+        _ -> False
+      }
+    }
+  }
+}

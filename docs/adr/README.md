@@ -28,3 +28,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0022 | [Workouts in a plan](0022-workouts-in-a-plan.md) | Accepted |
 | 0023 | [Starting plans: assignments](0023-assignments.md) | Accepted |
 | 0024 | [Coach access: grants with names, and the Coaches screen](0024-coach-grants-screen.md) | Accepted |
+| 0025 | [Entering activities by hand](0025-manual-activities.md) | Accepted |

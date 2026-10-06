@@ -1,8 +1,11 @@
 import atlas.{
-  AssignmentsPage, EmailChanged, Model, OnlineChanged, PasswordChanged,
-  PlansPage, RefreshResponded, RouteChanged, SignInResponded, SignInSubmitted,
-  SignOutClicked, SignedIn, SignedOut, WorkoutsPage,
+  ActivitiesPage, AssignmentsPage, EmailChanged, Model, OnlineChanged,
+  PasswordChanged, PlansPage, RefreshResponded, RouteChanged, SignInResponded,
+  SignInSubmitted, SignOutClicked, SignedIn, SignedOut, WorkoutsPage,
 }
+import atlas/activities_page
+import atlas/activity
+import atlas/activity_form
 import atlas/assignment_form
 import atlas/assignments_page
 import atlas/auth.{Session}
@@ -22,6 +25,7 @@ import atlas/workout_form
 import atlas/workouts_page
 import gleam/dict
 import gleam/option.{None, Some}
+import gleam/string
 import gleam/uri
 import gleeunit
 
@@ -41,6 +45,7 @@ fn signed_out(form: signin.Form) -> atlas.Model {
     workouts_page.new(),
     assignments_page.new(),
     coaches_page.new(),
+    activities_page.new(),
   )
 }
 
@@ -54,6 +59,7 @@ fn signed_in() -> atlas.Model {
     workouts_page.new(),
     assignments_page.new(),
     coaches_page.new(),
+    activities_page.new(),
   )
 }
 
@@ -432,4 +438,96 @@ pub fn signing_out_clears_the_schedule_and_the_coach_list_test() {
     atlas.update(schedule_screen("u1", plan.Private), SignOutClicked)
   assert model.assignments == assignments_page.new()
   assert model.coaches == coaches_page.new()
+}
+
+fn activities_screen() -> atlas.Model {
+  Model(
+    ..signed_in(),
+    route: route.Activities,
+    syncing: ready_syncing(),
+    activities: activities_page.Model(
+      ..activities_page.new(),
+      mode: activities_page.Adding,
+      form: activity_form.Form(
+        "2026-10-05",
+        "07:30",
+        activity.Run,
+        "Morning run",
+        "8,5",
+        "45",
+        "",
+        "",
+        None,
+      ),
+    ),
+  )
+}
+
+pub fn saving_a_manual_activity_queues_it_for_upload_test() {
+  let #(model, _) =
+    atlas.update(activities_screen(), ActivitiesPage(activities_page.Submitted))
+  let assert option.Some(engine) = model.syncing.sync
+  let assert [entry] = sync.outbox(engine).entries
+  assert entry.kind == outbox.Create
+  assert entry.collection == collection.Activities
+  assert dict.get(entry.fields, "owner") == Ok("\"u1\"")
+  assert dict.get(entry.fields, "source") == Ok("\"manual\"")
+  assert dict.get(entry.fields, "distance_m") == Ok("8500")
+  // The start is stored in UTC, whatever the time zone of the machine running the test is.
+  let assert Ok(started) = dict.get(entry.fields, "started_at")
+  assert string.ends_with(started, ":00.000Z\"")
+}
+
+pub fn an_invalid_activity_is_not_queued_test() {
+  let invalid =
+    Model(
+      ..activities_screen(),
+      activities: activities_page.Model(
+        ..activities_page.new(),
+        mode: activities_page.Adding,
+        form: activity_form.Form(
+          "2026-10-05",
+          "07:30",
+          activity.Run,
+          "",
+          "",
+          "",
+          "",
+          "",
+          None,
+        ),
+      ),
+    )
+  let #(model, _) =
+    atlas.update(invalid, ActivitiesPage(activities_page.Submitted))
+  let assert option.Some(engine) = model.syncing.sync
+  assert outbox.is_empty(sync.outbox(engine))
+  assert model.activities.form.error
+    == option.Some("Enter a distance or a time, or both.")
+}
+
+pub fn signing_out_clears_the_activities_on_screen_test() {
+  let showing =
+    Model(
+      ..signed_in(),
+      activities: activities_page.Model(..activities_page.new(), rows: [
+        activity_form.Row(
+          activity.Activity(
+            "x",
+            activity.Manual,
+            "2026-10-01 05:30:00.000Z",
+            activity.Run,
+            1.0,
+            1,
+          ),
+          "u1",
+          "Private run",
+          0.0,
+          0,
+          "T",
+        ),
+      ]),
+    )
+  let #(model, _) = atlas.update(showing, SignOutClicked)
+  assert model.activities == activities_page.new()
 }

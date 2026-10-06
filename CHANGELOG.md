@@ -29,6 +29,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Start a plan on a date from its screen, change the date or remove it, with start and end shown with weekdays (ADR 0023).
 - Coaches screen in Settings: add a coach by e-mail address (find, then confirm), remove access, and see the athletes you coach. Coaches can start a plan for an athlete who granted access (ADR 0024).
 - `coach_grants` carries display names (migration `1760000100_coach_grant_names.js`, ADR 0024).
+- Activities screen: add, change and delete activities by hand (local time converted to UTC with the right daylight-saving offset), and see Strava activities read-only (ADR 0025).
 
 ### Fixed
 - E-mail addresses containing `+` are now found by the lookup (`+` is encoded in the request).

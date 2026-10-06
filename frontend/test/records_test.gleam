@@ -165,3 +165,24 @@ pub fn a_grant_carries_the_names_test() {
     == Ok(grants.Grant("g2", "u1", "u2", "", "", ""))
   assert records.grant(parse("{\"id\":\"g3\"}")) == Error(Nil)
 }
+
+pub fn an_activity_row_carries_what_the_list_shows_test() {
+  let text =
+    "{\"id\":\"x1\",\"owner\":\"u1\",\"source\":\"strava\",\"started_at\":\"2026-10-01 05:30:00.000Z\",\"sport\":\"run\",\"name\":\"Morning run\",\"distance_m\":8500,\"moving_time_s\":2700,\"elevation_gain_m\":120.5,\"avg_hr\":152,\"updated\":\"T1\"}"
+  let assert Ok(row) = records.activity_row(parse(text))
+  assert row.owner_id == "u1"
+  assert row.name == "Morning run"
+  assert row.elevation_m == 120.5
+  assert row.avg_hr == 152
+  assert row.updated == "T1"
+  assert row.activity.source == activity.Strava
+  // A manual activity made offline has few fields.
+  let assert Ok(bare) =
+    records.activity_row(parse(
+      "{\"id\":\"x2\",\"source\":\"manual\",\"started_at\":\"2026-10-01 05:30:00.000Z\",\"sport\":\"walk\"}",
+    ))
+  assert bare.owner_id == ""
+  assert bare.avg_hr == 0
+  assert bare.updated == ""
+  assert records.activity_row(parse("{\"id\":\"x3\"}")) == Error(Nil)
+}

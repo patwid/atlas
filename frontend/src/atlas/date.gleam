@@ -181,30 +181,63 @@ pub fn local_date(
   timestamp: String,
   utc_offset_minutes: Int,
 ) -> Result(Date, Nil) {
+  case local_datetime(timestamp, utc_offset_minutes) {
+    Ok(#(day, _, _)) -> Ok(day)
+    Error(Nil) -> Error(Nil)
+  }
+}
+
+/// The local date and clock time (hour, minute) of a UTC timestamp.
+pub fn local_datetime(
+  timestamp: String,
+  utc_offset_minutes: Int,
+) -> Result(#(Date, Int, Int), Nil) {
   case string.length(timestamp) >= 16 {
     False -> Error(Nil)
     True -> {
-      use date <- try(parse(string.slice(timestamp, 0, 10)))
+      use day <- try(parse(string.slice(timestamp, 0, 10)))
       let separator = string.slice(timestamp, 10, 1)
       case separator == " " || separator == "T" {
         False -> Error(Nil)
         True -> {
-          let hour = string.slice(timestamp, 11, 2)
-          let minute = string.slice(timestamp, 14, 2)
-          use h <- try(int.parse(hour))
-          use m <- try(int.parse(minute))
+          use h <- try(int.parse(string.slice(timestamp, 11, 2)))
+          use m <- try(int.parse(string.slice(timestamp, 14, 2)))
           case h >= 0 && h <= 23 && m >= 0 && m <= 59 {
             False -> Error(Nil)
-            True ->
-              Ok(add_days(
-                date,
-                floor_div(h * 60 + m + utc_offset_minutes, 1440),
+            True -> {
+              let total = h * 60 + m + utc_offset_minutes
+              let shift = floor_div(total, 1440)
+              let minutes_of_day = total - shift * 1440
+              Ok(#(
+                add_days(day, shift),
+                minutes_of_day / 60,
+                minutes_of_day % 60,
               ))
+            }
           }
         }
       }
     }
   }
+}
+
+/// The UTC timestamp, as PocketBase stores it (`2026-10-01 07:00:00.000Z`), of a local date and clock
+/// time, given the local offset from UTC in minutes at that moment.
+pub fn utc_timestamp(
+  day: Date,
+  hour: Int,
+  minute: Int,
+  utc_offset_minutes: Int,
+) -> String {
+  let total = hour * 60 + minute - utc_offset_minutes
+  let shift = floor_div(total, 1440)
+  let minutes_of_day = total - shift * 1440
+  to_string(add_days(day, shift))
+  <> " "
+  <> pad(minutes_of_day / 60, 2)
+  <> ":"
+  <> pad(minutes_of_day % 60, 2)
+  <> ":00.000Z"
 }
 
 /// The local calendar date at a moment given in seconds since 1970, for a local offset from UTC in minutes.
