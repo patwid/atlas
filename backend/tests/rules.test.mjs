@@ -1,72 +1,19 @@
 // API rule tests against a throwaway PocketBase instance. See docs/adr/0009-data-model-and-api-rules.md.
 import { test as nodeTest, before, after } from "node:test"
 import assert from "node:assert/strict"
-import { spawn, execFileSync } from "node:child_process"
-import { mkdtempSync, cpSync, rmSync } from "node:fs"
-import { tmpdir } from "node:os"
-import { join, dirname } from "node:path"
-import { fileURLToPath } from "node:url"
+import { startPocketBase, id } from "./harness.mjs"
 
-const backend = join(dirname(fileURLToPath(import.meta.url)), "..")
-const PORT = 18090 + Math.floor(Math.random() * 500)
-const URL = `http://127.0.0.1:${PORT}`
-let dir, server, admin
-const people = {}
-
-const api = async (method, path, { token, body } = {}) => {
-  const res = await fetch(`${URL}/api/${path}`, {
-    method,
-    headers: { "content-type": "application/json", ...(token ? { authorization: token } : {}) },
-    body: body ? JSON.stringify(body) : undefined,
-  })
-  const text = await res.text()
-  return { status: res.status, body: text ? JSON.parse(text) : null }
-}
-const as = (name) => people[name].token
-const create = (who, collection, body) => api("POST", `collections/${collection}/records`, { token: who && as(who), body })
-const update = (who, collection, id, body) => api("PATCH", `collections/${collection}/records/${id}`, { token: who && as(who), body })
-const get = (who, collection, id) => api("GET", `collections/${collection}/records/${id}`, { token: who && as(who) })
-const list = async (who, collection, filter = "") =>
-  (await api("GET", `collections/${collection}/records?perPage=200${filter ? `&filter=${encodeURIComponent(filter)}` : ""}`, { token: who && as(who) }))
-let n = 0
-const id = () => (`t${Date.now().toString(36)}${(n++).toString(36)}${Math.random().toString(36).slice(2)}`).replace(/[^a-z0-9]/g, "").padEnd(15, "0").slice(0, 15)
-
-before(async () => {
-  dir = mkdtempSync(join(tmpdir(), "atlas-pb-"))
-  cpSync(join(backend, "pb_migrations"), join(dir, "pb_migrations"), { recursive: true })
-  cpSync(join(backend, "pb_hooks"), join(dir, "pb_hooks"), { recursive: true })
-  const pb = (...args) => ["--dir", join(dir, "pb_data"), "--migrationsDir", join(dir, "pb_migrations"), "--hooksDir", join(dir, "pb_hooks"), ...args]
-  execFileSync("pocketbase", ["superuser", "upsert", "admin@example.com", "adminpass123", ...pb()], { stdio: "pipe" })
-  server = spawn("pocketbase", ["serve", `--http=127.0.0.1:${PORT}`, ...pb()], { stdio: "pipe" })
-  for (let i = 0; i < 100; i++) {
-    try { if ((await fetch(`${URL}/api/health`)).ok) break } catch {}
-    await new Promise((r) => setTimeout(r, 100))
-  }
-  const auth = await api("POST", "collections/_superusers/auth-with-password", { body: { identity: "admin@example.com", password: "adminpass123" } })
-  admin = auth.body.token
-})
-
-// Every test gets its own four users, so grants and shares never leak between tests.
-let run = 0
-const world = async () => {
-  run++
-  for (const name of ["alice", "bob", "carol", "dave"]) {
-    const email = `${name}${run}@example.com`
-    const r = await api("POST", "collections/users/records", {
-      token: admin,
-      body: { email, password: "password123", passwordConfirm: "password123", name },
-    })
-    assert.equal(r.status, 200, JSON.stringify(r.body))
-    const login = await api("POST", "collections/users/auth-with-password", { body: { identity: email, password: "password123" } })
-    people[name] = { id: r.body.id, token: login.body.token }
-  }
-}
-const test = (name, fn) => nodeTest(name, async () => { await world(); await fn() })
-
-after(() => {
-  server?.kill()
-  if (dir) rmSync(dir, { recursive: true, force: true })
-})
+let h
+before(async () => { h = await startPocketBase() })
+after(() => h?.stop())
+const test = (name, fn) => nodeTest(name, async () => { await h.world(); await fn() })
+const people = new Proxy({}, { get: (_, k) => h.people[k] })
+const as = (name) => h.as(name)
+const api = (...a) => h.api(...a)
+const create = (...a) => h.create(...a)
+const update = (...a) => h.update(...a)
+const get = (...a) => h.get(...a)
+const list = (...a) => h.list(...a)
 
 const mkPlan = async (owner, extra = {}) => {
   const r = await create(owner, "plans", { id: id(), owner: people[owner].id, title: "10k", visibility: "private", ...extra })
@@ -197,7 +144,7 @@ test("activities: clients cannot create strava or garmin rows; the server can", 
   const server = await create(null, "activities", { id: id(), owner: people.alice.id, source: "strava", external_id: "42", started_at: "2026-10-01 07:00:00.000Z", sport: "run" })
   assert.equal(server.status, 400) // anonymous is rejected
   const r = await api("POST", "collections/activities/records", {
-    token: admin, body: { id: id(), owner: people.alice.id, source: "strava", external_id: "42", started_at: "2026-10-01 07:00:00.000Z", sport: "run" },
+    token: h.admin, body: { id: id(), owner: people.alice.id, source: "strava", external_id: "42", started_at: "2026-10-01 07:00:00.000Z", sport: "run" },
   })
   assert.equal(r.status, 200, JSON.stringify(r.body))
   assert.equal((await update("alice", "activities", r.body.id, { name: "mine now" })).status, 404)
@@ -205,7 +152,7 @@ test("activities: clients cannot create strava or garmin rows; the server can", 
 
 test("activities: Strava activities are visible to a granted coach (ADR 0005)", async () => {
   const r = await api("POST", "collections/activities/records", {
-    token: admin, body: { id: id(), owner: people.alice.id, source: "strava", external_id: "99", started_at: "2026-10-01 07:00:00.000Z", sport: "run" },
+    token: h.admin, body: { id: id(), owner: people.alice.id, source: "strava", external_id: "99", started_at: "2026-10-01 07:00:00.000Z", sport: "run" },
   })
   assert.equal((await get("bob", "activities", r.body.id)).status, 404)
   await grant("alice", "bob")

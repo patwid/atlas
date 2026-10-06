@@ -13,6 +13,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - `sbxenv.yaml` to create and attach to the dev sandbox with `sbx env run` (ADR 0008).
 - PocketBase migration with the data model and API rules: plans, workouts, assignments, activities, matches, coach grants and Strava connections (ADR 0009).
 - `scripts/test-backend.sh` runs the API rule tests against a throwaway PocketBase (ADR 0009).
+- `GET /api/atlas/users/lookup` to find a user by exact e-mail, so coaches and athletes can be selected for grants and assignments (ADR 0010).
 
 ### Changed
 - Coach access to athletes' activities, including Strava-sourced data, now that Strava has confirmed the usage in writing (ADR 0005).

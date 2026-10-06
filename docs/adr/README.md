@@ -13,3 +13,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0007 | [Declare the dev sandbox's network access as a committed sbx kit](0007-sandbox-network-policy-as-kit.md) | Accepted |
 | 0008 | [Start the dev sandbox from a committed `sbxenv.yaml`](0008-sandbox-environment-file.md) | Accepted |
 | 0009 | [Data model and API rules](0009-data-model-and-api-rules.md) | Accepted |
+| 0010 | [Select users by exact e-mail lookup](0010-user-lookup-by-email.md) | Accepted |
