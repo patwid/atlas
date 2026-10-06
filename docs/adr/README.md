@@ -21,3 +21,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0015 | [Pure domain core: dates, plans, matching and units](0015-domain-core.md) | Accepted / Proposed |
 | 0016 | [Sync core: a pure outbox state machine and pull cursors](0016-sync-core-outbox-and-cursor.md) | Accepted |
 | 0017 | [Sessions and the HTTP layer: plain `fetch`, tokens in `localStorage`, session checks](0017-session-and-http-layer.md) | Accepted |
+| 0018 | [The sync engine: a pure command/event state machine](0018-sync-engine.md) | Accepted |
