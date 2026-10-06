@@ -13,3 +13,6 @@ frontend/test-js/node_modules/
 # Strava brand downloads: only the two files the app uses are kept, in frontend/assets/strava
 /1.1-Connect-with-Strava-Buttons.zip
 /1.2-Strava-API-Logos.zip
+
+# Nix
+result
