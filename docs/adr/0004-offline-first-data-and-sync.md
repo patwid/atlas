@@ -1,6 +1,6 @@
 # 0004. Offline-first: IndexedDB as the client source of truth, with an outbox synced to PocketBase
 
-- Status: Proposed
+- Status: Accepted (by the owner 2026-10-06)
 - Date: 2026-10-06
 - Deciders: agent
 

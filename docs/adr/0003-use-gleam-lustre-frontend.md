@@ -1,6 +1,6 @@
 # 0003. Build the frontend with Gleam and Lustre (TEA) on the JavaScript target
 
-- Status: Accepted (project requirement); Proposed (sub-decisions below)
+- Status: Accepted (project requirement; sub-decisions accepted by the owner 2026-10-06)
 - Date: 2026-10-06
 - Deciders: project owner (stack), agent (sub-decisions)
 

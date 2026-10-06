@@ -13,4 +13,5 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - `sbxenv.yaml` to create and attach to the dev sandbox with `sbx env run` (ADR 0008).
 
 ### Changed
-- Coach access to athletes' activities, with Strava-sourced data kept owner-only until Strava confirms (ADR 0005).
+- Coach access to athletes' activities, including Strava-sourced data, now that Strava has confirmed the usage in writing (ADR 0005).
+- ADRs 0003 and 0004 accepted.

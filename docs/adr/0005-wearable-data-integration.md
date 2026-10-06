@@ -1,6 +1,6 @@
 # 0005. Wearable data: Strava API first, FIT file import as a fallback, Garmin API deferred
 
-- Status: Accepted (points 1–3); Proposed (point 4: Strava-sourced data and coaches, pending written confirmation from Strava)
+- Status: Accepted (points 1–3); point 4 accepted 2026-10-06 on the owner's report that Strava confirmed the usage in writing
 - Date: 2026-10-06
 - Deciders: project owner (Strava first, Garmin later, coaches see athletes' activities), agent
 
@@ -39,17 +39,13 @@ Users want activities from their watches matched against planned workouts. Findi
    can read an athlete's activities only if the athlete has granted coach access, and Strava's
    terms add a further rule:
    - Activities from `fit`, `manual`, and later `garmin` are visible to the coach in full.
-   - Activities from `strava` are owner-only for now, even after they are stored in our database.
-     Strava's API agreement says Strava Data may be shown only to the user it belongs to.
-     Storing a copy does not change where the data came from, so "imported" Strava data is
-     still Strava Data. Press coverage from 2024-11 named coaching platforms (Final Surge,
-     intervals.icu) as affected. Strava also said "the overwhelming majority of existing use cases"
-     and "coaching platforms" were still allowed, so the position is ambiguous.
-   - Next step: ask Strava developer support in writing whether coach access is allowed. Until
-     they answer, coaches see only *planned versus done* status for Strava-sourced workouts
-     (completed yes/no, which the athlete confirms), and none of the
-     Strava metrics. Coach visibility for `strava` is a single policy point in the API rules,
-     so it can be switched on if Strava allows it.
+   - Activities from `strava` were first kept owner-only, because Strava's API agreement says Strava Data
+     may be shown only to the user it belongs to, and press coverage from 2024-11 named coaching platforms
+     (Final Surge, intervals.icu) as affected. On 2026-10-06 the owner reported that Strava confirmed
+     their usage in writing, so coach visibility for `strava` follows the same athlete-granted rule as
+     the other sources. It stays a single policy point in the API rules.
+   - Open item: the owner should file Strava's written confirmation (for example in `docs/`) and check that it
+     covers coach access to the activity metrics we store. If it does not, switch the policy point back to owner-only.
    - Plans themselves (our own data) can be shared without restriction.
 
 ## Consequences

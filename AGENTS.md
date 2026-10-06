@@ -36,7 +36,7 @@ Record decisions and changes yourself. Do not wait to be asked, and do not ask f
   Domain logic goes in pure Gleam modules with `gleeunit` tests (ADR 0003).
 - Offline-first: IndexedDB is the client's source of truth, with client-generated IDs and a mutation
   outbox synced to PocketBase. The service worker (plain JS) caches only the app shell (ADR 0004).
-- Strava data is visible only to its owner. Never expose it in shared plans or to other users (ADR 0005).
+- Strava data is visible to its owner and, if the athlete granted coach access, to their coach. Never expose it in shared plans or to other users (ADR 0005).
 
 ## Commands
 
