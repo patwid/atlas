@@ -5,11 +5,12 @@ schemaVersion: "2"
 kind: mixin
 name: default
 displayName: Atlas development
-description: "Network access for the Gleam package registry and the Strava API"
+description: "Network access for the Gleam package registry, the Nix binary cache and the Strava API"
 
 permissions:
   network:
     allow:
       - repo.hex.pm      # Gleam/Hex package downloads
+      - cache.nixos.org  # Nix binary cache for the dev shell (flake.nix)
       - strava.com
       - "*.strava.com"   # www.strava.com (OAuth + API v3)
