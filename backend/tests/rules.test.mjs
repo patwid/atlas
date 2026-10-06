@@ -281,3 +281,40 @@ test("matches: an activity can be linked again to a workout of another assignmen
   assert.equal((await update("alice", "matches", m.id, { activity: (await mkActivity("alice")).id })).status, 404)
   assert.equal((await update("alice", "matches", m.id, { owner: people.bob.id })).status, 404)
 })
+
+test("plan_shares: carry display names for both people, as labels only", async () => {
+  const plan = await mkPlan("alice")
+  const s = await create("alice", "plan_shares", {
+    id: id(), plan: plan.id, user: people.bob.id, user_name: "Bob", shared_by_name: "Alice",
+  })
+  assert.equal(s.status, 200, JSON.stringify(s.body))
+  const seen = (await get("bob", "plan_shares", s.body.id)).body
+  assert.equal(seen.user_name, "Bob")
+  assert.equal(seen.shared_by_name, "Alice")
+  assert.equal((await create("alice", "plan_shares", { id: id(), plan: plan.id, user: people.carol.id, user_name: "x".repeat(201) })).status, 400)
+  // Sharing again after removal reuses the row: the pair is unique, and a removed row keeps its place.
+  assert.equal((await update("alice", "plan_shares", s.body.id, { deleted: true })).status, 200)
+  assert.equal((await create("alice", "plan_shares", { id: id(), plan: plan.id, user: people.bob.id })).status, 400)
+  assert.equal((await update("alice", "plan_shares", s.body.id, { deleted: false, user_name: "Bobby" })).status, 200)
+  assert.equal((await get("bob", "plans", plan.id)).status, 200)
+})
+
+test("assignments: a plan shared with you can be started by you, but not once the share is removed, nor if shared with someone else", async () => {
+  const plan = await mkPlan("alice") // private
+  const startFor = (who) => create(who, "assignments", { id: id(), plan: plan.id, athlete: people[who].id, assigned_by: people[who].id, start_date: "2026-11-02" })
+  assert.equal((await startFor("bob")).status, 400, "not shared yet")
+  const share = (await create("alice", "plan_shares", { id: id(), plan: plan.id, user: people.bob.id })).body
+  assert.equal((await startFor("bob")).status, 200, "shared with Bob")
+  assert.equal((await startFor("carol")).status, 400, "Carol has no share")
+  assert.equal((await update("alice", "plan_shares", share.id, { deleted: true })).status, 200)
+  assert.equal((await startFor("bob")).status, 400, "the share was removed")
+})
+
+test("assignments: a coach can start a shared plan for an athlete who granted access, and only then", async () => {
+  const plan = await mkPlan("alice")
+  await create("alice", "plan_shares", { id: id(), plan: plan.id, user: people.bob.id })
+  const forCarol = () => create("bob", "assignments", { id: id(), plan: plan.id, athlete: people.carol.id, assigned_by: people.bob.id, start_date: "2026-11-02" })
+  assert.equal((await forCarol()).status, 400, "Carol has not granted Bob access")
+  await grant("carol", "bob")
+  assert.equal((await forCarol()).status, 200)
+})

@@ -34,6 +34,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Matching rule change: a match can be moved to another assignment of the same user (migration `1760000200_matches_relink.js`).
 - Strava section in Settings: connect, see the state, import the last 30 days again and disconnect, with the "Powered by Strava" attribution (ADR 0027). `GET /api/atlas/strava/status` tells the app whether Strava is set up and connected.
 - Copy a plan with its workouts into your own plans from its screen; the copy is private and remembers its source (ADR 0028).
+- `plan_shares` carry display names, and a plan shared with someone can be started by them (migration `1760000300_plan_share_names_and_start_rule.js`, ADR 0029).
 
 ### Changed
 - Strava's redirect now returns to `/settings?strava=<result>` (ADR 0027).

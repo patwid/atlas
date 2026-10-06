@@ -32,3 +32,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0026 | [The Today screen and stored matches](0026-today-screen.md) | Accepted |
 | 0027 | [The Strava section in Settings](0027-strava-screen.md) | Accepted / Proposed |
 | 0028 | [Copying a plan](0028-copy-a-plan.md) | Accepted |
+| 0029 | [Sharing a plan with named people](0029-sharing-plans.md) | Accepted |
