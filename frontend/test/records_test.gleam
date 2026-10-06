@@ -4,6 +4,7 @@ import atlas/grants
 import atlas/matching
 import atlas/plan.{Assignment, Plan, Workout}
 import atlas/records
+import atlas/shares
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/json
@@ -205,4 +206,15 @@ pub fn a_stored_match_keeps_its_deleted_flag_test() {
   assert row.deleted
   assert row.updated == ""
   assert records.stored_match(parse("{\"id\":\"m3\"}")) == Error(Nil)
+}
+
+pub fn a_share_keeps_names_and_the_deleted_flag_test() {
+  let text =
+    "{\"id\":\"s1\",\"plan\":\"p1\",\"user\":\"bob\",\"user_name\":\"Bob\",\"shared_by_name\":\"Ana\",\"deleted\":true,\"updated\":\"T1\"}"
+  assert records.share(parse(text))
+    == Ok(shares.Share("s1", "p1", "bob", "Bob", "Ana", True, "T1"))
+  // A share made before names existed still reads.
+  assert records.share(parse("{\"id\":\"s2\",\"plan\":\"p\",\"user\":\"u\"}"))
+    == Ok(shares.Share("s2", "p", "u", "", "", False, ""))
+  assert records.share(parse("{\"id\":\"s3\"}")) == Error(Nil)
 }

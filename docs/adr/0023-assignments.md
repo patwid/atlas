@@ -37,3 +37,9 @@ and whoever assigned it). The screens should not offer what the server would ref
 - Ending a plan early is done by removing the assignment; there is no "paused" state.
 - The whole-app tests cover starting, re-dating and removing an own plan against a real PocketBase, starting a public plan of
   someone else, and that a private shared plan offers no start.
+
+## Addendum: shared plans can be started (2026-10-06)
+
+The text above says a private plan that is only shared with the user can be read but not started. [0029](0029-sharing-plans.md) changed the server rule: a
+plan shared with the user (an undeleted `plan_shares` row) can be started by them, and by a coach for an athlete who granted access, like a plan of their
+own or a public one. The Start button follows the rule, so it now appears for shared plans too.

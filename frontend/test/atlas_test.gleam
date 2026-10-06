@@ -1,7 +1,8 @@
 import atlas.{
   ActivitiesPage, AssignmentsPage, EmailChanged, Model, OnlineChanged,
-  PasswordChanged, PlansPage, RefreshResponded, RouteChanged, SignInResponded,
-  SignInSubmitted, SignOutClicked, SignedIn, SignedOut, StravaPage, WorkoutsPage,
+  PasswordChanged, PlansPage, RefreshResponded, RouteChanged, SharingPage,
+  SignInResponded, SignInSubmitted, SignOutClicked, SignedIn, SignedOut,
+  StravaPage, WorkoutsPage,
 }
 import atlas/activities_page
 import atlas/activity
@@ -17,10 +18,13 @@ import atlas/grants
 import atlas/http.{Response}
 import atlas/matching
 import atlas/outbox
+import atlas/person_finder
 import atlas/plan
 import atlas/plan_form
 import atlas/plans_page.{Creating}
 import atlas/route
+import atlas/shares
+import atlas/sharing_page
 import atlas/signin.{Form}
 import atlas/strava_page
 import atlas/sync
@@ -55,6 +59,7 @@ fn signed_out(form: signin.Form) -> atlas.Model {
     activities_page.new(),
     today_page.new(),
     strava_page.new(),
+    sharing_page.new(),
   )
 }
 
@@ -71,6 +76,7 @@ fn signed_in() -> atlas.Model {
     activities_page.new(),
     today_page.new(),
     strava_page.new(),
+    sharing_page.new(),
   )
 }
 
@@ -722,4 +728,114 @@ pub fn a_copy_waits_until_the_workouts_have_been_read_test() {
   assert outbox.is_empty(sync.outbox(engine))
   let assert plans_page.CopyProblem("src", message) = model.plans.copy
   assert string.contains(message, "still loading")
+}
+
+fn sharing_screen(owner: String) -> atlas.Model {
+  Model(
+    ..signed_in(),
+    route: route.Plan("p1"),
+    syncing: ready_syncing(),
+    plans: plans_page.Model(
+      ..plans_page.new(),
+      plans: [plan.Plan("p1", owner, "10k plan", "", plan.Private, "T")],
+      loaded: True,
+    ),
+    sharing: sharing_page.Model(
+      ..sharing_page.new(),
+      finder: person_finder.Model(
+        "bob@example.com",
+        person_finder.Found(grants.Person("bob", "Bob")),
+      ),
+    ),
+  )
+}
+
+pub fn sharing_your_own_plan_queues_a_share_with_names_test() {
+  let #(model, _) =
+    atlas.update(sharing_screen("u1"), SharingPage(sharing_page.ShareClicked))
+  let assert option.Some(engine) = model.syncing.sync
+  let assert [entry] = sync.outbox(engine).entries
+  assert entry.collection == collection.PlanShares
+  assert dict.get(entry.fields, "plan") == Ok("\"p1\"")
+  assert dict.get(entry.fields, "user") == Ok("\"bob\"")
+  assert dict.get(entry.fields, "user_name") == Ok("\"Bob\"")
+  assert dict.get(entry.fields, "shared_by_name") == Ok("\"Alice\"")
+}
+
+pub fn a_plan_that_is_not_yours_cannot_be_shared_test() {
+  let #(model, _) =
+    atlas.update(
+      sharing_screen("someone-else"),
+      SharingPage(sharing_page.ShareClicked),
+    )
+  let assert option.Some(engine) = model.syncing.sync
+  assert outbox.is_empty(sync.outbox(engine))
+}
+
+pub fn a_private_plan_shared_with_you_can_be_started_test() {
+  let model =
+    Model(
+      ..schedule_screen("u2", plan.Private),
+      assignments: assignments_page.new(),
+      sharing: sharing_page.Model(..sharing_page.new(), shares: [
+        shares.Share("s1", "p1", "u1", "Alice", "Zed", False, "T"),
+      ]),
+    )
+  let #(next, _) =
+    atlas.update(model, AssignmentsPage(assignments_page.StartClicked))
+  assert next.assignments.mode == assignments_page.Starting
+}
+
+pub fn a_removed_share_no_longer_allows_starting_test() {
+  let model =
+    Model(
+      ..schedule_screen("u2", plan.Private),
+      assignments: assignments_page.new(),
+      sharing: sharing_page.Model(..sharing_page.new(), shares: [
+        shares.Share("s1", "p1", "u1", "Alice", "Zed", True, "T"),
+      ]),
+    )
+  let #(next, _) =
+    atlas.update(model, AssignmentsPage(assignments_page.StartClicked))
+  assert next.assignments.mode == assignments_page.Browsing
+}
+
+pub fn the_plan_list_says_who_shared_a_plan_test() {
+  let model =
+    Model(
+      ..signed_in(),
+      route: route.Plans,
+      plans: plans_page.Model(
+        ..plans_page.new(),
+        plans: [plan.Plan("p1", "zed", "Zed's plan", "", plan.Private, "T")],
+        loaded: True,
+      ),
+      sharing: sharing_page.Model(..sharing_page.new(), shares: [
+        shares.Share("s1", "p1", "u1", "Alice", "Zed", False, "T"),
+      ]),
+    )
+  let html = element.to_string(atlas.view(model))
+  assert string.contains(html, "Shared by Zed")
+  let opened =
+    element.to_string(atlas.view(Model(..model, route: route.Plan("p1"))))
+  assert string.contains(opened, "Shared with you by Zed.")
+}
+
+pub fn only_the_owner_sees_the_sharing_section_test() {
+  let owner = element.to_string(atlas.view(sharing_screen("u1")))
+  assert string.contains(owner, "Share with someone by e-mail address")
+  let other = element.to_string(atlas.view(sharing_screen("someone-else")))
+  assert !string.contains(other, "Share with someone by e-mail address")
+}
+
+pub fn signing_out_clears_the_shares_on_screen_test() {
+  let showing =
+    Model(
+      ..signed_in(),
+      sharing: sharing_page.Model(..sharing_page.new(), shares: [
+        shares.Share("s1", "p1", "u1", "Alice", "Zed", False, "T"),
+      ]),
+    )
+  let #(model, _) = atlas.update(showing, SignOutClicked)
+  assert model.sharing == sharing_page.new()
 }

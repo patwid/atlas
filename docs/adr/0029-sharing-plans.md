@@ -29,7 +29,20 @@ has existed since the data model, but there was no screen and no way to look a p
 ## Consequences
 
 - Sharing is read access. A recipient who wants to change the plan copies it; they never see the owner's other plans.
-- Stopping a share hides the plan from the recipient at their next sync but cannot take back what they have already seen or copied
+- Stopping a share hides the plan from the recipient **on the server at once** but cannot take back what they have already seen or copied
   (as with coach access, [0024](0024-coach-grants-screen.md)). The privacy notice must say so.
 - A share to someone who is also a coach of the owner, or to several people, is just several rows; nothing groups them.
 - Assignments of a plan whose share was later removed keep working for the athlete: they can still read the plan through their assignment ([0009](0009-data-model-and-api-rules.md)).
+
+## Known gap: access removal does not reach the recipient's device (found 2026-10-06)
+
+The first version of this ADR said a removed share disappears from the recipient's device at their next sync. **That is not true.** An
+incremental pull ([0016](0016-sync-core-outbox-and-cursor.md)) only returns records that *changed*, and a plan the user can no longer read has not
+changed; a removed share row is not visible to its recipient either (`user = me && deleted = false`). The device keeps showing the plan until a
+full resync, which happens only on a new device or after 80 days without syncing. A test against a real server shows the plan still listed after a
+sync with the share already removed.
+
+The same holds for coach access ([0024](0024-coach-grants-screen.md)): after an athlete removes a coach, the coach's device keeps the athlete's
+activities and matches. This is a privacy defect, not just a stale list, and must be fixed before launch. The planned fix is a periodic
+**membership sweep**: a cheap request for the IDs the user can currently read, per collection, after which local records that are not among them
+(and have no unsent edits) are removed, with a new ADR and tests. Until then, treat "stop sharing" and "remove access" as stopping *new* access only.

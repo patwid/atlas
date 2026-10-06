@@ -13,7 +13,7 @@ import atlas/store
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
-import gleam/option.{None, Some}
+import gleam/option.{type Option, None, Some}
 import gleam/order
 import gleam/string
 import lustre/attribute.{class}
@@ -274,6 +274,15 @@ fn sorted(plans: List(Plan)) -> List(Plan) {
 // VIEWS -------------------------------------------------------------------------------------------
 
 pub fn view_list(model: Model, user_id: String) -> Element(Msg) {
+  view_list_with(model, user_id, fn(_) { None })
+}
+
+/// `shared_by` says who shared a plan with the user, when it was shared with them.
+pub fn view_list_with(
+  model: Model,
+  user_id: String,
+  shared_by: fn(Plan) -> Option(String),
+) -> Element(Msg) {
   let #(mine, others) =
     list.partition(model.plans, fn(p) { p.owner_id == user_id })
   html.section([class("plans")], [
@@ -301,20 +310,29 @@ pub fn view_list(model: Model, user_id: String) -> Element(Msg) {
               html.text("You have no plans yet. Create one to get started."),
             ])
         }
-      True, plans -> plan_list(plans)
+      True, plans -> plan_list(plans, shared_by)
     },
     case others {
       [] -> element.none()
       plans ->
         html.div([], [
           html.h2([], [html.text("Shared with you")]),
-          plan_list(plans),
+          plan_list(plans, shared_by),
         ])
     },
   ])
 }
 
 pub fn view_detail(model: Model, id: String, user_id: String) -> Element(Msg) {
+  view_detail_with(model, id, user_id, fn(_) { None })
+}
+
+pub fn view_detail_with(
+  model: Model,
+  id: String,
+  user_id: String,
+  shared_by: fn(Plan) -> Option(String),
+) -> Element(Msg) {
   let back =
     html.a([attribute.href(route.to_path(route.Plans)), class("back")], [
       html.text("← All plans"),
@@ -351,9 +369,14 @@ pub fn view_detail(model: Model, id: String, user_id: String) -> Element(Msg) {
               case mine {
                 False ->
                   html.p([class("muted")], [
-                    html.text(
-                      "This plan was shared with you. Only its owner can change it. Copy it to make a version of your own.",
-                    ),
+                    html.text(case shared_by(found) {
+                      Some(name) ->
+                        "Shared with you by "
+                        <> name
+                        <> ". Only its owner can change it. Copy it to make a version of your own."
+                      None ->
+                        "This plan was shared with you. Only its owner can change it. Copy it to make a version of your own."
+                    }),
                   ])
                 True -> owner_actions(found, model.confirming_delete)
               },
@@ -444,7 +467,10 @@ fn owner_actions(found: Plan, confirming: Bool) -> Element(Msg) {
   })
 }
 
-fn plan_list(plans: List(Plan)) -> Element(Msg) {
+fn plan_list(
+  plans: List(Plan),
+  shared_by: fn(Plan) -> Option(String),
+) -> Element(Msg) {
   html.ul(
     [class("cards")],
     list.map(plans, fn(p) {
@@ -453,6 +479,11 @@ fn plan_list(plans: List(Plan)) -> Element(Msg) {
           html.text(p.title),
         ]),
         badges(p),
+        case shared_by(p) {
+          Some(name) ->
+            html.p([class("muted")], [html.text("Shared by " <> name)])
+          None -> element.none()
+        },
         case p.description {
           "" -> element.none()
           text -> html.p([class("muted")], [html.text(snippet(text))])

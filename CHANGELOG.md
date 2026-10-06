@@ -35,6 +35,10 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Strava section in Settings: connect, see the state, import the last 30 days again and disconnect, with the "Powered by Strava" attribution (ADR 0027). `GET /api/atlas/strava/status` tells the app whether Strava is set up and connected.
 - Copy a plan with its workouts into your own plans from its screen; the copy is private and remembers its source (ADR 0028).
 - `plan_shares` carry display names, and a plan shared with someone can be started by them (migration `1760000300_plan_share_names_and_start_rule.js`, ADR 0029).
+- Share a plan with named people by e-mail address, see who shared a plan with you, and start a plan that was shared with you; stop sharing with a confirmation (ADR 0029).
+
+### Known issues
+- Removing a share or a coach's access hides the data on the server at once, but a device that already has it keeps it until a full resync (ADR 0029, known gap). To be fixed before launch.
 
 ### Changed
 - Strava's redirect now returns to `/settings?strava=<result>` (ADR 0027).

@@ -25,8 +25,7 @@ by e-mail address ([0010](0010-user-lookup-by-email.md)). Screens also have to s
 - **E-mail addresses in URLs**: `+` is encoded as `%2B`. A bare `+` in a query string is read as a space, so
   `name+tag@example.com` would not be found. (`uri.percent_encode` leaves `+` alone.)
 - **Who can do what** follows the server: only the athlete creates, changes or removes a grant; the coach sees it
-  (and can start plans for the athlete, 0023) until the athlete removes it, after which the grant is no longer visible to the coach
-  and the coach's device drops it at its next sync.
+  (and can start plans for the athlete, 0023) until the athlete removes it, after which the server no longer shows the grant or the athlete's data to the coach.
 
 ## Consequences
 
@@ -38,3 +37,9 @@ by e-mail address ([0010](0010-user-lookup-by-email.md)). Screens also have to s
 - The whole-app tests run the whole story with two users against a real PocketBase: the athlete looks up and adds her
   coach (a failed lookup first), the coach starts his plan for her, she finds it "Assigned by" him and can move her date but
   not restart or edit it, and removing access hides the grant from the coach.
+
+## Addendum: removal does not reach the coach's device (2026-10-06)
+
+The text above first said the coach's device drops the grant at its next sync. It does not: a record that becomes unreadable has not changed, so an
+incremental pull never mentions it. The coach's device keeps the athlete's activities until a full resync. See the known gap in
+[0029](0029-sharing-plans.md); the planned membership sweep fixes it for sharing and coach access alike.

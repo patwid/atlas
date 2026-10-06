@@ -311,7 +311,7 @@ test("a user starts a plan on a date, moves the date and removes it, and the ser
   w.close()
 })
 
-test("a public plan of someone else can be started, a private one shared with you cannot", { skip: !built && "frontend not built" }, async () => {
+test("a public plan of someone else can be started, and so can a private one that is shared with you", { skip: !built && "frontend not built" }, async () => {
   await h.world()
   const alice = h.people.alice
   const bob = h.people.bob
@@ -331,13 +331,17 @@ test("a public plan of someone else can be started, a private one shared with yo
   assert.equal(started.athlete, bob.id)
   assert.equal(started.plan, "publicplan00001")
 
-  // The private plan shared with Bob is readable, but the server would refuse a start, so none is offered.
+  // The private plan that is shared with Bob can be started too (ADR 0029): a share is enough.
   click(w, [...d.querySelectorAll("a")].find((a) => a.textContent.includes("All plans")))
   const privateLink = await waitFor("the private plan in the list", () => [...d.querySelectorAll(".cards a")].find((a) => a.textContent === "Private plan"))
   click(w, privateLink)
   await waitFor("the private plan's screen", () => d.querySelector("h2")?.textContent === "Private plan")
-  await waitFor("the schedule section", () => d.body.textContent.includes("Nobody is following this plan yet."))
-  assert.equal(button(w, "Start this plan"), undefined)
+  click(w, await waitFor("the start button", () => button(w, "Start this plan")))
+  await waitFor("the start form", () => d.querySelector("#assign-start"))
+  typeInto(w, d.querySelector("#assign-start"), "2026-12-14")
+  submit(w, d.querySelector(".schedule-form"))
+  await waitFor("the second assignment on the server", async () =>
+    (await h.api("GET", "collections/assignments/records?perPage=50", { token: bob.token })).body.items.some((a) => a.plan === "privateplan0001"))
   w.close()
 })
 
@@ -606,5 +610,92 @@ test("a user copies someone else's public plan with its workouts, then edits the
   submit(w, d.querySelector(".plan-form"))
   await waitFor("the rename on the server", async () => (await mine()).some((p) => p.title === "My autumn 10k"))
   assert.equal((await h.api("GET", "collections/plans/records/copysrcplan0001", { token: alice.token })).body.title, "Autumn 10k")
+  w.close()
+})
+
+// Sharing a plan with named people -------------------------------------------------------------------------
+
+test("an owner shares a private plan by e-mail, the recipient reads and starts it, and stopping and sharing again reuses the row", { skip: !built && "frontend not built" }, async () => {
+  await h.world()
+  const alice = h.people.alice
+  const bob = h.people.bob
+  const carol = h.people.carol
+  await setup(h.create("alice", "plans", { id: "winterplan00001", owner: alice.id, title: "Winter base", visibility: "private" }))
+  await setup(h.create("alice", "workouts", { id: "winterwork00001", plan: "winterplan00001", day_index: 0, position: 0, title: "Easy hour", kind: "easy", duration_s: 3600 }))
+  const shares = async () => (await h.api("GET", "collections/plan_shares/records?perPage=50", { token: alice.token })).body.items
+  const seesPlan = async (who) => (await h.api("GET", "collections/plans/records/winterplan00001", { token: who.token })).status === 200
+
+  // Alice shares with Bob. Finding him gives him nothing until she confirms.
+  let w = startApp("/plans/winterplan00001", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
+  let d = w.document
+  await waitFor("the sharing section", () => d.body.textContent.includes("Not shared with anyone."))
+  assert.equal(await seesPlan(bob), false, "private to start with")
+  typeInto(w, d.querySelector("#share-email"), bob.email)
+  submit(w, d.querySelector(".share-form"))
+  await waitFor("the person found", () => d.body.textContent.includes("Found bob. Share this plan with them?"))
+  assert.deepEqual(await shares(), [], "finding someone shares nothing")
+  click(w, button(w, "Share plan"))
+  const bobShare = await waitFor("the share on the server", async () => (await shares())[0])
+  assert.equal(bobShare.plan, "winterplan00001")
+  assert.equal(bobShare.user, bob.id)
+  assert.equal(bobShare.user_name, "bob")
+  assert.equal(bobShare.shared_by_name, "alice")
+  await waitFor("bob in the list", () => d.querySelector(".sharing .cards")?.textContent.includes("bob"))
+  assert.equal(await seesPlan(bob), true)
+  // Sharing with someone who already has it is refused before anything is sent.
+  typeInto(w, d.querySelector("#share-email"), bob.email)
+  submit(w, d.querySelector(".share-form"))
+  await waitFor("the refusal", () => d.body.textContent.includes("bob already has this plan."))
+  w.close()
+
+  // Bob finds it under "Shared with you", read-only, can start it and cannot share it on.
+  w = startApp("/plans", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
+  d = w.document
+  const link = await waitFor("the plan in his list", () => [...d.querySelectorAll(".cards a")].find((a) => a.textContent === "Winter base"))
+  assert.ok(d.body.textContent.includes("Shared by alice"))
+  click(w, link)
+  await waitFor("the plan screen", () => d.body.textContent.includes("Shared with you by alice.") && d.body.textContent.includes("Easy hour"))
+  assert.equal(button(w, "Edit"), undefined)
+  assert.equal(d.querySelector("#share-email"), null, "only the owner sees the sharing section")
+  click(w, await waitFor("the start button", () => button(w, "Start this plan")))
+  await waitFor("the start form", () => d.querySelector("#assign-start"))
+  typeInto(w, d.querySelector("#assign-start"), "2026-12-07")
+  submit(w, d.querySelector(".schedule-form"))
+  const started = await waitFor("the assignment on the server", async () =>
+    (await h.api("GET", "collections/assignments/records?perPage=50", { token: bob.token })).body.items[0])
+  assert.equal(started.athlete, bob.id)
+  assert.equal(started.plan, "winterplan00001", "a shared private plan can be started")
+  w.close()
+
+  // Carol: shared, then stopped, then shared again through the same row.
+  w = startApp("/plans/winterplan00001", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
+  d = w.document
+  await waitFor("bob still listed", () => d.querySelector(".sharing .cards")?.textContent.includes("bob"))
+  typeInto(w, d.querySelector("#share-email"), carol.email)
+  submit(w, d.querySelector(".share-form"))
+  await waitFor("carol found", () => d.body.textContent.includes("Found carol. Share this plan with them?"))
+  click(w, button(w, "Share plan"))
+  const carolShare = await waitFor("carol's share", async () => (await shares()).find((s) => s.user === carol.id))
+  assert.equal(await seesPlan(carol), true)
+  const carolCard = () => [...d.querySelectorAll(".sharing .cards li")].find((li) => li.textContent.includes("carol"))
+  await waitFor("carol listed", () => carolCard())
+  click(w, [...carolCard().querySelectorAll("button")].find((b) => b.textContent === "Stop sharing"))
+  await waitFor("the question", () => d.body.textContent.includes("Stop sharing this plan with carol?"))
+  assert.equal(await seesPlan(carol), true, "asking does not stop it")
+  click(w, button(w, "Yes, stop sharing"))
+  await waitFor("the share removed on the server", async () => (await shares()).find((s) => s.id === carolShare.id)?.deleted === true)
+  assert.equal(await seesPlan(carol), false, "Carol no longer sees the plan")
+  assert.equal(await seesPlan(bob), true, "Bob still does")
+  await waitFor("carol gone from the list", () => !carolCard())
+
+  typeInto(w, d.querySelector("#share-email"), carol.email)
+  submit(w, d.querySelector(".share-form"))
+  await waitFor("carol found again", () => d.body.textContent.includes("Found carol. Share this plan with them?"))
+  click(w, button(w, "Share plan"))
+  await waitFor("the same row live again", async () => {
+    const all = (await shares()).filter((s) => s.user === carol.id)
+    return all.length === 1 && all[0].id === carolShare.id && all[0].deleted === false
+  })
+  assert.equal(await seesPlan(carol), true)
   w.close()
 })

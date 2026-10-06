@@ -18,6 +18,8 @@ import atlas/plans_page
 import atlas/pwa
 import atlas/random
 import atlas/route.{type Route}
+import atlas/shares
+import atlas/sharing_page
 import atlas/shell
 import atlas/signin
 import atlas/storage
@@ -59,6 +61,7 @@ pub type Model {
     activities: activities_page.Model,
     daily: today_page.Model,
     strava: strava_page.Model,
+    sharing: sharing_page.Model,
   )
 }
 
@@ -79,6 +82,7 @@ pub type Msg {
   ActivitiesPage(activities_page.Msg)
   TodayPage(today_page.Msg)
   StravaPage(strava_page.Msg)
+  SharingPage(sharing_page.Msg)
   ProblemsDismissed
 }
 
@@ -133,6 +137,7 @@ fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
       activities: activities_page.new(),
       daily: today_page.new(),
       strava: strava_page.new(),
+      sharing: sharing_page.new(),
     ),
     effect.batch([
       modem.init(RouteChanged),
@@ -233,6 +238,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               activities: activities_page.new(),
               daily: today_page.new(),
               strava: strava_page.new(),
+              sharing: sharing_page.new(),
             ),
             effect.batch([remember(session), load]),
           )
@@ -276,6 +282,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         activities: activities_page.new(),
         daily: today_page.new(),
         strava: strava_page.new(),
+        sharing: sharing_page.new(),
       ),
       forget(),
     )
@@ -311,6 +318,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
                 effect.map(coaches_page.refresh(), CoachesPage),
                 effect.map(activities_page.refresh(), ActivitiesPage),
                 effect.map(today_page.refresh(), TodayPage),
+                effect.map(sharing_page.refresh(), SharingPage),
               ])
             False -> effect.none()
           }
@@ -485,6 +493,48 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         SignedOut(_) -> #(model, effect.none())
       }
 
+    SharingPage(inner) ->
+      case model.auth {
+        SignedIn(session) -> {
+          let #(page_model, page_effect, actions) =
+            sharing_page.update(
+              model.sharing,
+              inner,
+              sharing_context(model, session),
+            )
+          let #(state, action_effects) = perform_shares(model.syncing, actions)
+          // The lookup is a request, not a record: it is sent here and answered in a message.
+          let lookups =
+            list.filter_map(actions, fn(action) {
+              case action {
+                sharing_page.LookUp(email) ->
+                  Ok(effect.map(
+                    http.send(
+                      api.lookup_user(email),
+                      Some(session.token),
+                      fn(response) {
+                        sharing_page.Finder(person_finder.LookupAnswered(
+                          response,
+                        ))
+                      },
+                    ),
+                    SharingPage,
+                  ))
+                _ -> Error(Nil)
+              }
+            })
+          #(
+            Model(..model, sharing: page_model, syncing: state),
+            effect.batch([
+              effect.map(page_effect, SharingPage),
+              effect.map(effect.batch(action_effects), Syncing),
+              ..lookups
+            ]),
+          )
+        }
+        SignedOut(_) -> #(model, effect.none())
+      }
+
     ProblemsDismissed -> #(
       Model(..model, syncing: syncing.dismiss_problems(model.syncing)),
       effect.none(),
@@ -517,7 +567,9 @@ fn assignments_context(
       case list.find(model.plans.plans, fn(p) { p.id == id }) {
         Ok(found) -> {
           let can_start =
-            found.owner_id == session.user_id || found.visibility == plan.Public
+            found.owner_id == session.user_id
+            || found.visibility == plan.Public
+            || shares.is_shared_with(model.sharing.shares, id, session.user_id)
           assignments_page.Context(
             id,
             session.user_id,
@@ -548,6 +600,52 @@ fn today_inputs(model: Model, session: Session) -> today.Inputs {
     matches: model.daily.matches,
     offset_at: clock.utc_offset_at_utc,
   )
+}
+
+/// The plan whose screen is open, for sharing: only its owner may share it.
+fn sharing_context(model: Model, session: Session) -> sharing_page.Context {
+  let me =
+    grants.Person(session.user_id, case session.name {
+      "" -> session.email
+      name -> name
+    })
+  case model.route {
+    route.Plan(id) ->
+      case list.find(model.plans.plans, fn(p) { p.id == id }) {
+        Ok(found) ->
+          sharing_page.Context(id, me, found.owner_id == session.user_id)
+        Error(Nil) -> sharing_page.Context(id, me, False)
+      }
+    _ -> sharing_page.Context("", me, False)
+  }
+}
+
+/// Carries out what the user did with who a plan is shared with.
+fn perform_shares(
+  state: syncing.State,
+  actions: List(sharing_page.Action),
+) -> #(syncing.State, List(Effect(syncing.Msg))) {
+  list.fold(actions, #(state, []), fn(acc, action) {
+    let #(current, effects) = acc
+    case action {
+      sharing_page.Share(id, fields) -> {
+        let #(next, effect) =
+          syncing.create(current, collection.PlanShares, id, fields)
+        #(next, list.append(effects, [effect]))
+      }
+      sharing_page.ShareAgain(id, fields, base) -> {
+        let #(next, effect) =
+          syncing.edit(current, collection.PlanShares, id, fields, base)
+        #(next, list.append(effects, [effect]))
+      }
+      sharing_page.Stop(id, base) -> {
+        let #(next, effect) =
+          syncing.delete(current, collection.PlanShares, id, base)
+        #(next, list.append(effects, [effect]))
+      }
+      sharing_page.LookUp(_) -> acc
+    }
+  })
 }
 
 /// Carries out what the Strava section asked for: a request, a move to Strava's page, or a sync.
@@ -815,6 +913,7 @@ fn session_ended(model: Model) -> #(Model, Effect(Msg)) {
         activities: activities_page.new(),
         daily: today_page.new(),
         strava: strava_page.new(),
+        sharing: sharing_page.new(),
       ),
       forget(),
     )
@@ -892,11 +991,18 @@ fn page(model: Model, session: Session) -> Element(Msg) {
         TodayPage,
       )
     route.Plans ->
-      element.map(plans_page.view_list(model.plans, session.user_id), PlansPage)
+      element.map(
+        plans_page.view_list_with(model.plans, session.user_id, fn(p) {
+          shares.shared_by(model.sharing.shares, p.id, session.user_id)
+        }),
+        PlansPage,
+      )
     route.Plan(id) -> {
       let detail =
         element.map(
-          plans_page.view_detail(model.plans, id, session.user_id),
+          plans_page.view_detail_with(model.plans, id, session.user_id, fn(p) {
+            shares.shared_by(model.sharing.shares, p.id, session.user_id)
+          }),
           PlansPage,
         )
       case list.find(model.plans.plans, fn(p) { p.id == id }) {
@@ -922,6 +1028,18 @@ fn page(model: Model, session: Session) -> Element(Msg) {
               ),
               AssignmentsPage,
             ),
+            // Only the owner shares a plan.
+            case found.owner_id == session.user_id {
+              True ->
+                element.map(
+                  sharing_page.view(
+                    model.sharing,
+                    sharing_context(model, session),
+                  ),
+                  SharingPage,
+                )
+              False -> element.none()
+            },
           ])
         Error(Nil) -> detail
       }
