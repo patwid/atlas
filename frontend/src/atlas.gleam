@@ -11,6 +11,7 @@ import atlas/collection
 import atlas/grants
 import atlas/http
 import atlas/online
+import atlas/person_finder
 import atlas/plan
 import atlas/plan_copy
 import atlas/plans_page
@@ -382,7 +383,11 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
                     http.send(
                       api.lookup_user(email),
                       Some(session.token),
-                      fn(response) { coaches_page.LookupAnswered(response) },
+                      fn(response) {
+                        coaches_page.Finder(person_finder.LookupAnswered(
+                          response,
+                        ))
+                      },
                     ),
                     CoachesPage,
                   ))

@@ -2,11 +2,10 @@
 //// The athlete gives access: look a person up by e-mail, confirm, and a grant is created that carries
 //// both names (ADR 0010, 0024). Own state and messages; writes and the lookup come back as `Action`s.
 
-import atlas/api
 import atlas/collection
 import atlas/grants.{type Grant, type Person}
-import atlas/http
 import atlas/outbox
+import atlas/person_finder
 import atlas/random
 import atlas/records
 import atlas/store
@@ -14,27 +13,18 @@ import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/string
 import lustre/attribute.{class}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
 
-pub type Lookup {
-  Idle
-  Looking
-  /// Found: the user has to confirm before access is given.
-  Found(Person)
-  Failed(String)
-}
-
 pub type Model {
   Model(
     grants: List(Grant),
     loaded: Bool,
-    email: String,
-    lookup: Lookup,
+    /// The form for adding a coach.
+    finder: person_finder.Model,
     /// The grant whose "Remove access" was clicked once.
     confirming: Option(String),
   )
@@ -43,9 +33,7 @@ pub type Model {
 pub type Msg {
   Refresh
   GrantsRead(Result(List(Dynamic), Nil))
-  EmailChanged(String)
-  FindClicked
-  LookupAnswered(http.Response)
+  Finder(person_finder.Msg)
   GiveAccessClicked
   CancelClicked
   RemoveClicked(String)
@@ -53,14 +41,14 @@ pub type Msg {
 }
 
 pub type Action {
-  /// Ask the server who has this e-mail address; the answer comes back as `LookupAnswered`.
+  /// Ask the server who has this e-mail address; the answer comes back as `Finder(LookupAnswered(..))`.
   LookUp(email: String)
   Grant(id: String, fields: outbox.Fields)
   Revoke(id: String, base_updated: String)
 }
 
 pub fn new() -> Model {
-  Model([], False, "", Idle, None)
+  Model([], False, person_finder.new(), None)
 }
 
 pub fn refresh() -> Effect(Msg) {
@@ -87,91 +75,36 @@ pub fn update(
     )
     GrantsRead(Error(Nil)) -> #(model, effect.none(), [])
 
-    EmailChanged(text) -> #(
-      Model(..model, email: text, lookup: Idle),
-      effect.none(),
-      [],
-    )
-
-    FindClicked ->
-      case string.trim(model.email), model.lookup {
-        _, Looking -> #(model, effect.none(), [])
-        "", _ -> #(
-          Model(..model, lookup: Failed("Enter an e-mail address.")),
-          effect.none(),
-          [],
-        )
-        typed, _ ->
-          case string.contains(typed, "@") {
-            False -> #(
-              Model(..model, lookup: Failed("Enter a complete e-mail address.")),
-              effect.none(),
-              [],
-            )
-            True -> #(Model(..model, lookup: Looking), effect.none(), [
-              LookUp(typed),
-            ])
-          }
+    Finder(inner) -> {
+      let refuse = fn(person: Person) {
+        case grants.has_grant(model.grants, me.id, person.id) {
+          True -> Some(person_finder.display(person) <> " already has access.")
+          False -> None
+        }
       }
-
-    LookupAnswered(response) ->
-      case model.lookup {
-        Looking ->
-          case response.status, api.parse_lookup(response.body) {
-            200, Ok(person) ->
-              case person.id == me.id {
-                True -> #(
-                  Model(..model, lookup: Failed("That is your own address.")),
-                  effect.none(),
-                  [],
-                )
-                False ->
-                  case grants.has_grant(model.grants, me.id, person.id) {
-                    True -> #(
-                      Model(
-                        ..model,
-                        lookup: Failed(
-                          display(person) <> " already has access.",
-                        ),
-                      ),
-                      effect.none(),
-                      [],
-                    )
-                    False -> #(
-                      Model(..model, lookup: Found(person)),
-                      effect.none(),
-                      [],
-                    )
-                  }
-              }
-            status, _ -> #(
-              Model(
-                ..model,
-                lookup: Failed(api.lookup_error(status, response.body)),
-              ),
-              effect.none(),
-              [],
-            )
-          }
-        // An answer for a search the user has since changed or cancelled.
-        _ -> #(model, effect.none(), [])
-      }
+      let #(finder, found) =
+        person_finder.update(model.finder, inner, me, refuse)
+      #(
+        Model(..model, finder: finder),
+        effect.none(),
+        list.map(found, fn(action) {
+          let person_finder.LookUp(email) = action
+          LookUp(email)
+        }),
+      )
+    }
 
     GiveAccessClicked ->
-      case model.lookup {
-        Found(person) -> #(
-          Model(..model, email: "", lookup: Idle),
+      case person_finder.found(model.finder) {
+        Some(person) -> #(
+          Model(..model, finder: person_finder.reset(model.finder)),
           effect.none(),
           [Grant(random.new_id(), grant_fields(me, person))],
         )
-        _ -> #(model, effect.none(), [])
+        None -> #(model, effect.none(), [])
       }
 
-    CancelClicked -> #(
-      Model(..model, lookup: Idle, confirming: None),
-      effect.none(),
-      [],
-    )
+    CancelClicked -> #(Model(..model, confirming: None), effect.none(), [])
 
     RemoveClicked(id) -> #(
       Model(..model, confirming: Some(id)),
@@ -201,13 +134,6 @@ fn grant_fields(me: Person, coach: Person) -> outbox.Fields {
   ])
 }
 
-fn display(person: Person) -> String {
-  case string.trim(person.name) {
-    "" -> "This person"
-    name -> name
-  }
-}
-
 // VIEWS -------------------------------------------------------------------------------------------
 
 pub fn view(model: Model, me: String) -> Element(Msg) {
@@ -230,7 +156,20 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
           list.map(given, fn(g) { given_view(g, model) }),
         )
     },
-    add_view(model),
+    person_finder.view(
+      model.finder,
+      person_finder.Labels(
+        field_id: "coach-email",
+        form_class: "coach-form",
+        field_label: "Add a coach by e-mail address",
+        question: fn(name) {
+          "Found " <> name <> ". Let them see your training?"
+        },
+        confirm_label: "Give access",
+      ),
+      Finder,
+      GiveAccessClicked,
+    ),
     case athletes {
       [] -> element.none()
       people ->
@@ -293,59 +232,5 @@ fn given_view(g: Grant, model: Model) -> Element(Msg) {
         ),
       ]
     }),
-  ])
-}
-
-fn add_view(model: Model) -> Element(Msg) {
-  html.form([class("coach-form"), event.on_submit(fn(_) { FindClicked })], [
-    html.label([attribute.for("coach-email")], [
-      html.text("Add a coach by e-mail address"),
-    ]),
-    html.div([class("row")], [
-      html.input([
-        attribute.id("coach-email"),
-        attribute.type_("email"),
-        attribute.name("email"),
-        attribute.autocomplete("off"),
-        attribute.value(model.email),
-        event.on_input(EmailChanged),
-      ]),
-      html.button(
-        [attribute.type_("submit"), attribute.disabled(model.lookup == Looking)],
-        [
-          html.text(case model.lookup {
-            Looking -> "Looking…"
-            _ -> "Find"
-          }),
-        ],
-      ),
-    ]),
-    case model.lookup {
-      Failed(message) ->
-        html.p([class("error"), attribute.role("alert")], [html.text(message)])
-      Found(person) ->
-        html.div([class("found"), attribute.role("status")], [
-          html.p([], [
-            html.text(
-              "Found " <> display(person) <> ". Let them see your training?",
-            ),
-          ]),
-          html.div([class("actions")], [
-            html.button(
-              [attribute.type_("button"), event.on_click(GiveAccessClicked)],
-              [html.text("Give access")],
-            ),
-            html.button(
-              [
-                attribute.type_("button"),
-                class("secondary"),
-                event.on_click(CancelClicked),
-              ],
-              [html.text("Cancel")],
-            ),
-          ]),
-        ])
-      _ -> element.none()
-    },
   ])
 }
