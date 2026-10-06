@@ -839,3 +839,46 @@ pub fn signing_out_clears_the_shares_on_screen_test() {
   let #(model, _) = atlas.update(showing, SignOutClicked)
   assert model.sharing == sharing_page.new()
 }
+
+fn coaching_model(route_to: route.Route) -> atlas.Model {
+  Model(
+    ..signed_in(),
+    route: route_to,
+    coaches: coaches_page.Model(
+      ..coaches_page.new(),
+      grants: [grants.Grant("g1", "ana", "u1", "Ana Athlete", "Alice", "T")],
+      loaded: True,
+    ),
+  )
+}
+
+pub fn the_athletes_tab_appears_only_for_a_coach_test() {
+  let coach = element.to_string(atlas.view(coaching_model(route.Today)))
+  assert string.contains(coach, "href=\"/athletes\"")
+  let alone = element.to_string(atlas.view(signed_in()))
+  assert !string.contains(alone, "href=\"/athletes\"")
+}
+
+pub fn a_coach_sees_the_athletes_and_each_ones_page_test() {
+  let list = element.to_string(atlas.view(coaching_model(route.Athletes)))
+  assert string.contains(list, "Ana Athlete")
+  assert string.contains(list, "href=\"/athletes/ana\"")
+  let page = element.to_string(atlas.view(coaching_model(route.Athlete("ana"))))
+  assert string.contains(
+    page,
+    "You can see this because Ana Athlete gave you access.",
+  )
+  assert string.contains(page, "<table")
+}
+
+pub fn nobody_else_can_be_looked_at_test() {
+  let page =
+    element.to_string(atlas.view(coaching_model(route.Athlete("stranger"))))
+  assert string.contains(page, "You do not coach this person.")
+  assert !string.contains(page, "<table")
+}
+
+pub fn the_settings_list_of_athletes_links_to_their_pages_test() {
+  let settings = element.to_string(atlas.view(coaching_model(route.Settings)))
+  assert string.contains(settings, "href=\"/athletes/ana\"")
+}

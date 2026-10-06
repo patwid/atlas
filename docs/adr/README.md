@@ -34,3 +34,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0028 | [Copying a plan](0028-copy-a-plan.md) | Accepted |
 | 0029 | [Sharing a plan with named people](0029-sharing-plans.md) | Accepted |
 | 0030 | [The membership sweep: access that is taken away reaches the device](0030-membership-sweep.md) | Accepted |
+| 0031 | [The coach's view of an athlete's progress](0031-coach-view-of-an-athlete.md) | Accepted |

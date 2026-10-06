@@ -36,6 +36,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Copy a plan with its workouts into your own plans from its screen; the copy is private and remembers its source (ADR 0028).
 - `plan_shares` carry display names, and a plan shared with someone can be started by them (migration `1760000300_plan_share_names_and_start_rule.js`, ADR 0029).
 - Share a plan with named people by e-mail address, see who shared a plan with you, and start a plan that was shared with you; stop sharing with a confirmation (ADR 0029).
+- Coach's view: an Athletes tab for coaches, with each athlete's last six weeks (planned, done, missed, distances), the plans they follow and their latest activities, read-only (ADR 0031).
 
 ### Changed
 - Strava's redirect now returns to `/settings?strava=<result>` (ADR 0027).

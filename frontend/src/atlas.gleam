@@ -4,6 +4,7 @@
 import atlas/activities_page
 import atlas/api
 import atlas/assignments_page
+import atlas/athletes_page
 import atlas/auth.{type Session}
 import atlas/clock
 import atlas/coaches_page
@@ -979,7 +980,12 @@ pub fn view(model: Model) -> Element(Msg) {
     SignedOut(form) ->
       signin.view(form, EmailChanged, PasswordChanged, SignInSubmitted)
     SignedIn(session) ->
-      shell.view(model.route, model.online, page(model, session))
+      shell.view(
+        model.route,
+        model.online,
+        grants.athletes_of(model.coaches.grants, session.user_id) != [],
+        page(model, session),
+      )
   }
 }
 
@@ -1058,6 +1064,23 @@ fn page(model: Model, session: Session) -> Element(Msg) {
         ),
         element.map(strava_page.view(model.strava), StravaPage),
       ])
+    route.Athletes ->
+      athletes_page.view_list(grants.athletes_of(
+        model.coaches.grants,
+        session.user_id,
+      ))
+    route.Athlete(id) -> {
+      let athlete =
+        list.find(
+          grants.athletes_of(model.coaches.grants, session.user_id),
+          fn(person) { person.id == id },
+        )
+      athletes_page.view_athlete(
+        option.from_result(athlete),
+        // The same computation as the athlete's own Today screen, for the athlete.
+        today.Inputs(..today_inputs(model, session), user_id: id),
+      )
+    }
     route.NotFound ->
       shell.empty("Page not found", "Use the tabs below to get back.")
   }

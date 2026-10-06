@@ -23,7 +23,15 @@ pub fn unknown_paths_are_not_found_test() {
 }
 
 pub fn to_path_round_trips_test() {
-  let routes = [Today, Plans, Plan("abc123"), Activities, Settings]
+  let routes = [
+    Today,
+    Plans,
+    Plan("abc123"),
+    Activities,
+    Settings,
+    route.Athletes,
+    route.Athlete("ana1"),
+  ]
   assert list_map_parse(routes) == routes
 }
 
@@ -48,4 +56,13 @@ pub fn the_strava_result_is_read_from_the_address_test() {
   assert result("/settings") == option.None
   assert result("/settings?other=1") == option.None
   assert result("/?strava=taken") == option.Some("taken")
+}
+
+pub fn the_athlete_pages_are_routes_test() {
+  assert parse("/athletes") == route.Athletes
+  assert parse("/athletes/ana1") == route.Athlete("ana1")
+  assert parse("/athletes/a/b") == NotFound
+  assert route.to_path(route.Athlete("a b")) == "/athletes/a%20b"
+  assert route.title(route.Athletes) == "Athletes"
+  assert route.title(route.Athlete("x")) == "Athlete"
 }

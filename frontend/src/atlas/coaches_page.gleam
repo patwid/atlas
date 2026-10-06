@@ -8,6 +8,7 @@ import atlas/outbox
 import atlas/person_finder
 import atlas/random
 import atlas/records
+import atlas/route
 import atlas/store
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -177,7 +178,13 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
           html.h2([], [html.text("Athletes you coach")]),
           html.ul(
             [class("cards")],
-            list.map(people, fn(p) { html.li([], [html.text(p.name)]) }),
+            list.map(people, fn(p) {
+              html.li([], [
+                html.a([attribute.href(route.to_path(route.Athlete(p.id)))], [
+                  html.text(p.name),
+                ]),
+              ])
+            }),
           ),
         ])
     },

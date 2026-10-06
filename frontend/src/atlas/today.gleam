@@ -58,6 +58,16 @@ pub type Sections {
 
 /// The workouts around today with their status, ordered by day, then plan and position.
 pub fn items(inputs: Inputs) -> List(Item) {
+  items_between(
+    inputs,
+    date.add_days(inputs.today, -window_days),
+    date.add_days(inputs.today, window_days),
+  )
+}
+
+/// The same for any range of days, both ends included. Progress over several weeks uses it (ADR 0031);
+/// `inputs.user_id` is the person whose schedule and activities are looked at, not necessarily the signed-in user.
+pub fn items_between(inputs: Inputs, from: Date, to: Date) -> List(Item) {
   let mine =
     list.filter(inputs.assignments, fn(row) {
       row.assignment.athlete_id == inputs.user_id
@@ -68,8 +78,8 @@ pub fn items(inputs: Inputs) -> List(Item) {
     })
   let near =
     list.filter(every_scheduled, fn(s) {
-      let distance = date.diff_days(from: inputs.today, to: s.date)
-      distance >= -window_days && distance <= window_days
+      date.compare(s.date, from) != order.Lt
+      && date.compare(s.date, to) != order.Gt
     })
   let my_activities =
     list.filter(inputs.activities, fn(row) { row.owner_id == inputs.user_id })

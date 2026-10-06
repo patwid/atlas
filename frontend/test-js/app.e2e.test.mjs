@@ -652,7 +652,8 @@ test("an owner shares a private plan by e-mail, the recipient reads and starts i
   w = startApp("/plans", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
   d = w.document
   const link = await waitFor("the plan in his list", () => [...d.querySelectorAll(".cards a")].find((a) => a.textContent === "Winter base"))
-  assert.ok(d.body.textContent.includes("Shared by alice"))
+  // Plans arrive one step before the shares that say who shared them, so the label follows a moment later.
+  await waitFor("who shared it", () => d.body.textContent.includes("Shared by alice"))
   click(w, link)
   await waitFor("the plan screen", () => d.body.textContent.includes("Shared with you by alice.") && d.body.textContent.includes("Easy hour"))
   assert.equal(button(w, "Edit"), undefined)
@@ -753,5 +754,58 @@ test("an athlete who removes a coach's access also removes her activities from h
   await waitFor("the athlete's activity gone from the coach's device", async () => !(await onDevice("activities")).includes("sweepact0000001"))
   assert.ok((await onDevice("activities")).includes("sweepact0000002"), "his own activity is untouched")
   assert.ok(!(await onDevice("coach_grants")).includes("sweepgrant00001"), "the grant itself is gone too")
+  w.close()
+})
+
+// The coach's view of an athlete's progress ------------------------------------------------------------------
+
+test("a coach sees an athlete's weeks, plans and activities read-only, and loses the view when access is removed", { skip: !built && "frontend not built" }, async () => {
+  await h.world()
+  const alice = h.people.alice
+  const bob = h.people.bob
+  const start = daysFromNow(-10)
+  await setup(h.create("alice", "coach_grants", { id: "cvgrant00000001", athlete: alice.id, coach: bob.id, athlete_name: "alice", coach_name: "bob" }))
+  await setup(h.create("bob", "plans", { id: "coachview000001", owner: bob.id, title: "Spring base", visibility: "private" }))
+  // Day 0 is ten days ago (missed), day 5 five days ago (done), day 10 is today (still to do).
+  const workout = (id, day, title, kind, distance) =>
+    setup(h.create("bob", "workouts", { id, plan: "coachview000001", day_index: day, position: 0, title, kind, distance_m: distance }))
+  await workout("cvworkout000001", 0, "Missed easy run", "easy", 5000)
+  await workout("cvworkout000002", 5, "Tempo they did", "tempo", 8000)
+  await workout("cvworkout000003", 10, "Today's long run", "long", 10000)
+  await setup(h.create("bob", "assignments", { id: "cvassign0000001", plan: "coachview000001", athlete: alice.id, assigned_by: bob.id, start_date: ymd(start) }))
+  await setup(h.create("alice", "activities", {
+    id: "cvactivity00001", owner: alice.id, source: "manual", started_at: utcOf(daysFromNow(-5), 7, 0),
+    sport: "run", name: "Tempo morning", distance_m: 8000, moving_time_s: 2400,
+  }))
+
+  const w = startApp("/athletes", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
+  const d = w.document
+  const link = await waitFor("the athlete in the list", () => [...d.querySelectorAll(".athletes .cards a")].find((a) => a.textContent === "alice"))
+  assert.ok([...d.querySelectorAll("nav a")].some((a) => a.textContent === "Athletes"), "the tab is there for a coach")
+  click(w, link)
+  await waitFor("the athlete's page", () => d.querySelector("table.progress") && d.body.textContent.includes("Tempo morning"))
+
+  // The weekly figures, added up over the weeks shown, do not depend on the weekday the test runs on.
+  const rows = [...d.querySelectorAll("tr.week-row")].map((tr) => [...tr.querySelectorAll("td")].map((td) => td.textContent))
+  const sum = (column) => rows.reduce((total, cells) => total + Number(cells[column]), 0)
+  assert.equal(rows.length, 6)
+  assert.equal(sum(0), 3, "three workouts planned")
+  assert.equal(sum(1), 1, "one done")
+  assert.equal(sum(2), 1, "one missed")
+  assert.equal(sum(3), 23, "23 km planned")
+  assert.equal(sum(4), 8, "8 km trained")
+  assert.ok(d.body.textContent.includes("Spring base"), "the plan they follow, which the coach can read")
+  assert.ok(d.body.textContent.includes("Recent activities") && d.body.textContent.includes("Tempo morning"))
+  assert.ok(d.body.textContent.includes("You can see this because alice gave you access. It is read-only."))
+  assert.equal(d.querySelectorAll(".athlete button").length, 0, "nothing can be changed here")
+  assert.match(d.body.textContent, /Missed in the last 6 weeks: 1\./)
+
+  // The athlete takes access away: the page, the tab and the data leave the coach's device.
+  const grant = (await h.api("GET", "collections/coach_grants/records/cvgrant00000001", { token: alice.token })).body
+  await setup(h.update("alice", "coach_grants", grant.id, { deleted: true, base_updated: grant.updated }))
+  flipOnline(w)
+  await waitFor("the page to lose the athlete", () => d.body.textContent.includes("You do not coach this person."))
+  assert.ok(![...d.querySelectorAll("nav a")].some((a) => a.textContent === "Athletes"), "the tab goes away")
+  assert.ok(!(await onDevice("activities")).includes("cvactivity00001"), "and her activity is gone from his device")
   w.close()
 })

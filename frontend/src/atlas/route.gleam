@@ -10,6 +10,8 @@ pub type Route {
   Plan(id: String)
   Activities
   Settings
+  Athletes
+  Athlete(id: String)
   NotFound
 }
 
@@ -20,6 +22,8 @@ pub fn parse(uri: Uri) -> Route {
     ["plans", id] -> Plan(id)
     ["activities"] -> Activities
     ["settings"] -> Settings
+    ["athletes"] -> Athletes
+    ["athletes", id] -> Athlete(id)
     _ -> NotFound
   }
 }
@@ -31,6 +35,8 @@ pub fn to_path(route: Route) -> String {
     Plan(id) -> "/plans/" <> uri.percent_encode(id)
     Activities -> "/activities"
     Settings -> "/settings"
+    Athletes -> "/athletes"
+    Athlete(id) -> "/athletes/" <> uri.percent_encode(id)
     NotFound -> "/"
   }
 }
@@ -42,6 +48,8 @@ pub fn title(route: Route) -> String {
     Plan(_) -> "Plan"
     Activities -> "Activities"
     Settings -> "Settings"
+    Athletes -> "Athletes"
+    Athlete(_) -> "Athlete"
     NotFound -> "Not found"
   }
 }

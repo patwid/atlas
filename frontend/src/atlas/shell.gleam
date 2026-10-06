@@ -7,7 +7,13 @@ import lustre/attribute.{class}
 import lustre/element.{type Element}
 import lustre/element/html
 
-pub fn view(route: Route, online: Bool, page: Element(msg)) -> Element(msg) {
+/// `coaching` adds the Athletes tab, for people whom someone has given access to (ADR 0031).
+pub fn view(
+  route: Route,
+  online: Bool,
+  coaching: Bool,
+  page: Element(msg),
+) -> Element(msg) {
   html.div([class("shell")], [
     html.header([class("bar")], [
       html.h1([], [html.text(route.title(route))]),
@@ -20,17 +26,26 @@ pub fn view(route: Route, online: Bool, page: Element(msg)) -> Element(msg) {
       },
     ]),
     html.main([attribute.id("main")], [page]),
-    nav(route),
+    nav(route, coaching),
   ])
 }
 
-fn nav(current: Route) -> Element(msg) {
-  let items = [
-    #(route.Today, "Today"),
-    #(route.Plans, "Plans"),
-    #(route.Activities, "Activities"),
-    #(route.Settings, "Settings"),
-  ]
+fn nav(current: Route, coaching: Bool) -> Element(msg) {
+  let items = case coaching {
+    True -> [
+      #(route.Today, "Today"),
+      #(route.Plans, "Plans"),
+      #(route.Activities, "Activities"),
+      #(route.Athletes, "Athletes"),
+      #(route.Settings, "Settings"),
+    ]
+    False -> [
+      #(route.Today, "Today"),
+      #(route.Plans, "Plans"),
+      #(route.Activities, "Activities"),
+      #(route.Settings, "Settings"),
+    ]
+  }
   html.nav([class("tabs"), attribute.aria_label("Main")], {
     list.map(items, fn(item) {
       let #(target, label) = item
@@ -53,6 +68,7 @@ fn nav(current: Route) -> Element(msg) {
 fn section(r: Route) -> Route {
   case r {
     route.Plan(_) -> route.Plans
+    route.Athlete(_) -> route.Athletes
     other -> other
   }
 }
