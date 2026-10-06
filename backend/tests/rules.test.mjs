@@ -346,3 +346,22 @@ test("athlete_settings: one row per athlete under their own user ID, readable by
   // Updates need the guard's base like every synced collection (ADR 0011).
   assert.equal((await h.update("alice", "athlete_settings", me, { max_hr: 195 })).status, 400)
 })
+
+test("athlete_settings: lactate zones in mmol/L are optional, and checked when given", async () => {
+  const hr = { max_hr: 185, hr_zone1_min: 110, hr_zone2_min: 140, hr_zone3_min: 152, hr_zone4_min: 165, hr_zone5_min: 176 }
+  const lactate = { lactate_zone1_min: 0.8, lactate_zone2_min: 1.5, lactate_zone3_min: 2.5, lactate_zone4_min: 4, lactate_zone5_min: 6 }
+  const me = people.alice.id
+  // Without lactate zones, as an app from before them sends it.
+  const s = await create("alice", "athlete_settings", { id: me, owner: me, ...hr })
+  assert.equal(s.status, 200, JSON.stringify(s.body))
+  assert.equal(s.body.lactate_zone1_min, 0)
+  assert.equal((await update("alice", "athlete_settings", me, { ...lactate, lactate_zone5_min: 30.5 })).status, 400)
+  const saved = await update("alice", "athlete_settings", me, lactate)
+  assert.equal(saved.status, 200, JSON.stringify(saved.body))
+  assert.equal(saved.body.lactate_zone1_min, 0.8)
+  assert.equal(saved.body.lactate_zone4_min, 4)
+  // An older app that changes only the heart-rate zones leaves them as they are.
+  const hrOnly = await update("alice", "athlete_settings", me, { max_hr: 190 })
+  assert.equal(hrOnly.status, 200, JSON.stringify(hrOnly.body))
+  assert.equal(hrOnly.body.lactate_zone3_min, 2.5)
+})

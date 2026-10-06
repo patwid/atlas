@@ -38,3 +38,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0032 | [Provide the development tools through a Nix flake](0032-nix-flake-dev-shell.md) | Accepted |
 | 0033 | [Build and run the app with `nix build` and `nix run`](0033-build-and-run-with-nix.md) | Accepted |
 | 0034 | [Heart-rate zones as an explicit setting](0034-heart-rate-zone-settings.md) | Accepted / Proposed |
+| 0035 | [Lactate zones as an explicit setting](0035-lactate-zone-settings.md) | Accepted / Proposed |

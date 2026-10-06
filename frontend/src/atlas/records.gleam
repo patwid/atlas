@@ -5,9 +5,11 @@
 import atlas/activity.{type Activity, Activity}
 import atlas/activity_form
 import atlas/assignment_form
+import atlas/athlete_settings
 import atlas/date
 import atlas/grants.{type Grant, Grant}
 import atlas/hr_zones
+import atlas/lactate_zones
 import atlas/matching.{type Stored, Match, Stored}
 import atlas/plan.{
   type Assignment, type Plan, type Workout, Assignment, Plan, Workout,
@@ -214,9 +216,12 @@ pub fn grant(record: Dynamic) -> Result(Grant, Nil) {
   })
 }
 
-/// An athlete's heart-rate zones. A row with a value missing or out of order is unusable and skipped,
-/// so the defaults apply instead of half-saved zones.
-pub fn hr_zones_row(record: Dynamic) -> Result(hr_zones.Row, Nil) {
+/// An athlete's zones. Heart-rate zones with a value missing or out of order make the row unusable, so it is
+/// skipped and the defaults apply instead of half-saved zones. Lactate zones that are missing or unusable (rows
+/// saved before they existed hold zeros) fall back to the lactate defaults alone.
+pub fn athlete_settings_row(
+  record: Dynamic,
+) -> Result(athlete_settings.Row, Nil) {
   let read = {
     use owner <- decode.field("owner", decode.string)
     use max_hr <- decode.field("max_hr", whole_number())
@@ -225,21 +230,45 @@ pub fn hr_zones_row(record: Dynamic) -> Result(hr_zones.Row, Nil) {
     use z3 <- decode.field(hr_zones.start_field(3), whole_number())
     use z4 <- decode.field(hr_zones.start_field(4), whole_number())
     use z5 <- decode.field(hr_zones.start_field(5), whole_number())
+    use l1 <- lactate_start(1)
+    use l2 <- lactate_start(2)
+    use l3 <- lactate_start(3)
+    use l4 <- lactate_start(4)
+    use l5 <- lactate_start(5)
     use updated <- decode.optional_field("updated", "", decode.string)
     decode.success(#(
       owner,
       hr_zones.HrZones(max_hr, [z1, z2, z3, z4, z5]),
+      [l1, l2, l3, l4, l5],
       updated,
     ))
   }
   case run(record, read) {
     Error(Nil) -> Error(Nil)
-    Ok(#(owner, zones, updated)) ->
-      case hr_zones.parse(hr_zones.to_form(zones)) {
-        Ok(checked) -> Ok(hr_zones.Row(owner, checked, updated))
+    Ok(#(owner, hr, lactate, updated)) ->
+      case hr_zones.parse(hr_zones.to_form(hr)) {
         Error(_) -> Error(Nil)
+        Ok(hr) -> {
+          let lactate = case
+            lactate_zones.parse(list.map(lactate, lactate_zones.format))
+          {
+            Ok(zones) -> zones
+            Error(_) -> lactate_zones.defaults()
+          }
+          Ok(athlete_settings.Row(owner, hr, lactate, updated))
+        }
       }
   }
+}
+
+/// Where a lactate zone starts, in tenths; 0 when missing.
+fn lactate_start(zone: Int, next: fn(Int) -> Decoder(a)) -> Decoder(a) {
+  use mmol <- decode.optional_field(
+    lactate_zones.start_field(zone),
+    0.0,
+    number(),
+  )
+  next(lactate_zones.tenths_of(mmol))
 }
 
 pub fn activity(record: Dynamic) -> Result(Activity, Nil) {

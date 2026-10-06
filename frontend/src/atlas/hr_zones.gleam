@@ -1,12 +1,9 @@
 //// Heart-rate zones as an explicit setting (ADR 0034): a maximum heart rate and where each of the five
 //// zones starts, in beats per minute. Until the athlete saves their own, the defaults are used: zones
-//// from 50, 60, 70, 80 and 90 percent of a maximum of 190. Pure: parsing, checking and the fields to write.
+//// from 50, 60, 70, 80 and 90 percent of a maximum of 190. Pure: parsing and checking.
 
-import atlas/outbox
-import gleam/dict
 import gleam/int
 import gleam/list
-import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
 
@@ -26,14 +23,9 @@ pub type Zone {
   Zone(number: Int, low: Int, high: Int)
 }
 
-/// Stored zones with the fields the screen needs.
-pub type Row {
-  Row(owner_id: String, zones: HrZones, updated: String)
-}
-
 /// What the zones form holds: the text of the maximum and of the five starts.
 pub type Form {
-  Form(max_hr: String, starts: List(String), error: Option(String))
+  Form(max_hr: String, starts: List(String))
 }
 
 /// The default zones for a maximum: starts at 50, 60, 70, 80 and 90 percent of it, rounded down.
@@ -68,30 +60,15 @@ pub fn zone_of(settings: HrZones, hr: Int) -> Result(Int, Nil) {
   }
 }
 
-/// The zones of `me`, or the defaults when they have not saved any. Coaches' devices also hold
-/// the zones of their athletes, so the rows are searched by owner.
-pub fn row_of(rows: List(Row), me: String) -> Option(Row) {
-  case list.find(rows, fn(row) { row.owner_id == me }) {
-    Ok(row) -> Some(row)
-    Error(Nil) -> None
-  }
-}
-
 pub fn to_form(settings: HrZones) -> Form {
-  Form(
-    int.to_string(settings.max_hr),
-    list.map(settings.starts, int.to_string),
-    None,
-  )
+  Form(int.to_string(settings.max_hr), list.map(settings.starts, int.to_string))
 }
 
 /// The form with the zones worked out again from the maximum it holds (the default percentages).
-/// The form is left as it was, with an error, when the maximum is not usable.
-pub fn fill_from_max(form: Form) -> Form {
-  case bpm(form.max_hr, "maximum heart rate") {
-    Ok(max_hr) -> to_form(defaults(max_hr))
-    Error(message) -> Form(..form, error: Some(message))
-  }
+/// `Error` when the maximum is not usable.
+pub fn fill_from_max(form: Form) -> Result(Form, String) {
+  bpm(form.max_hr, "maximum heart rate")
+  |> result.map(fn(max_hr) { to_form(defaults(max_hr)) })
 }
 
 /// Checks the form: whole numbers from 30 to 250, each zone starting above the one before, and
@@ -133,18 +110,6 @@ fn rising(starts: List(Int), number: Int) -> Result(Nil, String) {
   }
 }
 
-/// The fields to write: the owner and every value, so the stored row is always complete.
-pub fn fields(owner: String, settings: HrZones) -> outbox.Fields {
-  dict.from_list([
-    outbox.field_string("owner", owner),
-    outbox.field_int("max_hr", settings.max_hr),
-    ..list.index_map(settings.starts, fn(start, index) {
-      outbox.field_int(start_field(index + 1), start)
-    })
-  ])
-}
-
-/// The stored field for where zone `number` starts: `hr_zone1_min` to `hr_zone5_min`.
 pub fn start_field(number: Int) -> String {
   "hr_zone" <> int.to_string(number) <> "_min"
 }

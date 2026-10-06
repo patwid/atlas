@@ -1,7 +1,4 @@
-import atlas/hr_zones.{Form, HrZones, Row, Zone}
-import atlas/outbox
-import gleam/dict
-import gleam/option.{None, Some}
+import atlas/hr_zones.{Form, HrZones, Zone}
 
 pub fn defaults_start_at_50_to_90_percent_of_the_maximum_test() {
   assert hr_zones.defaults(190) == HrZones(190, [95, 114, 133, 152, 171])
@@ -44,7 +41,7 @@ pub fn zone_lookup_test() {
 }
 
 fn form(max: String, starts: List(String)) -> hr_zones.Form {
-  Form(max, starts, None)
+  Form(max, starts)
 }
 
 pub fn a_valid_form_is_read_test() {
@@ -86,33 +83,7 @@ pub fn zones_must_rise_and_stay_below_the_maximum_test() {
 pub fn zones_can_be_worked_out_again_from_the_maximum_test() {
   let typed = form("200", ["1", "2", "3", "4", "5"])
   assert hr_zones.fill_from_max(typed)
-    == form("200", ["100", "120", "140", "160", "180"])
-  let broken = form("abc", ["1", "2", "3", "4", "5"])
-  assert hr_zones.fill_from_max(broken)
-    == Form(
-      ..broken,
-      error: Some(
-        "The maximum heart rate must be a whole number from 30 to 250.",
-      ),
-    )
-}
-
-pub fn every_value_is_written_test() {
-  assert hr_zones.fields("u1", HrZones(185, [110, 140, 152, 165, 176]))
-    == dict.from_list([
-      outbox.field_string("owner", "u1"),
-      outbox.field_int("max_hr", 185),
-      outbox.field_int("hr_zone1_min", 110),
-      outbox.field_int("hr_zone2_min", 140),
-      outbox.field_int("hr_zone3_min", 152),
-      outbox.field_int("hr_zone4_min", 165),
-      outbox.field_int("hr_zone5_min", 176),
-    ])
-}
-
-pub fn the_row_is_found_by_owner_test() {
-  let mine = Row("me", hr_zones.defaults(180), "t1")
-  let athletes = Row("athlete", hr_zones.defaults(200), "t2")
-  assert hr_zones.row_of([athletes, mine], "me") == Some(mine)
-  assert hr_zones.row_of([athletes], "me") == None
+    == Ok(form("200", ["100", "120", "140", "160", "180"]))
+  assert hr_zones.fill_from_max(form("abc", ["1", "2", "3", "4", "5"]))
+    == Error("The maximum heart rate must be a whole number from 30 to 250.")
 }

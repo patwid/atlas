@@ -15,7 +15,6 @@ import atlas/coaches_page
 import atlas/collection
 import atlas/date
 import atlas/grants
-import atlas/hr_zones_page
 import atlas/http.{Response}
 import atlas/matching
 import atlas/outbox
@@ -33,6 +32,7 @@ import atlas/syncing
 import atlas/today_page
 import atlas/workout_form
 import atlas/workouts_page
+import atlas/zones_page
 import gleam/dict
 import gleam/list
 import gleam/option.{None, Some}
@@ -61,7 +61,7 @@ fn signed_out(form: signin.Form) -> atlas.Model {
     today_page.new(),
     strava_page.new(),
     sharing_page.new(),
-    hr_zones_page.new(),
+    zones_page.new(),
   )
 }
 
@@ -79,7 +79,7 @@ fn signed_in() -> atlas.Model {
     today_page.new(),
     strava_page.new(),
     sharing_page.new(),
-    hr_zones_page.new(),
+    zones_page.new(),
   )
 }
 

@@ -39,6 +39,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - `plan_shares` carry display names, and a plan shared with someone can be started by them (migration `1760000300_plan_share_names_and_start_rule.js`, ADR 0029).
 - Share a plan with named people by e-mail address, see who shared a plan with you, and start a plan that was shared with you; stop sharing with a confirmation (ADR 0029).
 - Heart-rate zones in Settings: the maximum heart rate and where each of the five zones starts, filled with defaults (50-90 % of 190 bpm) until you save your own, synced across devices and visible to your coach. New collection `athlete_settings` (migration `1760000400_athlete_settings.js`, ADR 0034).
+- Lactate zones in Settings: where each of the five zones starts in mmol/L, filled with defaults (1.0, 1.5, 2.5, 4.0, 6.0) until you save your own; the section is now "Training zones" (migration `1760000500_athlete_settings_lactate_zones.js`, ADR 0035).
 - Coach's view: an Athletes tab for coaches, with each athlete's last six weeks (planned, done, missed, distances), the plans they follow and their latest activities, read-only (ADR 0031).
 - Strava's official "Connect with Strava" button and "Powered by Strava" logo (unchanged, checked by checksum), and a "View on Strava" link on Strava activities (ADR 0027).
 

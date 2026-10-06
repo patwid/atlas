@@ -52,3 +52,8 @@ We use options 2 and 5.
   row goes with the user (cascade).
 - **Proposed**: 190 bpm is a middling default. Better would be the highest `max_hr` of the athlete's activities, or an age-based estimate;
   both make the defaults change under the athlete, so a fixed value was chosen until the owner decides.
+
+## Addendum: lactate zones (2026-10-06)
+
+[0035](0035-lactate-zone-settings.md) adds lactate zones to the same row. The row type moved from `hr_zones` to `athlete_settings`, and the
+Settings section is now `zones_page`, titled "Training zones".
