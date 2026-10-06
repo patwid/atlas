@@ -7,6 +7,7 @@ import atlas/activity_form
 import atlas/assignment_form
 import atlas/date
 import atlas/grants.{type Grant, Grant}
+import atlas/matching.{type Stored, Match, Stored}
 import atlas/plan.{
   type Assignment, type Plan, type Workout, Assignment, Plan, Workout,
 }
@@ -145,6 +146,26 @@ pub fn assignment_row(record: Dynamic) -> Result(assignment_form.Row, Nil) {
         decode.success(assignment_form.Row(found, assigned_by, updated))
       })
   }
+}
+
+/// A stored match, removed ones included (they matter: the row is reused to link the activity again).
+pub fn stored_match(record: Dynamic) -> Result(Stored, Nil) {
+  run(record, {
+    use id <- decode.field("id", decode.string)
+    use activity_id <- decode.field("activity", decode.string)
+    use assignment_id <- decode.field("assignment", decode.string)
+    use workout_id <- decode.field("workout", decode.string)
+    use owner <- decode.optional_field("owner", "", decode.string)
+    use deleted <- decode.optional_field("deleted", False, decode.bool)
+    use updated <- decode.optional_field("updated", "", decode.string)
+    decode.success(Stored(
+      id,
+      owner,
+      Match(activity_id, workout_id, assignment_id),
+      deleted,
+      updated,
+    ))
+  })
 }
 
 pub fn grant(record: Dynamic) -> Result(Grant, Nil) {

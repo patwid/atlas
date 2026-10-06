@@ -256,3 +256,28 @@ test("coach_grants: carry display names for both people, as labels only", async 
   assert.equal((await update("bob", "coach_grants", g.body.id, { coach_name: "Hacked" })).status, 404)
   assert.equal((await update("alice", "coach_grants", g.body.id, { coach_name: "Bob C." })).status, 200)
 })
+
+test("matches: an activity can be linked again to a workout of another assignment of the same user, not of someone else's", async () => {
+  const mk = async (owner, vis = "private") => {
+    const p = await mkPlan(owner, { visibility: vis })
+    const w = await mkWorkout(owner, p)
+    const asg = (await create(owner, "assignments", { id: id(), plan: p.id, athlete: people[owner].id, assigned_by: people[owner].id, start_date: "2026-10-01" })).body
+    return { p, w, asg }
+  }
+  const first = await mk("alice")
+  const second = await mk("alice")
+  const bobs = await mk("bob", "public")
+  const act = await mkActivity("alice")
+  const m = (await create("alice", "matches", { id: id(), owner: people.alice.id, activity: act.id, assignment: first.asg.id, workout: first.w.id })).body
+  // Remove, then link again to the other assignment through the same row.
+  assert.equal((await update("alice", "matches", m.id, { deleted: true })).status, 200)
+  const moved = await update("alice", "matches", m.id, { deleted: false, assignment: second.asg.id, workout: second.w.id })
+  assert.equal(moved.status, 200, JSON.stringify(moved.body))
+  assert.equal(moved.body.assignment, second.asg.id)
+  // A new row for the same activity is still refused: one match per activity.
+  assert.equal((await create("alice", "matches", { id: id(), owner: people.alice.id, activity: act.id, assignment: first.asg.id, workout: first.w.id })).status, 400)
+  // Someone else's assignment cannot be the target, and the activity and owner stay fixed.
+  assert.equal((await update("alice", "matches", m.id, { assignment: bobs.asg.id })).status, 404)
+  assert.equal((await update("alice", "matches", m.id, { activity: (await mkActivity("alice")).id })).status, 404)
+  assert.equal((await update("alice", "matches", m.id, { owner: people.bob.id })).status, 404)
+})

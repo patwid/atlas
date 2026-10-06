@@ -457,8 +457,9 @@ pub fn edit(
   fields: outbox.Fields,
   base_updated: String,
 ) -> #(State, Effect(Msg)) {
+  let base = freshest(state, collection, id, base_updated)
   write(state, collection, id, fields, fn(box) {
-    outbox.record_update(box, collection, id, fields, base_updated)
+    outbox.record_update(box, collection, id, fields, base)
   })
 }
 
@@ -470,9 +471,24 @@ pub fn delete(
   base_updated: String,
 ) -> #(State, Effect(Msg)) {
   let fields = dict.from_list([outbox.field_bool("deleted", True)])
+  let base = freshest(state, collection, id, base_updated)
   write(state, collection, id, fields, fn(box) {
-    outbox.record_delete(box, collection, id, base_updated)
+    outbox.record_delete(box, collection, id, base)
   })
+}
+
+/// The screen's copy of a record can be a moment behind the device database. The engine's own knowledge
+/// of the newest `updated` wins when it is newer, so an edit right after a save is not refused as a conflict.
+fn freshest(
+  state: State,
+  collection: Collection,
+  id: String,
+  given: String,
+) -> String {
+  case state.sync {
+    Some(engine) -> sync.freshest_base(engine, collection, id, given)
+    None -> given
+  }
 }
 
 fn write(

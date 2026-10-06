@@ -521,3 +521,79 @@ test("a user adds, edits and deletes an activity by hand; the start is stored in
   assert.ok(d.body.textContent.includes("Lunch run"), "the Strava activity is still there")
   w.close()
 })
+
+// The Today screen ------------------------------------------------------------------------------------
+
+const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+const daysFromNow = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d }
+const utcOf = (day, hour, minute) => new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, minute).toISOString().replace("T", " ")
+
+test("Today shows missed, looks-done and rest days; the user confirms, unlinks, re-links and links by hand", { skip: !built && "frontend not built" }, async () => {
+  await h.world()
+  const alice = h.people.alice
+  const yesterday = daysFromNow(-1)
+  const today = daysFromNow(0)
+  await setup(h.create("alice", "plans", { id: "todayplan000001", owner: alice.id, title: "Tempo block", visibility: "private" }))
+  await setup(h.create("alice", "workouts", { id: "todaywork000001", plan: "todayplan000001", day_index: 0, position: 0, title: "Easy shake-out", kind: "easy", distance_m: 5000 }))
+  await setup(h.create("alice", "workouts", { id: "todaywork000002", plan: "todayplan000001", day_index: 1, position: 0, title: "Tempo intervals", kind: "tempo", distance_m: 8000, duration_s: 2700 }))
+  await setup(h.create("alice", "workouts", { id: "todaywork000003", plan: "todayplan000001", day_index: 2, position: 0, title: "Recovery day", kind: "rest" }))
+  // The plan started yesterday: day 0 is yesterday (missed), day 1 today, day 2 tomorrow.
+  await setup(h.create("alice", "assignments", { id: "todayasg0000001", plan: "todayplan000001", athlete: alice.id, assigned_by: alice.id, start_date: ymd(yesterday) }))
+  const activity = (id, day, hour, name) => setup(h.create("alice", "activities", {
+    id, owner: alice.id, source: "manual", started_at: utcOf(day, hour, 0), sport: "run", name, distance_m: 8000, moving_time_s: 2700,
+  }))
+  await activity("todayact0000001", today, 7, "Morning tempo")
+  const matches = async () => (await h.api("GET", "collections/matches/records?perPage=50", { token: alice.token })).body.items
+
+  const w = startApp("/", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
+  const d = w.document
+  const card = (title) => [...d.querySelectorAll(".item")].find((li) => li.textContent.includes(title))
+  const inCard = (title, text) => [...card(title).querySelectorAll("button")].find((b) => b.textContent.trim() === text)
+
+  await waitFor("today's tempo workout as a suggestion", () => card("Tempo intervals")?.textContent.includes("Looks done: 07:00 · Run · 8.00 km · 45:00"))
+  assert.ok(card("Easy shake-out").textContent.includes("Missed"), "yesterday's workout without a run is missed")
+  assert.ok(card("Recovery day").textContent.includes("Rest day"))
+  assert.deepEqual(await matches(), [], "a suggestion is not stored")
+
+  // Confirm the suggestion: now it is a stored match.
+  click(w, inCard("Tempo intervals", "Yes, that is it"))
+  const first = await waitFor("the match on the server", async () => (await matches())[0])
+  assert.equal(first.owner, alice.id)
+  assert.equal(first.activity, "todayact0000001")
+  assert.equal(first.workout, "todaywork000002")
+  assert.equal(first.assignment, "todayasg0000001")
+  await waitFor("done, confirmed", () => card("Tempo intervals").textContent.includes("Done: 07:00") && inCard("Tempo intervals", "Unlink"))
+
+  // Unlink it: the row is removed on the server and the suggestion returns.
+  click(w, inCard("Tempo intervals", "Unlink"))
+  await waitFor("the question", () => d.body.textContent.includes("Unlink this activity?"))
+  click(w, button(w, "Yes, unlink"))
+  await waitFor("the row removed", async () => (await matches())[0]?.deleted === true)
+  await waitFor("the suggestion again", () => card("Tempo intervals").textContent.includes("Looks done"))
+
+  // Link the same activity again: the removed row is reused, not duplicated.
+  click(w, inCard("Tempo intervals", "Yes, that is it"))
+  await waitFor("the same row live again", async () => { const all = await matches(); return all.length === 1 && all[0].id === first.id && all[0].deleted === false })
+
+  // Yesterday's run is not on the device until it is added; then link it to the missed workout by hand.
+  await activity("todayact0000002", yesterday, 18, "Evening jog")
+  w.dispatchEvent(new w.Event("offline"))
+  w.dispatchEvent(new w.Event("online"))
+  await waitFor("the missed workout to offer activities", () => inCard("Easy shake-out", "Link an activity"))
+  click(w, inCard("Easy shake-out", "Link an activity"))
+  await waitFor("the list with yesterday's run", () => d.body.textContent.includes("Which activity was it?") && d.body.textContent.includes("18:00 · Run"))
+  click(w, [...d.querySelectorAll(".choices button")].find((b) => b.textContent === "This one"))
+  await waitFor("the second match on the server", async () => (await matches()).some((m) => m.activity === "todayact0000002" && m.workout === "todaywork000001"))
+  await waitFor("done by hand", () => card("Easy shake-out").textContent.includes("Done: 18:00"))
+  assert.equal((await matches()).length, 2)
+  w.close()
+})
+
+test("Today without a plan points to the plans", { skip: !built && "frontend not built" }, async () => {
+  await h.world()
+  const bob = h.people.bob
+  const w = startApp("/", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
+  await waitFor("the empty state", () => w.document.body.textContent.includes("You are not following a plan yet"))
+  assert.equal(w.document.querySelector('a[href="/plans"]')?.textContent, "Go to plans")
+  w.close()
+})

@@ -20,6 +20,8 @@ import atlas/signin
 import atlas/storage
 import atlas/sync
 import atlas/syncing
+import atlas/today
+import atlas/today_page
 import atlas/workouts_page
 import gleam/list
 import gleam/option.{None, Some}
@@ -51,6 +53,7 @@ pub type Model {
     assignments: assignments_page.Model,
     coaches: coaches_page.Model,
     activities: activities_page.Model,
+    daily: today_page.Model,
   )
 }
 
@@ -69,6 +72,7 @@ pub type Msg {
   AssignmentsPage(assignments_page.Msg)
   CoachesPage(coaches_page.Msg)
   ActivitiesPage(activities_page.Msg)
+  TodayPage(today_page.Msg)
   ProblemsDismissed
 }
 
@@ -102,6 +106,7 @@ fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
       assignments: assignments_page.new(),
       coaches: coaches_page.new(),
       activities: activities_page.new(),
+      daily: today_page.new(),
     ),
     effect.batch([
       modem.init(RouteChanged),
@@ -192,6 +197,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               assignments: assignments_page.new(),
               coaches: coaches_page.new(),
               activities: activities_page.new(),
+              daily: today_page.new(),
             ),
             effect.batch([remember(session), load]),
           )
@@ -233,6 +239,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         assignments: assignments_page.new(),
         coaches: coaches_page.new(),
         activities: activities_page.new(),
+        daily: today_page.new(),
       ),
       forget(),
     )
@@ -267,6 +274,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
                 effect.map(assignments_page.refresh(), AssignmentsPage),
                 effect.map(coaches_page.refresh(), CoachesPage),
                 effect.map(activities_page.refresh(), ActivitiesPage),
+                effect.map(today_page.refresh(), TodayPage),
               ])
             False -> effect.none()
           }
@@ -403,6 +411,23 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         SignedOut(_) -> #(model, effect.none())
       }
 
+    TodayPage(inner) ->
+      case model.auth {
+        SignedIn(session) -> {
+          let #(page_model, page_effect, actions) =
+            today_page.update(model.daily, inner, today_inputs(model, session))
+          let #(state, action_effects) = perform_matches(model.syncing, actions)
+          #(
+            Model(..model, daily: page_model, syncing: state),
+            effect.batch([
+              effect.map(page_effect, TodayPage),
+              effect.map(effect.batch(action_effects), Syncing),
+            ]),
+          )
+        }
+        SignedOut(_) -> #(model, effect.none())
+      }
+
     ProblemsDismissed -> #(
       Model(..model, syncing: syncing.dismiss_problems(model.syncing)),
       effect.none(),
@@ -452,6 +477,39 @@ fn assignments_context(
       }
     _ -> assignments_page.Context("", session.user_id, [], today, False)
   }
+}
+
+/// Everything the Today screen works from, read from what the other screens already hold.
+fn today_inputs(model: Model, session: Session) -> today.Inputs {
+  today.Inputs(
+    user_id: session.user_id,
+    today: clock.today(),
+    assignments: model.assignments.rows,
+    workouts: list.map(model.workouts.rows, fn(row) { row.workout }),
+    plans: model.plans.plans,
+    activities: model.activities.rows,
+    matches: model.daily.matches,
+    offset_at: clock.utc_offset_at_utc,
+  )
+}
+
+/// Carries out what the user did with links between activities and workouts.
+fn perform_matches(
+  state: syncing.State,
+  actions: List(today_page.Action),
+) -> #(syncing.State, List(Effect(syncing.Msg))) {
+  list.fold(actions, #(state, []), fn(acc, action) {
+    let #(current, effects) = acc
+    let #(next, effect) = case action {
+      today_page.Create(id, fields) ->
+        syncing.create(current, collection.Matches, id, fields)
+      today_page.Edit(id, fields, base) ->
+        syncing.edit(current, collection.Matches, id, fields, base)
+      today_page.Delete(id, base) ->
+        syncing.delete(current, collection.Matches, id, base)
+    }
+    #(next, list.append(effects, [effect]))
+  })
 }
 
 /// What the activities screen needs from the browser: today, and the UTC offset for any moment
@@ -603,6 +661,7 @@ fn session_ended(model: Model) -> #(Model, Effect(Msg)) {
         assignments: assignments_page.new(),
         coaches: coaches_page.new(),
         activities: activities_page.new(),
+        daily: today_page.new(),
       ),
       forget(),
     )
@@ -663,7 +722,7 @@ fn refresh_if_due(state: Auth) -> Effect(Msg) {
   }
 }
 
-fn view(model: Model) -> Element(Msg) {
+pub fn view(model: Model) -> Element(Msg) {
   case model.auth {
     SignedOut(form) ->
       signin.view(form, EmailChanged, PasswordChanged, SignInSubmitted)
@@ -675,9 +734,9 @@ fn view(model: Model) -> Element(Msg) {
 fn page(model: Model, session: Session) -> Element(Msg) {
   case model.route {
     route.Today ->
-      shell.empty(
-        "Nothing planned yet",
-        "Today's workout and what you have done will show up here.",
+      element.map(
+        today_page.view(model.daily, today_inputs(model, session)),
+        TodayPage,
       )
     route.Plans ->
       element.map(plans_page.view_list(model.plans, session.user_id), PlansPage)

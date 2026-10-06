@@ -11,8 +11,10 @@ import atlas/assignments_page
 import atlas/auth.{Session}
 import atlas/coaches_page
 import atlas/collection
+import atlas/date
 import atlas/grants
 import atlas/http.{Response}
+import atlas/matching
 import atlas/outbox
 import atlas/plan
 import atlas/plan_form
@@ -21,6 +23,7 @@ import atlas/route
 import atlas/signin.{Form}
 import atlas/sync
 import atlas/syncing
+import atlas/today_page
 import atlas/workout_form
 import atlas/workouts_page
 import gleam/dict
@@ -28,6 +31,7 @@ import gleam/option.{None, Some}
 import gleam/string
 import gleam/uri
 import gleeunit
+import lustre/element
 
 pub fn main() -> Nil {
   gleeunit.main()
@@ -46,6 +50,7 @@ fn signed_out(form: signin.Form) -> atlas.Model {
     assignments_page.new(),
     coaches_page.new(),
     activities_page.new(),
+    today_page.new(),
   )
 }
 
@@ -60,6 +65,7 @@ fn signed_in() -> atlas.Model {
     assignments_page.new(),
     coaches_page.new(),
     activities_page.new(),
+    today_page.new(),
   )
 }
 
@@ -530,4 +536,61 @@ pub fn signing_out_clears_the_activities_on_screen_test() {
     )
   let #(model, _) = atlas.update(showing, SignOutClicked)
   assert model.activities == activities_page.new()
+}
+
+fn today_screen() -> atlas.Model {
+  Model(
+    ..signed_in(),
+    route: route.Today,
+    syncing: ready_syncing(),
+    assignments: assignments_page.Model(..assignments_page.new(), rows: [
+      assignment_form.Row(
+        plan.Assignment("a1", "p1", "u1", date.Date(2020, 1, 6)),
+        "u1",
+        "T",
+      ),
+    ]),
+    workouts: workouts_page.Model(..workouts_page.new(), rows: [
+      workout_form.Row(
+        plan.Workout("w1", "p1", 0, 0, "Easy", plan.Easy, None, None),
+        "",
+        "T",
+      ),
+    ]),
+    activities: activities_page.Model(..activities_page.new(), rows: [
+      activity_form.Row(
+        activity.Activity(
+          "x1",
+          activity.Manual,
+          "2020-01-06 07:00:00.000Z",
+          activity.Run,
+          5000.0,
+          1500,
+        ),
+        "u1",
+        "",
+        0.0,
+        0,
+        "T",
+      ),
+    ]),
+  )
+}
+
+pub fn the_today_screen_shows_old_schedules_as_outside_its_window_test() {
+  // The plan started years ago, so nothing falls in the window around today.
+  let html = element.to_string(atlas.view(today_screen()))
+  assert string.contains(html, "Nothing planned for today.")
+}
+
+pub fn signing_out_clears_the_matches_on_screen_test() {
+  let showing =
+    Model(
+      ..signed_in(),
+      daily: today_page.Model(..today_page.new(), matches: [
+        matching.Stored("m1", "u1", matching.Match("x", "w", "a"), False, "T"),
+      ]),
+    )
+  let #(model, _) = atlas.update(showing, SignOutClicked)
+  assert model.daily == today_page.new()
 }

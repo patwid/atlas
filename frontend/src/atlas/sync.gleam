@@ -17,6 +17,8 @@ import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/list
 import gleam/option.{None, Some}
+import gleam/order
+import gleam/string
 
 /// Says what an answer is for.
 pub type Tag {
@@ -101,6 +103,10 @@ pub opaque type Sync {
     /// A start was requested while a run was going on. The run may already have passed what the
     /// requester wanted to see, so another one follows it.
     rerun: Bool,
+    /// The newest `updated` this engine has seen for each record (from acknowledged saves and pulls).
+    /// Screens read the device database a moment after it changes, so an edit made in that moment would
+    /// otherwise be based on an older value and be refused as a conflict.
+    known_updated: Dict(String, String),
   )
 }
 
@@ -116,6 +122,7 @@ pub fn new(outbox: Outbox, cursors: List(#(Collection, Cursor))) -> Sync {
     commits: [],
     pending_cursors: dict.new(),
     rerun: False,
+    known_updated: dict.new(),
   )
 }
 
@@ -126,6 +133,28 @@ pub fn outbox(sync: Sync) -> Outbox {
 /// Changes the outbox for a local write. Safe at any time: entries being sent are never altered.
 pub fn change_outbox(sync: Sync, change: fn(Outbox) -> Outbox) -> Sync {
   Sync(..sync, outbox: change(sync.outbox))
+}
+
+/// The `updated` value to base an edit on: the engine's own newest knowledge of the record, unless the
+/// caller's value (read from the device database) is newer. PocketBase timestamps compare as text.
+pub fn freshest_base(
+  sync: Sync,
+  collection: Collection,
+  id: String,
+  given: String,
+) -> String {
+  case dict.get(sync.known_updated, record_key(collection, id)) {
+    Ok(known) ->
+      case string.compare(known, given) {
+        order.Gt -> known
+        _ -> given
+      }
+    Error(Nil) -> given
+  }
+}
+
+fn record_key(collection: Collection, id: String) -> String {
+  collection.to_string(collection) <> "/" <> id
 }
 
 /// Whether a run is going on. `Started` is ignored while it is.
@@ -194,6 +223,7 @@ fn respond(
           case api.classify(entry, status, body) {
             api.Final(response) -> {
               let #(next, commands) = apply_response(sync, seq, response)
+              let next = remember_saved(next, entry, response)
               #(next, with_saved_record(next, entry, response, body, commands))
             }
             api.CheckSession(reason) -> #(Sync(..sync, state: Verifying), [
@@ -247,6 +277,21 @@ fn respond(
 
     // An answer that no longer belongs to what the engine is doing, for example after a restart.
     _, _ -> #(sync, [])
+  }
+}
+
+fn remember_saved(sync: Sync, entry: Entry, response: outbox.Response) -> Sync {
+  case response {
+    outbox.Saved(updated) ->
+      Sync(
+        ..sync,
+        known_updated: dict.insert(
+          sync.known_updated,
+          record_key(entry.collection, entry.id),
+          updated,
+        ),
+      )
+    _ -> sync
   }
 }
 
@@ -402,6 +447,13 @@ fn pulled_page(
         Error(Nil) -> False
       }
     })
+  let sync =
+    Sync(
+      ..sync,
+      known_updated: list.fold(metas, sync.known_updated, fn(known, meta) {
+        dict.insert(known, record_key(pull.current, meta.id), meta.updated)
+      }),
+    )
   let pull =
     PullState(
       ..pull,

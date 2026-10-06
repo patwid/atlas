@@ -1,6 +1,7 @@
 import atlas/activity
 import atlas/date.{Date}
 import atlas/grants
+import atlas/matching
 import atlas/plan.{Assignment, Plan, Workout}
 import atlas/records
 import gleam/dynamic.{type Dynamic}
@@ -185,4 +186,23 @@ pub fn an_activity_row_carries_what_the_list_shows_test() {
   assert bare.avg_hr == 0
   assert bare.updated == ""
   assert records.activity_row(parse("{\"id\":\"x3\"}")) == Error(Nil)
+}
+
+pub fn a_stored_match_keeps_its_deleted_flag_test() {
+  let live =
+    "{\"id\":\"m1\",\"owner\":\"u1\",\"activity\":\"x1\",\"assignment\":\"a1\",\"workout\":\"w1\",\"deleted\":false,\"updated\":\"T1\"}"
+  assert records.stored_match(parse(live))
+    == Ok(matching.Stored(
+      "m1",
+      "u1",
+      matching.Match("x1", "w1", "a1"),
+      False,
+      "T1",
+    ))
+  let removed =
+    "{\"id\":\"m2\",\"activity\":\"x2\",\"assignment\":\"a1\",\"workout\":\"w2\",\"deleted\":true}"
+  let assert Ok(row) = records.stored_match(parse(removed))
+  assert row.deleted
+  assert row.updated == ""
+  assert records.stored_match(parse("{\"id\":\"m3\"}")) == Error(Nil)
 }

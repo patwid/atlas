@@ -778,3 +778,29 @@ pub fn many_requests_during_one_run_cause_only_one_more_run_test() {
   assert list.contains(commands, Tell(Finished))
   assert !sync.is_busy(s8)
 }
+
+pub fn the_engine_remembers_the_newest_updated_it_has_seen_test() {
+  let box = outbox.record_create(outbox.new(), Plans, "new1", title("A"))
+  let w =
+    run(world(box, [], server([rec("plans", "old1", 100, "x")])), started())
+  // After the create is acknowledged, the engine knows the record's new `updated`...
+  let known = sync.freshest_base(w.sync, Plans, "new1", "")
+  assert known != ""
+  assert known
+    == {
+      let assert Ok(r) = dict.get(w.server.records, "plans/new1")
+      r.updated
+    }
+  // ...and from a pull, the one of a record it never wrote.
+  assert sync.freshest_base(w.sync, Plans, "old1", "") == stamp_text(100)
+}
+
+pub fn a_newer_value_from_the_caller_wins_and_unknown_records_use_it_test() {
+  let box = outbox.record_create(outbox.new(), Plans, "new1", title("A"))
+  let w = run(world(box, [], server([])), started())
+  assert sync.freshest_base(w.sync, Plans, "new1", "9999-12-31 00:00:00.000Z")
+    == "9999-12-31 00:00:00.000Z"
+  assert sync.freshest_base(w.sync, Plans, "never-seen", "T-given") == "T-given"
+  assert sync.freshest_base(sync.new(outbox.new(), []), Plans, "x", "T0")
+    == "T0"
+}

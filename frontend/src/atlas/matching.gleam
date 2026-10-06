@@ -17,6 +17,19 @@ pub type Match {
   Match(activity_id: String, workout_id: String, assignment_id: String)
 }
 
+/// A match as stored (ADR 0009): the user's confirmation or choice, kept apart from live proposals.
+/// Removed matches stay as rows (`deleted`) because an activity has at most one match row.
+pub type Stored {
+  Stored(
+    id: String,
+    owner_id: String,
+    match: Match,
+    deleted: Bool,
+    /// The `updated` value of the local copy: the base for edits (ADR 0011).
+    updated: String,
+  )
+}
+
 pub type Status {
   /// Matched with the activity of this ID.
   Done(activity_id: String)

@@ -30,8 +30,11 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Coaches screen in Settings: add a coach by e-mail address (find, then confirm), remove access, and see the athletes you coach. Coaches can start a plan for an athlete who granted access (ADR 0024).
 - `coach_grants` carries display names (migration `1760000100_coach_grant_names.js`, ADR 0024).
 - Activities screen: add, change and delete activities by hand (local time converted to UTC with the right daylight-saving offset), and see Strava activities read-only (ADR 0025).
+- Today screen: the workouts of the plans you follow around today with their status (to do, missed, rest day, looks done, done); confirm a suggested activity, link one by hand, or unlink (ADR 0026).
+- Matching rule change: a match can be moved to another assignment of the same user (migration `1760000200_matches_relink.js`).
 
 ### Fixed
+- An edit made right after a save is no longer refused as a conflict when the screen has not yet refreshed: the sync engine now remembers the newest `updated` it has seen per record (ADR 0026).
 - E-mail addresses containing `+` are now found by the lookup (`+` is encoded in the request).
 - A sync requested while another one is running is no longer lost: one more run follows (ADR 0018, addendum).
 - Test servers are stopped with SIGKILL, and tests have a timeout, so a slow PocketBase shutdown can no longer keep the test process alive.
