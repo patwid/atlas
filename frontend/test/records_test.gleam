@@ -1,5 +1,6 @@
 import atlas/activity
 import atlas/date.{Date}
+import atlas/grants
 import atlas/plan.{Assignment, Plan, Workout}
 import atlas/records
 import gleam/dynamic.{type Dynamic}
@@ -135,4 +136,32 @@ pub fn a_workout_row_carries_description_and_the_local_updated_test() {
   assert fresh.description == ""
   assert fresh.updated == ""
   assert records.workout_row(parse("{\"id\":\"w3\"}")) == Error(Nil)
+}
+
+pub fn an_assignment_row_carries_who_made_it_and_the_local_updated_test() {
+  let text =
+    "{\"id\":\"a1\",\"plan\":\"p1\",\"athlete\":\"u1\",\"assigned_by\":\"u2\",\"start_date\":\"2026-11-02\",\"updated\":\"T9\"}"
+  let assert Ok(row) = records.assignment_row(parse(text))
+  assert row.assigned_by == "u2"
+  assert row.updated == "T9"
+  assert row.assignment == Assignment("a1", "p1", "u1", Date(2026, 11, 2))
+  let assert Ok(offline) =
+    records.assignment_row(parse(
+      "{\"id\":\"a2\",\"plan\":\"p\",\"athlete\":\"u\",\"start_date\":\"2026-11-02\"}",
+    ))
+  assert offline.updated == ""
+  assert offline.assigned_by == ""
+}
+
+pub fn a_grant_carries_the_names_test() {
+  let text =
+    "{\"id\":\"g1\",\"athlete\":\"u1\",\"coach\":\"u2\",\"athlete_name\":\"Ana\",\"coach_name\":\"Coach C\",\"updated\":\"T1\"}"
+  assert records.grant(parse(text))
+    == Ok(grants.Grant("g1", "u1", "u2", "Ana", "Coach C", "T1"))
+  // Grants made before names existed still read.
+  assert records.grant(parse(
+      "{\"id\":\"g2\",\"athlete\":\"u1\",\"coach\":\"u2\"}",
+    ))
+    == Ok(grants.Grant("g2", "u1", "u2", "", "", ""))
+  assert records.grant(parse("{\"id\":\"g3\"}")) == Error(Nil)
 }

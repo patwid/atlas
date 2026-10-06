@@ -130,6 +130,46 @@ pub fn weekday(date: Date) -> Weekday {
   }
 }
 
+/// `Mon 2 Nov 2026`, for showing a date to people.
+pub fn format(date: Date) -> String {
+  weekday_short(weekday(date))
+  <> " "
+  <> int.to_string(date.day)
+  <> " "
+  <> month_short(date.month)
+  <> " "
+  <> int.to_string(date.year)
+}
+
+pub fn weekday_short(day: Weekday) -> String {
+  case day {
+    Monday -> "Mon"
+    Tuesday -> "Tue"
+    Wednesday -> "Wed"
+    Thursday -> "Thu"
+    Friday -> "Fri"
+    Saturday -> "Sat"
+    Sunday -> "Sun"
+  }
+}
+
+pub fn month_short(month: Int) -> String {
+  case month {
+    1 -> "Jan"
+    2 -> "Feb"
+    3 -> "Mar"
+    4 -> "Apr"
+    5 -> "May"
+    6 -> "Jun"
+    7 -> "Jul"
+    8 -> "Aug"
+    9 -> "Sep"
+    10 -> "Oct"
+    11 -> "Nov"
+    _ -> "Dec"
+  }
+}
+
 /// The Monday of the week that contains `date`.
 pub fn start_of_week(date: Date) -> Date {
   add_days(date, -modulo(to_epoch_days(date) + 3, 7))

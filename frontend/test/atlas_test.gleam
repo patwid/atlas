@@ -1,10 +1,14 @@
 import atlas.{
-  EmailChanged, Model, OnlineChanged, PasswordChanged, PlansPage,
-  RefreshResponded, RouteChanged, SignInResponded, SignInSubmitted,
+  AssignmentsPage, EmailChanged, Model, OnlineChanged, PasswordChanged,
+  PlansPage, RefreshResponded, RouteChanged, SignInResponded, SignInSubmitted,
   SignOutClicked, SignedIn, SignedOut, WorkoutsPage,
 }
+import atlas/assignment_form
+import atlas/assignments_page
 import atlas/auth.{Session}
+import atlas/coaches_page
 import atlas/collection
+import atlas/grants
 import atlas/http.{Response}
 import atlas/outbox
 import atlas/plan
@@ -35,6 +39,8 @@ fn signed_out(form: signin.Form) -> atlas.Model {
     syncing.new(),
     plans_page.new(),
     workouts_page.new(),
+    assignments_page.new(),
+    coaches_page.new(),
   )
 }
 
@@ -46,6 +52,8 @@ fn signed_in() -> atlas.Model {
     syncing.new(),
     plans_page.new(),
     workouts_page.new(),
+    assignments_page.new(),
+    coaches_page.new(),
   )
 }
 
@@ -328,4 +336,96 @@ pub fn signing_out_clears_the_workouts_on_screen_too_test() {
     )
   let #(model, _) = atlas.update(showing, SignOutClicked)
   assert model.workouts == workouts_page.new()
+}
+
+fn schedule_screen(owner: String, visibility: plan.Visibility) -> atlas.Model {
+  Model(
+    ..signed_in(),
+    route: route.Plan("p1"),
+    syncing: ready_syncing(),
+    plans: plans_page.Model(
+      ..plans_page.new(),
+      plans: [plan.Plan("p1", owner, "10k plan", "", visibility, "T")],
+      loaded: True,
+    ),
+    coaches: coaches_page.Model(
+      [grants.Grant("g1", "ana", "u1", "Ana", "Alice", "T")],
+      True,
+    ),
+    assignments: assignments_page.Model(
+      ..assignments_page.new(),
+      mode: assignments_page.Starting,
+      form: assignment_form.Form("u1", "2026-11-02", None),
+    ),
+  )
+}
+
+pub fn starting_your_own_plan_queues_an_assignment_test() {
+  let #(model, _) =
+    atlas.update(
+      schedule_screen("u1", plan.Private),
+      AssignmentsPage(assignments_page.Submitted),
+    )
+  let assert option.Some(engine) = model.syncing.sync
+  let assert [entry] = sync.outbox(engine).entries
+  assert entry.collection == collection.Assignments
+  assert dict.get(entry.fields, "plan") == Ok("\"p1\"")
+  assert dict.get(entry.fields, "athlete") == Ok("\"u1\"")
+  assert dict.get(entry.fields, "assigned_by") == Ok("\"u1\"")
+  assert dict.get(entry.fields, "start_date") == Ok("\"2026-11-02\"")
+}
+
+pub fn a_coach_can_start_the_plan_for_an_athlete_who_granted_access_test() {
+  let model = schedule_screen("u1", plan.Private)
+  let for_ana =
+    Model(
+      ..model,
+      assignments: assignments_page.Model(
+        ..model.assignments,
+        form: assignment_form.Form("ana", "2026-11-02", None),
+      ),
+    )
+  let #(next, _) =
+    atlas.update(for_ana, AssignmentsPage(assignments_page.Submitted))
+  let assert option.Some(engine) = next.syncing.sync
+  let assert [entry] = sync.outbox(engine).entries
+  assert dict.get(entry.fields, "athlete") == Ok("\"ana\"")
+  assert dict.get(entry.fields, "assigned_by") == Ok("\"u1\"")
+}
+
+pub fn a_private_plan_of_someone_else_cannot_be_started_test() {
+  // The server would refuse it (ADR 0009), so the app does not even offer it (ADR 0023).
+  let #(next, _) =
+    atlas.update(
+      Model(..schedule_screen("u2", plan.Private), assignments: assignments_page.new()),
+      AssignmentsPage(assignments_page.StartClicked),
+    )
+  assert next.assignments.mode == assignments_page.Browsing
+}
+
+pub fn a_public_plan_of_someone_else_can_be_started_test() {
+  let #(next, _) =
+    atlas.update(
+      Model(
+        ..schedule_screen("u2", plan.Public),
+        assignments: assignments_page.new(),
+      ),
+      AssignmentsPage(assignments_page.StartClicked),
+    )
+  assert next.assignments.mode == assignments_page.Starting
+}
+
+pub fn nothing_is_queued_without_a_plan_on_screen_test() {
+  let model = Model(..schedule_screen("u1", plan.Private), route: route.Plans)
+  let #(next, _) =
+    atlas.update(model, AssignmentsPage(assignments_page.Submitted))
+  let assert option.Some(engine) = next.syncing.sync
+  assert outbox.is_empty(sync.outbox(engine))
+}
+
+pub fn signing_out_clears_the_schedule_and_the_coach_list_test() {
+  let #(model, _) =
+    atlas.update(schedule_screen("u1", plan.Private), SignOutClicked)
+  assert model.assignments == assignments_page.new()
+  assert model.coaches == coaches_page.new()
 }

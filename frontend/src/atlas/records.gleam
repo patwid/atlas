@@ -3,7 +3,9 @@
 //// added values this client does not know yet.
 
 import atlas/activity.{type Activity, Activity}
+import atlas/assignment_form
 import atlas/date
+import atlas/grants.{type Grant, Grant}
 import atlas/plan.{
   type Assignment, type Plan, type Workout, Assignment, Plan, Workout,
 }
@@ -97,6 +99,35 @@ pub fn assignment(record: Dynamic) -> Result(Assignment, Nil) {
     use athlete <- decode.field("athlete", decode.string)
     use start <- decode.field("start_date", date_decoder())
     decode.success(Assignment(id, plan_id, athlete, start))
+  })
+}
+
+/// An assignment with the fields only the screens need.
+pub fn assignment_row(record: Dynamic) -> Result(assignment_form.Row, Nil) {
+  case assignment(record) {
+    Error(Nil) -> Error(Nil)
+    Ok(found) ->
+      run(record, {
+        use assigned_by <- decode.optional_field(
+          "assigned_by",
+          "",
+          decode.string,
+        )
+        use updated <- decode.optional_field("updated", "", decode.string)
+        decode.success(assignment_form.Row(found, assigned_by, updated))
+      })
+  }
+}
+
+pub fn grant(record: Dynamic) -> Result(Grant, Nil) {
+  run(record, {
+    use id <- decode.field("id", decode.string)
+    use athlete <- decode.field("athlete", decode.string)
+    use coach <- decode.field("coach", decode.string)
+    use athlete_name <- decode.optional_field("athlete_name", "", decode.string)
+    use coach_name <- decode.optional_field("coach_name", "", decode.string)
+    use updated <- decode.optional_field("updated", "", decode.string)
+    decode.success(Grant(id, athlete, coach, athlete_name, coach_name, updated))
   })
 }
 

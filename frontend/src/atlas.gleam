@@ -2,11 +2,15 @@
 //// sign-in (ADR 0017): routing, the page frame, the online indicator and the session.
 
 import atlas/api
+import atlas/assignments_page
 import atlas/auth.{type Session}
 import atlas/clock
+import atlas/coaches_page
 import atlas/collection
+import atlas/grants
 import atlas/http
 import atlas/online
+import atlas/plan
 import atlas/plans_page
 import atlas/pwa
 import atlas/route.{type Route}
@@ -43,6 +47,8 @@ pub type Model {
     syncing: syncing.State,
     plans: plans_page.Model,
     workouts: workouts_page.Model,
+    assignments: assignments_page.Model,
+    coaches: coaches_page.Model,
   )
 }
 
@@ -58,6 +64,8 @@ pub type Msg {
   Syncing(syncing.Msg)
   PlansPage(plans_page.Msg)
   WorkoutsPage(workouts_page.Msg)
+  AssignmentsPage(assignments_page.Msg)
+  CoachesPage(coaches_page.Msg)
   ProblemsDismissed
 }
 
@@ -88,6 +96,8 @@ fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
       syncing: syncing_state,
       plans: plans_page.new(),
       workouts: workouts_page.new(),
+      assignments: assignments_page.new(),
+      coaches: coaches_page.new(),
     ),
     effect.batch([
       modem.init(RouteChanged),
@@ -175,6 +185,8 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               syncing: syncing_state,
               plans: plans_page.new(),
               workouts: workouts_page.new(),
+              assignments: assignments_page.new(),
+              coaches: coaches_page.new(),
             ),
             effect.batch([remember(session), load]),
           )
@@ -213,6 +225,8 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         syncing: syncing.reset(model.syncing),
         plans: plans_page.new(),
         workouts: workouts_page.new(),
+        assignments: assignments_page.new(),
+        coaches: coaches_page.new(),
       ),
       forget(),
     )
@@ -244,6 +258,8 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               effect.batch([
                 effect.map(plans_page.refresh(), PlansPage),
                 effect.map(workouts_page.refresh(), WorkoutsPage),
+                effect.map(assignments_page.refresh(), AssignmentsPage),
+                effect.map(coaches_page.refresh(), CoachesPage),
               ])
             False -> effect.none()
           }
@@ -295,6 +311,38 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         SignedOut(_) -> #(model, effect.none())
       }
 
+    CoachesPage(inner) -> {
+      let #(page_model, page_effect) = coaches_page.update(model.coaches, inner)
+      #(
+        Model(..model, coaches: page_model),
+        effect.map(page_effect, CoachesPage),
+      )
+    }
+
+    AssignmentsPage(inner) ->
+      case model.auth {
+        SignedIn(session) -> {
+          let context = assignments_context(model, session)
+          let #(page_model, page_effect, actions) =
+            assignments_page.update(model.assignments, inner, context)
+          // Nothing is written without a plan on screen.
+          let actions = case context.plan_id {
+            "" -> []
+            _ -> actions
+          }
+          let #(state, action_effects) =
+            perform_assignments(model.syncing, actions)
+          #(
+            Model(..model, assignments: page_model, syncing: state),
+            effect.batch([
+              effect.map(page_effect, AssignmentsPage),
+              effect.map(effect.batch(action_effects), Syncing),
+            ]),
+          )
+        }
+        SignedOut(_) -> #(model, effect.none())
+      }
+
     ProblemsDismissed -> #(
       Model(..model, syncing: syncing.dismiss_problems(model.syncing)),
       effect.none(),
@@ -313,6 +361,56 @@ fn plan_on_screen(model: Model, session: Session) -> #(String, Bool) {
       }
     _ -> #("", False)
   }
+}
+
+/// What the schedule of the open plan needs to know. A plan can be started when it is the user's own
+/// or public (the server's rule); only then can athletes be chosen too.
+fn assignments_context(
+  model: Model,
+  session: Session,
+) -> assignments_page.Context {
+  let today = clock.today()
+  case model.route {
+    route.Plan(id) ->
+      case list.find(model.plans.plans, fn(p) { p.id == id }) {
+        Ok(found) -> {
+          let can_start =
+            found.owner_id == session.user_id || found.visibility == plan.Public
+          assignments_page.Context(
+            id,
+            session.user_id,
+            case can_start {
+              True -> grants.athletes_of(model.coaches.grants, session.user_id)
+              False -> []
+            },
+            today,
+            can_start,
+          )
+        }
+        Error(Nil) ->
+          assignments_page.Context(id, session.user_id, [], today, False)
+      }
+    _ -> assignments_page.Context("", session.user_id, [], today, False)
+  }
+}
+
+/// Carries out what the user did with the schedule of a plan.
+fn perform_assignments(
+  state: syncing.State,
+  actions: List(assignments_page.Action),
+) -> #(syncing.State, List(Effect(syncing.Msg))) {
+  list.fold(actions, #(state, []), fn(acc, action) {
+    let #(current, effects) = acc
+    let #(next, effect) = case action {
+      assignments_page.Create(id, fields) ->
+        syncing.create(current, collection.Assignments, id, fields)
+      assignments_page.Edit(id, fields, base) ->
+        syncing.edit(current, collection.Assignments, id, fields, base)
+      assignments_page.Delete(id, base) ->
+        syncing.delete(current, collection.Assignments, id, base)
+    }
+    #(next, list.append(effects, [effect]))
+  })
 }
 
 /// Carries out what the user did on the workouts of a plan.
@@ -389,6 +487,8 @@ fn session_ended(model: Model) -> #(Model, Effect(Msg)) {
         syncing: syncing.reset(model.syncing),
         plans: plans_page.new(),
         workouts: workouts_page.new(),
+        assignments: assignments_page.new(),
+        coaches: coaches_page.new(),
       ),
       forget(),
     )
@@ -484,6 +584,17 @@ fn page(model: Model, session: Session) -> Element(Msg) {
                 found.owner_id == session.user_id,
               ),
               WorkoutsPage,
+            ),
+            element.map(
+              assignments_page.view(
+                model.assignments,
+                assignments_context(model, session),
+                list.map(workouts_page.rows_of(model.workouts, id), fn(row) {
+                  row.workout
+                }),
+                model.coaches.grants,
+              ),
+              AssignmentsPage,
             ),
           ])
         Error(Nil) -> detail

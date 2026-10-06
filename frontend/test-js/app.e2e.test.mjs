@@ -295,3 +295,79 @@ test("someone else's plan shows its workouts but offers no way to change them", 
   assert.equal(button(w, "Delete"), undefined)
   w.close()
 })
+
+// Starting a plan -------------------------------------------------------------------------------------
+
+test("a user starts a plan on a date, moves the date and removes it, and the server follows", { skip: !built && "frontend not built" }, async () => {
+  await h.world()
+  const alice = h.people.alice
+  await h.create("alice", "plans", { id: "sched0plan00001", owner: alice.id, title: "Base building", visibility: "private" })
+  await h.create("alice", "workouts", { id: "sched0work00001", plan: "sched0plan00001", day_index: 27, position: 0, title: "Long run", kind: "long" })
+  const w = startApp("/plans/sched0plan00001", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
+  const d = w.document
+  const assignments = async () => (await h.api("GET", "collections/assignments/records?perPage=50", { token: alice.token })).body.items
+
+  await waitFor("the empty schedule", () => d.body.textContent.includes("Nobody is following this plan yet. Pick a start date to begin."))
+  click(w, button(w, "Start this plan"))
+  await waitFor("the form", () => d.querySelector("#assign-start"))
+  assert.equal(d.querySelector("#assign-athlete"), null, "with no coaching relationships there is nobody else to choose")
+  typeInto(w, d.querySelector("#assign-start"), "")
+  submit(w, d.querySelector(".schedule-form"))
+  await waitFor("a date error", () => d.querySelector(".error")?.textContent === "Pick a start date.")
+  assert.deepEqual(await assignments(), [])
+  typeInto(w, d.querySelector("#assign-start"), "2026-11-02")
+  submit(w, d.querySelector(".schedule-form"))
+  const created = await waitFor("the assignment on the server", async () => (await assignments())[0])
+  assert.equal(created.plan, "sched0plan00001")
+  assert.equal(created.athlete, alice.id)
+  assert.equal(created.assigned_by, alice.id)
+  assert.equal(created.start_date, "2026-11-02")
+  await waitFor("start and end with weekdays", () => d.body.textContent.includes("Starts Mon 2 Nov 2026") && d.body.textContent.includes("ends Sun 29 Nov 2026"))
+
+  // Move it a week later.
+  click(w, button(w, "Change date"))
+  await waitFor("the date form", () => d.querySelector("#assign-start")?.value === "2026-11-02")
+  typeInto(w, d.querySelector("#assign-start"), "2026-11-09")
+  submit(w, d.querySelector(".schedule-form"))
+  await waitFor("the new date on the server", async () => (await assignments())[0]?.start_date === "2026-11-09")
+  await waitFor("the new dates on screen", () => d.body.textContent.includes("Starts Mon 9 Nov 2026") && d.body.textContent.includes("ends Sun 6 Dec 2026"))
+
+  // Remove it, after the question.
+  click(w, button(w, "Remove"))
+  await waitFor("the question", () => d.body.textContent.includes("Remove this from the schedule?"))
+  assert.equal((await assignments())[0].deleted, false)
+  click(w, button(w, "Yes, remove it"))
+  await waitFor("deleted on the server", async () => (await assignments())[0]?.deleted === true)
+  await waitFor("an empty schedule again", () => d.body.textContent.includes("Nobody is following this plan yet"))
+  w.close()
+})
+
+test("a public plan of someone else can be started, a private one shared with you cannot", { skip: !built && "frontend not built" }, async () => {
+  await h.world()
+  const alice = h.people.alice
+  const bob = h.people.bob
+  await h.create("alice", "plans", { id: "publicplan00001", owner: alice.id, title: "Public plan", visibility: "public" })
+  await h.create("alice", "plans", { id: "privateplan0001", owner: alice.id, title: "Private plan", visibility: "private" })
+  await h.create("alice", "plan_shares", { id: "share0000000001", plan: "privateplan0001", user: bob.id })
+
+  const w = startApp("/plans/publicplan00001", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
+  const d = w.document
+  await waitFor("the public plan", () => d.querySelector("h2")?.textContent === "Public plan" && button(w, "Start this plan"))
+  click(w, button(w, "Start this plan"))
+  await waitFor("the form", () => d.querySelector("#assign-start"))
+  typeInto(w, d.querySelector("#assign-start"), "2026-12-07")
+  submit(w, d.querySelector(".schedule-form"))
+  const started = await waitFor("the assignment on the server", async () =>
+    (await h.api("GET", "collections/assignments/records?perPage=50", { token: bob.token })).body.items[0])
+  assert.equal(started.athlete, bob.id)
+  assert.equal(started.plan, "publicplan00001")
+
+  // The private plan shared with Bob is readable, but the server would refuse a start, so none is offered.
+  click(w, [...d.querySelectorAll("a")].find((a) => a.textContent.includes("All plans")))
+  const privateLink = await waitFor("the private plan in the list", () => [...d.querySelectorAll(".cards a")].find((a) => a.textContent === "Private plan"))
+  click(w, privateLink)
+  await waitFor("the private plan's screen", () => d.querySelector("h2")?.textContent === "Private plan")
+  await waitFor("the schedule section", () => d.body.textContent.includes("Nobody is following this plan yet."))
+  assert.equal(button(w, "Start this plan"), undefined)
+  w.close()
+})

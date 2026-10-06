@@ -120,3 +120,11 @@ pub fn from_unix_seconds_test() {
   assert date.from_unix_seconds(1_791_246_600, -300) == Date(2026, 10, 5)
   assert date.from_unix_seconds(-1, 0) == Date(1969, 12, 31)
 }
+
+pub fn format_for_people_test() {
+  assert date.format(Date(2026, 11, 2)) == "Mon 2 Nov 2026"
+  assert date.format(Date(2026, 10, 6)) == "Tue 6 Oct 2026"
+  assert date.format(Date(2024, 2, 29)) == "Thu 29 Feb 2024"
+  assert date.format(Date(2027, 1, 1)) == "Fri 1 Jan 2027"
+  assert date.format(Date(2026, 12, 31)) == "Thu 31 Dec 2026"
+}
