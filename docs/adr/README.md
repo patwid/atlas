@@ -19,3 +19,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0013 | [App shell, routing and PWA build](0013-app-shell-and-pwa-build.md) | Accepted |
 | 0014 | [Purge soft-deleted rows after a retention period](0014-purge-soft-deleted-rows.md) | Accepted |
 | 0015 | [Pure domain core: dates, plans, matching and units](0015-domain-core.md) | Accepted / Proposed |
+| 0016 | [Sync core: a pure outbox state machine and pull cursors](0016-sync-core-outbox-and-cursor.md) | Accepted |

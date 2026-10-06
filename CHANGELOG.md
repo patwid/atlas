@@ -19,6 +19,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Lustre app shell: routing, page frame, offline indicator, PWA manifest and app-shell service worker, built into `backend/pb_public` by `scripts/build-frontend.sh` (ADR 0013).
 - Daily purge of soft-deleted rows older than 90 days (`ATLAS_PURGE_RETENTION_DAYS`), also runnable on demand by superusers (ADR 0014).
 - Pure domain core in Gleam with tests: dates, client IDs, plan scheduling, activity-to-workout matching, pace and heart-rate zones (ADR 0015).
+- Pure sync core in Gleam with tests: mutation outbox with compaction, conflict and retry handling, and pull cursors (ADR 0016).
 
 ### Changed
 - Coach access to athletes' activities, including Strava-sourced data, now that Strava has confirmed the usage in writing (ADR 0005).
