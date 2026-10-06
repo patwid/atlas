@@ -16,6 +16,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - `GET /api/atlas/users/lookup` to find a user by exact e-mail, so coaches and athletes can be selected for grants and assignments (ADR 0010).
 - Server-side `base_updated` conflict guard on synced collections: stale updates get 409 (ADR 0011).
 - Strava hooks: OAuth connect and callback, 30-day import, webhook for new, changed and deleted activities and for deauthorization, disconnect with data removal (ADR 0012).
+- Lustre app shell: routing, page frame, offline indicator, PWA manifest and app-shell service worker, built into `backend/pb_public` by `scripts/build-frontend.sh` (ADR 0013).
 
 ### Changed
 - Coach access to athletes' activities, including Strava-sourced data, now that Strava has confirmed the usage in writing (ADR 0005).

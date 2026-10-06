@@ -15,6 +15,22 @@ target = "javascript"
 
 [dependencies]
 gleam_stdlib = ">= 1.0.0 and < 2.0.0"
+lustre = ">= 5.7.1 and < 6.0.0"
+modem = ">= 2.1.3 and < 3.0.0"
 
 [dev_dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"
+lustre_dev_tools = ">= 2.4.0 and < 3.0.0"
+
+[tools.lustre.html]
+lang = "en"
+title = "Atlas"
+meta = [
+  { name = "theme-color", content = "#0f766e" },
+  { name = "description", content = "Plan, share and review your running training." },
+]
+links = [
+  { rel = "manifest", href = "/manifest.json" },
+  { rel = "icon", href = "/icon.svg", type = "image/svg+xml" },
+]
+stylesheets = [{ href = "/app.css" }]

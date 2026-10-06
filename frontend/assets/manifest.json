@@ -1,0 +1,13 @@
+{
+  "name": "Atlas",
+  "short_name": "Atlas",
+  "description": "Plan, share and review your running training.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0e1514",
+  "theme_color": "#0f766e",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
