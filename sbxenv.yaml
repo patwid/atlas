@@ -1,0 +1,12 @@
+# Docker Sandboxes environment for developing Atlas (ADR 0008).
+# Start or attach from the repo root on the host:  sbx env run
+schemaVersion: "1"
+name: claude-atlas
+agent: claude
+workspace: .
+
+kits:
+  - ./sbx/default   # network allowlist: Hex packages, Strava (ADR 0007)
+
+# Deliberately no `lifecycle:` hooks and no `secrets:`. This file sits inside the
+# workspace the agent can write to, and lifecycle commands run on the host (ADR 0008).
