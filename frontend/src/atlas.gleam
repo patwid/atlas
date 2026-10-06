@@ -4,8 +4,10 @@
 import atlas/api
 import atlas/auth.{type Session}
 import atlas/clock
+import atlas/collection
 import atlas/http
 import atlas/online
+import atlas/plans_page
 import atlas/pwa
 import atlas/route.{type Route}
 import atlas/shell
@@ -33,7 +35,13 @@ pub type Auth {
 }
 
 pub type Model {
-  Model(route: Route, online: Bool, auth: Auth, syncing: syncing.State)
+  Model(
+    route: Route,
+    online: Bool,
+    auth: Auth,
+    syncing: syncing.State,
+    plans: plans_page.Model,
+  )
 }
 
 pub type Msg {
@@ -46,6 +54,7 @@ pub type Msg {
   RefreshResponded(http.Response)
   SignOutClicked
   Syncing(syncing.Msg)
+  PlansPage(plans_page.Msg)
   ProblemsDismissed
 }
 
@@ -69,7 +78,13 @@ fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
   let is_online = online.is_online()
   let #(syncing_state, load) = load_device_data(auth, syncing.new())
   #(
-    Model(route:, online: is_online, auth:, syncing: syncing_state),
+    Model(
+      route:,
+      online: is_online,
+      auth:,
+      syncing: syncing_state,
+      plans: plans_page.new(),
+    ),
     effect.batch([
       modem.init(RouteChanged),
       online.listen(OnlineChanged),
@@ -150,7 +165,12 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           let #(syncing_state, load) =
             load_device_data(SignedIn(session), model.syncing)
           #(
-            Model(..model, auth: SignedIn(session), syncing: syncing_state),
+            Model(
+              ..model,
+              auth: SignedIn(session),
+              syncing: syncing_state,
+              plans: plans_page.new(),
+            ),
             effect.batch([remember(session), load]),
           )
         }
@@ -186,6 +206,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         ..model,
         auth: SignedOut(signin.empty()),
         syncing: syncing.reset(model.syncing),
+        plans: plans_page.new(),
       ),
       forget(),
     )
@@ -211,7 +232,36 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
                 #(changed, effect.batch([effects, more]))
               },
             )
-          #(next, effect.batch([effect.map(inner_effect, Syncing), app_effect]))
+          // Records changed on the device: the screens read them again.
+          let refresh = case state.revision != model.syncing.revision {
+            True -> effect.map(plans_page.refresh(), PlansPage)
+            False -> effect.none()
+          }
+          #(
+            next,
+            effect.batch([
+              effect.map(inner_effect, Syncing),
+              app_effect,
+              refresh,
+            ]),
+          )
+        }
+        SignedOut(_) -> #(model, effect.none())
+      }
+
+    PlansPage(inner) ->
+      case model.auth {
+        SignedIn(session) -> {
+          let #(page_model, page_effect, actions) =
+            plans_page.update(model.plans, inner, session.user_id)
+          let #(state, action_effects) = perform(model.syncing, actions)
+          #(
+            Model(..model, plans: page_model, syncing: state),
+            effect.batch([
+              effect.map(page_effect, PlansPage),
+              effect.map(effect.batch(action_effects), Syncing),
+            ]),
+          )
         }
         SignedOut(_) -> #(model, effect.none())
       }
@@ -221,6 +271,25 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       effect.none(),
     )
   }
+}
+
+/// Carries out what the user did on the plans screens, through the sync runner.
+fn perform(
+  state: syncing.State,
+  actions: List(plans_page.Action),
+) -> #(syncing.State, List(Effect(syncing.Msg))) {
+  list.fold(actions, #(state, []), fn(acc, action) {
+    let #(current, effects) = acc
+    let #(next, effect) = case action {
+      plans_page.Create(id, fields) ->
+        syncing.create(current, collection.Plans, id, fields)
+      plans_page.Edit(id, fields, base) ->
+        syncing.edit(current, collection.Plans, id, fields, base)
+      plans_page.Delete(id, base) ->
+        syncing.delete(current, collection.Plans, id, base)
+    }
+    #(next, list.append(effects, [effect]))
+  })
 }
 
 /// What the app does about the engine's notices. Conflicts and rejections are handled in `syncing`.
@@ -257,6 +326,7 @@ fn session_ended(model: Model) -> #(Model, Effect(Msg)) {
           ),
         ),
         syncing: syncing.reset(model.syncing),
+        plans: plans_page.new(),
       ),
       forget(),
     )
@@ -322,38 +392,30 @@ fn view(model: Model) -> Element(Msg) {
     SignedOut(form) ->
       signin.view(form, EmailChanged, PasswordChanged, SignInSubmitted)
     SignedIn(session) ->
-      shell.view(
-        model.route,
-        model.online,
-        page(model.route, session, model.syncing),
-      )
+      shell.view(model.route, model.online, page(model, session))
   }
 }
 
-fn page(
-  current: Route,
-  session: Session,
-  sync_state: syncing.State,
-) -> Element(Msg) {
-  case current {
+fn page(model: Model, session: Session) -> Element(Msg) {
+  case model.route {
     route.Today ->
       shell.empty(
         "Nothing planned yet",
         "Today's workout and what you have done will show up here.",
       )
     route.Plans ->
-      shell.empty(
-        "No plans yet",
-        "Create a training plan or open a shared one.",
-      )
+      element.map(plans_page.view_list(model.plans, session.user_id), PlansPage)
     route.Plan(id) ->
-      shell.empty("Plan " <> id, "This plan is not available offline yet.")
+      element.map(
+        plans_page.view_detail(model.plans, id, session.user_id),
+        PlansPage,
+      )
     route.Activities ->
       shell.empty(
         "No activities yet",
         "Connect Strava or import a FIT file to see your runs.",
       )
-    route.Settings -> settings(session, sync_state)
+    route.Settings -> settings(session, model.syncing)
     route.NotFound ->
       shell.empty("Page not found", "Use the tabs below to get back.")
   }

@@ -18,12 +18,19 @@ const plan_json =
 
 pub fn reads_a_plan_test() {
   assert records.plan(parse(plan_json))
-    == Ok(Plan("p1", "u1", "10k plan", "Build up", plan.Public))
+    == Ok(Plan(
+      "p1",
+      "u1",
+      "10k plan",
+      "Build up",
+      plan.Public,
+      "2026-10-06 08:30:35.585Z",
+    ))
 }
 
 pub fn a_plan_made_offline_has_fewer_fields_test() {
   assert records.plan(parse("{\"id\":\"p2\",\"title\":\"New\"}"))
-    == Ok(Plan("p2", "", "New", "", plan.Private))
+    == Ok(Plan("p2", "", "New", "", plan.Private, ""))
 }
 
 pub fn a_plan_without_a_title_is_skipped_test() {

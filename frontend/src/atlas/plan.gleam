@@ -32,6 +32,8 @@ pub type Plan {
     title: String,
     description: String,
     visibility: Visibility,
+    /// The `updated` value of the local copy: the base for edits (ADR 0011). Empty until first synced.
+    updated: String,
   )
 }
 
@@ -59,6 +61,13 @@ pub type Scheduled {
 
 pub type WeekTotal {
   WeekTotal(week_start: Date, workouts: Int, distance_m: Float, duration_s: Int)
+}
+
+pub fn visibility_to_string(visibility: Visibility) -> String {
+  case visibility {
+    Private -> "private"
+    Public -> "public"
+  }
 }
 
 pub fn kind_from_string(text: String) -> Result(Kind, Nil) {

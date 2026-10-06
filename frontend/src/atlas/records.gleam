@@ -25,18 +25,18 @@ pub fn plan(record: Dynamic) -> Result(Plan, Nil) {
       "private",
       decode.string,
     )
-    decode.success(
-      Plan(
-        id: id,
-        owner_id: owner,
-        title: title,
-        description: description,
-        visibility: case visibility {
-          "public" -> plan.Public
-          _ -> plan.Private
-        },
-      ),
-    )
+    use updated <- decode.optional_field("updated", "", decode.string)
+    decode.success(Plan(
+      id: id,
+      owner_id: owner,
+      title: title,
+      description: description,
+      visibility: case visibility {
+        "public" -> plan.Public
+        _ -> plan.Private
+      },
+      updated: updated,
+    ))
   })
 }
 

@@ -123,3 +123,87 @@ test("an expired session on the server signs the user out and keeps the device d
   assert.deepEqual(onServer, [], "and nothing reached the server")
   w.close()
 })
+
+// Driving the plans screens through the DOM ---------------------------------------------------------
+
+const waitFor = async (what, check, ms = 8000) => {
+  const end = Date.now() + ms
+  let last
+  while (Date.now() < end) {
+    try { last = await check(); if (last) return last } catch {}
+    await sleep(50)
+  }
+  assert.fail(`timed out waiting for: ${what}`)
+}
+const click = (w, el) => el.dispatchEvent(new w.MouseEvent("click", { bubbles: true, cancelable: true, button: 0 }))
+const typeInto = (w, el, value) => { el.value = value; el.dispatchEvent(new w.Event("input", { bubbles: true })) }
+const submit = (w, form) => form.dispatchEvent(new w.Event("submit", { bubbles: true, cancelable: true }))
+const button = (w, text) => [...w.document.querySelectorAll("button")].find((b) => b.textContent.trim() === text)
+
+test("a user creates, edits and deletes a plan on the plans screens and the server follows", { skip: !built && "frontend not built" }, async () => {
+  await h.world()
+  const alice = h.people.alice
+  const w = startApp("/plans", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
+  const d = w.document
+  const onServer = async () => (await h.api("GET", "collections/plans/records?perPage=50", { token: alice.token })).body.items
+
+  await waitFor("the empty list", () => d.body.textContent.includes("You have no plans yet"))
+
+  // Create
+  click(w, button(w, "New plan"))
+  await waitFor("the form", () => d.querySelector("#plan-title"))
+  submit(w, d.querySelector("form"))
+  await waitFor("a title error", () => d.querySelector(".error")?.textContent === "Give the plan a title.")
+  assert.deepEqual(await onServer(), [], "an empty title is not sent")
+  typeInto(w, d.querySelector("#plan-title"), "Autumn 10k")
+  typeInto(w, d.querySelector("#plan-description"), "Eight weeks, three runs a week")
+  submit(w, d.querySelector("form"))
+  const link = await waitFor("the plan in the list", () => [...d.querySelectorAll(".cards a")].find((a) => a.textContent === "Autumn 10k"))
+  const created = await waitFor("the plan on the server", async () => (await onServer()).find((p) => p.title === "Autumn 10k"))
+  assert.equal(created.owner, alice.id)
+  assert.equal(created.description, "Eight weeks, three runs a week")
+  assert.equal(created.visibility, "private")
+  assert.equal(link.getAttribute("href"), `/plans/${created.id}`)
+  await waitFor("the synced marker", () => !d.body.textContent.includes("Not synced yet"))
+
+  // Edit, on the plan's own screen
+  click(w, link)
+  await waitFor("the plan screen", () => d.querySelector("h2")?.textContent === "Autumn 10k" && button(w, "Edit"))
+  assert.equal(w.location.pathname, `/plans/${created.id}`)
+  click(w, button(w, "Edit"))
+  await waitFor("the edit form", () => d.querySelector("#plan-title")?.value === "Autumn 10k")
+  typeInto(w, d.querySelector("#plan-title"), "Autumn half marathon")
+  submit(w, d.querySelector("form"))
+  await waitFor("the new title on screen", () => d.querySelector("h2")?.textContent === "Autumn half marathon")
+  await waitFor("the new title on the server", async () => (await onServer()).some((p) => p.title === "Autumn half marathon"))
+  assert.equal((await onServer()).find((p) => p.id === created.id).description, "Eight weeks, three runs a week", "unchanged fields stay")
+
+  // Delete, with the question first
+  click(w, button(w, "Delete"))
+  await waitFor("the question", () => d.body.textContent.includes("Delete this plan?"))
+  assert.equal((await onServer()).find((p) => p.id === created.id).deleted, false, "asking does not delete")
+  click(w, button(w, "Yes, delete it"))
+  await waitFor("the plan marked deleted on the server", async () => (await onServer()).find((p) => p.id === created.id)?.deleted === true)
+  click(w, [...d.querySelectorAll("a")].find((a) => a.textContent.includes("All plans")))
+  await waitFor("an empty list again", () => d.body.textContent.includes("You have no plans yet"))
+  w.close()
+})
+
+test("plans shared with the user show up read-only, and a pulled new plan appears without a reload", { skip: !built && "frontend not built" }, async () => {
+  await h.world()
+  const alice = h.people.alice
+  const bob = h.people.bob
+  const w = startApp("/plans", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
+  const d = w.document
+  await waitFor("the empty list", () => d.body.textContent.includes("You have no plans yet"))
+  // Alice publishes a plan while Bob has the app open; Bob's next sync brings it in.
+  await h.create("alice", "plans", { id: "alicepublic0001", owner: alice.id, title: "Alice's public plan", visibility: "public" })
+  w.dispatchEvent(new w.Event("offline"))
+  w.dispatchEvent(new w.Event("online"))
+  await waitFor("the shared plan", () => d.body.textContent.includes("Shared with you") && d.body.textContent.includes("Alice's public plan"))
+  click(w, [...d.querySelectorAll(".cards a")].find((a) => a.textContent === "Alice's public plan"))
+  await waitFor("the shared plan's screen", () => d.body.textContent.includes("Only its owner can change it"))
+  assert.equal(button(w, "Edit"), undefined)
+  assert.equal(button(w, "Delete"), undefined)
+  w.close()
+})

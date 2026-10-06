@@ -1,13 +1,19 @@
 import atlas.{
-  EmailChanged, Model, OnlineChanged, PasswordChanged, RefreshResponded,
-  RouteChanged, SignInResponded, SignInSubmitted, SignOutClicked, SignedIn,
-  SignedOut,
+  EmailChanged, Model, OnlineChanged, PasswordChanged, PlansPage,
+  RefreshResponded, RouteChanged, SignInResponded, SignInSubmitted,
+  SignOutClicked, SignedIn, SignedOut,
 }
 import atlas/auth.{Session}
 import atlas/http.{Response}
+import atlas/outbox
+import atlas/plan
+import atlas/plan_form
+import atlas/plans_page.{Creating}
 import atlas/route
 import atlas/signin.{Form}
+import atlas/sync
 import atlas/syncing
+import gleam/dict
 import gleam/option.{None, Some}
 import gleam/uri
 import gleeunit
@@ -19,11 +25,11 @@ pub fn main() -> Nil {
 const alice = Session("old.token.x", "u1", "Alice", "alice@example.com")
 
 fn signed_out(form: signin.Form) -> atlas.Model {
-  Model(route.Today, True, SignedOut(form), syncing.new())
+  Model(route.Today, True, SignedOut(form), syncing.new(), plans_page.new())
 }
 
 fn signed_in() -> atlas.Model {
-  Model(route.Today, True, SignedIn(alice), syncing.new())
+  Model(route.Today, True, SignedIn(alice), syncing.new(), plans_page.new())
 }
 
 fn form_of(model: atlas.Model) -> signin.Form {
@@ -176,4 +182,63 @@ pub fn signing_in_starts_loading_the_device_data_test() {
   let #(model, _) =
     atlas.update(busy, SignInResponded(Response(200, sign_in_ok)))
   assert model.syncing.phase == syncing.Loading
+}
+
+fn ready_syncing() -> syncing.State {
+  syncing.State(
+    ..syncing.new(),
+    sync: option.Some(sync.new(outbox.new(), [])),
+    phase: syncing.Ready,
+  )
+}
+
+pub fn saving_a_new_plan_queues_it_for_upload_test() {
+  let typing =
+    Model(
+      ..signed_in(),
+      syncing: ready_syncing(),
+      plans: plans_page.Model(
+        ..plans_page.new(),
+        mode: Creating,
+        form: plan_form.Form("Half marathon", "", plan.Public, None),
+      ),
+    )
+  let #(model, _) = atlas.update(typing, PlansPage(plans_page.Submitted))
+  let assert option.Some(engine) = model.syncing.sync
+  let assert [entry] = sync.outbox(engine).entries
+  assert entry.kind == outbox.Create
+  assert entry.id != ""
+  assert entry.fields
+    == dict.from_list([
+      outbox.field_string("owner", "u1"),
+      outbox.field_string("title", "Half marathon"),
+      outbox.field_string("description", ""),
+      outbox.field_string("visibility", "public"),
+    ])
+  assert model.plans.mode == plans_page.Browsing
+}
+
+pub fn an_invalid_plan_is_not_queued_test() {
+  let typing =
+    Model(
+      ..signed_in(),
+      syncing: ready_syncing(),
+      plans: plans_page.Model(..plans_page.new(), mode: Creating),
+    )
+  let #(model, _) = atlas.update(typing, PlansPage(plans_page.Submitted))
+  let assert option.Some(engine) = model.syncing.sync
+  assert outbox.is_empty(sync.outbox(engine))
+  assert model.plans.form.error == option.Some("Give the plan a title.")
+}
+
+pub fn signing_out_clears_the_plans_on_screen_test() {
+  let showing =
+    Model(
+      ..signed_in(),
+      plans: plans_page.Model(..plans_page.new(), plans: [
+        plan.Plan("p1", "u1", "Private plan", "", plan.Private, "T"),
+      ]),
+    )
+  let #(model, _) = atlas.update(showing, SignOutClicked)
+  assert model.plans == plans_page.new()
 }

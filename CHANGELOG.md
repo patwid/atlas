@@ -24,6 +24,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Sync engine: a pure state machine that runs a session check, pushes the outbox, pulls every collection and commits cursors only after the session is confirmed (ADR 0018).
 - Device database in IndexedDB (records, outbox, cursors, one owner per device), record decoders, and `scripts/test-frontend-js.sh` for the browser glue (ADR 0019).
 - Sync runner in the app: runs the engine against the device database, local writes that queue for upload, conflicted copies of plans and workouts, and a Settings section for sync status and problems. Whole-app tests with jsdom, fake-indexeddb and a real PocketBase (ADR 0020).
+- Plans screens: list, create, edit and delete plans, and read plans shared with you, working offline and syncing in the background (ADR 0021).
 
 ### Fixed
 - The HTTP glue no longer reports an error thrown by the app's own handler as "no connection".

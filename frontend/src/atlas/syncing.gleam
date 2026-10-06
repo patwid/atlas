@@ -41,6 +41,8 @@ pub type State {
     write_failed: Bool,
     /// Things the user should know: conflicts and rejections, newest first.
     problems: List(String),
+    /// Goes up whenever records in the device database changed, so screens know to read them again.
+    revision: Int,
   )
 }
 
@@ -56,6 +58,8 @@ pub type Msg {
   /// Start a run now (a no-op while one is going on or before loading).
   Kick
   Wrote(Bool)
+  /// A write to the records (not to the meta values) finished.
+  RecordsWritten(Bool)
   /// The local version of a record whose edit clashed with a newer server version.
   LocalVersion(Collection, String, Result(Option(Dynamic), Nil))
   /// The server's current version of a record, fetched after a conflict or rejection.
@@ -63,7 +67,7 @@ pub type Msg {
 }
 
 pub fn new() -> State {
-  State(None, NotLoaded, False, [])
+  State(None, NotLoaded, False, [], 0)
 }
 
 pub fn is_ready(state: State) -> Bool {
@@ -97,6 +101,7 @@ pub fn update(
           ..state,
           sync: Some(sync.new(loaded.outbox, loaded.cursors)),
           phase: Ready,
+          revision: state.revision + 1,
         )
       let persist =
         effect.from(fn(_) { store.request_persistence(fn(_) { Nil }) })
@@ -116,6 +121,17 @@ pub fn update(
 
     Wrote(True) -> #(state, effect.none(), [])
     Wrote(False) -> #(State(..state, write_failed: True), effect.none(), [])
+
+    RecordsWritten(True) -> #(
+      State(..state, revision: state.revision + 1),
+      effect.none(),
+      [],
+    )
+    RecordsWritten(False) -> #(
+      State(..state, write_failed: True),
+      effect.none(),
+      [],
+    )
 
     LocalVersion(collection, id, Ok(Some(record))) ->
       keep_local_version(state, collection, id, record, context)
@@ -220,7 +236,7 @@ fn handle_notices(
               True ->
                 effect.from(fn(dispatch) {
                   store.delete_record(collection, id, fn(ok) {
-                    dispatch(Wrote(ok))
+                    dispatch(RecordsWritten(ok))
                   })
                 })
               False -> fetch_server_version(collection, id, context)
@@ -317,7 +333,7 @@ fn keep_local_version(
               collection,
               copy_id,
               outbox.fields_json(fields),
-              fn(ok) { dispatch(Wrote(ok)) },
+              fn(ok) { dispatch(RecordsWritten(ok)) },
             )
           }),
           write_meta(
@@ -358,12 +374,16 @@ fn store_server_version(
     True, _, _ -> effect.none()
     False, 200, Ok(record) ->
       effect.from(fn(dispatch) {
-        store.put_records(collection, [record], fn(ok) { dispatch(Wrote(ok)) })
+        store.put_records(collection, [record], fn(ok) {
+          dispatch(RecordsWritten(ok))
+        })
       })
     // The server no longer shows it to this user: it is gone for them too.
     False, 404, _ ->
       effect.from(fn(dispatch) {
-        store.delete_record(collection, id, fn(ok) { dispatch(Wrote(ok)) })
+        store.delete_record(collection, id, fn(ok) {
+          dispatch(RecordsWritten(ok))
+        })
       })
     _, _, _ -> effect.none()
   }
@@ -382,7 +402,9 @@ fn execute(command: Command, engine: Sync, context: Context) -> Effect(Msg) {
       write_meta(local.cursor_key(collection), cursor.to_json_string(saved))
     sync.Apply(collection, records) ->
       effect.from(fn(dispatch) {
-        store.put_records(collection, records, fn(ok) { dispatch(Wrote(ok)) })
+        store.put_records(collection, records, fn(ok) {
+          dispatch(RecordsWritten(ok))
+        })
       })
     sync.Reconcile(collection, keep_ids) ->
       effect.from(fn(dispatch) {
@@ -390,7 +412,7 @@ fn execute(command: Command, engine: Sync, context: Context) -> Effect(Msg) {
           collection,
           keep_ids,
           pending_ids(sync.outbox(engine), collection),
-          fn(ok) { dispatch(Wrote(ok)) },
+          fn(ok) { dispatch(RecordsWritten(ok)) },
         )
       })
     sync.RetryIn(seconds) -> timer.after(seconds, Kick)
@@ -471,7 +493,7 @@ fn write(
           // The record first, then the outbox entry that describes it (ADR 0019).
           effect.from(fn(dispatch) {
             store.merge_json(collection, id, outbox.fields_json(fields), fn(ok) {
-              dispatch(Wrote(ok))
+              dispatch(RecordsWritten(ok))
             })
           }),
           write_meta(
