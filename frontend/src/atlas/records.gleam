@@ -11,6 +11,7 @@ import atlas/grants.{type Grant, Grant}
 import atlas/hr_zones
 import atlas/lactate_zones
 import atlas/matching.{type Stored, Match, Stored}
+import atlas/pace_zones
 import atlas/plan.{
   type Assignment, type Plan, type Workout, Assignment, Plan, Workout,
 }
@@ -217,8 +218,8 @@ pub fn grant(record: Dynamic) -> Result(Grant, Nil) {
 }
 
 /// An athlete's zones. Heart-rate zones with a value missing or out of order make the row unusable, so it is
-/// skipped and the defaults apply instead of half-saved zones. Lactate zones that are missing or unusable (rows
-/// saved before they existed hold zeros) fall back to the lactate defaults alone.
+/// skipped and the defaults apply instead of half-saved zones. Lactate and pace zones that are missing or unusable
+/// (rows saved before they existed hold zeros) fall back to their own defaults alone.
 pub fn athlete_settings_row(
   record: Dynamic,
 ) -> Result(athlete_settings.Row, Nil) {
@@ -235,17 +236,24 @@ pub fn athlete_settings_row(
     use l3 <- lactate_start(3)
     use l4 <- lactate_start(4)
     use l5 <- lactate_start(5)
+    use threshold <- optional_whole(pace_zones.threshold_field)
+    use p1 <- optional_whole(pace_zones.start_field(1))
+    use p2 <- optional_whole(pace_zones.start_field(2))
+    use p3 <- optional_whole(pace_zones.start_field(3))
+    use p4 <- optional_whole(pace_zones.start_field(4))
+    use p5 <- optional_whole(pace_zones.start_field(5))
     use updated <- decode.optional_field("updated", "", decode.string)
     decode.success(#(
       owner,
       hr_zones.HrZones(max_hr, [z1, z2, z3, z4, z5]),
       [l1, l2, l3, l4, l5],
+      pace_zones.PaceZones(threshold, [p1, p2, p3, p4, p5]),
       updated,
     ))
   }
   case run(record, read) {
     Error(Nil) -> Error(Nil)
-    Ok(#(owner, hr, lactate, updated)) ->
+    Ok(#(owner, hr, lactate, pace, updated)) ->
       case hr_zones.parse(hr_zones.to_form(hr)) {
         Error(_) -> Error(Nil)
         Ok(hr) -> {
@@ -255,7 +263,11 @@ pub fn athlete_settings_row(
             Ok(zones) -> zones
             Error(_) -> lactate_zones.defaults()
           }
-          Ok(athlete_settings.Row(owner, hr, lactate, updated))
+          let pace = case pace_zones.parse(pace_zones.to_form(pace)) {
+            Ok(zones) -> zones
+            Error(_) -> pace_zones.defaults(pace_zones.default_threshold_s)
+          }
+          Ok(athlete_settings.Row(owner, hr, lactate, pace, updated))
         }
       }
   }
@@ -269,6 +281,12 @@ fn lactate_start(zone: Int, next: fn(Int) -> Decoder(a)) -> Decoder(a) {
     number(),
   )
   next(lactate_zones.tenths_of(mmol))
+}
+
+/// A whole number that may be missing (0 then).
+fn optional_whole(name: String, next: fn(Int) -> Decoder(a)) -> Decoder(a) {
+  use value <- decode.optional_field(name, 0, whole_number())
+  next(value)
 }
 
 pub fn activity(record: Dynamic) -> Result(Activity, Nil) {

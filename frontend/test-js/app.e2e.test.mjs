@@ -354,6 +354,7 @@ test("training zones start as the defaults, are saved under the athlete's ID, an
   const settings = async () => (await h.api("GET", "collections/athlete_settings/records?perPage=50", { token: alice.token })).body.items
   const zones = (row) => [row.max_hr, row.hr_zone1_min, row.hr_zone2_min, row.hr_zone3_min, row.hr_zone4_min, row.hr_zone5_min]
   const lactate = (row) => [1, 2, 3, 4, 5].map((n) => row[`lactate_zone${n}_min`])
+  const pace = (row) => [row.threshold_pace_s, ...[1, 2, 3, 4, 5].map((n) => row[`pace_zone${n}_start_s`])]
 
   // 1. Nothing saved: the form shows the defaults. Change zone 2 and save.
   let w = startApp("/settings", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
@@ -364,19 +365,25 @@ test("training zones start as the defaults, are saved under the athlete's ID, an
   assert.deepEqual([1, 2, 3, 4, 5].map((n) => d.querySelector(`#lactate-zone-${n}`).value), ["1.0", "1.5", "2.5", "4.0", "6.0"])
   typeInto(w, d.querySelector("#hr-zone-2"), "120")
   typeInto(w, d.querySelector("#lactate-zone-3"), "2,8")
+  assert.equal(d.querySelector("#pace-threshold").value, "5:00")
+  assert.deepEqual([1, 2, 3, 4, 5].map((n) => d.querySelector(`#pace-zone-${n}`).value), ["7:00", "6:27", "5:42", "5:18", "4:57"])
+  typeInto(w, d.querySelector("#pace-threshold"), "4:00")
+  click(w, button(w, "Work out zones from threshold pace"))
+  await waitFor("the pace zones worked out", () => d.querySelector("#pace-zone-1").value === "5:36")
   submit(w, d.querySelector(".zones-form"))
   const row = await waitFor("the zones on the server", async () => (await settings())[0])
   assert.equal(row.id, alice.id)
   assert.equal(row.owner, alice.id)
   assert.deepEqual(zones(row), [190, 95, 120, 133, 152, 171])
   assert.deepEqual(lactate(row), [1, 1.5, 2.8, 4, 6])
+  assert.deepEqual(pace(row), [240, 336, 309, 273, 254, 237])
   w.close()
 
   // 2. Another device that never pulled the row saved its own zones offline: its create becomes an update.
   await call(store.open, "atlas")
   await call(store.clearAll)
   await call(store.putMeta, "owner", alice.id)
-  const fields = { owner: JSON.stringify(alice.id), max_hr: "200", hr_zone1_min: "100", hr_zone2_min: "120", hr_zone3_min: "140", hr_zone4_min: "160", hr_zone5_min: "180", lactate_zone1_min: "0.8", lactate_zone2_min: "1.6", lactate_zone3_min: "2.6", lactate_zone4_min: "4.2", lactate_zone5_min: "6.5" }
+  const fields = { owner: JSON.stringify(alice.id), max_hr: "200", hr_zone1_min: "100", hr_zone2_min: "120", hr_zone3_min: "140", hr_zone4_min: "160", hr_zone5_min: "180", lactate_zone1_min: "0.8", lactate_zone2_min: "1.6", lactate_zone3_min: "2.6", lactate_zone4_min: "4.2", lactate_zone5_min: "6.5", threshold_pace_s: "270", pace_zone1_start_s: "420", pace_zone2_start_s: "360", pace_zone3_start_s: "315", pace_zone4_start_s: "285", pace_zone5_start_s: "260" }
   await call(store.mergeJson, "athlete_settings", alice.id, JSON.stringify(Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, JSON.parse(v)]))))
   await call(store.putMeta, "outbox", JSON.stringify({
     next_seq: 2,
@@ -389,10 +396,12 @@ test("training zones start as the defaults, are saved under the athlete's ID, an
   assert.equal(rows.length, 1, "still one row")
   assert.deepEqual(zones(rows[0]), [200, 100, 120, 140, 160, 180])
   assert.deepEqual(lactate(rows[0]), [0.8, 1.6, 2.6, 4.2, 6.5])
+  assert.deepEqual(pace(rows[0]), [270, 420, 360, 315, 285, 260])
   await waitFor("the outbox empty", async () => JSON.parse((await call(store.getMeta, "outbox")).value).entries.length === 0)
   assert.equal(d.querySelectorAll(".problems li").length, 0, "no problems shown")
   assert.equal(d.querySelector("#hr-max").value, "200")
   assert.equal(d.querySelector("#lactate-zone-5").value, "6.5")
+  assert.equal(d.querySelector("#pace-zone-5").value, "4:20")
   w.close()
 })
 

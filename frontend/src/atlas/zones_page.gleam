@@ -1,13 +1,14 @@
-//// Training zones, in Settings (ADR 0034, 0035): the maximum heart rate and where each heart-rate zone starts,
-//// and where each lactate zone starts. The form is filled with the saved zones, or with the defaults until the
+//// Training zones, in Settings (ADR 0034, 0035, 0036): the maximum heart rate and where each heart-rate zone
+//// starts, where each lactate zone starts, and the threshold pace and where each pace zone starts. The form is filled with the saved zones, or with the defaults until the
 //// athlete saves their own. One row per athlete, whose ID is the athlete's user ID, so devices that save offline
 //// write to the same row. Own state and messages; writes come back as `Action`s.
 
 import atlas/athlete_settings
 import atlas/collection
-import atlas/hr_zones.{type HrZones}
-import atlas/lactate_zones.{type LactateZones}
+import atlas/hr_zones
+import atlas/lactate_zones
 import atlas/outbox
+import atlas/pace_zones
 import atlas/records
 import atlas/store
 import gleam/dynamic.{type Dynamic}
@@ -28,6 +29,7 @@ pub type Model {
     hr: hr_zones.Form,
     /// The text of the five lactate zone starts.
     lactate: List(String),
+    pace: pace_zones.Form,
     error: Option(String),
     /// The user changed the form since it was filled, so synced changes do not overwrite it.
     edited: Bool,
@@ -41,7 +43,10 @@ pub type Msg {
   MaxChanged(String)
   HrStartChanged(zone: Int, value: String)
   LactateStartChanged(zone: Int, value: String)
+  ThresholdChanged(String)
+  PaceStartChanged(zone: Int, value: String)
   FillFromMaxClicked
+  FillFromThresholdClicked
   ResetClicked
   Submitted
 }
@@ -52,7 +57,19 @@ pub type Action {
 }
 
 pub fn new() -> Model {
-  filled(Model([], False, hr_zones.Form("", []), [], None, False, False), "")
+  filled(
+    Model(
+      [],
+      False,
+      hr_zones.Form("", []),
+      [],
+      pace_zones.Form("", []),
+      None,
+      False,
+      False,
+    ),
+    "",
+  )
 }
 
 pub fn refresh() -> Effect(Msg) {
@@ -64,7 +81,7 @@ pub fn refresh() -> Effect(Msg) {
 }
 
 /// The zones that apply to `me`: their saved ones, or the defaults.
-pub fn current(model: Model, me: String) -> #(HrZones, LactateZones) {
+pub fn current(model: Model, me: String) -> athlete_settings.Zones {
   athlete_settings.current(model.rows, me)
 }
 
@@ -108,65 +125,82 @@ pub fn update(
     LactateStartChanged(zone, value) ->
       edited(Model(..model, lactate: replace_at(model.lactate, zone, value)))
 
+    ThresholdChanged(value) ->
+      edited(
+        Model(..model, pace: pace_zones.Form(..model.pace, threshold: value)),
+      )
+
+    PaceStartChanged(zone, value) ->
+      edited(
+        Model(
+          ..model,
+          pace: pace_zones.Form(
+            ..model.pace,
+            starts: replace_at(model.pace.starts, zone, value),
+          ),
+        ),
+      )
+
     FillFromMaxClicked ->
       case hr_zones.fill_from_max(model.hr) {
         Ok(form) -> edited(Model(..model, hr: form))
-        Error(message) -> #(
-          Model(..model, error: Some(message)),
-          effect.none(),
-          [],
-        )
+        Error(message) -> refused(model, message)
+      }
+
+    FillFromThresholdClicked ->
+      case pace_zones.fill_from_threshold(model.pace) {
+        Ok(form) -> edited(Model(..model, pace: form))
+        Error(message) -> refused(model, message)
       }
 
     ResetClicked -> #(filled(model, me), effect.none(), [])
 
     Submitted ->
       case parse(model) {
-        Error(message) -> #(
-          Model(..model, error: Some(message)),
-          effect.none(),
-          [],
-        )
-        Ok(#(hr, lactate)) -> {
-          let fields = athlete_settings.fields(me, hr, lactate)
+        Error(message) -> refused(model, message)
+        Ok(zones) -> {
+          let fields = athlete_settings.fields(me, zones)
           let action = case athlete_settings.row_of(model.rows, me) {
             Some(row) -> Edit(me, fields, row.updated)
             None -> Create(me, fields)
           }
-          #(
-            Model(
-              ..model,
-              hr: hr_zones.to_form(hr),
-              lactate: lactate_zones.to_form(lactate),
-              error: None,
-              edited: False,
-              saved: True,
-            ),
-            effect.none(),
-            [action],
-          )
+          #(Model(..with_zones(model, zones), saved: True), effect.none(), [
+            action,
+          ])
         }
       }
   }
 }
 
-fn parse(model: Model) -> Result(#(HrZones, LactateZones), String) {
+fn parse(model: Model) -> Result(athlete_settings.Zones, String) {
   use hr <- result.try(hr_zones.parse(model.hr))
   use lactate <- result.try(lactate_zones.parse(model.lactate))
-  Ok(#(hr, lactate))
+  use pace <- result.try(pace_zones.parse(model.pace))
+  Ok(athlete_settings.Zones(hr, lactate, pace))
 }
 
 /// The form filled with the zones that apply to `me`, as saved.
 fn filled(model: Model, me: String) -> Model {
-  let #(hr, lactate) = current(model, me)
+  with_zones(model, current(model, me))
+}
+
+fn with_zones(model: Model, zones: athlete_settings.Zones) -> Model {
   Model(
     ..model,
-    hr: hr_zones.to_form(hr),
-    lactate: lactate_zones.to_form(lactate),
+    hr: hr_zones.to_form(zones.hr),
+    lactate: lactate_zones.to_form(zones.lactate),
+    pace: pace_zones.to_form(zones.pace),
     error: None,
     edited: False,
     saved: False,
   )
+}
+
+fn refused(
+  model: Model,
+  message: String,
+) -> #(Model, Effect(Msg), List(Action)) {
+  #(Model(..model, error: Some(message)), effect.none(), [])
 }
 
 fn edited(model: Model) -> #(Model, Effect(Msg), List(Action)) {
@@ -202,6 +236,16 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
         }
       })
     Error(_) -> list.map(model.lactate, fn(_) { "" })
+  }
+  let pace_ends = case pace_zones.parse(model.pace) {
+    Ok(zones) ->
+      list.map(pace_zones.zones(zones), fn(zone) {
+        case zone.fastest {
+          Some(fastest) -> "to " <> pace_zones.format(fastest) <> " /km"
+          None -> "/km and faster"
+        }
+      })
+    Error(_) -> list.map(model.pace.starts, fn(_) { "" })
   }
   html.section([class("training-zones")], [
     html.h2([], [html.text("Training zones")]),
@@ -256,6 +300,38 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
         lactate_ends,
         fn(n, v) { LactateStartChanged(n, v) },
       ),
+      html.h3([], [html.text("Pace")]),
+      html.label([attribute.for("pace-threshold")], [
+        html.text("Threshold pace (min:s per km)"),
+      ]),
+      html.div([class("row")], [
+        html.input([
+          attribute.id("pace-threshold"),
+          attribute.type_("text"),
+          attribute.name("threshold_pace"),
+          attribute.value(model.pace.threshold),
+          attribute.placeholder("5:00"),
+          event.on_input(ThresholdChanged),
+        ]),
+        html.button(
+          [
+            attribute.type_("button"),
+            class("secondary"),
+            event.on_click(FillFromThresholdClicked),
+          ],
+          [html.text("Work out zones from threshold pace")],
+        ),
+      ]),
+      html.p([class("muted")], [
+        html.text(
+          "The pace you could hold for about an hour. Defaults: zones start at 140, 129, 114, 106 and 99 percent of its time per km ("
+          <> pace_zones.format(pace_zones.default_threshold_s)
+          <> " /km until you set yours).",
+        ),
+      ]),
+      zones_view("pace-zone-", "text", model.pace.starts, pace_ends, fn(n, v) {
+        PaceStartChanged(n, v)
+      }),
       case model.error {
         Some(message) ->
           html.p([class("error"), attribute.role("alert")], [

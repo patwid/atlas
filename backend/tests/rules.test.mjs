@@ -365,3 +365,21 @@ test("athlete_settings: lactate zones in mmol/L are optional, and checked when g
   assert.equal(hrOnly.status, 200, JSON.stringify(hrOnly.body))
   assert.equal(hrOnly.body.lactate_zone3_min, 2.5)
 })
+
+test("athlete_settings: pace zones in seconds per km are optional, and checked when given", async () => {
+  const hr = { max_hr: 185, hr_zone1_min: 110, hr_zone2_min: 140, hr_zone3_min: 152, hr_zone4_min: 165, hr_zone5_min: 176 }
+  const pace = { threshold_pace_s: 270, pace_zone1_start_s: 420, pace_zone2_start_s: 360, pace_zone3_start_s: 315, pace_zone4_start_s: 285, pace_zone5_start_s: 260 }
+  const me = people.alice.id
+  const s = await create("alice", "athlete_settings", { id: me, owner: me, ...hr })
+  assert.equal(s.status, 200, JSON.stringify(s.body))
+  assert.equal(s.body.threshold_pace_s, 0)
+  assert.equal((await update("alice", "athlete_settings", me, { ...pace, pace_zone1_start_s: 901 })).status, 400)
+  assert.equal((await update("alice", "athlete_settings", me, { ...pace, pace_zone5_start_s: 119 })).status, 400)
+  assert.equal((await update("alice", "athlete_settings", me, { ...pace, threshold_pace_s: 270.5 })).status, 400)
+  const saved = await update("alice", "athlete_settings", me, pace)
+  assert.equal(saved.status, 200, JSON.stringify(saved.body))
+  assert.equal(saved.body.pace_zone5_start_s, 260)
+  // An older app that changes only the heart-rate zones leaves them as they are.
+  const hrOnly = await update("alice", "athlete_settings", me, { max_hr: 190 })
+  assert.equal(hrOnly.body.threshold_pace_s, 270)
+})
