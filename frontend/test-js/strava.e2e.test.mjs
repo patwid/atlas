@@ -29,7 +29,7 @@ test("a server without Strava credentials says so and offers no button", skip, a
   await bare.world()
   const w = startBareApp("/settings", session(bare.people.alice))
   await waitFor("the explanation", () => w.document.body.textContent.includes("Strava is not set up on this server."))
-  assert.equal(button(w, "Connect with Strava"), undefined)
+  assert.equal(w.document.querySelector("button.strava-connect"), null)
   w.close()
 })
 
@@ -44,10 +44,14 @@ test("connect, import, import again and disconnect", skip, async () => {
 
   // 1. Not connected: the button is there, with the attribution. Clicking it asks the server for Strava's address.
   let w = startApp("/settings", session(alice))
-  await waitFor("the connect button", () => button(w, "Connect with Strava"))
-  assert.ok(w.document.body.textContent.includes("Powered by Strava"))
+  const connectButton = () => w.document.querySelector("button.strava-connect")
+  await waitFor("the connect button", () => connectButton())
+  // Strava's own artwork, as the brand rules require: the official button image and the attribution logo.
+  assert.equal(connectButton().querySelector("img").getAttribute("src"), "/strava/btn_strava_connect_with_orange.svg")
+  assert.equal(connectButton().querySelector("img").getAttribute("alt"), "Connect with Strava")
+  assert.equal(w.document.querySelector('.attribution img[alt="Powered by Strava"]').getAttribute("src"), "/strava/api_logo_pwrdBy_strava_horiz_orange.svg")
   requests.length = 0
-  click(w, button(w, "Connect with Strava"))
+  click(w, connectButton())
   await waitFor("the request for the address", () => requests.some((r) => r.includes("GET /api/atlas/strava/connect")))
   w.close()
 
@@ -71,6 +75,11 @@ test("connect, import, import again and disconnect", skip, async () => {
   const card = [...d.querySelectorAll(".cards li")].find((li) => li.textContent.includes("Lunch run"))
   assert.ok(card.textContent.includes("Strava"))
   assert.equal(card.querySelectorAll("button").length, 0, "Strava activities are read-only")
+  // Strava's rules: wherever its data is shown, a link back that says "View on Strava".
+  const viewLink = card.querySelector("a.strava-link")
+  assert.equal(viewLink.textContent, "View on Strava")
+  assert.equal(viewLink.getAttribute("href"), "https://www.strava.com/activities/11")
+  assert.equal(viewLink.getAttribute("rel"), "noopener noreferrer")
 
   // 4. Importing again picks up an activity that appeared since.
   strava.state.activities.set(13, strava.activity(13, { name: "Easy jog", start_date: "2026-10-03T07:00:00Z" }))
@@ -89,7 +98,7 @@ test("connect, import, import again and disconnect", skip, async () => {
   assert.equal((await h.api("GET", "atlas/strava/status", { token: alice.token })).body.connected, true, "asking does not disconnect")
   click(w, button(w, "Yes, disconnect"))
   await waitFor("the message", () => d.body.textContent.includes("Strava is disconnected. 3 activities from Strava were removed from Atlas."))
-  await waitFor("the button to connect again", () => button(w, "Connect with Strava"))
+  await waitFor("the button to connect again", () => d.querySelector("button.strava-connect"))
   assert.equal((await h.api("GET", "atlas/strava/status", { token: alice.token })).body.connected, false)
   assert.ok(strava.state.calls.some((c) => c.path === "/oauth/deauthorize"), "Strava was told")
   click(w, [...d.querySelectorAll("nav a")].find((a) => a.textContent === "Activities"))

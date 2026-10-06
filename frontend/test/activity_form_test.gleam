@@ -3,7 +3,7 @@ import atlas/activity_form.{Form, Row, Valid}
 import atlas/date.{Date}
 import atlas/outbox
 import gleam/dict
-import gleam/option.{None}
+import gleam/option.{None, Some}
 import gleam/string
 
 fn form() -> activity_form.Form {
@@ -142,6 +142,7 @@ fn row() -> activity_form.Row {
     120.0,
     152,
     "T1",
+    "",
   )
 }
 
@@ -179,6 +180,7 @@ pub fn unset_values_show_as_empty_fields_test() {
       0.0,
       0,
       "T",
+      "",
     )
   assert activity_form.from_row(bare, 0)
     == Form("2026-10-01", "05:30", activity.Walk, "", "", "30", "", "", None)
@@ -247,4 +249,48 @@ pub fn labels_for_every_sport_test() {
   assert activity_form.sport_label(activity.Run) == "Run"
   assert activity_form.sport_label(activity.TrailRun) == "Trail run"
   assert activity_form.sport_label(activity.Strength) == "Strength"
+}
+
+fn strava_row(
+  source: activity.Source,
+  external_id: String,
+) -> activity_form.Row {
+  Row(
+    Activity(
+      "x",
+      source,
+      "2026-10-01 05:30:00.000Z",
+      activity.Run,
+      5000.0,
+      1500,
+    ),
+    "u1",
+    "",
+    0.0,
+    0,
+    "T",
+    external_id,
+  )
+}
+
+pub fn a_strava_activity_links_back_to_strava_test() {
+  assert activity_form.strava_url(strava_row(activity.Strava, "1234567890"))
+    == Some("https://www.strava.com/activities/1234567890")
+}
+
+pub fn only_strava_activities_with_a_numeric_id_get_a_link_test() {
+  assert activity_form.strava_url(strava_row(activity.Manual, "1234567890"))
+    == None
+  assert activity_form.strava_url(strava_row(activity.Fit, "abc")) == None
+  assert activity_form.strava_url(strava_row(activity.Strava, "")) == None
+  // Nothing but digits ever reaches the address.
+  assert activity_form.strava_url(strava_row(activity.Strava, "12/../x"))
+    == None
+  assert activity_form.strava_url(strava_row(activity.Strava, "12 34")) == None
+  assert activity_form.strava_url(strava_row(
+      activity.Strava,
+      "https://evil.example",
+    ))
+    == None
+  assert activity_form.strava_url(strava_row(activity.Strava, "1e5")) == None
 }

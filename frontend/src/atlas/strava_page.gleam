@@ -295,6 +295,7 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
             "Bring your runs in from Strava automatically. Atlas can then match them to your plans.",
           ),
         ]),
+        // Strava's own button image, unchanged, as their brand rules require.
         html.button(
           [
             attribute.type_("button"),
@@ -302,7 +303,14 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
             attribute.disabled(model.busy),
             event.on_click(ConnectClicked),
           ],
-          [html.text("Connect with Strava")],
+          [
+            html.img([
+              attribute.src("/strava/btn_strava_connect_with_orange.svg"),
+              attribute.alt("Connect with Strava"),
+              attribute.width(237),
+              attribute.height(48),
+            ]),
+          ],
         ),
         attribution(),
       ])
@@ -361,7 +369,15 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
   }
 }
 
-/// Strava's API agreement asks for this wherever its data is used.
+/// Strava's API agreement asks for this wherever its data is used: their logo, unchanged, small and
+/// apart from our own name.
 fn attribution() -> Element(Msg) {
-  html.p([class("muted attribution")], [html.text("Powered by Strava")])
+  html.p([class("attribution")], [
+    html.img([
+      attribute.src("/strava/api_logo_pwrdBy_strava_horiz_orange.svg"),
+      attribute.alt("Powered by Strava"),
+      attribute.width(146),
+      attribute.height(15),
+    ]),
+  ])
 }

@@ -218,3 +218,15 @@ pub fn a_share_keeps_names_and_the_deleted_flag_test() {
     == Ok(shares.Share("s2", "p", "u", "", "", False, ""))
   assert records.share(parse("{\"id\":\"s3\"}")) == Error(Nil)
 }
+
+pub fn an_activity_row_carries_the_providers_id_test() {
+  let text =
+    "{\"id\":\"x1\",\"source\":\"strava\",\"started_at\":\"2026-10-01 05:30:00.000Z\",\"sport\":\"run\",\"external_id\":\"987654\"}"
+  let assert Ok(row) = records.activity_row(parse(text))
+  assert row.external_id == "987654"
+  let assert Ok(bare) =
+    records.activity_row(parse(
+      "{\"id\":\"x2\",\"source\":\"manual\",\"started_at\":\"2026-10-01 05:30:00.000Z\",\"sport\":\"run\"}",
+    ))
+  assert bare.external_id == ""
+}

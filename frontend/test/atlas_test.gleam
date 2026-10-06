@@ -542,6 +542,7 @@ pub fn signing_out_clears_the_activities_on_screen_test() {
           0.0,
           0,
           "T",
+          "",
         ),
       ]),
     )
@@ -583,6 +584,7 @@ fn today_screen() -> atlas.Model {
         0.0,
         0,
         "T",
+        "",
       ),
     ]),
   )

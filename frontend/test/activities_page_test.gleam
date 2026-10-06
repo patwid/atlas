@@ -37,6 +37,7 @@ fn row(
     120.0,
     152,
     "T-" <> id,
+    "",
   )
 }
 
@@ -344,4 +345,38 @@ pub fn the_delete_question_has_a_way_out_test() {
   assert string.contains(html, "Delete this activity?")
   assert string.contains(html, "Yes, delete it")
   assert string.contains(html, "Keep it")
+}
+
+fn from_strava(external_id: String) -> activity_form.Row {
+  Row(
+    ..row("s", "me", activity.Strava, "2026-10-01 05:30:00.000Z", "Lunch run"),
+    external_id: external_id,
+  )
+}
+
+pub fn a_strava_activity_says_view_on_strava_and_links_to_it_test() {
+  let html = html_of(with_rows([from_strava("5551234")]))
+  assert string.contains(html, ">View on Strava<")
+  assert string.contains(
+    html,
+    "href=\"https://www.strava.com/activities/5551234\"",
+  )
+  assert string.contains(html, "target=\"_blank\"")
+  assert string.contains(html, "rel=\"noopener noreferrer\"")
+  assert string.contains(html, "strava-link")
+}
+
+pub fn activities_from_elsewhere_have_no_strava_link_test() {
+  let manual =
+    html_of(
+      with_rows([
+        Row(
+          ..row("m", "me", activity.Manual, "2026-10-01 05:30:00.000Z", ""),
+          external_id: "5551234",
+        ),
+      ]),
+    )
+  assert !string.contains(manual, "View on Strava")
+  let without_id = html_of(with_rows([from_strava("")]))
+  assert !string.contains(without_id, "View on Strava")
 }

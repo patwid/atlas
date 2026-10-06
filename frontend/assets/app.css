@@ -93,3 +93,12 @@ table.progress { width: 100%; border-collapse: collapse; font-variant-numeric: t
 table.progress caption { text-align: left; color: var(--muted); font-size: 0.875rem; padding-bottom: 0.25rem; }
 table.progress th, table.progress td { padding: 0.5rem 0.5rem; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
 table.progress th[scope="row"], table.progress th:first-child { text-align: left; font-weight: 500; }
+
+/* Strava's brand rules: their button image is shown as it is, with no background, border or padding of ours. */
+button.strava-connect { background: none; border: 0; padding: 0; margin-top: 0.75rem; line-height: 0; border-radius: 6px; }
+button.strava-connect img { display: block; }
+button.strava-connect:disabled { opacity: 0.6; cursor: progress; }
+.attribution { margin: 0.75rem 0 0; line-height: 0; }
+.attribution img { height: 15px; width: auto; }
+/* "View on Strava" must be identifiable as a link: bold, underlined and in Strava's orange. */
+a.strava-link { color: #FC5200; font-weight: 700; text-decoration: underline; }

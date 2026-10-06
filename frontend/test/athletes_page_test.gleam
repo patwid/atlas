@@ -24,6 +24,7 @@ fn run(
     0.0,
     0,
     "T",
+    "",
   )
 }
 
@@ -158,4 +159,29 @@ pub fn an_athlete_without_a_plan_or_activities_says_so_test() {
     html_of(athletes_page.view_athlete(Some(Person("ana", "Ana")), quiet))
   assert string.contains(html, "Not following a plan.")
   assert string.contains(html, "No activities yet.")
+}
+
+pub fn a_coach_sees_the_link_back_to_strava_too_test() {
+  let strava_run =
+    activity_form.Row(
+      Activity(
+        "x9",
+        activity.Strava,
+        "2026-10-04 06:00:00.000Z",
+        activity.Run,
+        4000.0,
+        1200,
+      ),
+      "ana",
+      "Sunday run",
+      0.0,
+      0,
+      "T",
+      "777888",
+    )
+  let with_link = Inputs(..inputs(), activities: [strava_run])
+  let html =
+    html_of(athletes_page.view_athlete(Some(Person("ana", "Ana")), with_link))
+  assert string.contains(html, ">View on Strava<")
+  assert string.contains(html, "https://www.strava.com/activities/777888")
 }

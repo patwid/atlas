@@ -354,6 +354,7 @@ fn row_view(row: Row, model: Model, context: Context) -> Element(Msg) {
             "" -> element.none()
             text -> html.p([], [html.text(text)])
           },
+          view_on_strava(row),
           case editable(row, context.user_id) {
             False -> element.none()
             True -> actions(row, model)
@@ -361,6 +362,25 @@ fn row_view(row: Row, model: Model, context: Context) -> Element(Msg) {
         ])
     },
   ])
+}
+
+/// Strava's brand rules: wherever its data is shown, link back to it with exactly this text (ADR 0027).
+pub fn view_on_strava(row: Row) -> Element(msg) {
+  case activity_form.strava_url(row) {
+    Some(url) ->
+      html.p([], [
+        html.a(
+          [
+            attribute.href(url),
+            attribute.target("_blank"),
+            attribute.rel("noopener noreferrer"),
+            class("strava-link"),
+          ],
+          [html.text("View on Strava")],
+        ),
+      ])
+    None -> element.none()
+  }
 }
 
 fn title(row: Row) -> String {

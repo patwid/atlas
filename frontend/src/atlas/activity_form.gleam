@@ -11,7 +11,7 @@ import gleam/dict
 import gleam/float
 import gleam/int
 import gleam/list
-import gleam/option.{type Option, None}
+import gleam/option.{type Option, None, Some}
 import gleam/string
 
 const max_name = 200
@@ -62,6 +62,8 @@ pub type Row {
     elevation_m: Float,
     avg_hr: Int,
     updated: String,
+    /// The provider's ID for the activity (Strava's), empty for activities made here.
+    external_id: String,
   )
 }
 
@@ -288,4 +290,22 @@ pub fn sport_label(sport: Sport) -> String {
 
 fn pad2(n: Int) -> String {
   string.pad_start(int.to_string(n), 2, "0")
+}
+
+/// The address of a Strava activity on strava.com, for the "View on Strava" link that Strava's brand rules
+/// require wherever its data is shown (ADR 0027). `None` for anything that did not come from Strava, and for
+/// an ID that is not just digits, so that nothing but a number ever reaches the address.
+pub fn strava_url(row: Row) -> Option(String) {
+  case row.activity.source, row.external_id {
+    activity.Strava, id if id != "" ->
+      case string.to_graphemes(id) |> list.all(is_digit) {
+        True -> Some("https://www.strava.com/activities/" <> id)
+        False -> None
+      }
+    _, _ -> None
+  }
+}
+
+fn is_digit(character: String) -> Bool {
+  string.contains("0123456789", character)
 }

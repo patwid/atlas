@@ -120,6 +120,11 @@ pub fn activity_row(record: Dynamic) -> Result(activity_form.Row, Nil) {
         )
         use heart_rate <- decode.optional_field("avg_hr", 0, whole_number())
         use updated <- decode.optional_field("updated", "", decode.string)
+        use external_id <- decode.optional_field(
+          "external_id",
+          "",
+          decode.string,
+        )
         decode.success(activity_form.Row(
           found,
           owner,
@@ -127,6 +132,7 @@ pub fn activity_row(record: Dynamic) -> Result(activity_form.Row, Nil) {
           elevation,
           heart_rate,
           updated,
+          external_id,
         ))
       })
   }

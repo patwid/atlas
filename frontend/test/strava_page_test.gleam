@@ -252,3 +252,37 @@ pub fn only_web_addresses_are_followed_test() {
   assert answer("not an address").1 == []
   assert answer("/relative/path").1 == []
 }
+
+pub fn the_official_button_is_shown_unchanged_test() {
+  let html = html_of(disconnected())
+  assert string.contains(
+    html,
+    "src=\"/strava/btn_strava_connect_with_orange.svg\"",
+  )
+  assert string.contains(html, "alt=\"Connect with Strava\"")
+  assert string.contains(html, "width=\"237\"")
+  assert string.contains(html, "height=\"48\"")
+  // Not a text button of our own with Strava's name on it.
+  assert !string.contains(html, ">Connect with Strava<")
+}
+
+pub fn the_official_attribution_logo_is_shown_in_both_states_test() {
+  for_each([disconnected(), connected()], fn(model) {
+    let html = html_of(model)
+    assert string.contains(
+      html,
+      "src=\"/strava/api_logo_pwrdBy_strava_horiz_orange.svg\"",
+    )
+    assert string.contains(html, "alt=\"Powered by Strava\"")
+  })
+}
+
+fn for_each(items: List(a), check: fn(a) -> Nil) -> Nil {
+  case items {
+    [] -> Nil
+    [first, ..rest] -> {
+      check(first)
+      for_each(rest, check)
+    }
+  }
+}

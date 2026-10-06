@@ -1,6 +1,7 @@
 //// The coach's side: the athletes who gave access, and one athlete's progress (ADR 0031). Read-only
 //// views over data the device already holds; there is no state and nothing to change here.
 
+import atlas/activities_page
 import atlas/activity_form.{type Row}
 import atlas/date
 import atlas/grants.{type Person}
@@ -248,6 +249,7 @@ fn activity_view(row: Row, inputs: Inputs) -> Element(msg) {
       "" -> element.none()
       text -> html.p([], [html.text(text)])
     },
+    activities_page.view_on_strava(row),
   ])
 }
 

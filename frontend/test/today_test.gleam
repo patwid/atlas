@@ -45,6 +45,7 @@ fn activity_row(
     0.0,
     0,
     "T",
+    "",
   )
 }
 
