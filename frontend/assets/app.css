@@ -102,3 +102,9 @@ button.strava-connect:disabled { opacity: 0.6; cursor: progress; }
 .attribution img { height: 15px; width: auto; }
 /* "View on Strava" must be identifiable as a link: bold, underlined and in Strava's orange. */
 a.strava-link { color: #FC5200; font-weight: 700; text-decoration: underline; }
+/* Heart-rate zones in Settings (ADR 0034) */
+.zones-form .row > input { flex: 1 1 6rem; }
+.zones-form .row button { margin-top: 0; }
+.zones { display: grid; gap: 0.375rem; margin-top: 0.5rem; }
+.zone { display: grid; grid-template-columns: 6.5rem minmax(4rem, 6rem) 1fr; align-items: center; gap: 0.5rem; }
+.zone label { margin-top: 0; }

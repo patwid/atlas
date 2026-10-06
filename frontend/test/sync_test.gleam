@@ -46,6 +46,11 @@ type Server {
   )
 }
 
+/// How many collections a run pulls and a sweep reconciles.
+fn collections() -> Int {
+  list.length(collection.all)
+}
+
 fn server(records: List(Rec)) -> Server {
   Server(
     records: dict.from_list(
@@ -462,8 +467,8 @@ pub fn a_first_run_checks_the_session_pushes_then_pulls_everything_test() {
   assert applied(w, Plans) == [["new1"], ["a", "b"], ["new1"]]
   assert applied(w, Workouts) == [["w1"]]
   // Everything was a full resync, so every collection is reconciled and gets a cursor.
-  assert list.length(reconciled(w)) == 7
-  assert list.length(saved_cursors(w)) == 7
+  assert list.length(reconciled(w)) == collections()
+  assert list.length(saved_cursors(w)) == collections()
   assert is_finished(w)
   assert !sync.is_busy(w.sync)
   let assert [SessionRefreshed(_), ..] = notices(w)
@@ -702,7 +707,7 @@ pub fn local_writes_made_during_the_pull_are_pushed_before_the_run_ends_test() {
   // Nothing to push, so the first list request is out. Jump to the end of the pull by answering each one.
   let empty =
     "{\"items\":[],\"page\":1,\"perPage\":200,\"totalItems\":0,\"totalPages\":0}"
-  let s2 = answer_all_lists(s1, empty, 7)
+  let s2 = answer_all_lists(s1, empty, collections())
   let s3 =
     sync.change_outbox(s2, fn(box) {
       outbox.record_create(box, Plans, "late", title("written during the pull"))
@@ -723,7 +728,8 @@ fn answer_all_lists(state: Sync, body: String, count: Int) -> Sync {
   case count {
     0 -> state
     _ -> {
-      let assert Ok(c) = list.first(list.drop(collection.all, 7 - count))
+      let assert Ok(c) =
+        list.first(list.drop(collection.all, collections() - count))
       let #(next, _) = sync.update(state, Responded(sync.Pull(c, 1), 200, body))
       answer_all_lists(next, body, count - 1)
     }
@@ -795,7 +801,7 @@ pub fn a_start_requested_during_a_run_makes_another_run_follow_it_test() {
   let #(s2, _) = sync.update(s1, Responded(CheckStart, 200, "{}"))
   let empty =
     "{\"items\":[],\"page\":1,\"perPage\":200,\"totalItems\":0,\"totalPages\":0}"
-  let s3 = answer_all_lists(s2, empty, 7)
+  let s3 = answer_all_lists(s2, empty, collections())
   let #(s4, commands) =
     sync.update(s3, Responded(sync.VerifyForCommit, 200, "{}"))
   assert list.contains(commands, Tell(Finished))
@@ -809,7 +815,7 @@ pub fn without_a_request_during_the_run_it_just_ends_test() {
   let #(s1, _) = sync.update(s0, Responded(CheckStart, 200, "{}"))
   let empty =
     "{\"items\":[],\"page\":1,\"perPage\":200,\"totalItems\":0,\"totalPages\":0}"
-  let s2 = answer_all_lists(s1, empty, 7)
+  let s2 = answer_all_lists(s1, empty, collections())
   let #(s3, commands) =
     sync.update(s2, Responded(sync.VerifyForCommit, 200, "{}"))
   assert list.contains(commands, Tell(Finished))
@@ -825,11 +831,11 @@ pub fn many_requests_during_one_run_cause_only_one_more_run_test() {
   let #(s3, _) = sync.update(s2, Responded(CheckStart, 200, "{}"))
   let empty =
     "{\"items\":[],\"page\":1,\"perPage\":200,\"totalItems\":0,\"totalPages\":0}"
-  let s4 = answer_all_lists(s3, empty, 7)
+  let s4 = answer_all_lists(s3, empty, collections())
   let #(s5, _) = sync.update(s4, Responded(sync.VerifyForCommit, 200, "{}"))
   // The second run ends like any other, and no third one follows.
   let #(s6, _) = sync.update(s5, Responded(CheckStart, 200, "{}"))
-  let s7 = answer_all_lists(s6, empty, 7)
+  let s7 = answer_all_lists(s6, empty, collections())
   let #(s8, commands) =
     sync.update(s7, Responded(sync.VerifyForCommit, 200, "{}"))
   assert list.contains(commands, Tell(Finished))
@@ -900,8 +906,8 @@ pub fn a_due_sweep_lists_the_readable_ids_and_reconciles_every_collection_test()
   assert list.contains(reconciled(w), #(Plans, ["a", "b"]))
   assert list.contains(reconciled(w), #(Workouts, ["w1"]))
   assert list.contains(reconciled(w), #(Matches, []))
-  assert list.length(reconciled(w)) == 7
-  assert list.length(id_requests(w)) == 7
+  assert list.length(reconciled(w)) == collections()
+  assert list.length(id_requests(w)) == collections()
   assert list.contains(log(w), sync.SaveSweep(now))
   assert is_finished(w)
 }
@@ -985,7 +991,7 @@ pub fn a_new_device_that_resyncs_everything_does_not_sweep_as_well_test() {
       started(),
     )
   assert id_requests(w) == []
-  assert list.length(reconciled(w)) == 7
+  assert list.length(reconciled(w)) == collections()
   assert !list.contains(log(w), sync.SaveSweep(now))
 }
 
@@ -1026,7 +1032,7 @@ pub fn a_sweep_makes_the_next_run_skip_it_test() {
       started(),
     )
   let count = list.length(id_requests(first))
-  assert count == 7
+  assert count == collections()
   let second = run(first, started())
   assert list.length(id_requests(second)) == count
 }
@@ -1048,7 +1054,7 @@ pub fn a_failed_confirmation_does_not_count_as_a_sweep_test() {
       ),
       started(),
     )
-  assert list.length(reconciled(again)) == 7
+  assert list.length(reconciled(again)) == collections()
 }
 
 pub fn many_ids_are_walked_in_pages_of_five_hundred_test() {

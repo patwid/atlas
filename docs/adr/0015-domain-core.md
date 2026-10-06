@@ -53,3 +53,8 @@ All modules are in `frontend/src/atlas/`, have no side effects and no browser or
 number. This removes the limitation described above: an activity on the other side of a daylight-saving change from "today"
 is placed on its correct local day. The browser supplies the function (`clock.utc_offset_at_utc`, [0025](0025-manual-activities.md)). Tests
 cover a run at 22:30 UTC on the day Swiss summer time starts, which is on the 30th locally but on the 29th with a fixed winter offset.
+
+## Addendum: heart-rate zones are a setting (2026-10-06)
+
+The Proposed zone method is replaced by [0034](0034-heart-rate-zone-settings.md): the zones are stored per athlete and changeable, with these
+percentages as the defaults. The zone code moved from `units` to `hr_zones`.

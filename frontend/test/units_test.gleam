@@ -1,4 +1,4 @@
-import atlas/units.{Zone}
+import atlas/units
 
 pub fn pace_test() {
   assert units.pace_seconds_per_km(10_000.0, 3000) == Ok(300)
@@ -31,28 +31,4 @@ pub fn format_distance_test() {
   assert units.format_distance_km(0.0) == "0.00 km"
   assert units.format_distance_km(900.0) == "0.90 km"
   assert units.format_distance_km(-10.0) == "0.00 km"
-}
-
-pub fn zones_do_not_overlap_and_cover_half_to_max_test() {
-  assert units.hr_zones(190)
-    == [
-      Zone(1, 95, 113),
-      Zone(2, 114, 132),
-      Zone(3, 133, 151),
-      Zone(4, 152, 170),
-      Zone(5, 171, 190),
-    ]
-  assert units.hr_zones(0) == []
-  assert units.hr_zones(-1) == []
-}
-
-pub fn zone_lookup_test() {
-  assert units.hr_zone(190, 150) == Ok(3)
-  assert units.hr_zone(190, 95) == Ok(1)
-  assert units.hr_zone(190, 94) == Error(Nil)
-  assert units.hr_zone(190, 113) == Ok(1)
-  assert units.hr_zone(190, 114) == Ok(2)
-  assert units.hr_zone(190, 190) == Ok(5)
-  assert units.hr_zone(190, 200) == Ok(5)
-  assert units.hr_zone(0, 100) == Error(Nil)
 }

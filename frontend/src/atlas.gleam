@@ -10,6 +10,7 @@ import atlas/clock
 import atlas/coaches_page
 import atlas/collection
 import atlas/grants
+import atlas/hr_zones_page
 import atlas/http
 import atlas/online
 import atlas/person_finder
@@ -63,6 +64,7 @@ pub type Model {
     daily: today_page.Model,
     strava: strava_page.Model,
     sharing: sharing_page.Model,
+    zones: hr_zones_page.Model,
   )
 }
 
@@ -84,6 +86,7 @@ pub type Msg {
   TodayPage(today_page.Msg)
   StravaPage(strava_page.Msg)
   SharingPage(sharing_page.Msg)
+  HrZonesPage(hr_zones_page.Msg)
   ProblemsDismissed
 }
 
@@ -139,6 +142,7 @@ fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
       daily: today_page.new(),
       strava: strava_page.new(),
       sharing: sharing_page.new(),
+      zones: hr_zones_page.new(),
     ),
     effect.batch([
       modem.init(RouteChanged),
@@ -240,6 +244,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               daily: today_page.new(),
               strava: strava_page.new(),
               sharing: sharing_page.new(),
+              zones: hr_zones_page.new(),
             ),
             effect.batch([remember(session), load]),
           )
@@ -284,6 +289,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         daily: today_page.new(),
         strava: strava_page.new(),
         sharing: sharing_page.new(),
+        zones: hr_zones_page.new(),
       ),
       forget(),
     )
@@ -320,6 +326,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
                 effect.map(activities_page.refresh(), ActivitiesPage),
                 effect.map(today_page.refresh(), TodayPage),
                 effect.map(sharing_page.refresh(), SharingPage),
+                effect.map(hr_zones_page.refresh(), HrZonesPage),
               ])
             False -> effect.none()
           }
@@ -488,6 +495,23 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
             effect.batch([
               effect.map(page_effect, StravaPage),
               ..list.map(actions, fn(action) { strava_effect(action, session) })
+            ]),
+          )
+        }
+        SignedOut(_) -> #(model, effect.none())
+      }
+
+    HrZonesPage(inner) ->
+      case model.auth {
+        SignedIn(session) -> {
+          let #(page_model, page_effect, actions) =
+            hr_zones_page.update(model.zones, inner, session.user_id)
+          let #(state, action_effects) = perform_zones(model.syncing, actions)
+          #(
+            Model(..model, zones: page_model, syncing: state),
+            effect.batch([
+              effect.map(page_effect, HrZonesPage),
+              effect.map(effect.batch(action_effects), Syncing),
             ]),
           )
         }
@@ -742,6 +766,23 @@ fn perform_coaches(
   })
 }
 
+/// Carries out what the user did with their heart-rate zones.
+fn perform_zones(
+  state: syncing.State,
+  actions: List(hr_zones_page.Action),
+) -> #(syncing.State, List(Effect(syncing.Msg))) {
+  list.fold(actions, #(state, []), fn(acc, action) {
+    let #(current, effects) = acc
+    let #(next, effect) = case action {
+      hr_zones_page.Create(id, fields) ->
+        syncing.create(current, collection.AthleteSettings, id, fields)
+      hr_zones_page.Edit(id, fields, base) ->
+        syncing.edit(current, collection.AthleteSettings, id, fields, base)
+    }
+    #(next, list.append(effects, [effect]))
+  })
+}
+
 /// Carries out what the user did with the schedule of a plan.
 fn perform_assignments(
   state: syncing.State,
@@ -915,6 +956,7 @@ fn session_ended(model: Model) -> #(Model, Effect(Msg)) {
         daily: today_page.new(),
         strava: strava_page.new(),
         sharing: sharing_page.new(),
+        zones: hr_zones_page.new(),
       ),
       forget(),
     )
@@ -1058,6 +1100,10 @@ fn page(model: Model, session: Session) -> Element(Msg) {
     route.Settings ->
       html.div([], [
         settings(session, model.syncing),
+        element.map(
+          hr_zones_page.view(model.zones, session.user_id),
+          HrZonesPage,
+        ),
         element.map(
           coaches_page.view(model.coaches, session.user_id),
           CoachesPage,

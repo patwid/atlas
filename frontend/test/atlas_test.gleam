@@ -15,6 +15,7 @@ import atlas/coaches_page
 import atlas/collection
 import atlas/date
 import atlas/grants
+import atlas/hr_zones_page
 import atlas/http.{Response}
 import atlas/matching
 import atlas/outbox
@@ -60,6 +61,7 @@ fn signed_out(form: signin.Form) -> atlas.Model {
     today_page.new(),
     strava_page.new(),
     sharing_page.new(),
+    hr_zones_page.new(),
   )
 }
 
@@ -77,6 +79,7 @@ fn signed_in() -> atlas.Model {
     today_page.new(),
     strava_page.new(),
     sharing_page.new(),
+    hr_zones_page.new(),
   )
 }
 

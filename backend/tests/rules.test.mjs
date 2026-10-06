@@ -318,3 +318,31 @@ test("assignments: a coach can start a shared plan for an athlete who granted ac
   await grant("carol", "bob")
   assert.equal((await forCarol()).status, 200)
 })
+
+test("athlete_settings: one row per athlete under their own user ID, readable by their coach, with checked heart rates", async () => {
+  const zones = { max_hr: 185, hr_zone1_min: 110, hr_zone2_min: 140, hr_zone3_min: 152, hr_zone4_min: 165, hr_zone5_min: 176 }
+  const me = people.alice.id
+  // Only under one's own ID and for oneself.
+  assert.equal((await create("alice", "athlete_settings", { id: id(), owner: me, ...zones })).status, 400)
+  assert.equal((await create("bob", "athlete_settings", { id: me, owner: me, ...zones })).status, 400)
+  assert.equal((await create("alice", "athlete_settings", { id: me, owner: me, ...zones, max_hr: 251 })).status, 400)
+  assert.equal((await create("alice", "athlete_settings", { id: me, owner: me, ...zones, hr_zone1_min: 29 })).status, 400)
+  const { hr_zone5_min, ...missing } = zones
+  assert.equal((await create("alice", "athlete_settings", { id: me, owner: me, ...missing })).status, 400)
+  const s = await create("alice", "athlete_settings", { id: me, owner: me, ...zones })
+  assert.equal(s.status, 200, JSON.stringify(s.body))
+  // A second device that also saved offline gets "ID not unique", which the client turns into an update.
+  const again = await create("alice", "athlete_settings", { id: me, owner: me, ...zones, max_hr: 190 })
+  assert.equal(again.status, 400)
+  assert.equal(again.body.data?.id?.code, "validation_not_unique", JSON.stringify(again.body))
+  assert.equal((await update("alice", "athlete_settings", me, { max_hr: 190 })).status, 200)
+  // Coaches read, strangers do not; nobody else changes them, and the owner stays.
+  assert.equal((await get("bob", "athlete_settings", me)).status, 404)
+  await grant("alice", "bob")
+  assert.equal((await get("bob", "athlete_settings", me)).body.max_hr, 190)
+  assert.equal((await get("carol", "athlete_settings", me)).status, 404)
+  assert.equal((await update("bob", "athlete_settings", me, { max_hr: 200 })).status, 404)
+  assert.equal((await update("alice", "athlete_settings", me, { owner: people.bob.id })).status, 404)
+  // Updates need the guard's base like every synced collection (ADR 0011).
+  assert.equal((await h.update("alice", "athlete_settings", me, { max_hr: 195 })).status, 400)
+})

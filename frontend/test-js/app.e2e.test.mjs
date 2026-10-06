@@ -346,6 +346,50 @@ test("a public plan of someone else can be started, and so can a private one tha
 })
 
 
+// Heart-rate zones -----------------------------------------------------------------------------------
+
+test("heart-rate zones start as the defaults, are saved under the athlete's ID, and a second device's offline save updates the same row", { skip: !built && "frontend not built" }, async () => {
+  await h.world()
+  const alice = h.people.alice
+  const settings = async () => (await h.api("GET", "collections/athlete_settings/records?perPage=50", { token: alice.token })).body.items
+  const zones = (row) => [row.max_hr, row.hr_zone1_min, row.hr_zone2_min, row.hr_zone3_min, row.hr_zone4_min, row.hr_zone5_min]
+
+  // 1. Nothing saved: the form shows the defaults. Change zone 2 and save.
+  let w = startApp("/settings", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
+  let d = w.document
+  await waitFor("the default zones", () => d.body.textContent.includes("These are the default zones"))
+  assert.equal(d.querySelector("#hr-max").value, "190")
+  assert.deepEqual([1, 2, 3, 4, 5].map((n) => d.querySelector(`#hr-zone-${n}`).value), ["95", "114", "133", "152", "171"])
+  typeInto(w, d.querySelector("#hr-zone-2"), "120")
+  submit(w, d.querySelector(".zones-form"))
+  const row = await waitFor("the zones on the server", async () => (await settings())[0])
+  assert.equal(row.id, alice.id)
+  assert.equal(row.owner, alice.id)
+  assert.deepEqual(zones(row), [190, 95, 120, 133, 152, 171])
+  w.close()
+
+  // 2. Another device that never pulled the row saved its own zones offline: its create becomes an update.
+  await call(store.open, "atlas")
+  await call(store.clearAll)
+  await call(store.putMeta, "owner", alice.id)
+  const fields = { owner: JSON.stringify(alice.id), max_hr: "200", hr_zone1_min: "100", hr_zone2_min: "120", hr_zone3_min: "140", hr_zone4_min: "160", hr_zone5_min: "180" }
+  await call(store.mergeJson, "athlete_settings", alice.id, JSON.stringify(Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, JSON.parse(v)]))))
+  await call(store.putMeta, "outbox", JSON.stringify({
+    next_seq: 2,
+    entries: [{ seq: 1, collection: "athlete_settings", id: alice.id, kind: "create", fields, base_updated: null, in_flight: false, attempts: 0 }],
+  }))
+  w = startApp("/settings", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
+  d = w.document
+  await waitFor("the second device's zones on the server", async () => (await settings())[0]?.max_hr === 200)
+  const rows = await settings()
+  assert.equal(rows.length, 1, "still one row")
+  assert.deepEqual(zones(rows[0]), [200, 100, 120, 140, 160, 180])
+  await waitFor("the outbox empty", async () => JSON.parse((await call(store.getMeta, "outbox")).value).entries.length === 0)
+  assert.equal(d.querySelectorAll(".problems li").length, 0, "no problems shown")
+  assert.equal(d.querySelector("#hr-max").value, "200")
+  w.close()
+})
+
 // Coaching -------------------------------------------------------------------------------------------
 
 test("an athlete adds a coach by e-mail, the coach assigns a plan, and the athlete finds it on her schedule", { skip: !built && "frontend not built" }, async () => {

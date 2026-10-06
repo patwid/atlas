@@ -30,4 +30,4 @@ onRecordUpdateRequest((e) => {
     }
   }
   return e.next()
-}, "coach_grants", "plans", "plan_shares", "workouts", "assignments", "activities", "matches")
+}, "coach_grants", "plans", "plan_shares", "workouts", "assignments", "activities", "matches", "athlete_settings")

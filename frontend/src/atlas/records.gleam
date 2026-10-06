@@ -7,6 +7,7 @@ import atlas/activity_form
 import atlas/assignment_form
 import atlas/date
 import atlas/grants.{type Grant, Grant}
+import atlas/hr_zones
 import atlas/matching.{type Stored, Match, Stored}
 import atlas/plan.{
   type Assignment, type Plan, type Workout, Assignment, Plan, Workout,
@@ -211,6 +212,34 @@ pub fn grant(record: Dynamic) -> Result(Grant, Nil) {
     use updated <- decode.optional_field("updated", "", decode.string)
     decode.success(Grant(id, athlete, coach, athlete_name, coach_name, updated))
   })
+}
+
+/// An athlete's heart-rate zones. A row with a value missing or out of order is unusable and skipped,
+/// so the defaults apply instead of half-saved zones.
+pub fn hr_zones_row(record: Dynamic) -> Result(hr_zones.Row, Nil) {
+  let read = {
+    use owner <- decode.field("owner", decode.string)
+    use max_hr <- decode.field("max_hr", whole_number())
+    use z1 <- decode.field(hr_zones.start_field(1), whole_number())
+    use z2 <- decode.field(hr_zones.start_field(2), whole_number())
+    use z3 <- decode.field(hr_zones.start_field(3), whole_number())
+    use z4 <- decode.field(hr_zones.start_field(4), whole_number())
+    use z5 <- decode.field(hr_zones.start_field(5), whole_number())
+    use updated <- decode.optional_field("updated", "", decode.string)
+    decode.success(#(
+      owner,
+      hr_zones.HrZones(max_hr, [z1, z2, z3, z4, z5]),
+      updated,
+    ))
+  }
+  case run(record, read) {
+    Error(Nil) -> Error(Nil)
+    Ok(#(owner, zones, updated)) ->
+      case hr_zones.parse(hr_zones.to_form(zones)) {
+        Ok(checked) -> Ok(hr_zones.Row(owner, checked, updated))
+        Error(_) -> Error(Nil)
+      }
+  }
 }
 
 pub fn activity(record: Dynamic) -> Result(Activity, Nil) {

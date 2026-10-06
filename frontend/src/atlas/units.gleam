@@ -1,8 +1,7 @@
-//// Pace, duration and distance formatting, and heart-rate zones. Pure functions.
+//// Pace, duration and distance formatting. Pure functions. Heart-rate zones are in `hr_zones`.
 
 import gleam/float
 import gleam/int
-import gleam/list
 import gleam/string
 
 /// Seconds per kilometre, rounded. `Error` when there is no distance or no time to divide.
@@ -39,50 +38,6 @@ pub fn format_distance_km(distance_m: Float) -> String {
   int.to_string(hundredths / 100) <> "." <> pad2(hundredths % 100) <> " km"
 }
 
-pub type Zone {
-  Zone(number: Int, low: Int, high: Int)
-}
-
-/// Five zones as shares of the maximum heart rate: 50-60, 60-70, 70-80, 80-90 and 90-100 percent.
-/// The zones do not overlap and zone 5 ends at the maximum. Empty for a non-positive maximum.
-pub fn hr_zones(max_hr: Int) -> List(Zone) {
-  case max_hr > 0 {
-    False -> []
-    True -> {
-      let lows = [50, 60, 70, 80, 90]
-      list.index_map(lows, fn(percent, index) {
-        let high = case index {
-          4 -> max_hr
-          _ -> max_hr * { percent + 10 } / 100 - 1
-        }
-        Zone(number: index + 1, low: max_hr * percent / 100, high: high)
-      })
-    }
-  }
-}
-
-/// The zone number (1-5) for a heart rate. Rates above the maximum count as zone 5.
-/// `Error` below zone 1 (under half the maximum) or when the maximum is unusable.
-pub fn hr_zone(max_hr: Int, hr: Int) -> Result(Int, Nil) {
-  case hr_zones(max_hr) {
-    [] -> Error(Nil)
-    zones ->
-      case hr > max_hr {
-        True -> Ok(5)
-        False ->
-          list.find(zones, fn(zone) { hr >= zone.low && hr <= zone.high })
-          |> result_map(fn(zone) { zone.number })
-      }
-  }
-}
-
 fn pad2(n: Int) -> String {
   string.pad_start(int.to_string(n), 2, "0")
-}
-
-fn result_map(result: Result(a, Nil), f: fn(a) -> b) -> Result(b, Nil) {
-  case result {
-    Ok(value) -> Ok(f(value))
-    Error(Nil) -> Error(Nil)
-  }
 }

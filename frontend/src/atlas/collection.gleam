@@ -8,6 +8,7 @@ pub type Collection {
   Assignments
   Activities
   Matches
+  AthleteSettings
 }
 
 pub const all = [
@@ -18,6 +19,7 @@ pub const all = [
   Assignments,
   Activities,
   Matches,
+  AthleteSettings,
 ]
 
 pub fn to_string(collection: Collection) -> String {
@@ -29,6 +31,7 @@ pub fn to_string(collection: Collection) -> String {
     Assignments -> "assignments"
     Activities -> "activities"
     Matches -> "matches"
+    AthleteSettings -> "athlete_settings"
   }
 }
 
@@ -41,6 +44,7 @@ pub fn from_string(text: String) -> Result(Collection, Nil) {
     "assignments" -> Ok(Assignments)
     "activities" -> Ok(Activities)
     "matches" -> Ok(Matches)
+    "athlete_settings" -> Ok(AthleteSettings)
     _ -> Error(Nil)
   }
 }
@@ -55,5 +59,6 @@ pub fn label(collection: Collection) -> String {
     Assignments -> "assignment"
     Activities -> "activity"
     Matches -> "match"
+    AthleteSettings -> "setting"
   }
 }
