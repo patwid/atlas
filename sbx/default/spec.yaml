@@ -1,0 +1,15 @@
+# Docker Sandboxes mixin kit for developing Atlas (ADR 0007).
+# Add to an existing sandbox:  sbx kit add <sandbox> ./sbx/default
+# New sandbox:                 sbx run claude --name <sandbox> --kit ./sbx/default
+schemaVersion: "2"
+kind: mixin
+name: default
+displayName: Atlas development
+description: "Network access for the Gleam package registry and the Strava API"
+
+permissions:
+  network:
+    allow:
+      - repo.hex.pm      # Gleam/Hex package downloads
+      - strava.com
+      - "*.strava.com"   # www.strava.com (OAuth + API v3)
