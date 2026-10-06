@@ -167,6 +167,11 @@ pub fn local_date(
   }
 }
 
+/// The local calendar date at a moment given in seconds since 1970, for a local offset from UTC in minutes.
+pub fn from_unix_seconds(seconds: Int, utc_offset_minutes: Int) -> Date {
+  from_epoch_days(floor_div(seconds + utc_offset_minutes * 60, 86_400))
+}
+
 fn pad(n: Int, width: Int) -> String {
   string.pad_start(int.to_string(n), width, "0")
 }

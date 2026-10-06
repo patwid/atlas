@@ -109,3 +109,14 @@ pub fn local_date_rejects_bad_timestamps_test() {
   assert date.local_date("2026-10-01 25:00:00Z", 0) == Error(Nil)
   assert date.local_date("2026-10-01 07:61:00Z", 0) == Error(Nil)
 }
+
+pub fn from_unix_seconds_test() {
+  assert date.from_unix_seconds(0, 0) == Date(1970, 1, 1)
+  assert date.from_unix_seconds(86_399, 0) == Date(1970, 1, 1)
+  assert date.from_unix_seconds(86_400, 0) == Date(1970, 1, 2)
+  // 2026-10-06 23:30 UTC is already the 7th in UTC+2, and 2026-10-06 00:30 UTC is still the 5th in UTC-5.
+  assert date.from_unix_seconds(1_791_329_400, 0) == Date(2026, 10, 6)
+  assert date.from_unix_seconds(1_791_329_400, 120) == Date(2026, 10, 7)
+  assert date.from_unix_seconds(1_791_246_600, -300) == Date(2026, 10, 5)
+  assert date.from_unix_seconds(-1, 0) == Date(1969, 12, 31)
+}

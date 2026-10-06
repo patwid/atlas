@@ -23,3 +23,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0017 | [Sessions and the HTTP layer: plain `fetch`, tokens in `localStorage`, session checks](0017-session-and-http-layer.md) | Accepted |
 | 0018 | [The sync engine: a pure command/event state machine](0018-sync-engine.md) | Accepted |
 | 0019 | [The device database: IndexedDB records, meta values and one owner](0019-device-database.md) | Accepted |
+| 0020 | [The sync runner in the app, local writes and conflicted copies](0020-sync-runner-and-conflicted-copies.md) | Accepted |

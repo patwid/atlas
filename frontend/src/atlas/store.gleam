@@ -169,3 +169,11 @@ pub fn clear(callback: fn(Bool) -> Nil) -> Nil {
 pub fn request_persistence(callback: fn(Bool) -> Nil) -> Nil {
   do_request_persistence(callback)
 }
+
+@external(javascript, "./store.ffi.mjs", "recordFields")
+fn do_record_fields(record: Dynamic) -> List(#(String, String))
+
+/// The fields of a stored record as names and encoded JSON text, the form `outbox.Fields` uses.
+pub fn record_fields(record: Dynamic) -> List(#(String, String)) {
+  do_record_fields(record)
+}

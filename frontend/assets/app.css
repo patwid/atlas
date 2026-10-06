@@ -53,3 +53,5 @@ button:disabled { opacity: 0.6; cursor: progress; }
 .error { color: #b91c1c; margin: 0.25rem 0 0; }
 @media (prefers-color-scheme: dark) { .error { color: #fca5a5; } button { color: #04201d; } }
 .settings h2 { font-size: 1.125rem; }
+.problems { border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.5rem 1rem; background: var(--surface); }
+.problems ul { margin: 0.5rem 0; padding-left: 1.25rem; }

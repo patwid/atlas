@@ -44,3 +44,16 @@ pub fn from_string(text: String) -> Result(Collection, Nil) {
     _ -> Error(Nil)
   }
 }
+
+/// A short name for messages: "plan", "workout", ...
+pub fn label(collection: Collection) -> String {
+  case collection {
+    CoachGrants -> "coach grant"
+    Plans -> "plan"
+    PlanShares -> "plan share"
+    Workouts -> "workout"
+    Assignments -> "assignment"
+    Activities -> "activity"
+    Matches -> "match"
+  }
+}

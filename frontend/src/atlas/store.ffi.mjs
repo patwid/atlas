@@ -148,3 +148,8 @@ export function requestPersistence(callback) {
     callback(false)
   }
 }
+
+// A record's fields as [name, JSON text] pairs.
+export function recordFields(record) {
+  return toList(Object.entries(record).map(([key, value]) => [key, JSON.stringify(value)]))
+}

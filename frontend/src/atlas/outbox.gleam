@@ -240,12 +240,19 @@ pub fn request_body(entry: Entry) -> String {
     Update, Some(base) -> [#("base_updated", encode_string(base))]
     Update, None -> []
   }
-  let pairs =
-    list.append(dict.to_list(entry.fields), extra)
-    |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
+  object_text(list.append(dict.to_list(entry.fields), extra))
+}
+
+/// The fields as a JSON object text, for changing the local copy of a record to match a write.
+pub fn fields_json(fields: Fields) -> String {
+  object_text(dict.to_list(fields))
+}
+
+fn object_text(pairs: List(#(String, String))) -> String {
+  let sorted = list.sort(pairs, fn(a, b) { string.compare(a.0, b.0) })
   "{"
   <> string.join(
-    list.map(pairs, fn(pair) { encode_string(pair.0) <> ":" <> pair.1 }),
+    list.map(sorted, fn(pair) { encode_string(pair.0) <> ":" <> pair.1 }),
     ",",
   )
   <> "}"

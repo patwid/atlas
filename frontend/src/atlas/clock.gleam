@@ -2,3 +2,6 @@
 
 @external(javascript, "./clock.ffi.mjs", "nowSeconds")
 pub fn now_seconds() -> Int
+
+@external(javascript, "./clock.ffi.mjs", "utcOffsetMinutes")
+pub fn utc_offset_minutes() -> Int

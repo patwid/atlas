@@ -23,6 +23,10 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Sign-in with PocketBase: sign-in page, stored session with refresh, sign-out in Settings, and the HTTP/API layer with response classification pinned by a contract test against the real server (ADR 0017).
 - Sync engine: a pure state machine that runs a session check, pushes the outbox, pulls every collection and commits cursors only after the session is confirmed (ADR 0018).
 - Device database in IndexedDB (records, outbox, cursors, one owner per device), record decoders, and `scripts/test-frontend-js.sh` for the browser glue (ADR 0019).
+- Sync runner in the app: runs the engine against the device database, local writes that queue for upload, conflicted copies of plans and workouts, and a Settings section for sync status and problems. Whole-app tests with jsdom, fake-indexeddb and a real PocketBase (ADR 0020).
+
+### Fixed
+- The HTTP glue no longer reports an error thrown by the app's own handler as "no connection".
 
 ### Changed
 - Coach access to athletes' activities, including Strava-sourced data, now that Strava has confirmed the usage in writing (ADR 0005).

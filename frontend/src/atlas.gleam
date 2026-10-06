@@ -11,6 +11,9 @@ import atlas/route.{type Route}
 import atlas/shell
 import atlas/signin
 import atlas/storage
+import atlas/sync
+import atlas/syncing
+import gleam/list
 import gleam/option.{None, Some}
 import gleam/result
 import gleam/uri.{type Uri}
@@ -30,7 +33,7 @@ pub type Auth {
 }
 
 pub type Model {
-  Model(route: Route, online: Bool, auth: Auth)
+  Model(route: Route, online: Bool, auth: Auth, syncing: syncing.State)
 }
 
 pub type Msg {
@@ -42,6 +45,8 @@ pub type Msg {
   SignInResponded(http.Response)
   RefreshResponded(http.Response)
   SignOutClicked
+  Syncing(syncing.Msg)
+  ProblemsDismissed
 }
 
 pub fn main() -> Nil {
@@ -62,12 +67,14 @@ fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
     Error(Nil) -> SignedOut(signin.empty())
   }
   let is_online = online.is_online()
+  let #(syncing_state, load) = load_device_data(auth, syncing.new())
   #(
-    Model(route:, online: is_online, auth:),
+    Model(route:, online: is_online, auth:, syncing: syncing_state),
     effect.batch([
       modem.init(RouteChanged),
       online.listen(OnlineChanged),
       pwa.register_service_worker(),
+      load,
       case is_online {
         True -> refresh_if_due(auth)
         False -> effect.none()
@@ -87,7 +94,11 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     OnlineChanged(is_online) -> #(
       Model(..model, online: is_online),
       case is_online {
-        True -> refresh_if_due(model.auth)
+        True ->
+          effect.batch([
+            refresh_if_due(model.auth),
+            effect.from(fn(dispatch) { dispatch(Syncing(syncing.Kick)) }),
+          ])
         False -> effect.none()
       },
     )
@@ -135,10 +146,14 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         response.status,
         auth.session_from_response(response.body)
       {
-        SignedOut(_), 200, Ok(session) -> #(
-          Model(..model, auth: SignedIn(session)),
-          remember(session),
-        )
+        SignedOut(_), 200, Ok(session) -> {
+          let #(syncing_state, load) =
+            load_device_data(SignedIn(session), model.syncing)
+          #(
+            Model(..model, auth: SignedIn(session), syncing: syncing_state),
+            effect.batch([remember(session), load]),
+          )
+        }
         SignedOut(form), status, _ -> #(
           Model(
             ..model,
@@ -158,37 +173,108 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
     RefreshResponded(response) ->
       case model.auth, response.status {
-        SignedIn(session), 200 ->
-          case auth.session_from_response(response.body) {
-            // A refresh must stay the same account; anything else is ignored.
-            Ok(fresh) if fresh.user_id == session.user_id -> {
-              let updated = auth.with_token(session, fresh.token)
-              #(Model(..model, auth: SignedIn(updated)), remember(updated))
-            }
-            _ -> #(model, effect.none())
-          }
+        SignedIn(_), 200 -> use_refreshed_session(model, response.body)
         // The server no longer accepts the token. Nothing else is deleted: local data stays
         // for the next sign-in of the same user (ADR 0017).
-        SignedIn(_), 401 -> #(
-          Model(
-            ..model,
-            auth: SignedOut(
-              signin.Form(
-                ..signin.empty(),
-                error: Some("Your session expired. Sign in again."),
-              ),
-            ),
-          ),
-          forget(),
-        )
+        SignedIn(_), 401 -> session_ended(model)
         // Offline, a server hiccup or anything else: stay signed in and try again later.
         _, _ -> #(model, effect.none())
       }
 
     SignOutClicked -> #(
-      Model(..model, auth: SignedOut(signin.empty())),
+      Model(
+        ..model,
+        auth: SignedOut(signin.empty()),
+        syncing: syncing.reset(model.syncing),
+      ),
       forget(),
     )
+
+    Syncing(inner) ->
+      case model.auth {
+        SignedIn(session) -> {
+          let context =
+            syncing.Context(
+              session.token,
+              clock.now_seconds(),
+              clock.utc_offset_minutes(),
+            )
+          let #(state, inner_effect, notices) =
+            syncing.update(model.syncing, inner, context)
+          let #(next, app_effect) =
+            list.fold(
+              notices,
+              #(Model(..model, syncing: state), effect.none()),
+              fn(acc, notice) {
+                let #(current, effects) = acc
+                let #(changed, more) = on_notice(current, notice)
+                #(changed, effect.batch([effects, more]))
+              },
+            )
+          #(next, effect.batch([effect.map(inner_effect, Syncing), app_effect]))
+        }
+        SignedOut(_) -> #(model, effect.none())
+      }
+
+    ProblemsDismissed -> #(
+      Model(..model, syncing: syncing.dismiss_problems(model.syncing)),
+      effect.none(),
+    )
+  }
+}
+
+/// What the app does about the engine's notices. Conflicts and rejections are handled in `syncing`.
+fn on_notice(model: Model, notice: sync.Notice) -> #(Model, Effect(Msg)) {
+  case notice {
+    sync.SessionRefreshed(body) -> use_refreshed_session(model, body)
+    sync.SignInRequired -> session_ended(model)
+    _ -> #(model, effect.none())
+  }
+}
+
+/// A fresh token from a refresh. It must stay the same account; anything else is ignored.
+fn use_refreshed_session(model: Model, body: String) -> #(Model, Effect(Msg)) {
+  case model.auth, auth.session_from_response(body) {
+    SignedIn(session), Ok(fresh) if fresh.user_id == session.user_id -> {
+      let updated = auth.with_token(session, fresh.token)
+      #(Model(..model, auth: SignedIn(updated)), remember(updated))
+    }
+    _, _ -> #(model, effect.none())
+  }
+}
+
+/// The server no longer accepts the token. Nothing else is deleted: local data and unsent
+/// changes stay for the next sign-in of the same user (ADR 0017, 0019).
+fn session_ended(model: Model) -> #(Model, Effect(Msg)) {
+  case model.auth {
+    SignedIn(_) -> #(
+      Model(
+        ..model,
+        auth: SignedOut(
+          signin.Form(
+            ..signin.empty(),
+            error: Some("Your session expired. Sign in again."),
+          ),
+        ),
+        syncing: syncing.reset(model.syncing),
+      ),
+      forget(),
+    )
+    SignedOut(_) -> #(model, effect.none())
+  }
+}
+
+/// Opens the device database for a signed-in user. Nothing happens when signed out.
+fn load_device_data(
+  state: Auth,
+  current: syncing.State,
+) -> #(syncing.State, Effect(Msg)) {
+  case state {
+    SignedIn(session) -> {
+      let #(next, load) = syncing.load(current, session.user_id)
+      #(next, effect.map(load, Syncing))
+    }
+    SignedOut(_) -> #(current, effect.none())
   }
 }
 
@@ -236,11 +322,19 @@ fn view(model: Model) -> Element(Msg) {
     SignedOut(form) ->
       signin.view(form, EmailChanged, PasswordChanged, SignInSubmitted)
     SignedIn(session) ->
-      shell.view(model.route, model.online, page(model.route, session))
+      shell.view(
+        model.route,
+        model.online,
+        page(model.route, session, model.syncing),
+      )
   }
 }
 
-fn page(current: Route, session: Session) -> Element(Msg) {
+fn page(
+  current: Route,
+  session: Session,
+  sync_state: syncing.State,
+) -> Element(Msg) {
   case current {
     route.Today ->
       shell.empty(
@@ -259,13 +353,13 @@ fn page(current: Route, session: Session) -> Element(Msg) {
         "No activities yet",
         "Connect Strava or import a FIT file to see your runs.",
       )
-    route.Settings -> settings(session)
+    route.Settings -> settings(session, sync_state)
     route.NotFound ->
       shell.empty("Page not found", "Use the tabs below to get back.")
   }
 }
 
-fn settings(session: Session) -> Element(Msg) {
+fn settings(session: Session, sync_state: syncing.State) -> Element(Msg) {
   html.section([attribute.class("settings")], [
     html.h2([], [html.text("Account")]),
     html.p([], [
@@ -277,5 +371,39 @@ fn settings(session: Session) -> Element(Msg) {
     html.button([attribute.type_("button"), event.on_click(SignOutClicked)], [
       html.text("Sign out"),
     ]),
+    html.h2([], [html.text("Sync")]),
+    html.p([attribute.class("muted")], [
+      html.text(case sync_state.phase {
+        syncing.Ready ->
+          "Your data is stored on this device and synced when you are online."
+        syncing.Loading -> "Opening the data on this device…"
+        syncing.NotLoaded -> "Not started."
+        syncing.Unavailable ->
+          "This browser could not open its local storage, so nothing is synced. Try reloading."
+      }),
+    ]),
+    case sync_state.write_failed {
+      True ->
+        html.p([attribute.class("error"), attribute.role("alert")], [
+          html.text(
+            "Your device ran out of storage. Free some space, or recent changes may be lost.",
+          ),
+        ])
+      False -> element.none()
+    },
+    case sync_state.problems {
+      [] -> element.none()
+      problems ->
+        html.div([attribute.class("problems")], [
+          html.ul(
+            [],
+            list.map(problems, fn(message) { html.li([], [html.text(message)]) }),
+          ),
+          html.button(
+            [attribute.type_("button"), event.on_click(ProblemsDismissed)],
+            [html.text("Dismiss")],
+          ),
+        ])
+    },
   ])
 }

@@ -7,6 +7,7 @@ import atlas/auth.{Session}
 import atlas/http.{Response}
 import atlas/route
 import atlas/signin.{Form}
+import atlas/syncing
 import gleam/option.{None, Some}
 import gleam/uri
 import gleeunit
@@ -18,11 +19,11 @@ pub fn main() -> Nil {
 const alice = Session("old.token.x", "u1", "Alice", "alice@example.com")
 
 fn signed_out(form: signin.Form) -> atlas.Model {
-  Model(route.Today, True, SignedOut(form))
+  Model(route.Today, True, SignedOut(form), syncing.new())
 }
 
 fn signed_in() -> atlas.Model {
-  Model(route.Today, True, SignedIn(alice))
+  Model(route.Today, True, SignedIn(alice), syncing.new())
 }
 
 fn form_of(model: atlas.Model) -> signin.Form {
@@ -158,4 +159,21 @@ pub fn offline_or_server_trouble_keeps_the_session_test() {
 pub fn signing_out_shows_an_empty_form_test() {
   let #(model, _) = atlas.update(signed_in(), SignOutClicked)
   assert model.auth == SignedOut(signin.empty())
+}
+
+pub fn signing_out_forgets_the_loaded_sync_state_test() {
+  let loaded =
+    Model(
+      ..signed_in(),
+      syncing: syncing.State(..syncing.new(), phase: syncing.Ready),
+    )
+  let #(model, _) = atlas.update(loaded, SignOutClicked)
+  assert model.syncing.phase == syncing.NotLoaded
+}
+
+pub fn signing_in_starts_loading_the_device_data_test() {
+  let busy = signed_out(Form("alice@example.com", "secret", True, None))
+  let #(model, _) =
+    atlas.update(busy, SignInResponded(Response(200, sign_in_ok)))
+  assert model.syncing.phase == syncing.Loading
 }

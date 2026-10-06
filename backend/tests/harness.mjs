@@ -13,12 +13,14 @@ export const randomPort = () => 18000 + Math.floor(Math.random() * 20000)
 let n = 0
 export const id = () => (`t${Date.now().toString(36)}${(n++).toString(36)}${Math.random().toString(36).slice(2)}`).replace(/[^a-z0-9]/g, "").padEnd(15, "0").slice(0, 15)
 
-export async function startPocketBase(env = {}) {
+/** `publicDir`: a built frontend to serve from pb_public (optional). */
+export async function startPocketBase(env = {}, { publicDir } = {}) {
   const port = randomPort()
   const url = `http://127.0.0.1:${port}`
   const dir = mkdtempSync(join(tmpdir(), "atlas-pb-"))
   cpSync(join(backend, "pb_migrations"), join(dir, "pb_migrations"), { recursive: true })
   cpSync(join(backend, "pb_hooks"), join(dir, "pb_hooks"), { recursive: true })
+  if (publicDir) cpSync(publicDir, join(dir, "pb_public"), { recursive: true })
   const pb = (...args) => ["--dir", join(dir, "pb_data"), "--migrationsDir", join(dir, "pb_migrations"), "--hooksDir", join(dir, "pb_hooks"), ...args]
   const childEnv = { ...process.env, ATLAS_PUBLIC_URL: url, NO_PROXY: "127.0.0.1,localhost", no_proxy: "127.0.0.1,localhost", ...env }
   execFileSync("pocketbase", ["superuser", "upsert", "admin@example.com", "adminpass123", ...pb()], { stdio: "pipe", env: childEnv })

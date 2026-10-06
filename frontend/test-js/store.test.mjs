@@ -107,3 +107,15 @@ test("a failure is reported as ok=false, not thrown", async () => {
   assert.equal(result.ok, false)
   assert.equal(result.value, undefined)
 })
+
+test("record fields come out as names with JSON text, ready for the outbox", async () => {
+  const pairs = store.recordFields({ id: "p1", title: 'A "q" plan', n: 3, flag: false, nothing: null, list: [1, 2] }).toArray()
+  assert.deepEqual(pairs, [
+    ["id", '"p1"'],
+    ["title", '"A \\"q\\" plan"'],
+    ["n", "3"],
+    ["flag", "false"],
+    ["nothing", "null"],
+    ["list", "[1,2]"],
+  ])
+})

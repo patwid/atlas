@@ -2,7 +2,12 @@
   "name": "atlas-frontend-js-tests",
   "private": true,
   "type": "module",
-  "description": "Tests for the browser glue (*.ffi.mjs) against fake-indexeddb. Dev only; not part of the app build.",
-  "scripts": { "test": "node --test" },
-  "devDependencies": { "fake-indexeddb": "^6.0.0" }
+  "description": "Tests for the browser glue (*.ffi.mjs) and the whole app (jsdom, fake-indexeddb, a real PocketBase). Dev only; not part of the app build.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.0.0",
+    "jsdom": "^30.1.2"
+  }
 }
