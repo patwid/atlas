@@ -1,6 +1,6 @@
 # 0003. Build the frontend with Gleam and Lustre (TEA) on the JavaScript target
 
-- Status: Accepted (project requirement; sub-decisions accepted by the owner 2026-10-06)
+- Status: Accepted (project requirement; sub-decisions accepted by the owner 2026-10-06). The PocketBase SDK point is superseded by [0017](0017-session-and-http-layer.md).
 - Date: 2026-10-06
 - Deciders: project owner (stack), agent (sub-decisions)
 

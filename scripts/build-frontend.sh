@@ -5,6 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 root=$PWD
 
+rm -rf frontend/dist # the build does not remove files from earlier builds
 (cd frontend && gleam run -m lustre/dev build atlas --minify=true)
 
 dist=frontend/dist

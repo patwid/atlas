@@ -35,3 +35,8 @@ links = [
   { rel = "icon", href = "/icon.svg", type = "image/svg+xml" },
 ]
 stylesheets = [{ href = "/app.css" }]
+
+# `gleam run -m lustre/dev start` serves the app on its own port; API calls go to PocketBase.
+[tools.lustre.dev.proxy]
+from = "/api"
+to = "http://127.0.0.1:8090/api"

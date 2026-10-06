@@ -20,6 +20,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Daily purge of soft-deleted rows older than 90 days (`ATLAS_PURGE_RETENTION_DAYS`), also runnable on demand by superusers (ADR 0014).
 - Pure domain core in Gleam with tests: dates, client IDs, plan scheduling, activity-to-workout matching, pace and heart-rate zones (ADR 0015).
 - Pure sync core in Gleam with tests: mutation outbox with compaction, conflict and retry handling, and pull cursors (ADR 0016).
+- Sign-in with PocketBase: sign-in page, stored session with refresh, sign-out in Settings, and the HTTP/API layer with response classification pinned by a contract test against the real server (ADR 0017).
 
 ### Changed
 - Coach access to athletes' activities, including Strava-sourced data, now that Strava has confirmed the usage in writing (ADR 0005).
