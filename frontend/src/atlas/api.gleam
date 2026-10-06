@@ -156,6 +156,18 @@ pub fn saved_updated(body: String) -> Result(String, Nil) {
   }
 }
 
+/// The record in a create or update answer, to store locally as the server's version.
+pub fn saved_record(body: String) -> Result(Dynamic, Nil) {
+  case json.parse(body, decode.dynamic) {
+    Ok(record) ->
+      case record_meta(record) {
+        Ok(_) -> Ok(record)
+        Error(Nil) -> Error(Nil)
+      }
+    Error(_) -> Error(Nil)
+  }
+}
+
 fn id_not_unique(body: String) -> Bool {
   let decoder = {
     use code <- decode.subfield(["data", "id", "code"], decode.string)

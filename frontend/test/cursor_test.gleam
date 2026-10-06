@@ -77,3 +77,19 @@ pub fn records_with_unsent_edits_are_not_overwritten_test() {
   assert cursor.may_apply(ob, Plans, "p2")
   assert cursor.may_apply(outbox.new(), Plans, "p1")
 }
+
+pub fn a_cursor_survives_storage_test() {
+  let c = Cursor("2026-10-05 08:00:00.123Z", Date(2026, 10, 5))
+  assert cursor.from_json_string(cursor.to_json_string(c)) == Ok(c)
+}
+
+pub fn a_damaged_cursor_is_an_error_so_the_collection_resyncs_test() {
+  assert cursor.from_json_string("") == Error(Nil)
+  assert cursor.from_json_string("{}") == Error(Nil)
+  assert cursor.from_json_string(
+      "{\"updated\":\"T\",\"synced_on\":\"yesterday\"}",
+    )
+    == Error(Nil)
+  assert cursor.from_json_string("{\"updated\":5,\"synced_on\":\"2026-10-05\"}")
+    == Error(Nil)
+}

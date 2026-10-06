@@ -411,8 +411,8 @@ pub fn a_first_run_checks_the_session_pushes_then_pulls_everything_test() {
     == ["/api/collections/users/auth-refresh", "/api/collections/plans/records"]
   assert list.last(requests) == Ok("/api/collections/users/auth-refresh")
   assert dict.has_key(w.server.records, "plans/new1")
-  // The pulled plans include the one just pushed.
-  assert applied(w, Plans) == [["a", "b"], ["new1"]]
+  // The server's answer to the create is stored first, then the pulled plans (which include it again).
+  assert applied(w, Plans) == [["new1"], ["a", "b"], ["new1"]]
   assert applied(w, Workouts) == [["w1"]]
   // Everything was a full resync, so every collection is reconciled and gets a cursor.
   assert list.length(reconciled(w)) == 7
@@ -698,4 +698,34 @@ pub fn activities_pulled_from_the_server_are_applied_test() {
   let s = server([Rec("activities", "x1", stamp_text(100), False, "run")])
   let w = run(world(outbox.new(), [], s), started())
   assert applied(w, Activities) == [["x1"]]
+}
+
+pub fn the_servers_answer_to_a_save_replaces_the_local_copy_test() {
+  let box = outbox.record_create(outbox.new(), Plans, "p1", title("A"))
+  let w = run(world(box, [], server([])), started())
+  let assert [first, ..] = applied(w, Plans)
+  assert first == ["p1"]
+}
+
+pub fn the_answer_is_not_applied_over_later_queued_edits_test() {
+  // The create is in flight when the user edits again; the edit is queued behind it.
+  let box = outbox.record_create(outbox.new(), Plans, "p1", title("A"))
+  let #(s0, _) = sync.update(sync.new(box, []), started())
+  let #(s1, commands) = sync.update(s0, Responded(CheckStart, 200, "{}"))
+  let assert [Tell(SessionRefreshed(_)), Send(_, tag)] = commands
+  let s2 =
+    sync.change_outbox(s1, fn(b) {
+      outbox.record_update(b, Plans, "p1", title("B"), "x")
+    })
+  let created =
+    "{\"id\":\"p1\",\"updated\":\""
+    <> stamp_text(501)
+    <> "\",\"deleted\":false,\"title\":\"A\"}"
+  let #(_, commands) = sync.update(s2, Responded(tag, 200, created))
+  assert !list.any(commands, fn(c) {
+    case c {
+      Apply(_, _) -> True
+      _ -> False
+    }
+  })
 }

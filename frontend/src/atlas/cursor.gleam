@@ -5,6 +5,8 @@
 import atlas/collection.{type Collection}
 import atlas/date.{type Date}
 import atlas/outbox.{type Outbox}
+import gleam/dynamic/decode
+import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/order
@@ -83,4 +85,30 @@ pub fn may_apply(outbox: Outbox, collection: Collection, id: String) -> Bool {
 
 fn escape(text: String) -> String {
   text |> string.replace("\\", "\\\\") |> string.replace("\"", "\\\"")
+}
+
+/// For storing a cursor on the device.
+pub fn to_json_string(cursor: Cursor) -> String {
+  json.object([
+    #("updated", json.string(cursor.updated)),
+    #("synced_on", json.string(date.to_string(cursor.synced_on))),
+  ])
+  |> json.to_string
+}
+
+/// `Error` for anything damaged, which makes the collection start over with a full resync.
+pub fn from_json_string(text: String) -> Result(Cursor, Nil) {
+  let decoder = {
+    use updated <- decode.field("updated", decode.string)
+    use synced_on <- decode.field("synced_on", decode.string)
+    decode.success(#(updated, synced_on))
+  }
+  case json.parse(text, decoder) {
+    Ok(#(updated, synced_on)) ->
+      case date.parse(synced_on) {
+        Ok(day) -> Ok(Cursor(updated, day))
+        Error(Nil) -> Error(Nil)
+      }
+    Error(_) -> Error(Nil)
+  }
 }

@@ -42,7 +42,8 @@ pub type Command {
   /// Send the request with the session token and report the answer with this tag.
   Send(request: Request, tag: Tag)
   SaveOutbox(Outbox)
-  /// Insert or update these pulled records locally. Records with unsent local edits were left out.
+  /// Insert or update these records locally: pulled records (those with unsent local edits are left out)
+  /// or the server's answer to a save.
   Apply(collection: Collection, records: List(Dynamic))
   /// After a complete full resync: delete local records of the collection whose IDs are not listed.
   /// Records with unsent local edits must be kept.
@@ -186,7 +187,10 @@ fn respond(
         Error(Nil) -> #(sync, [])
         Ok(entry) ->
           case api.classify(entry, status, body) {
-            api.Final(response) -> apply_response(sync, seq, response)
+            api.Final(response) -> {
+              let #(next, commands) = apply_response(sync, seq, response)
+              #(next, with_saved_record(next, entry, response, body, commands))
+            }
             api.CheckSession(reason) -> #(Sync(..sync, state: Verifying), [
               Send(api.refresh(), VerifyForPush(seq, reason)),
             ])
@@ -238,6 +242,25 @@ fn respond(
 
     // An answer that no longer belongs to what the engine is doing, for example after a restart.
     _, _ -> #(sync, [])
+  }
+}
+
+/// After a save, the server's answer replaces the local copy (new `updated`, server-set fields), unless
+/// later edits of the record are still queued: those keep the local copy as it is.
+fn with_saved_record(
+  sync: Sync,
+  entry: Entry,
+  response: outbox.Response,
+  body: String,
+  commands: List(Command),
+) -> List(Command) {
+  case response, api.saved_record(body) {
+    outbox.Saved(_), Ok(record) ->
+      case outbox.has_pending(sync.outbox, entry.collection, entry.id) {
+        True -> commands
+        False -> [Apply(entry.collection, [record]), ..commands]
+      }
+    _, _ -> commands
   }
 }
 
