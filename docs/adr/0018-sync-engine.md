@@ -48,3 +48,14 @@ when a `RetryIn` timer fires.
   completed are not saved until the commit step succeeds, so their pages are fetched again. It is wasteful but correct.
 - 18 tests run the engine against a fake PocketBase (stale base, duplicate ID, revoked token, paging,
   broken collection, backoff). They do not replace a test against the real server once the caller exists.
+
+## Addendum: a start requested during a run (2026-10-06)
+
+The first version ignored `Started` while a run was going on. A whole-app test showed this can lose
+a trigger that matters: the device comes back online (or another device publishes something) while a run
+is already in progress, the run has already pulled that collection, and nothing ever fetches the change.
+
+Now such a request is remembered. When the current run ends, one more run follows at once (starting
+with the session check, as always). Any number of requests during a run cause just one further run.
+Local writes were already covered, because a run pushes the outbox again before it ends.
+Every local write also requests a start, so a burst of edits can cost one extra pull after the run in progress.

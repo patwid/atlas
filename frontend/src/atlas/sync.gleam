@@ -98,6 +98,9 @@ pub opaque type Sync {
     /// `SaveCursor` and `Reconcile` commands held back until the pull is confirmed.
     commits: List(Command),
     pending_cursors: Dict(String, Cursor),
+    /// A start was requested while a run was going on. The run may already have passed what the
+    /// requester wanted to see, so another one follows it.
+    rerun: Bool,
   )
 }
 
@@ -112,6 +115,7 @@ pub fn new(outbox: Outbox, cursors: List(#(Collection, Cursor))) -> Sync {
     failures: 0,
     commits: [],
     pending_cursors: dict.new(),
+    rerun: False,
   )
 }
 
@@ -147,7 +151,7 @@ fn start(
   token_expired: Bool,
 ) -> #(Sync, List(Command)) {
   case is_busy(sync), token_expired {
-    True, _ -> #(sync, [])
+    True, _ -> #(Sync(..sync, rerun: True), [])
     False, True -> #(Sync(..sync, state: SignInNeeded), [Tell(SignInRequired)])
     False, False -> #(
       Sync(
@@ -157,6 +161,7 @@ fn start(
         outbox: outbox.recover(sync.outbox),
         commits: [],
         pending_cursors: dict.new(),
+        rerun: False,
       ),
       [Send(api.refresh(), CheckStart)],
     )
@@ -450,7 +455,22 @@ fn pulled_page(
 fn finish(sync: Sync) -> #(Sync, List(Command)) {
   case outbox.next(sync.outbox) {
     Some(_) -> push_next(sync)
-    None -> #(Sync(..sync, state: Idle, failures: 0), [Tell(Finished)])
+    None ->
+      case sync.rerun {
+        // Someone asked for a run while this one was going on: do it now.
+        True -> #(
+          Sync(
+            ..sync,
+            state: Starting,
+            failures: 0,
+            rerun: False,
+            commits: [],
+            pending_cursors: dict.new(),
+          ),
+          [Tell(Finished), Send(api.refresh(), CheckStart)],
+        )
+        False -> #(Sync(..sync, state: Idle, failures: 0), [Tell(Finished)])
+      }
   }
 }
 

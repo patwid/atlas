@@ -15,6 +15,7 @@ import atlas/signin
 import atlas/storage
 import atlas/sync
 import atlas/syncing
+import atlas/workouts_page
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/result
@@ -41,6 +42,7 @@ pub type Model {
     auth: Auth,
     syncing: syncing.State,
     plans: plans_page.Model,
+    workouts: workouts_page.Model,
   )
 }
 
@@ -55,6 +57,7 @@ pub type Msg {
   SignOutClicked
   Syncing(syncing.Msg)
   PlansPage(plans_page.Msg)
+  WorkoutsPage(workouts_page.Msg)
   ProblemsDismissed
 }
 
@@ -84,6 +87,7 @@ fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
       auth:,
       syncing: syncing_state,
       plans: plans_page.new(),
+      workouts: workouts_page.new(),
     ),
     effect.batch([
       modem.init(RouteChanged),
@@ -170,6 +174,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               auth: SignedIn(session),
               syncing: syncing_state,
               plans: plans_page.new(),
+              workouts: workouts_page.new(),
             ),
             effect.batch([remember(session), load]),
           )
@@ -207,6 +212,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         auth: SignedOut(signin.empty()),
         syncing: syncing.reset(model.syncing),
         plans: plans_page.new(),
+        workouts: workouts_page.new(),
       ),
       forget(),
     )
@@ -234,7 +240,11 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
             )
           // Records changed on the device: the screens read them again.
           let refresh = case state.revision != model.syncing.revision {
-            True -> effect.map(plans_page.refresh(), PlansPage)
+            True ->
+              effect.batch([
+                effect.map(plans_page.refresh(), PlansPage),
+                effect.map(workouts_page.refresh(), WorkoutsPage),
+              ])
             False -> effect.none()
           }
           #(
@@ -266,11 +276,62 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         SignedOut(_) -> #(model, effect.none())
       }
 
+    WorkoutsPage(inner) ->
+      case model.auth {
+        SignedIn(session) -> {
+          let #(plan_id, can_edit) = plan_on_screen(model, session)
+          let #(page_model, page_effect, actions) =
+            workouts_page.update(model.workouts, inner, plan_id, can_edit)
+          let #(state, action_effects) =
+            perform_workouts(model.syncing, actions)
+          #(
+            Model(..model, workouts: page_model, syncing: state),
+            effect.batch([
+              effect.map(page_effect, WorkoutsPage),
+              effect.map(effect.batch(action_effects), Syncing),
+            ]),
+          )
+        }
+        SignedOut(_) -> #(model, effect.none())
+      }
+
     ProblemsDismissed -> #(
       Model(..model, syncing: syncing.dismiss_problems(model.syncing)),
       effect.none(),
     )
   }
+}
+
+/// The plan whose screen is open, and whether the user may change it (only the owner may).
+/// Without an open plan nothing can be changed.
+fn plan_on_screen(model: Model, session: Session) -> #(String, Bool) {
+  case model.route {
+    route.Plan(id) ->
+      case list.find(model.plans.plans, fn(p) { p.id == id }) {
+        Ok(found) -> #(id, found.owner_id == session.user_id)
+        Error(Nil) -> #(id, False)
+      }
+    _ -> #("", False)
+  }
+}
+
+/// Carries out what the user did on the workouts of a plan.
+fn perform_workouts(
+  state: syncing.State,
+  actions: List(workouts_page.Action),
+) -> #(syncing.State, List(Effect(syncing.Msg))) {
+  list.fold(actions, #(state, []), fn(acc, action) {
+    let #(current, effects) = acc
+    let #(next, effect) = case action {
+      workouts_page.Create(id, fields) ->
+        syncing.create(current, collection.Workouts, id, fields)
+      workouts_page.Edit(id, fields, base) ->
+        syncing.edit(current, collection.Workouts, id, fields, base)
+      workouts_page.Delete(id, base) ->
+        syncing.delete(current, collection.Workouts, id, base)
+    }
+    #(next, list.append(effects, [effect]))
+  })
 }
 
 /// Carries out what the user did on the plans screens, through the sync runner.
@@ -327,6 +388,7 @@ fn session_ended(model: Model) -> #(Model, Effect(Msg)) {
         ),
         syncing: syncing.reset(model.syncing),
         plans: plans_page.new(),
+        workouts: workouts_page.new(),
       ),
       forget(),
     )
@@ -405,11 +467,28 @@ fn page(model: Model, session: Session) -> Element(Msg) {
       )
     route.Plans ->
       element.map(plans_page.view_list(model.plans, session.user_id), PlansPage)
-    route.Plan(id) ->
-      element.map(
-        plans_page.view_detail(model.plans, id, session.user_id),
-        PlansPage,
-      )
+    route.Plan(id) -> {
+      let detail =
+        element.map(
+          plans_page.view_detail(model.plans, id, session.user_id),
+          PlansPage,
+        )
+      case list.find(model.plans.plans, fn(p) { p.id == id }) {
+        Ok(found) ->
+          html.div([], [
+            detail,
+            element.map(
+              workouts_page.view(
+                model.workouts,
+                id,
+                found.owner_id == session.user_id,
+              ),
+              WorkoutsPage,
+            ),
+          ])
+        Error(Nil) -> detail
+      }
+    }
     route.Activities ->
       shell.empty(
         "No activities yet",

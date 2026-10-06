@@ -7,6 +7,7 @@ import atlas/date
 import atlas/plan.{
   type Assignment, type Plan, type Workout, Assignment, Plan, Workout,
 }
+import atlas/workout_form.{type Row, Row}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/float
@@ -70,6 +71,23 @@ pub fn workout(record: Dynamic) -> Result(Workout, Nil) {
       ),
     )
   })
+}
+
+/// A workout with the fields only the editing screen needs.
+pub fn workout_row(record: Dynamic) -> Result(Row, Nil) {
+  case workout(record) {
+    Error(Nil) -> Error(Nil)
+    Ok(found) ->
+      run(record, {
+        use description <- decode.optional_field(
+          "description",
+          "",
+          decode.string,
+        )
+        use updated <- decode.optional_field("updated", "", decode.string)
+        decode.success(Row(found, description, updated))
+      })
+  }
 }
 
 pub fn assignment(record: Dynamic) -> Result(Assignment, Nil) {

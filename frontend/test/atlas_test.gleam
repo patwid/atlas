@@ -1,9 +1,10 @@
 import atlas.{
   EmailChanged, Model, OnlineChanged, PasswordChanged, PlansPage,
   RefreshResponded, RouteChanged, SignInResponded, SignInSubmitted,
-  SignOutClicked, SignedIn, SignedOut,
+  SignOutClicked, SignedIn, SignedOut, WorkoutsPage,
 }
 import atlas/auth.{Session}
+import atlas/collection
 import atlas/http.{Response}
 import atlas/outbox
 import atlas/plan
@@ -13,6 +14,8 @@ import atlas/route
 import atlas/signin.{Form}
 import atlas/sync
 import atlas/syncing
+import atlas/workout_form
+import atlas/workouts_page
 import gleam/dict
 import gleam/option.{None, Some}
 import gleam/uri
@@ -25,11 +28,25 @@ pub fn main() -> Nil {
 const alice = Session("old.token.x", "u1", "Alice", "alice@example.com")
 
 fn signed_out(form: signin.Form) -> atlas.Model {
-  Model(route.Today, True, SignedOut(form), syncing.new(), plans_page.new())
+  Model(
+    route.Today,
+    True,
+    SignedOut(form),
+    syncing.new(),
+    plans_page.new(),
+    workouts_page.new(),
+  )
 }
 
 fn signed_in() -> atlas.Model {
-  Model(route.Today, True, SignedIn(alice), syncing.new(), plans_page.new())
+  Model(
+    route.Today,
+    True,
+    SignedIn(alice),
+    syncing.new(),
+    plans_page.new(),
+    workouts_page.new(),
+  )
 }
 
 fn form_of(model: atlas.Model) -> signin.Form {
@@ -241,4 +258,74 @@ pub fn signing_out_clears_the_plans_on_screen_test() {
     )
   let #(model, _) = atlas.update(showing, SignOutClicked)
   assert model.plans == plans_page.new()
+}
+
+fn plan_screen(owner: String) -> atlas.Model {
+  Model(
+    ..signed_in(),
+    route: route.Plan("p1"),
+    syncing: ready_syncing(),
+    plans: plans_page.Model(
+      ..plans_page.new(),
+      plans: [plan.Plan("p1", owner, "10k plan", "", plan.Private, "T")],
+      loaded: True,
+    ),
+    workouts: workouts_page.Model(
+      ..workouts_page.new(),
+      mode: workouts_page.Adding,
+      form: workout_form.Form(
+        "1",
+        "2",
+        "Easy run",
+        plan.Easy,
+        "8",
+        "45",
+        "",
+        None,
+      ),
+    ),
+  )
+}
+
+pub fn saving_a_workout_queues_it_for_upload_test() {
+  let #(model, _) =
+    atlas.update(plan_screen("u1"), WorkoutsPage(workouts_page.Submitted))
+  let assert option.Some(engine) = model.syncing.sync
+  let assert [entry] = sync.outbox(engine).entries
+  assert entry.kind == outbox.Create
+  assert entry.collection == collection.Workouts
+  assert dict.get(entry.fields, "plan") == Ok("\"p1\"")
+  assert dict.get(entry.fields, "day_index") == Ok("1")
+  assert dict.get(entry.fields, "distance_m") == Ok("8000")
+  assert dict.get(entry.fields, "duration_s") == Ok("2700")
+}
+
+pub fn workouts_of_someone_elses_plan_cannot_be_saved_test() {
+  let #(model, _) =
+    atlas.update(plan_screen("u2"), WorkoutsPage(workouts_page.Submitted))
+  let assert option.Some(engine) = model.syncing.sync
+  assert outbox.is_empty(sync.outbox(engine))
+}
+
+pub fn workouts_cannot_be_saved_when_no_plan_is_open_test() {
+  let model = Model(..plan_screen("u1"), route: route.Plans)
+  let #(next, _) = atlas.update(model, WorkoutsPage(workouts_page.Submitted))
+  let assert option.Some(engine) = next.syncing.sync
+  assert outbox.is_empty(sync.outbox(engine))
+}
+
+pub fn signing_out_clears_the_workouts_on_screen_too_test() {
+  let showing =
+    Model(
+      ..plan_screen("u1"),
+      workouts: workouts_page.Model(..workouts_page.new(), rows: [
+        workout_form.Row(
+          plan.Workout("w1", "p1", 0, 0, "Secret", plan.Easy, None, None),
+          "",
+          "T",
+        ),
+      ]),
+    )
+  let #(model, _) = atlas.update(showing, SignOutClicked)
+  assert model.workouts == workouts_page.new()
 }

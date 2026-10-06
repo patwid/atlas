@@ -729,3 +729,52 @@ pub fn the_answer_is_not_applied_over_later_queued_edits_test() {
     }
   })
 }
+
+pub fn a_start_requested_during_a_run_makes_another_run_follow_it_test() {
+  let #(s0, _) = sync.update(sync.new(outbox.new(), []), started())
+  // The request comes while the first run is going on: nothing is sent for it...
+  let #(s1, commands) = sync.update(s0, started())
+  assert commands == []
+  assert sync.is_busy(s1)
+  // ...but when the first run ends, a new one begins with a session check.
+  let #(s2, _) = sync.update(s1, Responded(CheckStart, 200, "{}"))
+  let empty =
+    "{\"items\":[],\"page\":1,\"perPage\":200,\"totalItems\":0,\"totalPages\":0}"
+  let s3 = answer_all_lists(s2, empty, 7)
+  let #(s4, commands) =
+    sync.update(s3, Responded(sync.VerifyForCommit, 200, "{}"))
+  assert list.contains(commands, Tell(Finished))
+  assert list.contains(commands, Send(api.refresh(), CheckStart))
+  assert sync.is_busy(s4)
+}
+
+pub fn without_a_request_during_the_run_it_just_ends_test() {
+  let #(s0, _) = sync.update(sync.new(outbox.new(), []), started())
+  let #(s1, _) = sync.update(s0, Responded(CheckStart, 200, "{}"))
+  let empty =
+    "{\"items\":[],\"page\":1,\"perPage\":200,\"totalItems\":0,\"totalPages\":0}"
+  let s2 = answer_all_lists(s1, empty, 7)
+  let #(s3, commands) =
+    sync.update(s2, Responded(sync.VerifyForCommit, 200, "{}"))
+  assert list.contains(commands, Tell(Finished))
+  assert !list.contains(commands, Send(api.refresh(), CheckStart))
+  assert !sync.is_busy(s3)
+}
+
+pub fn many_requests_during_one_run_cause_only_one_more_run_test() {
+  let #(s0, _) = sync.update(sync.new(outbox.new(), []), started())
+  let #(s1, _) = sync.update(s0, started())
+  let #(s2, _) = sync.update(s1, started())
+  let #(s3, _) = sync.update(s2, Responded(CheckStart, 200, "{}"))
+  let empty =
+    "{\"items\":[],\"page\":1,\"perPage\":200,\"totalItems\":0,\"totalPages\":0}"
+  let s4 = answer_all_lists(s3, empty, 7)
+  let #(s5, _) = sync.update(s4, Responded(sync.VerifyForCommit, 200, "{}"))
+  // The second run ends like any other, and no third one follows.
+  let #(s6, _) = sync.update(s5, Responded(CheckStart, 200, "{}"))
+  let s7 = answer_all_lists(s6, empty, 7)
+  let #(s8, commands) =
+    sync.update(s7, Responded(sync.VerifyForCommit, 200, "{}"))
+  assert list.contains(commands, Tell(Finished))
+  assert !sync.is_busy(s8)
+}

@@ -73,7 +73,15 @@ export async function startPocketBase(env = {}, { publicDir } = {}) {
       }
     },
     log: () => log,
-    stop: () => { server.kill(); rmSync(dir, { recursive: true, force: true }) },
+    // The data is throwaway, so the server is killed outright. A polite SIGTERM makes PocketBase shut
+    // down gracefully, which can take long while connections are open, and a living child keeps
+    // the test process from exiting.
+    stop: () => {
+      server.kill("SIGKILL")
+      server.stdout.destroy()
+      server.stderr.destroy()
+      rmSync(dir, { recursive: true, force: true })
+    },
   }
   return h
 }

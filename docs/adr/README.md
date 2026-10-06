@@ -25,3 +25,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0019 | [The device database: IndexedDB records, meta values and one owner](0019-device-database.md) | Accepted |
 | 0020 | [The sync runner in the app, local writes and conflicted copies](0020-sync-runner-and-conflicted-copies.md) | Accepted |
 | 0021 | [The plans screens](0021-plans-screens.md) | Accepted |
+| 0022 | [Workouts in a plan](0022-workouts-in-a-plan.md) | Accepted |

@@ -119,3 +119,20 @@ pub fn live_drops_deleted_and_unreadable_records_test() {
   assert records.is_deleted(parse("{\"deleted\":true}"))
   assert !records.is_deleted(parse("{\"id\":\"x\"}"))
 }
+
+pub fn a_workout_row_carries_description_and_the_local_updated_test() {
+  let text =
+    "{\"id\":\"w1\",\"plan\":\"p1\",\"day_index\":3,\"title\":\"Tempo\",\"kind\":\"tempo\",\"description\":\"3 x 10 min\",\"updated\":\"2026-10-06 08:00:00.100Z\"}"
+  let assert Ok(row) = records.workout_row(parse(text))
+  assert row.workout.title == "Tempo"
+  assert row.description == "3 x 10 min"
+  assert row.updated == "2026-10-06 08:00:00.100Z"
+  // Made offline: nothing synced yet.
+  let assert Ok(fresh) =
+    records.workout_row(parse(
+      "{\"id\":\"w2\",\"plan\":\"p1\",\"title\":\"x\",\"kind\":\"easy\"}",
+    ))
+  assert fresh.description == ""
+  assert fresh.updated == ""
+  assert records.workout_row(parse("{\"id\":\"w3\"}")) == Error(Nil)
+}

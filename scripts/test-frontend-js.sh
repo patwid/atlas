@@ -7,4 +7,4 @@ cd "$(dirname "$0")/.."
 scripts/build-frontend.sh >/dev/null   # also compiles the Gleam code the tests import
 cd frontend/test-js
 npm install --silent
-exec node --test
+exec node --test --test-timeout=120000   # a stuck test fails after two minutes instead of blocking forever

@@ -207,3 +207,91 @@ test("plans shared with the user show up read-only, and a pulled new plan appear
   assert.equal(button(w, "Delete"), undefined)
   w.close()
 })
+
+// Workouts inside a plan ------------------------------------------------------------------------------
+
+const choose = (w, select, value) => { select.value = value; select.dispatchEvent(new w.Event("change", { bubbles: true })) }
+const byLabel = (w, label) => [...w.document.querySelectorAll("button")].find((b) => b.getAttribute("aria-label") === label)
+
+test("the owner builds a plan's workouts: add, add to the same day, move, delete, and the server follows", { skip: !built && "frontend not built" }, async () => {
+  await h.world()
+  const alice = h.people.alice
+  await h.create("alice", "plans", { id: "baseplan0000001", owner: alice.id, title: "Base building", visibility: "private" })
+  const w = startApp("/plans/baseplan0000001", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
+  const d = w.document
+  const workouts = async () => (await h.api("GET", "collections/workouts/records?perPage=50&sort=day_index,position", { token: alice.token })).body.items
+
+  await waitFor("the empty workouts", () => d.body.textContent.includes("This plan has no workouts yet. Add the first one."))
+
+  // First workout: week 1, day 2, typed the way people type.
+  click(w, button(w, "Add workout"))
+  await waitFor("the form", () => d.querySelector("#workout-title"))
+  choose(w, d.querySelector("#workout-day"), "2")
+  submit(w, d.querySelector(".workout-form"))
+  await waitFor("a title error", () => d.querySelector(".error")?.textContent === "Give the workout a title.")
+  assert.deepEqual(await workouts(), [], "nothing is sent for an invalid form")
+  typeInto(w, d.querySelector("#workout-title"), "Easy run")
+  typeInto(w, d.querySelector("#workout-distance"), "8,5")
+  typeInto(w, d.querySelector("#workout-duration"), "1:15")
+  submit(w, d.querySelector(".workout-form"))
+  const first = await waitFor("the workout on the server", async () => (await workouts())[0])
+  assert.equal(first.plan, "baseplan0000001")
+  assert.equal(first.title, "Easy run")
+  assert.equal(first.kind, "easy")
+  assert.equal(first.day_index, 1)
+  assert.equal(first.position, 0)
+  assert.equal(first.distance_m, 8500)
+  assert.equal(first.duration_s, 4500)
+  await waitFor("the workout on screen with its targets", () => d.body.textContent.includes("Easy run") && d.body.textContent.includes("8.50 km · 1:15:00"))
+  await waitFor("the week total", () => d.querySelector(".totals")?.textContent.includes("8.50 km"))
+
+  // A second workout on the same day, from that day's own "+ Add".
+  click(w, byLabel(w, "Add a workout to week 1, day 2"))
+  await waitFor("the form for day 2", () => d.querySelector("#workout-title") && d.querySelector("#workout-day").value === "2")
+  typeInto(w, d.querySelector("#workout-title"), "Core session")
+  choose(w, d.querySelector("#workout-kind"), "strength")
+  submit(w, d.querySelector(".workout-form"))
+  const second = await waitFor("the second workout", async () => (await workouts()).find((x) => x.title === "Core session"))
+  assert.equal(second.kind, "strength")
+  assert.equal(second.day_index, 1)
+  assert.equal(second.position, 1, "it goes after the first one on that day")
+
+  // Move the first workout to day 4 and rename it.
+  click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Easy run")).querySelector("button"))
+  await waitFor("the edit form", () => d.querySelector("#workout-title")?.value === "Easy run")
+  assert.equal(d.querySelector("#workout-distance").value, "8.5")
+  assert.equal(d.querySelector("#workout-duration").value, "1:15")
+  choose(w, d.querySelector("#workout-day"), "4")
+  typeInto(w, d.querySelector("#workout-title"), "Steady run")
+  submit(w, d.querySelector(".workout-form"))
+  const moved = await waitFor("the move on the server", async () => (await workouts()).find((x) => x.id === first.id && x.title === "Steady run"))
+  assert.equal(moved.day_index, 3)
+  assert.equal(moved.position, 0)
+  assert.equal(moved.distance_m, 8500, "unchanged targets stay")
+
+  // Delete the second one, after the question.
+  const coreCard = () => [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Core session"))
+  click(w, [...coreCard().querySelectorAll("button")].find((b) => b.textContent === "Delete"))
+  await waitFor("the question", () => d.body.textContent.includes("Delete this workout?"))
+  assert.equal((await workouts()).find((x) => x.id === second.id).deleted, false)
+  click(w, button(w, "Yes, delete it"))
+  await waitFor("the delete on the server", async () => (await workouts()).find((x) => x.id === second.id)?.deleted === true)
+  await waitFor("gone from the screen", () => !d.body.textContent.includes("Core session"))
+  w.close()
+})
+
+test("someone else's plan shows its workouts but offers no way to change them", { skip: !built && "frontend not built" }, async () => {
+  await h.world()
+  const alice = h.people.alice
+  const bob = h.people.bob
+  await h.create("alice", "plans", { id: "sharedplan00001", owner: alice.id, title: "Coach's plan", visibility: "public" })
+  await h.create("alice", "workouts", { id: "sharedwork00001", plan: "sharedplan00001", day_index: 0, position: 0, title: "Hill repeats", kind: "interval", distance_m: 6000, duration_s: 2400 })
+  const w = startApp("/plans/sharedplan00001", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
+  const d = w.document
+  await waitFor("the shared workout", () => d.body.textContent.includes("Hill repeats") && d.body.textContent.includes("6.00 km · 40:00"))
+  assert.equal(button(w, "Add workout"), undefined)
+  assert.equal(byLabel(w, "Add a workout to week 1, day 1"), undefined)
+  assert.equal(button(w, "Edit"), undefined)
+  assert.equal(button(w, "Delete"), undefined)
+  w.close()
+})

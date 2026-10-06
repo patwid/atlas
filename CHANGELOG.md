@@ -25,8 +25,11 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Device database in IndexedDB (records, outbox, cursors, one owner per device), record decoders, and `scripts/test-frontend-js.sh` for the browser glue (ADR 0019).
 - Sync runner in the app: runs the engine against the device database, local writes that queue for upload, conflicted copies of plans and workouts, and a Settings section for sync status and problems. Whole-app tests with jsdom, fake-indexeddb and a real PocketBase (ADR 0020).
 - Plans screens: list, create, edit and delete plans, and read plans shared with you, working offline and syncing in the background (ADR 0021).
+- Workouts in a plan: weeks and days layout with weekly totals, and add, edit, move and delete for the plan's owner (read-only for others), working offline (ADR 0022).
 
 ### Fixed
+- A sync requested while another one is running is no longer lost: one more run follows (ADR 0018, addendum).
+- Test servers are stopped with SIGKILL, and tests have a timeout, so a slow PocketBase shutdown can no longer keep the test process alive.
 - The HTTP glue no longer reports an error thrown by the app's own handler as "no connection".
 
 ### Changed
