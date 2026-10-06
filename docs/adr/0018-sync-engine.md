@@ -46,5 +46,5 @@ when a `RetryIn` timer fires.
   copies and `Apply` into local writes (decoders per collection come with the data layer).
 - A pull that fails halfway repeats from the start on the next run. Cursors of collections that
   completed are not saved until the commit step succeeds, so their pages are fetched again. It is wasteful but correct.
-- 33 tests run the engine against a fake PocketBase (stale base, duplicate ID, revoked token, paging,
+- 18 tests run the engine against a fake PocketBase (stale base, duplicate ID, revoked token, paging,
   broken collection, backoff). They do not replace a test against the real server once the caller exists.
