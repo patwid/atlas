@@ -11,7 +11,14 @@ const people = new Proxy({}, { get: (_, k) => h.people[k] })
 const as = (name) => h.as(name)
 const api = (...a) => h.api(...a)
 const create = (...a) => h.create(...a)
-const update = (...a) => h.update(...a)
+// Clients must send base_updated (ADR 0011); like the sync engine, fetch it first unless given.
+const update = async (who, collection, rid, body) => {
+  if (body.base_updated === undefined) {
+    const current = await h.get(who, collection, rid)
+    if (current.status === 200) body = { ...body, base_updated: current.body.updated }
+  }
+  return h.update(who, collection, rid, body)
+}
 const get = (...a) => h.get(...a)
 const list = (...a) => h.list(...a)
 
