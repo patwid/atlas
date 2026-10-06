@@ -1,8 +1,8 @@
 # 0034. Heart-rate zones as an explicit setting
 
-- Status: Accepted (storage and screen); Proposed (default maximum of 190 bpm)
+- Status: Accepted
 - Date: 2026-10-06
-- Deciders: owner asked for configurable zones with defaults; agent (design)
+- Deciders: owner asked for configurable zones with defaults and kept the fixed default maximum (2026-10-06); agent (design)
 
 ## Context
 
@@ -50,8 +50,8 @@ We use options 2 and 5.
 - Further per-athlete settings can be added as fields on the same row.
 - The rows are never soft-deleted, so the purge job ([0014](0014-purge-soft-deleted-rows.md)) does not handle this collection; a deleted user's
   row goes with the user (cascade).
-- **Proposed**: 190 bpm is a middling default. Better would be the highest `max_hr` of the athlete's activities, or an age-based estimate;
-  both make the defaults change under the athlete, so a fixed value was chosen until the owner decides.
+- **Default maximum (decided by the owner, 2026-10-06)**: a fixed 190 bpm, a middling value. Alternatives were the highest `max_hr` of the athlete's activities, or an age-based estimate;
+  both make the defaults change under the athlete, so the owner kept the fixed value. Revisit when screens start using the zones.
 
 ## Addendum: lactate zones (2026-10-06)
 

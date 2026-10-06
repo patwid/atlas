@@ -1,8 +1,8 @@
 # 0035. Lactate zones as an explicit setting
 
-- Status: Accepted (storage and screen); Proposed (default values)
+- Status: Accepted
 - Date: 2026-10-06
-- Deciders: owner asked for configurable lactate zones and chose zones by blood lactate in mmol/L; agent (design)
+- Deciders: owner asked for configurable lactate zones and chose zones by blood lactate in mmol/L, and kept the default values (2026-10-06); agent (design)
 
 ## Context
 
@@ -24,7 +24,7 @@ For the values: floats in the UI and the domain would need rounding care in ever
   working. A client that finds them empty (0) or unusable uses the lactate defaults, and keeps the heart-rate zones.
 - **Values**: one decimal at most, typed with a point or a comma. In the app they are whole tenths (`lactate_zones` module); the stored value is
   mmol/L. Each zone ends one tenth below the next one's start; zone 5 has no upper end. Starts must rise.
-- **Defaults (Proposed)**: 1.0, 1.5, 2.5, 4.0 and 6.0 mmol/L, close to the Olympiatoppen intensity zones. 4.0 is the classic "anaerobic threshold";
+- **Defaults (decided by the owner, 2026-10-06)**: 1.0, 1.5, 2.5, 4.0 and 6.0 mmol/L, close to the Olympiatoppen intensity zones. 4.0 is the classic "anaerobic threshold";
   real thresholds vary a lot between athletes, which is why the zones are configurable.
 - **Screen**: the Settings section becomes "Training zones" with a "Heart rate" and a "Blood lactate" part and one "Save zones". Saving writes all
   values, so a row created from the screen is always complete.
