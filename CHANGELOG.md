@@ -11,6 +11,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - `backend/` layout for PocketBase hooks, migrations and static files (ADR 0002, 0006).
 - `sbx/default` sandbox kit that allows `repo.hex.pm` and Strava (ADR 0007).
 - `flake.nix` and `flake.lock`: development shell with all tools from nixpkgs unstable (`nix develop`); the sandbox kit allows `cache.nixos.org` (ADR 0032).
+- `nix build` and `nix run` for the whole app (frontend, hooks, migrations, PocketBase launcher); `build-frontend.sh` accepts `ATLAS_BUILD_ID` and `ATLAS_PUBLIC_OUT` (ADR 0033).
 - `sbxenv.yaml` to create and attach to the dev sandbox with `sbx env run` (ADR 0008).
 - PocketBase migration with the data model and API rules: plans, workouts, assignments, activities, matches, coach grants and Strava connections (ADR 0009).
 - `scripts/test-backend.sh` runs the API rule tests against a throwaway PocketBase (ADR 0009).

@@ -36,3 +36,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0030 | [The membership sweep: access that is taken away reaches the device](0030-membership-sweep.md) | Accepted |
 | 0031 | [The coach's view of an athlete's progress](0031-coach-view-of-an-athlete.md) | Accepted |
 | 0032 | [Provide the development tools through a Nix flake](0032-nix-flake-dev-shell.md) | Accepted |
+| 0033 | [Build and run the app with `nix build` and `nix run`](0033-build-and-run-with-nix.md) | Accepted |
