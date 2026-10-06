@@ -44,5 +44,7 @@ Record decisions and changes yourself. Do not wait to be asked, and do not ask f
 - Sandbox environment: `sbxenv.yaml` (ADR 0008). Never add `lifecycle:`, `secrets:` or `bindings:` to it.
 - Install toolchain: `scripts/install-tools.sh` (versions in `.tool-versions`, ADR 0006)
 - Backend rule tests: `scripts/test-backend.sh` (run it after any change to `pb_migrations`, ADR 0009)
+- Strava hooks need `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_VERIFY_TOKEN` and `ATLAS_PUBLIC_URL` in the environment (ADR 0012). Never commit them.
+- Hook handlers run in isolated scopes: put shared code in `pb_hooks/lib/` and `require(`${__hooks}/lib/x.js`)` inside the handler.
 - Backend: `cd backend && pocketbase serve --dir pb_data` (the admin UI is at `http://127.0.0.1:8090/_/`)
 - Frontend: `cd frontend && gleam test`, `gleam run -m lustre/dev start`

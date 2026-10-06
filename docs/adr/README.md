@@ -15,3 +15,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0009 | [Data model and API rules](0009-data-model-and-api-rules.md) | Accepted |
 | 0010 | [Select users by exact e-mail lookup](0010-user-lookup-by-email.md) | Accepted |
 | 0011 | [Refuse stale updates with a server-side `base_updated` guard](0011-sync-conflict-guard.md) | Accepted |
+| 0012 | [Strava integration as PocketBase hooks](0012-strava-integration-hooks.md) | Accepted |

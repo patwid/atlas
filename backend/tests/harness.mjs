@@ -20,7 +20,7 @@ export async function startPocketBase(env = {}) {
   cpSync(join(backend, "pb_migrations"), join(dir, "pb_migrations"), { recursive: true })
   cpSync(join(backend, "pb_hooks"), join(dir, "pb_hooks"), { recursive: true })
   const pb = (...args) => ["--dir", join(dir, "pb_data"), "--migrationsDir", join(dir, "pb_migrations"), "--hooksDir", join(dir, "pb_hooks"), ...args]
-  const childEnv = { ...process.env, NO_PROXY: "127.0.0.1,localhost", no_proxy: "127.0.0.1,localhost", ...env }
+  const childEnv = { ...process.env, ATLAS_PUBLIC_URL: url, NO_PROXY: "127.0.0.1,localhost", no_proxy: "127.0.0.1,localhost", ...env }
   execFileSync("pocketbase", ["superuser", "upsert", "admin@example.com", "adminpass123", ...pb()], { stdio: "pipe", env: childEnv })
   const server = spawn("pocketbase", ["serve", `--http=127.0.0.1:${port}`, ...pb()], { stdio: "pipe", env: childEnv })
   let log = ""
