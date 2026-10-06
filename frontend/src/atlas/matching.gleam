@@ -34,12 +34,13 @@ const max_relative_difference = 1.0
 
 /// Proposes new matches for the scheduled workouts. `existing` matches (made earlier or confirmed
 /// by the user) are kept out of the proposal: their activities and workouts are not used again.
-/// `utc_offset_minutes` is the athlete's local offset, used to decide on which day an activity happened.
+/// `offset_at` gives the athlete's UTC offset in minutes at a UTC timestamp. It is a function, not a number,
+/// because the offset changes with daylight saving and decides on which local day an activity happened.
 pub fn propose(
   scheduled: List(Scheduled),
   activities: List(Activity),
   existing: List(Match),
-  utc_offset_minutes: Int,
+  offset_at: fn(String) -> Int,
 ) -> List(Match) {
   let used_activities =
     set.from_list(list.map(existing, fn(m) { m.activity_id }))
@@ -58,7 +59,7 @@ pub fn propose(
         False ->
           activities
           |> list.filter(fn(a) { !set.contains(used_activities, a.id) })
-          |> list.filter_map(fn(a) { candidate(s, a, utc_offset_minutes) })
+          |> list.filter_map(fn(a) { candidate(s, a, offset_at) })
       }
     })
 
@@ -116,10 +117,10 @@ type Candidate {
 fn candidate(
   scheduled: Scheduled,
   activity: Activity,
-  utc_offset_minutes: Int,
+  offset_at: fn(String) -> Int,
 ) -> Result(Candidate, Nil) {
   case
-    date.local_date(activity.started_at, utc_offset_minutes),
+    date.local_date(activity.started_at, offset_at(activity.started_at)),
     compatible(scheduled.workout.kind, activity.sport)
   {
     Ok(day), True if day == scheduled.date ->
