@@ -557,3 +557,54 @@ test("Today without a plan points to the plans", { skip: !built && "frontend not
   assert.equal(w.document.querySelector('a[href="/plans"]')?.textContent, "Go to plans")
   w.close()
 })
+
+// Copying a plan --------------------------------------------------------------------------------------
+
+test("a user copies someone else's public plan with its workouts, then edits the copy; the original is untouched", { skip: !built && "frontend not built" }, async () => {
+  await h.world()
+  const alice = h.people.alice
+  const bob = h.people.bob
+  await setup(h.create("alice", "plans", { id: "copysrcplan0001", owner: alice.id, title: "Autumn 10k", description: "Eight weeks", visibility: "public" }))
+  await setup(h.create("alice", "workouts", { id: "copysrcwork0001", plan: "copysrcplan0001", day_index: 3, position: 0, title: "Tempo", kind: "tempo", description: "3 x 10 min", distance_m: 8000, duration_s: 2700 }))
+  await setup(h.create("alice", "workouts", { id: "copysrcwork0002", plan: "copysrcplan0001", day_index: 0, position: 0, title: "Easy run", kind: "easy", distance_m: 5000 }))
+
+  const w = startApp("/plans/copysrcplan0001", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
+  const d = w.document
+  const mine = async () => (await h.api("GET", "collections/plans/records?perPage=50", { token: bob.token })).body.items.filter((p) => p.owner === bob.id)
+  const workoutsOf = async (planId) =>
+    (await h.api("GET", `collections/workouts/records?perPage=50&sort=day_index&filter=${encodeURIComponent(`plan = "${planId}"`)}`, { token: bob.token })).body.items
+
+  await waitFor("the plan with its workouts", () => d.querySelector("h2")?.textContent === "Autumn 10k" && d.body.textContent.includes("Easy run") && d.body.textContent.includes("Tempo"))
+  assert.equal(button(w, "Edit"), undefined, "someone else's plan cannot be edited")
+  click(w, button(w, "Copy to my plans"))
+  await waitFor("the confirmation with a link", () => d.body.textContent.includes("Copied to your plans.") && [...d.querySelectorAll("a")].some((a) => a.textContent === "Open your copy"))
+  assert.equal(button(w, "Copy to my plans"), undefined, "a second click is not possible while the copy is shown")
+
+  const copy = await waitFor("the copy on the server", async () => (await mine())[0])
+  assert.equal(copy.title, "Copy of Autumn 10k")
+  assert.equal(copy.description, "Eight weeks")
+  assert.equal(copy.visibility, "private", "a copy of a public plan starts private")
+  assert.equal(copy.source_plan, "copysrcplan0001")
+  const copied = await waitFor("both workouts on the server", async () => { const ws = await workoutsOf(copy.id); return ws.length === 2 && ws })
+  assert.deepEqual(copied.map((x) => [x.title, x.day_index, x.kind]), [["Easy run", 0, "easy"], ["Tempo", 3, "tempo"]])
+  assert.equal(copied[1].description, "3 x 10 min")
+  assert.equal(copied[1].distance_m, 8000)
+  assert.equal(copied[1].duration_s, 2700)
+
+  // The original has not changed.
+  const original = (await h.api("GET", "collections/plans/records/copysrcplan0001", { token: alice.token })).body
+  assert.equal(original.title, "Autumn 10k")
+  assert.equal((await workoutsOf("copysrcplan0001")).length, 2)
+
+  // The copy is Bob's: he opens it and can change it.
+  click(w, [...d.querySelectorAll("a")].find((a) => a.textContent === "Open your copy"))
+  await waitFor("the copy's screen with edit", () => d.querySelector("h2")?.textContent === "Copy of Autumn 10k" && button(w, "Edit"))
+  assert.ok(d.body.textContent.includes("Tempo") && d.body.textContent.includes("Easy run"), "the workouts came along")
+  click(w, button(w, "Edit"))
+  await waitFor("the edit form", () => d.querySelector("#plan-title")?.value === "Copy of Autumn 10k")
+  typeInto(w, d.querySelector("#plan-title"), "My autumn 10k")
+  submit(w, d.querySelector(".plan-form"))
+  await waitFor("the rename on the server", async () => (await mine()).some((p) => p.title === "My autumn 10k"))
+  assert.equal((await h.api("GET", "collections/plans/records/copysrcplan0001", { token: alice.token })).body.title, "Autumn 10k")
+  w.close()
+})

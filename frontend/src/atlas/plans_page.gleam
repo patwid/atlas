@@ -28,6 +28,15 @@ pub type Mode {
   Editing(id: String)
 }
 
+/// Where a copy of the plan on screen stands.
+pub type CopyState {
+  NoCopy
+  /// Asked for; the app is making it.
+  Copying(source_id: String)
+  Copied(source_id: String, new_id: String)
+  CopyProblem(source_id: String, message: String)
+}
+
 pub type Model {
   Model(
     plans: List(Plan),
@@ -37,6 +46,7 @@ pub type Model {
     form: plan_form.Form,
     /// The first click on "Delete" asks; the second one deletes.
     confirming_delete: Bool,
+    copy: CopyState,
   )
 }
 
@@ -53,6 +63,11 @@ pub type Msg {
   Submitted
   DeleteClicked
   DeleteConfirmed(String)
+  CopyClicked(String)
+  /// The app made the copy: its plan has this ID.
+  CopyMade(String, String)
+  CopyFailed(String, String)
+  CopyAgainClicked
 }
 
 /// A change the user made. The app performs it with the sync runner.
@@ -60,10 +75,13 @@ pub type Action {
   Create(id: String, fields: outbox.Fields)
   Edit(id: String, fields: outbox.Fields, base_updated: String)
   Delete(id: String, base_updated: String)
+  /// Copy the plan with its workouts into the user's plans. The app builds the records and reports back
+  /// with `CopyMade`.
+  Copy(source_id: String)
 }
 
 pub fn new() -> Model {
-  Model([], False, Browsing, plan_form.empty(), False)
+  Model([], False, Browsing, plan_form.empty(), False, NoCopy)
 }
 
 pub fn refresh() -> Effect(Msg) {
@@ -195,6 +213,31 @@ pub fn update(
       [],
     )
 
+    CopyClicked(id) ->
+      case model.copy, find(model.plans, id) {
+        // One copy at a time, and no second one by a double click.
+        Copying(_), _ -> #(model, effect.none(), [])
+        Copied(source, _), _ if source == id -> #(model, effect.none(), [])
+        _, Ok(_) -> #(Model(..model, copy: Copying(id)), effect.none(), [
+          Copy(id),
+        ])
+        _, Error(Nil) -> #(model, effect.none(), [])
+      }
+
+    CopyMade(source, new_id) -> #(
+      Model(..model, copy: Copied(source, new_id)),
+      effect.none(),
+      [],
+    )
+
+    CopyFailed(source, message) -> #(
+      Model(..model, copy: CopyProblem(source, message)),
+      effect.none(),
+      [],
+    )
+
+    CopyAgainClicked -> #(Model(..model, copy: NoCopy), effect.none(), [])
+
     DeleteConfirmed(id) ->
       case find(model.plans, id) {
         Ok(found) if found.owner_id == user_id -> #(
@@ -309,15 +352,62 @@ pub fn view_detail(model: Model, id: String, user_id: String) -> Element(Msg) {
                 False ->
                   html.p([class("muted")], [
                     html.text(
-                      "This plan was shared with you. Only its owner can change it.",
+                      "This plan was shared with you. Only its owner can change it. Copy it to make a version of your own.",
                     ),
                   ])
                 True -> owner_actions(found, model.confirming_delete)
               },
+              copy_view(model.copy, found.id),
             ])
         },
       ])
     }
+  }
+}
+
+fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
+  case state {
+    Copied(source, new_id) if source == plan_id ->
+      html.div([class("copied"), attribute.role("status")], [
+        html.text("Copied to your plans. "),
+        html.a([attribute.href(route.to_path(route.Plan(new_id)))], [
+          html.text("Open your copy"),
+        ]),
+        html.text(" "),
+        html.button(
+          [
+            attribute.type_("button"),
+            class("link"),
+            event.on_click(CopyAgainClicked),
+          ],
+          [html.text("Copy again")],
+        ),
+      ])
+    CopyProblem(source, message) if source == plan_id ->
+      html.div([], [
+        html.p([class("error"), attribute.role("alert")], [html.text(message)]),
+        html.button(
+          [
+            attribute.type_("button"),
+            class("secondary"),
+            event.on_click(CopyAgainClicked),
+          ],
+          [html.text("Try again")],
+        ),
+      ])
+    Copying(source) if source == plan_id ->
+      html.p([class("muted")], [html.text("Copying…")])
+    _ ->
+      html.div([class("actions")], [
+        html.button(
+          [
+            attribute.type_("button"),
+            class("secondary"),
+            event.on_click(CopyClicked(plan_id)),
+          ],
+          [html.text("Copy to my plans")],
+        ),
+      ])
   }
 }
 

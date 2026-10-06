@@ -12,8 +12,10 @@ import atlas/grants
 import atlas/http
 import atlas/online
 import atlas/plan
+import atlas/plan_copy
 import atlas/plans_page
 import atlas/pwa
+import atlas/random
 import atlas/route.{type Route}
 import atlas/shell
 import atlas/signin
@@ -328,7 +330,8 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         SignedIn(session) -> {
           let #(page_model, page_effect, actions) =
             plans_page.update(model.plans, inner, session.user_id)
-          let #(state, action_effects) = perform(model.syncing, actions)
+          let #(state, action_effects, page_model) =
+            perform(model, session, model.syncing, page_model, actions)
           #(
             Model(..model, plans: page_model, syncing: state),
             effect.batch([
@@ -673,23 +676,97 @@ fn perform_workouts(
   })
 }
 
-/// Carries out what the user did on the plans screens, through the sync runner.
+/// Carries out what the user did on the plans screens, through the sync runner. A copy needs the plan's
+/// workouts, which the app holds, so it is made here, and the screen is told how it went.
 fn perform(
+  model: Model,
+  session: Session,
   state: syncing.State,
+  page_model: plans_page.Model,
   actions: List(plans_page.Action),
-) -> #(syncing.State, List(Effect(syncing.Msg))) {
-  list.fold(actions, #(state, []), fn(acc, action) {
-    let #(current, effects) = acc
-    let #(next, effect) = case action {
-      plans_page.Create(id, fields) ->
-        syncing.create(current, collection.Plans, id, fields)
-      plans_page.Edit(id, fields, base) ->
-        syncing.edit(current, collection.Plans, id, fields, base)
-      plans_page.Delete(id, base) ->
-        syncing.delete(current, collection.Plans, id, base)
+) -> #(syncing.State, List(Effect(syncing.Msg)), plans_page.Model) {
+  list.fold(actions, #(state, [], page_model), fn(acc, action) {
+    let #(current, effects, page) = acc
+    case action {
+      plans_page.Create(id, fields) -> {
+        let #(next, effect) =
+          syncing.create(current, collection.Plans, id, fields)
+        #(next, list.append(effects, [effect]), page)
+      }
+      plans_page.Edit(id, fields, base) -> {
+        let #(next, effect) =
+          syncing.edit(current, collection.Plans, id, fields, base)
+        #(next, list.append(effects, [effect]), page)
+      }
+      plans_page.Delete(id, base) -> {
+        let #(next, effect) =
+          syncing.delete(current, collection.Plans, id, base)
+        #(next, list.append(effects, [effect]), page)
+      }
+      plans_page.Copy(source_id) ->
+        copy_plan(model, session, current, effects, page, source_id)
     }
-    #(next, list.append(effects, [effect]))
   })
+}
+
+/// Makes a private copy of a plan with all its workouts. The plan is created first and its workouts after
+/// it, in order, so the server has the plan before it is asked to attach workouts to it.
+fn copy_plan(
+  model: Model,
+  session: Session,
+  state: syncing.State,
+  effects: List(Effect(syncing.Msg)),
+  page: plans_page.Model,
+  source_id: String,
+) -> #(syncing.State, List(Effect(syncing.Msg)), plans_page.Model) {
+  let report = fn(message) {
+    let #(next, _, _) = plans_page.update(page, message, session.user_id)
+    next
+  }
+  case
+    list.find(model.plans.plans, fn(p) { p.id == source_id }),
+    model.workouts.loaded
+  {
+    Ok(source), True -> {
+      let copy =
+        plan_copy.build(
+          source,
+          workouts_page.rows_of(model.workouts, source_id),
+          session.user_id,
+          random.new_id,
+        )
+      let #(with_plan, plan_effect) =
+        syncing.create(state, collection.Plans, copy.plan_id, copy.plan_fields)
+      let #(finished, workout_effects) =
+        list.fold(copy.workouts, #(with_plan, []), fn(inner, item) {
+          let #(current, made) = inner
+          let #(next, effect) =
+            syncing.create(current, collection.Workouts, item.0, item.1)
+          #(next, list.append(made, [effect]))
+        })
+      #(
+        finished,
+        list.append(effects, [plan_effect, ..workout_effects]),
+        report(plans_page.CopyMade(source_id, copy.plan_id)),
+      )
+    }
+    Ok(_), False -> #(
+      state,
+      effects,
+      report(plans_page.CopyFailed(
+        source_id,
+        "The workouts of this plan are still loading. Try again in a moment.",
+      )),
+    )
+    Error(Nil), _ -> #(
+      state,
+      effects,
+      report(plans_page.CopyFailed(
+        source_id,
+        "This plan is no longer on this device.",
+      )),
+    )
+  }
 }
 
 /// What the app does about the engine's notices. Conflicts and rejections are handled in `syncing`.

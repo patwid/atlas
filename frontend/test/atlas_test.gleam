@@ -29,6 +29,7 @@ import atlas/today_page
 import atlas/workout_form
 import atlas/workouts_page
 import gleam/dict
+import gleam/list
 import gleam/option.{None, Some}
 import gleam/string
 import gleam/uri
@@ -636,4 +637,89 @@ pub fn signing_out_clears_the_strava_state_test() {
     )
   let #(model, _) = atlas.update(showing, SignOutClicked)
   assert model.strava == strava_page.new()
+}
+
+fn copy_screen(workouts_loaded: Bool) -> atlas.Model {
+  Model(
+    ..signed_in(),
+    route: route.Plan("src"),
+    syncing: ready_syncing(),
+    plans: plans_page.Model(
+      ..plans_page.new(),
+      plans: [
+        plan.Plan("src", "coach", "10k plan", "Build up", plan.Public, "T"),
+      ],
+      loaded: True,
+    ),
+    workouts: workouts_page.Model(
+      ..workouts_page.new(),
+      loaded: workouts_loaded,
+      rows: [
+        workout_form.Row(
+          plan.Workout(
+            "w2",
+            "src",
+            3,
+            0,
+            "Tempo",
+            plan.Tempo,
+            option.Some(8000.0),
+            None,
+          ),
+          "",
+          "T",
+        ),
+        workout_form.Row(
+          plan.Workout("w1", "src", 0, 0, "Easy", plan.Easy, None, None),
+          "",
+          "T",
+        ),
+        workout_form.Row(
+          plan.Workout(
+            "other",
+            "elsewhere",
+            0,
+            0,
+            "Not mine",
+            plan.Easy,
+            None,
+            None,
+          ),
+          "",
+          "T",
+        ),
+      ],
+    ),
+  )
+}
+
+pub fn copying_a_plan_queues_the_plan_first_and_then_its_workouts_in_order_test() {
+  let #(model, _) =
+    atlas.update(copy_screen(True), PlansPage(plans_page.CopyClicked("src")))
+  let assert option.Some(engine) = model.syncing.sync
+  let entries = sync.outbox(engine).entries
+  assert list.map(entries, fn(e) { e.collection })
+    == [collection.Plans, collection.Workouts, collection.Workouts]
+  let assert [plan_entry, first, second] = entries
+  assert dict.get(plan_entry.fields, "title") == Ok("\"Copy of 10k plan\"")
+  assert dict.get(plan_entry.fields, "owner") == Ok("\"u1\"")
+  assert dict.get(plan_entry.fields, "visibility") == Ok("\"private\"")
+  assert dict.get(plan_entry.fields, "source_plan") == Ok("\"src\"")
+  // Both workouts belong to the new plan, in day order, and the other plan's workout is left out.
+  assert dict.get(first.fields, "plan") == Ok("\"" <> plan_entry.id <> "\"")
+  assert dict.get(second.fields, "plan") == Ok("\"" <> plan_entry.id <> "\"")
+  assert dict.get(first.fields, "title") == Ok("\"Easy\"")
+  assert dict.get(second.fields, "title") == Ok("\"Tempo\"")
+  // The screen links to the copy.
+  assert model.plans.copy == plans_page.Copied("src", plan_entry.id)
+}
+
+pub fn a_copy_waits_until_the_workouts_have_been_read_test() {
+  let #(model, _) =
+    atlas.update(copy_screen(False), PlansPage(plans_page.CopyClicked("src")))
+  let assert option.Some(engine) = model.syncing.sync
+  // Copying now would leave the workouts behind: nothing is queued.
+  assert outbox.is_empty(sync.outbox(engine))
+  let assert plans_page.CopyProblem("src", message) = model.plans.copy
+  assert string.contains(message, "still loading")
 }

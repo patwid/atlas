@@ -250,3 +250,92 @@ pub fn the_delete_question_has_a_clear_way_out_test() {
   assert string.contains(html, "Yes, delete it")
   assert string.contains(html, "Keep it")
 }
+
+// Copying -----------------------------------------------------------------------------------------
+
+pub fn copying_asks_the_app_and_blocks_a_second_click_test() {
+  let model = with_plans([others("o", "Coach plan")])
+  let #(copying, actions) = update(model, plans_page.CopyClicked("o"))
+  assert actions == [plans_page.Copy("o")]
+  assert copying.copy == plans_page.Copying("o")
+  // A double click does not start a second copy.
+  let #(still, actions) = update(copying, plans_page.CopyClicked("o"))
+  assert actions == []
+  assert still == copying
+}
+
+pub fn a_finished_copy_offers_the_new_plan_and_blocks_another_click_test() {
+  let copying =
+    Model(
+      ..with_plans([others("o", "Coach plan")]),
+      copy: plans_page.Copying("o"),
+    )
+  let #(done, _) = update(copying, plans_page.CopyMade("o", "new1"))
+  assert done.copy == plans_page.Copied("o", "new1")
+  let #(same, actions) = update(done, plans_page.CopyClicked("o"))
+  assert actions == []
+  assert same == done
+  // "Copy again" lifts the block.
+  let #(again, _) = update(done, plans_page.CopyAgainClicked)
+  assert again.copy == plans_page.NoCopy
+  let #(second, actions) = update(again, plans_page.CopyClicked("o"))
+  assert actions == [plans_page.Copy("o")]
+  assert second.copy == plans_page.Copying("o")
+}
+
+pub fn a_plan_not_on_the_device_cannot_be_copied_test() {
+  let #(model, actions) = update(with_plans([]), plans_page.CopyClicked("nope"))
+  assert actions == []
+  assert model.copy == plans_page.NoCopy
+}
+
+pub fn a_failed_copy_says_why_and_can_be_retried_test() {
+  let copying =
+    Model(..with_plans([mine("a", "A")]), copy: plans_page.Copying("a"))
+  let #(failed, _) =
+    update(copying, plans_page.CopyFailed("a", "Try again in a moment."))
+  assert failed.copy == plans_page.CopyProblem("a", "Try again in a moment.")
+  let html = html_of(plans_page.view_detail(failed, "a", "u1"))
+  assert string.contains(html, "Try again in a moment.")
+  assert string.contains(html, "role=\"alert\"")
+  let #(retry, _) = update(failed, plans_page.CopyAgainClicked)
+  assert retry.copy == plans_page.NoCopy
+}
+
+pub fn every_plan_on_screen_offers_a_copy_test() {
+  let own =
+    html_of(plans_page.view_detail(with_plans([mine("a", "Mine")]), "a", "u1"))
+  assert string.contains(own, "Copy to my plans")
+  let shared =
+    html_of(plans_page.view_detail(
+      with_plans([others("o", "Theirs")]),
+      "o",
+      "u1",
+    ))
+  assert string.contains(shared, "Copy to my plans")
+  assert string.contains(shared, "Copy it to make a version of your own")
+}
+
+pub fn a_copy_links_to_the_new_plan_only_on_the_plan_it_came_from_test() {
+  let model =
+    Model(
+      ..with_plans([mine("a", "A"), mine("b", "B")]),
+      copy: plans_page.Copied("a", "new1"),
+    )
+  let on_source = html_of(plans_page.view_detail(model, "a", "u1"))
+  assert string.contains(on_source, "Copied to your plans.")
+  assert string.contains(on_source, "href=\"/plans/new1\"")
+  assert string.contains(on_source, "Copy again")
+  let elsewhere = html_of(plans_page.view_detail(model, "b", "u1"))
+  assert !string.contains(elsewhere, "Copied to your plans.")
+  assert string.contains(elsewhere, "Copy to my plans")
+}
+
+pub fn the_copying_state_is_shown_test() {
+  let model =
+    Model(..with_plans([mine("a", "A")]), copy: plans_page.Copying("a"))
+  assert string.contains(
+    html_of(plans_page.view_detail(model, "a", "u1")),
+    "Copying…",
+  )
+}

@@ -31,3 +31,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0025 | [Entering activities by hand](0025-manual-activities.md) | Accepted |
 | 0026 | [The Today screen and stored matches](0026-today-screen.md) | Accepted |
 | 0027 | [The Strava section in Settings](0027-strava-screen.md) | Accepted / Proposed |
+| 0028 | [Copying a plan](0028-copy-a-plan.md) | Accepted |
