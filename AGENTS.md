@@ -48,4 +48,5 @@ Record decisions and changes yourself. Do not wait to be asked, and do not ask f
 - Hook handlers run in isolated scopes: put shared code in `pb_hooks/lib/` and `require(`${__hooks}/lib/x.js`)` inside the handler.
 - Backend: `cd backend && pocketbase serve --dir pb_data` (the admin UI is at `http://127.0.0.1:8090/_/`)
 - Build the frontend into `backend/pb_public`: `scripts/build-frontend.sh` (ADR 0013)
+- Browser glue tests (IndexedDB, needs npm): `scripts/test-frontend-js.sh` (ADR 0019)
 - Frontend: `cd frontend && gleam test`, `gleam run -m lustre/dev start`

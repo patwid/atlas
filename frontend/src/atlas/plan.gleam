@@ -20,6 +20,21 @@ pub type Kind {
   Strength
 }
 
+pub type Visibility {
+  Private
+  Public
+}
+
+pub type Plan {
+  Plan(
+    id: String,
+    owner_id: String,
+    title: String,
+    description: String,
+    visibility: Visibility,
+  )
+}
+
 pub type Workout {
   Workout(
     id: String,

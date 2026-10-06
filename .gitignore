@@ -6,3 +6,6 @@ backend/pb_public/*
 # Gleam
 frontend/build/
 frontend/priv/static/
+
+# Dev-only packages for frontend/test-js
+frontend/test-js/node_modules/
