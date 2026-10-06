@@ -99,7 +99,7 @@ pub fn update(
       let ready =
         State(
           ..state,
-          sync: Some(sync.new(loaded.outbox, loaded.cursors)),
+          sync: Some(sync.new(loaded.outbox, loaded.cursors, loaded.swept_at)),
           phase: Ready,
           revision: state.revision + 1,
         )
@@ -159,7 +159,11 @@ fn kick(state: State, context: Context) -> #(State, Effect(Msg), List(Notice)) {
     date.from_unix_seconds(context.now_seconds, context.utc_offset_minutes)
   run(
     state,
-    sync.Started(today, auth.is_expired(context.token, context.now_seconds)),
+    sync.Started(
+      today,
+      auth.is_expired(context.token, context.now_seconds),
+      context.now_seconds,
+    ),
     context,
   )
 }
@@ -415,6 +419,7 @@ fn execute(command: Command, engine: Sync, context: Context) -> Effect(Msg) {
           fn(ok) { dispatch(RecordsWritten(ok)) },
         )
       })
+    sync.SaveSweep(now) -> write_meta(local.swept_key, int.to_string(now))
     sync.RetryIn(seconds) -> timer.after(seconds, Kick)
     // Notices are returned to the app, not executed.
     sync.Tell(_) -> effect.none()

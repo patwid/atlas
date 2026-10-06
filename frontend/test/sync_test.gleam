@@ -16,7 +16,7 @@ import gleam/dynamic/decode
 import gleam/int
 import gleam/json
 import gleam/list
-import gleam/option.{type Option, None}
+import gleam/option.{type Option, None, Some}
 import gleam/order
 import gleam/string
 import gleam/uri
@@ -137,6 +137,7 @@ fn handle(server: Server, request: Request) -> #(Server, Int, String) {
     ])
   let #(path, query) = query_of(request.path)
   let body = read_body(option.unwrap(request.body, ""))
+  let wants_ids = dict.get(query, "fields") == Ok("id")
   case request.method, string.split(path, "/") {
     Post, ["", "api", "collections", "users", "auth-refresh"] ->
       case valid {
@@ -233,6 +234,47 @@ fn handle(server: Server, request: Request) -> #(Server, Int, String) {
         )
       }
 
+    Get, ["", "api", "collections", c, "records"] if wants_ids -> {
+      // The membership sweep: only IDs, in ID order, after a given ID (ADR 0030).
+      let after = case dict.get(query, "filter") {
+        Ok(f) ->
+          case string.split(f, "\"") {
+            [_, value, _] -> value
+            _ -> ""
+          }
+        Error(Nil) -> ""
+      }
+      let per_page = case dict.get(query, "perPage") {
+        Ok(p) -> option.unwrap(option.from_result(int.parse(p)), 30)
+        Error(Nil) -> 30
+      }
+      let ids = case valid {
+        // An invalid token is an anonymous caller who can read nothing.
+        False -> []
+        True ->
+          dict.values(server.records)
+          |> list.filter(fn(r) {
+            r.collection == c
+            && { after == "" || string.compare(r.id, after) == order.Gt }
+          })
+          |> list.map(fn(r) { r.id })
+          |> list.sort(string.compare)
+          |> list.take(per_page)
+      }
+      #(
+        server,
+        200,
+        "{\"items\":["
+          <> string.join(
+          list.map(ids, fn(id) { "{\"id\":\"" <> id <> "\"}" }),
+          ",",
+        )
+          <> "],\"page\":1,\"perPage\":"
+          <> int.to_string(per_page)
+          <> ",\"totalItems\":-1,\"totalPages\":-1}",
+      )
+    }
+
     Get, ["", "api", "collections", c, "records"] ->
       case c == server.broken {
         True -> #(
@@ -303,15 +345,20 @@ fn world(
   cursors: List(#(Collection, cursor.Cursor)),
   s: Server,
 ) -> World {
-  World(sync.new(box, cursors), s, [])
+  World(sync.new(box, cursors, recently_swept), s, [])
 }
+
+/// The time the tests start runs at, and a sweep time shortly before it: no sweep is due unless a test says so.
+const now = 1_000_000
+
+const recently_swept = Some(999_900)
 
 fn today() -> date.Date {
   Date(2026, 10, 6)
 }
 
 fn started() -> Event {
-  Started(today(), False)
+  Started(today(), False, now)
 }
 
 fn run(w: World, event: Event) -> World {
@@ -568,7 +615,7 @@ pub fn a_token_revoked_before_the_pull_never_moves_cursors_or_deletes_data_test(
 
 pub fn an_expired_token_asks_for_sign_in_without_sending_anything_test() {
   let box = outbox.record_create(outbox.new(), Plans, "p1", title("A"))
-  let w = run(world(box, [], server([])), Started(today(), True))
+  let w = run(world(box, [], server([])), Started(today(), True, now))
   assert w.server.requests == []
   assert notices(w) == [SignInRequired]
   assert outbox.pending_count(sync.outbox(w.sync)) == 1
@@ -577,7 +624,8 @@ pub fn an_expired_token_asks_for_sign_in_without_sending_anything_test() {
 pub fn a_failed_session_check_at_the_start_waits_and_can_be_retried_test() {
   let w = run(world(outbox.new(), [], server([])), started())
   assert is_finished(w)
-  let #(waiting, commands) = sync.update(sync.new(outbox.new(), []), started())
+  let #(waiting, commands) =
+    sync.update(sync.new(outbox.new(), [], recently_swept), started())
   assert commands == [Send(api.refresh(), CheckStart)]
   let #(waiting, commands) = sync.update(waiting, Responded(CheckStart, 0, ""))
   assert commands == [RetryIn(2)]
@@ -590,7 +638,7 @@ pub fn a_failed_session_check_at_the_start_waits_and_can_be_retried_test() {
 
 pub fn a_server_error_while_pushing_keeps_the_entry_and_retries_test() {
   let box = outbox.record_create(outbox.new(), Plans, "p1", title("A"))
-  let #(s0, _) = sync.update(sync.new(box, []), started())
+  let #(s0, _) = sync.update(sync.new(box, [], recently_swept), started())
   let #(s1, commands) = sync.update(s0, Responded(CheckStart, 200, "{}"))
   let assert [Tell(SessionRefreshed(_)), Send(_, tag)] = commands
   let #(s2, commands) = sync.update(s1, Responded(tag, 503, ""))
@@ -622,7 +670,8 @@ pub fn a_replayed_create_looks_up_the_base_and_becomes_an_update_test() {
 }
 
 pub fn a_record_with_unsent_local_edits_is_not_overwritten_by_a_pull_test() {
-  let #(s0, _) = sync.update(sync.new(outbox.new(), []), started())
+  let #(s0, _) =
+    sync.update(sync.new(outbox.new(), [], recently_swept), started())
   let #(s1, _) = sync.update(s0, Responded(CheckStart, 200, "{}"))
   // Coach grants come first in the pull; once they are in, the plans page is the one on the way.
   let empty =
@@ -647,7 +696,8 @@ pub fn a_record_with_unsent_local_edits_is_not_overwritten_by_a_pull_test() {
 }
 
 pub fn local_writes_made_during_the_pull_are_pushed_before_the_run_ends_test() {
-  let #(s0, _) = sync.update(sync.new(outbox.new(), []), started())
+  let #(s0, _) =
+    sync.update(sync.new(outbox.new(), [], recently_swept), started())
   let #(s1, _) = sync.update(s0, Responded(CheckStart, 200, "{}"))
   // Nothing to push, so the first list request is out. Jump to the end of the pull by answering each one.
   let empty =
@@ -681,13 +731,17 @@ fn answer_all_lists(state: Sync, body: String, count: Int) -> Sync {
 }
 
 pub fn started_while_busy_is_ignored_and_stale_answers_do_nothing_test() {
-  let #(busy, _) = sync.update(sync.new(outbox.new(), []), started())
+  let #(busy, _) =
+    sync.update(sync.new(outbox.new(), [], recently_swept), started())
   assert sync.is_busy(busy)
   let #(same, commands) = sync.update(busy, started())
   assert commands == []
   assert sync.is_busy(same)
   let #(_, commands) =
-    sync.update(sync.new(outbox.new(), []), Responded(sync.Push(99), 200, "{}"))
+    sync.update(
+      sync.new(outbox.new(), [], recently_swept),
+      Responded(sync.Push(99), 200, "{}"),
+    )
   assert commands == []
   let #(_, commands) =
     sync.update(busy, Responded(sync.Pull(Matches, 1), 200, "{}"))
@@ -710,7 +764,7 @@ pub fn the_servers_answer_to_a_save_replaces_the_local_copy_test() {
 pub fn the_answer_is_not_applied_over_later_queued_edits_test() {
   // The create is in flight when the user edits again; the edit is queued behind it.
   let box = outbox.record_create(outbox.new(), Plans, "p1", title("A"))
-  let #(s0, _) = sync.update(sync.new(box, []), started())
+  let #(s0, _) = sync.update(sync.new(box, [], recently_swept), started())
   let #(s1, commands) = sync.update(s0, Responded(CheckStart, 200, "{}"))
   let assert [Tell(SessionRefreshed(_)), Send(_, tag)] = commands
   let s2 =
@@ -731,7 +785,8 @@ pub fn the_answer_is_not_applied_over_later_queued_edits_test() {
 }
 
 pub fn a_start_requested_during_a_run_makes_another_run_follow_it_test() {
-  let #(s0, _) = sync.update(sync.new(outbox.new(), []), started())
+  let #(s0, _) =
+    sync.update(sync.new(outbox.new(), [], recently_swept), started())
   // The request comes while the first run is going on: nothing is sent for it...
   let #(s1, commands) = sync.update(s0, started())
   assert commands == []
@@ -749,7 +804,8 @@ pub fn a_start_requested_during_a_run_makes_another_run_follow_it_test() {
 }
 
 pub fn without_a_request_during_the_run_it_just_ends_test() {
-  let #(s0, _) = sync.update(sync.new(outbox.new(), []), started())
+  let #(s0, _) =
+    sync.update(sync.new(outbox.new(), [], recently_swept), started())
   let #(s1, _) = sync.update(s0, Responded(CheckStart, 200, "{}"))
   let empty =
     "{\"items\":[],\"page\":1,\"perPage\":200,\"totalItems\":0,\"totalPages\":0}"
@@ -762,7 +818,8 @@ pub fn without_a_request_during_the_run_it_just_ends_test() {
 }
 
 pub fn many_requests_during_one_run_cause_only_one_more_run_test() {
-  let #(s0, _) = sync.update(sync.new(outbox.new(), []), started())
+  let #(s0, _) =
+    sync.update(sync.new(outbox.new(), [], recently_swept), started())
   let #(s1, _) = sync.update(s0, started())
   let #(s2, _) = sync.update(s1, started())
   let #(s3, _) = sync.update(s2, Responded(CheckStart, 200, "{}"))
@@ -801,6 +858,297 @@ pub fn a_newer_value_from_the_caller_wins_and_unknown_records_use_it_test() {
   assert sync.freshest_base(w.sync, Plans, "new1", "9999-12-31 00:00:00.000Z")
     == "9999-12-31 00:00:00.000Z"
   assert sync.freshest_base(w.sync, Plans, "never-seen", "T-given") == "T-given"
-  assert sync.freshest_base(sync.new(outbox.new(), []), Plans, "x", "T0")
+  assert sync.freshest_base(
+      sync.new(outbox.new(), [], recently_swept),
+      Plans,
+      "x",
+      "T0",
+    )
     == "T0"
+}
+
+// THE MEMBERSHIP SWEEP (ADR 0030) -----------------------------------------------------------------
+
+fn every_collection_incremental() -> List(#(Collection, cursor.Cursor)) {
+  list.map(collection.all, fn(c) {
+    #(c, Cursor(stamp_text(1), Date(2026, 10, 5)))
+  })
+}
+
+fn id_requests(w: World) -> List(String) {
+  list.filter(paths(w), fn(p) { string.contains(p, "fields=id") })
+}
+
+fn many(count: Int) -> List(Rec) {
+  list.index_map(list.repeat(Nil, count), fn(_, i) {
+    rec("plans", "p" <> string.pad_start(int.to_string(i), 4, "0"), 100, "t")
+  })
+}
+
+pub fn a_due_sweep_lists_the_readable_ids_and_reconciles_every_collection_test() {
+  let s =
+    server([
+      rec("plans", "a", 100, "x"),
+      rec("plans", "b", 110, "x"),
+      rec("workouts", "w1", 120, "x"),
+    ])
+  let w =
+    run(
+      World(sync.new(outbox.new(), every_collection_incremental(), None), s, []),
+      started(),
+    )
+  assert list.contains(reconciled(w), #(Plans, ["a", "b"]))
+  assert list.contains(reconciled(w), #(Workouts, ["w1"]))
+  assert list.contains(reconciled(w), #(Matches, []))
+  assert list.length(reconciled(w)) == 7
+  assert list.length(id_requests(w)) == 7
+  assert list.contains(log(w), sync.SaveSweep(now))
+  assert is_finished(w)
+}
+
+pub fn the_removal_waits_until_the_session_was_confirmed_at_the_end_test() {
+  let s = server([rec("plans", "a", 100, "x")])
+  let w =
+    run(
+      World(sync.new(outbox.new(), every_collection_incremental(), None), s, []),
+      started(),
+    )
+  let commands = log(w)
+  // The reconciles come after the pull's own work and before the sweep is recorded.
+  let position = fn(target) { list_index(commands, target) }
+  assert position(sync.SaveSweep(now)) > position(Reconcile(Plans, ["a"]))
+}
+
+fn list_index(items: List(a), target: a) -> Int {
+  case items {
+    [] -> -1
+    [first, ..rest] ->
+      case first == target {
+        True -> 0
+        False ->
+          case list_index(rest, target) {
+            -1 -> -1
+            found -> found + 1
+          }
+      }
+  }
+}
+
+pub fn no_sweep_when_one_ran_recently_test() {
+  let s = server([rec("plans", "a", 100, "x")])
+  let w =
+    run(
+      World(
+        sync.new(outbox.new(), every_collection_incremental(), Some(now - 100)),
+        s,
+        [],
+      ),
+      started(),
+    )
+  assert id_requests(w) == []
+  assert reconciled(w) == []
+  assert !list.contains(log(w), sync.SaveSweep(now))
+  assert is_finished(w)
+}
+
+pub fn the_sweep_is_due_exactly_after_the_interval_test() {
+  let at = fn(seconds_ago) {
+    let w =
+      run(
+        World(
+          sync.new(
+            outbox.new(),
+            every_collection_incremental(),
+            Some(now - seconds_ago),
+          ),
+          server([]),
+          [],
+        ),
+        started(),
+      )
+    id_requests(w) != []
+  }
+  assert !at(599)
+  assert at(600)
+  assert at(100_000)
+}
+
+pub fn a_new_device_that_resyncs_everything_does_not_sweep_as_well_test() {
+  // Without cursors every collection is a full resync, which is complete by itself.
+  let w =
+    run(
+      World(
+        sync.new(outbox.new(), [], None),
+        server([rec("plans", "a", 100, "x")]),
+        [],
+      ),
+      started(),
+    )
+  assert id_requests(w) == []
+  assert list.length(reconciled(w)) == 7
+  assert !list.contains(log(w), sync.SaveSweep(now))
+}
+
+pub fn only_the_collections_with_a_cursor_are_swept_test() {
+  let cursors = [#(Plans, Cursor(stamp_text(1), Date(2026, 10, 5)))]
+  let w =
+    run(
+      World(
+        sync.new(outbox.new(), cursors, None),
+        server([rec("plans", "a", 100, "x")]),
+        [],
+      ),
+      started(),
+    )
+  assert list.length(id_requests(w)) == 1
+  assert list.all(id_requests(w), fn(p) { string.contains(p, "/plans/") })
+}
+
+pub fn a_token_revoked_during_the_run_removes_nothing_test() {
+  // The start check passes; after that the server answers as if to an anonymous user: empty lists, status 200.
+  // Taken at face value the sweep would conclude that everything is gone.
+  let s = Server(..server([rec("plans", "a", 100, "x")]), valid_requests: 1)
+  let w =
+    run(
+      World(sync.new(outbox.new(), every_collection_incremental(), None), s, []),
+      started(),
+    )
+  assert reconciled(w) == []
+  assert !list.contains(log(w), sync.SaveSweep(now))
+  assert list.contains(notices(w), SignInRequired)
+}
+
+pub fn a_sweep_makes_the_next_run_skip_it_test() {
+  let s = server([rec("plans", "a", 100, "x")])
+  let first =
+    run(
+      World(sync.new(outbox.new(), every_collection_incremental(), None), s, []),
+      started(),
+    )
+  let count = list.length(id_requests(first))
+  assert count == 7
+  let second = run(first, started())
+  assert list.length(id_requests(second)) == count
+}
+
+pub fn a_failed_confirmation_does_not_count_as_a_sweep_test() {
+  let s = Server(..server([rec("plans", "a", 100, "x")]), valid_requests: 1)
+  let failed =
+    run(
+      World(sync.new(outbox.new(), every_collection_incremental(), None), s, []),
+      started(),
+    )
+  // Signed in again with a working token: the sweep is still due and now succeeds.
+  let again =
+    run(
+      World(
+        ..failed,
+        server: Server(..failed.server, valid_requests: 1_000_000),
+        log: [],
+      ),
+      started(),
+    )
+  assert list.length(reconciled(again)) == 7
+}
+
+pub fn many_ids_are_walked_in_pages_of_five_hundred_test() {
+  let w =
+    run(
+      World(
+        sync.new(
+          outbox.new(),
+          [#(Plans, Cursor(stamp_text(1), Date(2026, 10, 5)))],
+          None,
+        ),
+        Server(..server(many(1200)), page_size: 1000),
+        [],
+      ),
+      started(),
+    )
+  let assert Ok(#(_, ids)) = list.find(reconciled(w), fn(r) { r.0 == Plans })
+  assert list.length(ids) == 1200
+  assert ids == list.sort(ids, string.compare)
+  assert list.length(list.unique(ids)) == 1200
+  // 500 + 500 + 200: the short page ends the walk.
+  assert list.length(id_requests(w)) == 3
+}
+
+pub fn exactly_one_full_page_needs_one_more_request_to_be_sure_test() {
+  let w =
+    run(
+      World(
+        sync.new(
+          outbox.new(),
+          [#(Plans, Cursor(stamp_text(1), Date(2026, 10, 5)))],
+          None,
+        ),
+        Server(..server(many(500)), page_size: 1000),
+        [],
+      ),
+      started(),
+    )
+  let assert Ok(#(_, ids)) = list.find(reconciled(w), fn(r) { r.0 == Plans })
+  assert list.length(ids) == 500
+  assert list.length(id_requests(w)) == 2
+}
+
+pub fn a_server_error_during_the_sweep_waits_and_removes_nothing_test() {
+  let cursors = [#(Plans, Cursor(stamp_text(1), Date(2026, 10, 5)))]
+  let #(s0, _) = sync.update(sync.new(outbox.new(), cursors, None), started())
+  let #(s1, _) = sync.update(s0, Responded(CheckStart, 200, "{}"))
+  let empty =
+    "{\"items\":[],\"page\":1,\"perPage\":200,\"totalItems\":0,\"totalPages\":0}"
+  // CoachGrants come first and have no cursor (a full resync); then the plans page, then the sweep of plans.
+  let s2 = answer_all_lists_until_sweep(s1, empty)
+  let #(_, commands) = sync.update(s2, Responded(sync.Sweep(Plans), 503, ""))
+  assert commands == [RetryIn(2)]
+}
+
+fn answer_all_lists_until_sweep(state: Sync, body: String) -> Sync {
+  let #(a, _) =
+    sync.update(
+      state,
+      Responded(sync.Pull(collection.CoachGrants, 1), 200, body),
+    )
+  let #(b, _) = sync.update(a, Responded(sync.Pull(Plans, 1), 200, body))
+  b
+}
+
+pub fn a_refused_listing_is_skipped_and_the_other_collections_still_sweep_test() {
+  let cursors =
+    list.map(collection.all, fn(c) {
+      #(c, Cursor(stamp_text(1), Date(2026, 10, 5)))
+    })
+  let #(s0, _) = sync.update(sync.new(outbox.new(), cursors, None), started())
+  let #(s1, _) = sync.update(s0, Responded(CheckStart, 200, "{}"))
+  let empty =
+    "{\"items\":[],\"page\":1,\"perPage\":200,\"totalItems\":0,\"totalPages\":0}"
+  let #(s2, _) =
+    sync.update(s1, Responded(sync.Pull(collection.CoachGrants, 1), 200, empty))
+  // The first sweep is refused with 400: the walk carries on with the next collection's pull.
+  let #(_, commands) =
+    sync.update(s2, Responded(sync.Sweep(collection.CoachGrants), 400, "{}"))
+  assert list.any(commands, fn(c) {
+    case c {
+      Send(_, sync.Pull(Plans, 1)) -> True
+      _ -> False
+    }
+  })
+  assert !list.any(commands, fn(c) {
+    case c {
+      Reconcile(_, _) -> True
+      _ -> False
+    }
+  })
+}
+
+pub fn an_expired_session_during_the_sweep_asks_for_sign_in_test() {
+  let cursors = [#(Plans, Cursor(stamp_text(1), Date(2026, 10, 5)))]
+  let #(s0, _) = sync.update(sync.new(outbox.new(), cursors, None), started())
+  let #(s1, _) = sync.update(s0, Responded(CheckStart, 200, "{}"))
+  let empty =
+    "{\"items\":[],\"page\":1,\"perPage\":200,\"totalItems\":0,\"totalPages\":0}"
+  let s2 = answer_all_lists_until_sweep(s1, empty)
+  let #(_, commands) = sync.update(s2, Responded(sync.Sweep(Plans), 401, ""))
+  assert commands == [Tell(SignInRequired)]
 }

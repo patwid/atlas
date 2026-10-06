@@ -235,7 +235,7 @@ pub fn signing_in_starts_loading_the_device_data_test() {
 fn ready_syncing() -> syncing.State {
   syncing.State(
     ..syncing.new(),
-    sync: option.Some(sync.new(outbox.new(), [])),
+    sync: option.Some(sync.new(outbox.new(), [], None)),
     phase: syncing.Ready,
   )
 }

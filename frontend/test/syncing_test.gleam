@@ -33,7 +33,7 @@ fn ready() -> syncing.State {
   let #(state, _, _) =
     syncing.update(
       syncing.new(),
-      syncing.Loaded(Ok(local.Loaded(outbox.new(), []))),
+      syncing.Loaded(Ok(local.Loaded(outbox.new(), [], None))),
       context(before_expiry),
     )
   state
@@ -59,7 +59,7 @@ pub fn an_expired_token_asks_for_sign_in_instead_of_starting_a_run_test() {
   let #(state, _, notices) =
     syncing.update(
       syncing.new(),
-      syncing.Loaded(Ok(local.Loaded(outbox.new(), []))),
+      syncing.Loaded(Ok(local.Loaded(outbox.new(), [], None))),
       context(after_expiry),
     )
   assert syncing.is_ready(state)

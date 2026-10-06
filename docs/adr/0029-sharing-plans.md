@@ -34,7 +34,7 @@ has existed since the data model, but there was no screen and no way to look a p
 - A share to someone who is also a coach of the owner, or to several people, is just several rows; nothing groups them.
 - Assignments of a plan whose share was later removed keep working for the athlete: they can still read the plan through their assignment ([0009](0009-data-model-and-api-rules.md)).
 
-## Known gap: access removal does not reach the recipient's device (found 2026-10-06)
+## Known gap (closed): access removal did not reach the recipient's device (found 2026-10-06)
 
 The first version of this ADR said a removed share disappears from the recipient's device at their next sync. **That is not true.** An
 incremental pull ([0016](0016-sync-core-outbox-and-cursor.md)) only returns records that *changed*, and a plan the user can no longer read has not
@@ -45,4 +45,7 @@ sync with the share already removed.
 The same holds for coach access ([0024](0024-coach-grants-screen.md)): after an athlete removes a coach, the coach's device keeps the athlete's
 activities and matches. This is a privacy defect, not just a stale list, and must be fixed before launch. The planned fix is a periodic
 **membership sweep**: a cheap request for the IDs the user can currently read, per collection, after which local records that are not among them
-(and have no unsent edits) are removed, with a new ADR and tests. Until then, treat "stop sharing" and "remove access" as stopping *new* access only.
+(and have no unsent edits) are removed, with a new ADR and tests. 
+
+**Resolved** by the membership sweep, [0030](0030-membership-sweep.md): a removed share now disappears from the recipient's device at their next sync
+after at most ten minutes. The paragraph above is kept as the record of what was wrong.

@@ -302,3 +302,28 @@ pub fn strava_errors_are_readable_test() {
     == "Strava could not be reached. Try again later."
   assert api.strava_error(418, "") == "That did not work (HTTP 418)."
 }
+
+pub fn the_sweep_asks_for_ids_in_order_after_the_last_one_seen_test() {
+  assert api.list_ids(Plans, None)
+    == Request(
+      Get,
+      "/api/collections/plans/records?perPage=500&sort=id&fields=id&skipTotal=1",
+      None,
+    )
+  assert api.list_ids(Workouts, Some("abc123"))
+    == Request(
+      Get,
+      "/api/collections/workouts/records?perPage=500&sort=id&fields=id&skipTotal=1&filter=id%20%3E%20%22abc123%22",
+      None,
+    )
+}
+
+pub fn the_ids_of_an_answer_are_read_in_order_test() {
+  assert api.parse_ids(
+      "{\"items\":[{\"id\":\"a\"},{\"id\":\"b\"}],\"page\":1,\"perPage\":500,\"totalItems\":-1,\"totalPages\":-1}",
+    )
+    == Ok(["a", "b"])
+  assert api.parse_ids("{\"items\":[]}") == Ok([])
+  assert api.parse_ids("{\"items\":[{\"title\":\"no id\"}]}") == Error(Nil)
+  assert api.parse_ids("<html>proxy</html>") == Error(Nil)
+}

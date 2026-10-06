@@ -6,6 +6,7 @@ import atlas/collection.{type Collection}
 import atlas/cursor.{type Cursor}
 import atlas/outbox.{type Outbox}
 import atlas/store
+import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
 
@@ -15,12 +16,19 @@ pub const outbox_key = "outbox"
 
 const owner_key = "owner"
 
+pub const swept_key = "swept_at"
+
 pub fn cursor_key(collection: Collection) -> String {
   "cursor:" <> collection.to_string(collection)
 }
 
 pub type Loaded {
-  Loaded(outbox: Outbox, cursors: List(#(Collection, Cursor)))
+  Loaded(
+    outbox: Outbox,
+    cursors: List(#(Collection, Cursor)),
+    /// When the last membership sweep was confirmed (seconds since 1970), if ever (ADR 0030).
+    swept_at: Option(Int),
+  )
 }
 
 /// The saved outbox. Nothing saved yet is an empty outbox; damaged text is an error, so that the app
@@ -37,6 +45,15 @@ pub fn restore_cursor(text: String) -> Option(Cursor) {
   case cursor.from_json_string(text) {
     Ok(c) -> Some(c)
     Error(Nil) -> None
+  }
+}
+
+/// The time of the last membership sweep, or `None` when there was none or the text is damaged
+/// (which only makes the next sweep come earlier).
+pub fn restore_swept_at(text: String) -> Option(Int) {
+  case int.parse(text) {
+    Ok(seconds) if seconds > 0 -> Some(seconds)
+    _ -> None
   }
 }
 
@@ -79,7 +96,13 @@ fn load_state(callback: fn(Result(Loaded, Nil)) -> Nil) -> Nil {
           Error(Nil) -> callback(Error(Nil))
           Ok(box) ->
             load_cursors(collection.all, [], fn(cursors) {
-              callback(Ok(Loaded(box, cursors)))
+              store.get_meta(swept_key, fn(text) {
+                let swept_at = case text {
+                  Ok(saved) -> restore_swept_at(saved)
+                  Error(Nil) -> None
+                }
+                callback(Ok(Loaded(box, cursors, swept_at)))
+              })
             })
         }
     }

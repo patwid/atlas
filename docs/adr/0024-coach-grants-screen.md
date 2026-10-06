@@ -43,3 +43,5 @@ by e-mail address ([0010](0010-user-lookup-by-email.md)). Screens also have to s
 The text above first said the coach's device drops the grant at its next sync. It does not: a record that becomes unreadable has not changed, so an
 incremental pull never mentions it. The coach's device keeps the athlete's activities until a full resync. See the known gap in
 [0029](0029-sharing-plans.md); the planned membership sweep fixes it for sharing and coach access alike.
+
+**Resolved** by the membership sweep, [0030](0030-membership-sweep.md): the coach's device now drops the athlete's data at a sync after removal.

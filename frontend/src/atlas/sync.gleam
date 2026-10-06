@@ -31,11 +31,14 @@ pub type Tag {
   Pull(collection: Collection, page: Int)
   /// Confirms the session once the whole pull is done, before cursors and reconciles are committed.
   VerifyForCommit
+  /// A page of the membership sweep: the IDs of the collection that the user can read now (ADR 0030).
+  Sweep(collection: Collection)
 }
 
 pub type Event {
-  /// Begin a run. `token_expired` is what the caller knows from the token's `exp` claim.
-  Started(today: Date, token_expired: Bool)
+  /// Begin a run. `token_expired` is what the caller knows from the token's `exp` claim, `now_seconds` is
+  /// the time (seconds since 1970), which decides whether a membership sweep is due.
+  Started(today: Date, token_expired: Bool, now_seconds: Int)
   /// The answer to a `Send`. Status 0 means there was no answer.
   Responded(tag: Tag, status: Int, body: String)
 }
@@ -51,6 +54,8 @@ pub type Command {
   /// Records with unsent local edits must be kept.
   Reconcile(collection: Collection, keep_ids: List(String))
   SaveCursor(collection: Collection, cursor: Cursor)
+  /// A membership sweep finished and was confirmed at this time (seconds since 1970): remember it.
+  SaveSweep(now_seconds: Int)
   Tell(Notice)
   /// Start the run again after this many seconds (or earlier, when the device comes back online).
   RetryIn(seconds: Int)
@@ -75,6 +80,7 @@ type State {
   Verifying
   LookingUp
   Pulling(PullState)
+  Sweeping(SweepState)
   Committing
   Waiting
   SignInNeeded
@@ -89,6 +95,19 @@ type PullState {
     ids_seen: List(String),
   )
 }
+
+/// A membership sweep in progress for one collection.
+type SweepState {
+  SweepState(
+    collection: Collection,
+    remaining: List(Collection),
+    /// The IDs readable by the user so far, in ID order.
+    ids: List(String),
+  )
+}
+
+/// A sweep runs at most this often (seconds). It asks for IDs only, one request per 500 records and collection.
+pub const sweep_interval_seconds = 600
 
 pub opaque type Sync {
   Sync(
@@ -107,10 +126,19 @@ pub opaque type Sync {
     /// Screens read the device database a moment after it changes, so an edit made in that moment would
     /// otherwise be based on an older value and be refused as a conflict.
     known_updated: Dict(String, String),
+    now_seconds: Int,
+    /// When the last membership sweep was confirmed.
+    swept_at: option.Option(Int),
+    /// A sweep ran in this run and still has to be confirmed.
+    swept_any: Bool,
   )
 }
 
-pub fn new(outbox: Outbox, cursors: List(#(Collection, Cursor))) -> Sync {
+pub fn new(
+  outbox: Outbox,
+  cursors: List(#(Collection, Cursor)),
+  swept_at: option.Option(Int),
+) -> Sync {
   Sync(
     state: Idle,
     outbox: outbox,
@@ -123,6 +151,9 @@ pub fn new(outbox: Outbox, cursors: List(#(Collection, Cursor))) -> Sync {
     pending_cursors: dict.new(),
     rerun: False,
     known_updated: dict.new(),
+    now_seconds: 0,
+    swept_at: swept_at,
+    swept_any: False,
   )
 }
 
@@ -167,7 +198,7 @@ pub fn is_busy(sync: Sync) -> Bool {
 
 pub fn update(sync: Sync, event: Event) -> #(Sync, List(Command)) {
   case event {
-    Started(today, token_expired) -> start(sync, today, token_expired)
+    Started(today, token_expired, now) -> start(sync, today, token_expired, now)
     Responded(tag, status, body) -> respond(sync, tag, status, body)
   }
 }
@@ -178,6 +209,7 @@ fn start(
   sync: Sync,
   today: Date,
   token_expired: Bool,
+  now: Int,
 ) -> #(Sync, List(Command)) {
   case is_busy(sync), token_expired {
     True, _ -> #(Sync(..sync, rerun: True), [])
@@ -187,6 +219,8 @@ fn start(
         ..sync,
         state: Starting,
         today: today,
+        now_seconds: now,
+        swept_any: False,
         outbox: outbox.recover(sync.outbox),
         commits: [],
         pending_cursors: dict.new(),
@@ -258,6 +292,9 @@ fn respond(
     Pull(collection, _page), Pulling(pull) if collection == pull.current ->
       pulled(sync, pull, status, body)
 
+    Sweep(collection), Sweeping(sweeping) if collection == sweeping.collection ->
+      swept(sync, sweeping, status, body)
+
     VerifyForCommit, Committing ->
       case status {
         200 -> {
@@ -267,9 +304,18 @@ fn respond(
               cursors: dict.merge(sync.cursors, sync.pending_cursors),
               commits: [],
               pending_cursors: dict.new(),
+              swept_at: case sync.swept_any {
+                True -> Some(sync.now_seconds)
+                False -> sync.swept_at
+              },
+              swept_any: False,
             )
           let #(next, commands) = finish(committed)
-          #(next, list.append(sync.commits, commands))
+          let remember = case sync.swept_any {
+            True -> [SaveSweep(sync.now_seconds)]
+            False -> []
+          }
+          #(next, list.flatten([sync.commits, remember, commands]))
         }
         401 -> sign_in_needed(discard_commits(sync))
         _ -> wait(discard_commits(sync))
@@ -497,9 +543,75 @@ fn pulled_page(
             new_cursor,
           ),
         )
-      let #(next, commands) = begin_collection(held, pull.remaining)
-      #(next, [apply, ..commands])
+      case pull.plan, sweep_due(held) {
+        // An incremental pull never hears about records the user can no longer read, so now and then the
+        // IDs that are readable are listed and the others are removed from the device (ADR 0030).
+        cursor.Since(_), True -> #(
+          Sync(
+            ..held,
+            state: Sweeping(SweepState(pull.current, pull.remaining, [])),
+            swept_any: True,
+          ),
+          [apply, Send(api.list_ids(pull.current, None), Sweep(pull.current))],
+        )
+        _, _ -> {
+          let #(next, commands) = begin_collection(held, pull.remaining)
+          #(next, [apply, ..commands])
+        }
+      }
     }
+  }
+}
+
+fn sweep_due(sync: Sync) -> Bool {
+  case sync.swept_at {
+    None -> True
+    Some(at) -> sync.now_seconds - at >= sweep_interval_seconds
+  }
+}
+
+/// One page of IDs. A full page means there may be more; anything shorter ends the walk, and the
+/// collection's local records that are not among the IDs are then removed, once the session is confirmed.
+fn swept(
+  sync: Sync,
+  sweeping: SweepState,
+  status: Int,
+  body: String,
+) -> #(Sync, List(Command)) {
+  case status {
+    200 ->
+      case api.parse_ids(body) {
+        Error(Nil) -> wait(sync)
+        Ok(ids) -> {
+          let all = list.append(sweeping.ids, ids)
+          case list.length(ids) >= api.id_page_size, list.last(ids) {
+            True, Ok(last) -> #(
+              Sync(..sync, state: Sweeping(SweepState(..sweeping, ids: all))),
+              [
+                Send(
+                  api.list_ids(sweeping.collection, Some(last)),
+                  Sweep(sweeping.collection),
+                ),
+              ],
+            )
+            _, _ ->
+              begin_collection(
+                Sync(
+                  ..sync,
+                  commits: list.append(sync.commits, [
+                    Reconcile(sweeping.collection, all),
+                  ]),
+                ),
+                sweeping.remaining,
+              )
+          }
+        }
+      }
+    401 -> sign_in_needed(sync)
+    0 -> wait(sync)
+    _ if status >= 500 -> wait(sync)
+    // The server refuses this listing: leave the collection alone and carry on.
+    _ -> begin_collection(sync, sweeping.remaining)
   }
 }
 
@@ -527,7 +639,7 @@ fn finish(sync: Sync) -> #(Sync, List(Command)) {
 }
 
 fn discard_commits(sync: Sync) -> Sync {
-  Sync(..sync, commits: [], pending_cursors: dict.new())
+  Sync(..sync, commits: [], pending_cursors: dict.new(), swept_any: False)
 }
 
 fn cursor_of(sync: Sync, collection: Collection) -> option.Option(Cursor) {

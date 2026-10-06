@@ -21,16 +21,38 @@ export const appRunner = (getHarness, fetched = () => {}) => (path, session) => 
   const dom = new JSDOM(html, { url: h.url + path, runScripts: "outside-only", pretendToBeVisual: true })
   const w = dom.window
   // jsdom's AbortSignal is not Node's, so the signal is left out of the shim.
-  w.fetch = (url, opts) => {
+  // A closed tab does nothing more. jsdom's own close() stops timers but not requests already under way, whose
+  // answers would still run the app's code, for example a sync run that finishes and removes records from the
+  // shared fake database. So after closing, nothing the app waits for ever arrives.
+  let closed = false
+  const never = () => new Promise(() => {})
+  const close = w.close.bind(w)
+  w.close = () => { closed = true; close() }
+  w.fetch = async (url, opts) => {
+    if (closed) return never()
     const { signal, ...rest } = opts
-    fetched(rest.method, url)
-    return fetch(new URL(url, h.url), rest)
+    fetched(rest.method, url, rest.body)
+    const response = await fetch(new URL(url, h.url), rest)
+    if (closed) return never()
+    return {
+      status: response.status,
+      text: async () => {
+        const text = await response.text()
+        return closed ? never() : text
+      },
+    }
   }
   w.indexedDB = globalThis.indexedDB
+  lastWindow = w
   if (session) w.localStorage.setItem("atlas.session", JSON.stringify(session))
   w.eval(readFileSync(join(pub, "atlas.js"), "utf8"))
   return w
 }
+
+let lastWindow = null
+
+/** What was on screen when something went wrong, for failure messages. */
+export const pageText = () => lastWindow?.document.body.textContent.slice(0, 400) ?? "(no window)"
 
 export const waitFor = async (what, check, ms = 8000) => {
   const end = Date.now() + ms
@@ -39,7 +61,7 @@ export const waitFor = async (what, check, ms = 8000) => {
     try { last = await check(); if (last) return last } catch {}
     await sleep(50)
   }
-  assert.fail(`timed out waiting for: ${what}`)
+  assert.fail(`timed out waiting for: ${what}\n  page text: ${pageText()}`)
 }
 export const click = (w, el) => el.dispatchEvent(new w.MouseEvent("click", { bubbles: true, cancelable: true, button: 0 }))
 export const typeInto = (w, el, value) => { el.value = value; el.dispatchEvent(new w.Event("input", { bubbles: true })) }

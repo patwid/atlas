@@ -217,6 +217,45 @@ fn encode_component(text: String) -> String {
   string.replace(uri.percent_encode(text), "+", "%2B")
 }
 
+/// How many IDs one request of the membership sweep returns (PocketBase allows up to 500).
+pub const id_page_size = 500
+
+/// The IDs of the records the user can read, in ID order, `after` the given one (ADR 0030). Paging by "after the
+/// last ID seen" rather than by page number keeps the walk correct when records appear or disappear meanwhile.
+pub fn list_ids(collection: Collection, after: Option(String)) -> Request {
+  let filter = case after {
+    Some(last) -> "&filter=" <> encode_component("id > \"" <> last <> "\"")
+    None -> ""
+  }
+  Request(
+    Get,
+    "/api/collections/"
+      <> collection.to_string(collection)
+      <> "/records?perPage="
+      <> int.to_string(id_page_size)
+      <> "&sort=id&fields=id&skipTotal=1"
+      <> filter,
+    None,
+  )
+}
+
+/// The IDs in an answer to `list_ids`.
+pub fn parse_ids(body: String) -> Result(List(String), Nil) {
+  let decoder = {
+    use items <- decode.field("items", decode.list(id_decoder()))
+    decode.success(items)
+  }
+  case json.parse(body, decoder) {
+    Ok(ids) -> Ok(ids)
+    Error(_) -> Error(Nil)
+  }
+}
+
+fn id_decoder() -> decode.Decoder(String) {
+  use id <- decode.field("id", decode.string)
+  decode.success(id)
+}
+
 fn record_path(collection: Collection, id: String) -> String {
   "/api/collections/"
   <> collection.to_string(collection)

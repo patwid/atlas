@@ -699,3 +699,59 @@ test("an owner shares a private plan by e-mail, the recipient reads and starts i
   assert.equal(await seesPlan(carol), true)
   w.close()
 })
+
+// Access that is taken away reaches the other person's device (ADR 0030) -------------------------------------
+
+const flipOnline = (w) => { w.dispatchEvent(new w.Event("offline")); w.dispatchEvent(new w.Event("online")) }
+const onDevice = async (collection) => {
+  await call(store.open, "atlas")
+  return (await call(store.getAll, collection)).value.toArray().map((r) => r.id)
+}
+
+test("a plan whose share was removed disappears from the recipient's device at the next sync", { skip: !built && "frontend not built" }, async () => {
+  await h.world()
+  const alice = h.people.alice
+  const carol = h.people.carol
+  await setup(h.create("alice", "plans", { id: "sweepplan000001", owner: alice.id, title: "Shared for a while", visibility: "private" }))
+  await setup(h.create("alice", "plans", { id: "sweepplan000002", owner: alice.id, title: "Stays shared", visibility: "private" }))
+  const share1 = (await setup(h.create("alice", "plan_shares", { id: "sweepshare00001", plan: "sweepplan000001", user: carol.id }))).body
+  await setup(h.create("alice", "plan_shares", { id: "sweepshare00002", plan: "sweepplan000002", user: carol.id }))
+
+  const w = startApp("/plans", { token: carol.token, user_id: carol.id, name: "carol", email: carol.email })
+  const d = w.document
+  await waitFor("both plans", () => d.body.textContent.includes("Shared for a while") && d.body.textContent.includes("Stays shared"))
+
+  // The owner stops sharing the first one. The server hides it at once.
+  await setup(h.update("alice", "plan_shares", share1.id, { deleted: true, base_updated: share1.updated }))
+  assert.equal((await h.get("carol", "plans", "sweepplan000001")).status, 404)
+  assert.ok(d.body.textContent.includes("Shared for a while"), "until the device syncs it still shows it")
+
+  flipOnline(w)
+  await waitFor("the plan gone from the screen", () => !d.body.textContent.includes("Shared for a while"))
+  assert.ok(d.body.textContent.includes("Stays shared"), "what is still shared stays")
+  assert.ok(!(await onDevice("plans")).includes("sweepplan000001"), "and it is gone from the device database too")
+  assert.ok((await onDevice("plans")).includes("sweepplan000002"))
+  w.close()
+})
+
+test("an athlete who removes a coach's access also removes her activities from his device", { skip: !built && "frontend not built" }, async () => {
+  await h.world()
+  const alice = h.people.alice
+  const bob = h.people.bob
+  const started = utcOf(daysFromNow(-1), 7, 0)
+  await setup(h.create("alice", "activities", { id: "sweepact0000001", owner: alice.id, source: "manual", started_at: started, sport: "run", distance_m: 8000, moving_time_s: 2700 }))
+  await setup(h.create("bob", "activities", { id: "sweepact0000002", owner: bob.id, source: "manual", started_at: started, sport: "run", distance_m: 5000, moving_time_s: 1500 }))
+  const grant = (await setup(h.create("alice", "coach_grants", { id: "sweepgrant00001", athlete: alice.id, coach: bob.id, athlete_name: "alice", coach_name: "bob" }))).body
+
+  const w = startApp("/settings", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
+  await waitFor("the coach's device to hold the athlete's activity", async () => (await onDevice("activities")).includes("sweepact0000001"))
+  assert.ok((await onDevice("activities")).includes("sweepact0000002"), "and his own")
+
+  await setup(h.update("alice", "coach_grants", grant.id, { deleted: true, base_updated: grant.updated }))
+  assert.equal((await h.get("bob", "activities", "sweepact0000001")).status, 404, "the server hides it at once")
+  flipOnline(w)
+  await waitFor("the athlete's activity gone from the coach's device", async () => !(await onDevice("activities")).includes("sweepact0000001"))
+  assert.ok((await onDevice("activities")).includes("sweepact0000002"), "his own activity is untouched")
+  assert.ok(!(await onDevice("coach_grants")).includes("sweepgrant00001"), "the grant itself is gone too")
+  w.close()
+})

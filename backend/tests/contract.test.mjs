@@ -100,3 +100,26 @@ test("soft-deleted records stay in lists for their owner (tombstones for sync)",
   const r = await h.api("GET", `collections/plans/records?filter=${encodeURIComponent(`id = "${p.id}"`)}`, { token: h.as("alice") })
   assert.equal(r.body.items[0].deleted, true)
 })
+
+test("the sweep request: only IDs, in ID order, after a given ID, and nothing once access is lost", async () => {
+  const mine = []
+  for (let i = 0; i < 5; i++) mine.push((await h.create("alice", "plans", plan("alice"))).body.id)
+  const ids = [...mine].sort()
+  const path = (after) =>
+    `collections/plans/records?perPage=500&sort=id&fields=id&skipTotal=1` + (after ? `&filter=${encodeURIComponent(`id > "${after}"`)}` : "")
+  const first = await h.api("GET", path(), { token: h.as("alice") })
+  assert.equal(first.status, 200)
+  assert.deepEqual(first.body.items.map((x) => Object.keys(x)), ids.map(() => ["id"]), "only the id field comes back")
+  assert.deepEqual(first.body.items.map((x) => x.id), ids)
+  // "After" an ID returns the ones that sort later, so the walk can continue from the last ID seen.
+  const rest = await h.api("GET", path(ids[2]), { token: h.as("alice") })
+  assert.deepEqual(rest.body.items.map((x) => x.id), ids.slice(3))
+  assert.deepEqual((await h.api("GET", path(ids[4]), { token: h.as("alice") })).body.items, [])
+  // A smaller page still starts at the beginning and is in the same order.
+  const small = await h.api("GET", `collections/plans/records?perPage=2&sort=id&fields=id&skipTotal=1`, { token: h.as("alice") })
+  assert.deepEqual(small.body.items.map((x) => x.id), ids.slice(0, 2))
+  // Someone who cannot read the plans gets an empty list, with status 200: the sweep must not mistake that for "all gone".
+  const other = await h.api("GET", path(), { token: h.as("bob") })
+  assert.equal(other.status, 200)
+  assert.deepEqual(other.body.items, [])
+})

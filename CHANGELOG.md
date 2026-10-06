@@ -37,13 +37,11 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - `plan_shares` carry display names, and a plan shared with someone can be started by them (migration `1760000300_plan_share_names_and_start_rule.js`, ADR 0029).
 - Share a plan with named people by e-mail address, see who shared a plan with you, and start a plan that was shared with you; stop sharing with a confirmation (ADR 0029).
 
-### Known issues
-- Removing a share or a coach's access hides the data on the server at once, but a device that already has it keeps it until a full resync (ADR 0029, known gap). To be fixed before launch.
-
 ### Changed
 - Strava's redirect now returns to `/settings?strava=<result>` (ADR 0027).
 
 ### Fixed
+- Removing a plan share or a coach's access now also removes the data from the other person's device, by a periodic membership sweep (ADR 0030).
 - An edit made right after a save is no longer refused as a conflict when the screen has not yet refreshed: the sync engine now remembers the newest `updated` it has seen per record (ADR 0026).
 - E-mail addresses containing `+` are now found by the lookup (`+` is encoded in the request).
 - A sync requested while another one is running is no longer lost: one more run follows (ADR 0018, addendum).
