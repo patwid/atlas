@@ -47,7 +47,7 @@
             pname = "atlas-app";
             version = "0-${buildId}";
             inherit src;
-            nativeBuildInputs = with pkgs; [ gleam erlang_27 beam27Packages.rebar3 bun git ];
+            nativeBuildInputs = with pkgs; [ gleam beam27Packages.erlang beam27Packages.rebar3 bun git ];
 
             buildPhase = ''
               runHook preBuild
@@ -97,6 +97,7 @@
       apps = forAll (pkgs: {
         default = {
           type = "app";
+          meta.description = "Run Atlas: PocketBase serving the built app";
           program = "${self.packages.${pkgs.stdenv.hostPlatform.system}.atlas}/bin/atlas";
         };
       });
@@ -105,7 +106,7 @@
         default = pkgs.mkShell {
           packages = with pkgs; [
             gleam
-            erlang_27
+            beam27Packages.erlang
             beam27Packages.rebar3
             pocketbase
             nodejs_22
