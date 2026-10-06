@@ -7,6 +7,7 @@
 
 import atlas/collection.{type Collection}
 import atlas/cursor.{type PullPlan}
+import atlas/grants.{type Person, Person}
 import atlas/outbox.{type Entry}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
@@ -14,6 +15,7 @@ import gleam/int
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/string
 import gleam/uri
 
 pub type Method {
@@ -43,6 +45,44 @@ pub fn sign_in(email: String, password: String) -> Request {
 /// makes it the way to check a session.
 pub fn refresh() -> Request {
   Request(Post, "/api/collections/users/auth-refresh", None)
+}
+
+/// Finds a user by exact e-mail address (ADR 0010). The answer has only their ID and name.
+pub fn lookup_user(email: String) -> Request {
+  Request(
+    Get,
+    "/api/atlas/users/lookup?email=" <> encode_component(email),
+    None,
+  )
+}
+
+pub fn parse_lookup(body: String) -> Result(Person, Nil) {
+  let decoder = {
+    use id <- decode.field("id", decode.string)
+    use name <- decode.optional_field("name", "", decode.string)
+    decode.success(Person(id, name))
+  }
+  case json.parse(body, decoder) {
+    Ok(person) if person.id != "" -> Ok(person)
+    _ -> Error(Nil)
+  }
+}
+
+/// What to tell the user when a lookup did not find anyone. `status` 0 means no answer.
+pub fn lookup_error(status: Int, body: String) -> String {
+  let message = reason(status, body)
+  case status {
+    0 -> "You are offline. Looking someone up needs a connection."
+    401 -> "Your session has ended. Sign in again."
+    404 -> "Nobody with this e-mail address uses Atlas."
+    429 -> "Too many lookups. Wait a few minutes and try again."
+    400 ->
+      case string.contains(message, "That is you") {
+        True -> "That is your own address."
+        False -> "Enter a complete e-mail address."
+      }
+    _ -> "The lookup failed. Try again later."
+  }
 }
 
 pub fn get_record(collection: Collection, id: String) -> Request {
@@ -77,7 +117,7 @@ pub fn entry_request(entry: Entry) -> Result(Request, Nil) {
 /// One page of a pull, oldest change first, with the ID as tie breaker so paging is stable.
 pub fn list_page(collection: Collection, plan: PullPlan, page: Int) -> Request {
   let filter = case cursor.filter(plan) {
-    Some(f) -> "&filter=" <> uri.percent_encode(f)
+    Some(f) -> "&filter=" <> encode_component(f)
     None -> ""
   }
   Request(
@@ -94,11 +134,17 @@ pub fn list_page(collection: Collection, plan: PullPlan, page: Int) -> Request {
   )
 }
 
+/// Percent-encodes text for a URL path or query. `uri.percent_encode` leaves `+` alone, but a server
+/// reads `+` in a query string as a space, so an address like `name+tag@example.com` would be altered.
+fn encode_component(text: String) -> String {
+  string.replace(uri.percent_encode(text), "+", "%2B")
+}
+
 fn record_path(collection: Collection, id: String) -> String {
   "/api/collections/"
   <> collection.to_string(collection)
   <> "/records/"
-  <> uri.percent_encode(id)
+  <> encode_component(id)
 }
 
 // ANSWERS TO ENTRIES ------------------------------------------------------------------------------

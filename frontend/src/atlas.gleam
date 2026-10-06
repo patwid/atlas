@@ -311,13 +311,44 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         SignedOut(_) -> #(model, effect.none())
       }
 
-    CoachesPage(inner) -> {
-      let #(page_model, page_effect) = coaches_page.update(model.coaches, inner)
-      #(
-        Model(..model, coaches: page_model),
-        effect.map(page_effect, CoachesPage),
-      )
-    }
+    CoachesPage(inner) ->
+      case model.auth {
+        SignedIn(session) -> {
+          let me =
+            grants.Person(session.user_id, case session.name {
+              "" -> session.email
+              name -> name
+            })
+          let #(page_model, page_effect, actions) =
+            coaches_page.update(model.coaches, inner, me)
+          let #(state, action_effects) = perform_coaches(model.syncing, actions)
+          // The lookup is a request, not a record: it is sent here and answered in a message.
+          let lookups =
+            list.filter_map(actions, fn(action) {
+              case action {
+                coaches_page.LookUp(email) ->
+                  Ok(effect.map(
+                    http.send(
+                      api.lookup_user(email),
+                      Some(session.token),
+                      fn(response) { coaches_page.LookupAnswered(response) },
+                    ),
+                    CoachesPage,
+                  ))
+                _ -> Error(Nil)
+              }
+            })
+          #(
+            Model(..model, coaches: page_model, syncing: state),
+            effect.batch([
+              effect.map(page_effect, CoachesPage),
+              effect.map(effect.batch(action_effects), Syncing),
+              ..lookups
+            ]),
+          )
+        }
+        SignedOut(_) -> #(model, effect.none())
+      }
 
     AssignmentsPage(inner) ->
       case model.auth {
@@ -392,6 +423,29 @@ fn assignments_context(
       }
     _ -> assignments_page.Context("", session.user_id, [], today, False)
   }
+}
+
+/// Carries out what the user did with their coaches. (A lookup is not a record; the caller sends it.)
+fn perform_coaches(
+  state: syncing.State,
+  actions: List(coaches_page.Action),
+) -> #(syncing.State, List(Effect(syncing.Msg))) {
+  list.fold(actions, #(state, []), fn(acc, action) {
+    let #(current, effects) = acc
+    case action {
+      coaches_page.Grant(id, fields) -> {
+        let #(next, effect) =
+          syncing.create(current, collection.CoachGrants, id, fields)
+        #(next, list.append(effects, [effect]))
+      }
+      coaches_page.Revoke(id, base) -> {
+        let #(next, effect) =
+          syncing.delete(current, collection.CoachGrants, id, base)
+        #(next, list.append(effects, [effect]))
+      }
+      coaches_page.LookUp(_) -> acc
+    }
+  })
 }
 
 /// Carries out what the user did with the schedule of a plan.
@@ -605,7 +659,14 @@ fn page(model: Model, session: Session) -> Element(Msg) {
         "No activities yet",
         "Connect Strava or import a FIT file to see your runs.",
       )
-    route.Settings -> settings(session, model.syncing)
+    route.Settings ->
+      html.div([], [
+        settings(session, model.syncing),
+        element.map(
+          coaches_page.view(model.coaches, session.user_id),
+          CoachesPage,
+        ),
+      ])
     route.NotFound ->
       shell.empty("Page not found", "Use the tabs below to get back.")
   }

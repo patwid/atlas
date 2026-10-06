@@ -349,8 +349,9 @@ fn schedule_screen(owner: String, visibility: plan.Visibility) -> atlas.Model {
       loaded: True,
     ),
     coaches: coaches_page.Model(
-      [grants.Grant("g1", "ana", "u1", "Ana", "Alice", "T")],
-      True,
+      ..coaches_page.new(),
+      grants: [grants.Grant("g1", "ana", "u1", "Ana", "Alice", "T")],
+      loaded: True,
     ),
     assignments: assignments_page.Model(
       ..assignments_page.new(),
@@ -397,7 +398,10 @@ pub fn a_private_plan_of_someone_else_cannot_be_started_test() {
   // The server would refuse it (ADR 0009), so the app does not even offer it (ADR 0023).
   let #(next, _) =
     atlas.update(
-      Model(..schedule_screen("u2", plan.Private), assignments: assignments_page.new()),
+      Model(
+        ..schedule_screen("u2", plan.Private),
+        assignments: assignments_page.new(),
+      ),
       AssignmentsPage(assignments_page.StartClicked),
     )
   assert next.assignments.mode == assignments_page.Browsing

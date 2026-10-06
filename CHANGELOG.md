@@ -27,8 +27,11 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Plans screens: list, create, edit and delete plans, and read plans shared with you, working offline and syncing in the background (ADR 0021).
 - Workouts in a plan: weeks and days layout with weekly totals, and add, edit, move and delete for the plan's owner (read-only for others), working offline (ADR 0022).
 - Start a plan on a date from its screen, change the date or remove it, with start and end shown with weekdays (ADR 0023).
+- Coaches screen in Settings: add a coach by e-mail address (find, then confirm), remove access, and see the athletes you coach. Coaches can start a plan for an athlete who granted access (ADR 0024).
+- `coach_grants` carries display names (migration `1760000100_coach_grant_names.js`, ADR 0024).
 
 ### Fixed
+- E-mail addresses containing `+` are now found by the lookup (`+` is encoded in the request).
 - A sync requested while another one is running is no longer lost: one more run follows (ADR 0018, addendum).
 - Test servers are stopped with SIGKILL, and tests have a timeout, so a slow PocketBase shutdown can no longer keep the test process alive.
 - The HTTP glue no longer reports an error thrown by the app's own handler as "no connection".

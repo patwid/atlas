@@ -238,3 +238,21 @@ test("sync: records changed since a cursor can be pulled, including soft deletes
   const pulled = await list("alice", "plans", `updated > "${cursor}"`)
   assert.ok(pulled.body.items.some((p) => p.id === plan.id && p.deleted))
 })
+
+test("coach_grants: carry display names for both people, as labels only", async () => {
+  const g = await create("alice", "coach_grants", {
+    id: id(), athlete: people.alice.id, coach: people.bob.id, athlete_name: "Alice", coach_name: "Coach Bob",
+  })
+  assert.equal(g.status, 200, JSON.stringify(g.body))
+  const seen = (await get("bob", "coach_grants", g.body.id)).body
+  assert.equal(seen.athlete_name, "Alice")
+  assert.equal(seen.coach_name, "Coach Bob")
+  // Names have a length limit like other text.
+  const long = await create("alice", "coach_grants", {
+    id: id(), athlete: people.alice.id, coach: people.carol.id, athlete_name: "x".repeat(201),
+  })
+  assert.equal(long.status, 400)
+  // Only the athlete changes a grant, names included, and with the guard's base.
+  assert.equal((await update("bob", "coach_grants", g.body.id, { coach_name: "Hacked" })).status, 404)
+  assert.equal((await update("alice", "coach_grants", g.body.id, { coach_name: "Bob C." })).status, 200)
+})

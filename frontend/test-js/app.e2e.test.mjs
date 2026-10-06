@@ -371,3 +371,84 @@ test("a public plan of someone else can be started, a private one shared with yo
   assert.equal(button(w, "Start this plan"), undefined)
   w.close()
 })
+
+// Setup calls must work: a silent 400 (for example an ID of the wrong length) would only show up later as a timeout.
+const setup = async (request) => {
+  const response = await request
+  assert.equal(response.status, 200, `setup failed: ${JSON.stringify(response.body)}`)
+  return response
+}
+
+// Coaching -------------------------------------------------------------------------------------------
+
+test("an athlete adds a coach by e-mail, the coach assigns a plan, and the athlete finds it on her schedule", { skip: !built && "frontend not built" }, async () => {
+  await h.world()
+  const alice = h.people.alice
+  const bob = h.people.bob
+  const grants = async () => (await h.api("GET", "collections/coach_grants/records?perPage=50", { token: alice.token })).body.items
+
+  // 1. Alice gives Bob access. Looking him up and confirming are separate steps.
+  let w = startApp("/settings", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
+  let d = w.document
+  await waitFor("the coaches section", () => d.body.textContent.includes("Nobody can see your training."))
+  typeInto(w, d.querySelector("#coach-email"), "nobody@example.com")
+  submit(w, d.querySelector(".coach-form"))
+  await waitFor("a not-found message", () => d.body.textContent.includes("Nobody with this e-mail address uses Atlas."))
+  typeInto(w, d.querySelector("#coach-email"), bob.email)
+  submit(w, d.querySelector(".coach-form"))
+  await waitFor("the person found", () => d.body.textContent.includes("Found bob. Let them see your training?"))
+  assert.deepEqual(await grants(), [], "finding someone gives no access yet")
+  click(w, button(w, "Give access"))
+  const grant = await waitFor("the grant on the server", async () => (await grants())[0])
+  assert.equal(grant.athlete, alice.id)
+  assert.equal(grant.coach, bob.id)
+  assert.equal(grant.athlete_name, "alice")
+  assert.equal(grant.coach_name, "bob")
+  await waitFor("bob in her list", () => d.querySelector(".coaches .cards")?.textContent.includes("bob"))
+  w.close()
+
+  // 2. Bob, who owns a plan, starts it for Alice.
+  await setup(h.create("bob", "plans", { id: "coachplan000001", owner: bob.id, title: "Coach's base plan", visibility: "private" }))
+  await setup(h.create("bob", "workouts", { id: "coachwork000001", plan: "coachplan000001", day_index: 0, position: 0, title: "Easy run", kind: "easy", distance_m: 5000 }))
+  w = startApp("/plans/coachplan000001", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
+  d = w.document
+  await waitFor("the assign button, which needs the grant on his device", () => button(w, "Start or assign"))
+  click(w, button(w, "Start or assign"))
+  await waitFor("the form with athletes", () => d.querySelector("#assign-athlete"))
+  const options = [...d.querySelectorAll("#assign-athlete option")].map((o) => o.textContent)
+  assert.deepEqual(options, ["Myself", "alice"])
+  choose(w, d.querySelector("#assign-athlete"), alice.id)
+  typeInto(w, d.querySelector("#assign-start"), "2026-11-02")
+  submit(w, d.querySelector(".schedule-form"))
+  const assignment = await waitFor("the assignment on the server", async () =>
+    (await h.api("GET", "collections/assignments/records?perPage=50", { token: bob.token })).body.items[0])
+  assert.equal(assignment.athlete, alice.id)
+  assert.equal(assignment.assigned_by, bob.id)
+  await waitFor("alice by name on his schedule", () => d.body.textContent.includes("alice") && d.body.textContent.includes("Starts Mon 2 Nov 2026"))
+  w.close()
+
+  // 3. Alice opens the app and finds the plan on her schedule.
+  w = startApp("/plans", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
+  d = w.document
+  const link = await waitFor("the coach's plan in her list", () => [...d.querySelectorAll(".cards a")].find((a) => a.textContent === "Coach's base plan"))
+  click(w, link)
+  await waitFor("the plan screen with its schedule", () => d.body.textContent.includes("Assigned by bob") && d.body.textContent.includes("Starts Mon 2 Nov 2026"))
+  assert.ok(d.body.textContent.includes("Easy run"), "the coach's workouts are readable through the assignment")
+  assert.equal(button(w, "Start this plan"), undefined, "a private plan of someone else cannot be started")
+  assert.equal(button(w, "Edit"), undefined, "and its workouts cannot be changed")
+  assert.ok(button(w, "Change date"), "but the athlete can move her own start date")
+  w.close()
+
+  // 4. Taking access back removes it for the coach.
+  w = startApp("/settings", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
+  d = w.document
+  await waitFor("the coach in the list", () => d.querySelector(".coaches .cards")?.textContent.includes("bob"))
+  click(w, button(w, "Remove access"))
+  await waitFor("the question", () => d.body.textContent.includes("Stop bob from seeing your training?"))
+  click(w, button(w, "Yes, remove access"))
+  await waitFor("the grant deleted on the server", async () => (await grants())[0]?.deleted === true)
+  await waitFor("nobody listed", () => d.body.textContent.includes("Nobody can see your training."))
+  const bobsView = await h.api("GET", `collections/coach_grants/records/${grant.id}`, { token: bob.token })
+  assert.equal(bobsView.status, 404, "the coach can no longer see the grant")
+  w.close()
+})

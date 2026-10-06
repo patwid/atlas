@@ -1,6 +1,7 @@
 import atlas/api.{CheckSession, Final, Get, Meta, Page, Patch, Post, Request}
 import atlas/collection.{Plans, Workouts}
 import atlas/cursor
+import atlas/grants
 import atlas/outbox
 import gleam/dict
 import gleam/dynamic
@@ -223,4 +224,44 @@ pub fn broken_pages_and_records_are_errors_test() {
   assert api.parse_page("{\"items\":5}") == Error(Nil)
   assert api.parse_page("{\"items\":[]}") == Error(Nil)
   assert api.record_meta(dynamic.int(5)) == Error(Nil)
+}
+
+pub fn the_lookup_request_encodes_the_address_test() {
+  assert api.lookup_user("a+b@example.com")
+    == Request(Get, "/api/atlas/users/lookup?email=a%2Bb%40example.com", None)
+}
+
+pub fn a_lookup_answer_gives_the_person_test() {
+  assert api.parse_lookup("{\"id\":\"u2\",\"name\":\"Bob\"}")
+    == Ok(grants.Person("u2", "Bob"))
+  assert api.parse_lookup("{\"id\":\"u3\"}") == Ok(grants.Person("u3", ""))
+  assert api.parse_lookup("{\"id\":\"\"}") == Error(Nil)
+  assert api.parse_lookup("<html>proxy</html>") == Error(Nil)
+}
+
+pub fn lookup_errors_are_readable_test() {
+  assert api.lookup_error(
+      404,
+      "{\"message\":\"No user with this e-mail address.\"}",
+    )
+    == "Nobody with this e-mail address uses Atlas."
+  assert api.lookup_error(400, "{\"message\":\"That is you.\"}")
+    == "That is your own address."
+  assert api.lookup_error(
+      400,
+      "{\"message\":\"An e-mail address is required.\"}",
+    )
+    == "Enter a complete e-mail address."
+  assert api.lookup_error(429, "")
+    == "Too many lookups. Wait a few minutes and try again."
+  assert api.lookup_error(0, "")
+    == "You are offline. Looking someone up needs a connection."
+  assert api.lookup_error(401, "") == "Your session has ended. Sign in again."
+  assert api.lookup_error(500, "") == "The lookup failed. Try again later."
+}
+
+pub fn plus_signs_survive_in_query_strings_test() {
+  // A bare + would arrive at the server as a space.
+  assert api.lookup_user("name+tag@example.com").path
+    == "/api/atlas/users/lookup?email=name%2Btag%40example.com"
 }
