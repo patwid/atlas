@@ -1,4 +1,6 @@
-import atlas/api.{CheckSession, Final, Get, Meta, Page, Patch, Post, Request}
+import atlas/api.{
+  CheckSession, Delete, Final, Get, Meta, Page, Patch, Post, Request,
+}
 import atlas/collection.{Plans, Workouts}
 import atlas/cursor
 import atlas/grants
@@ -264,4 +266,39 @@ pub fn plus_signs_survive_in_query_strings_test() {
   // A bare + would arrive at the server as a space.
   assert api.lookup_user("name+tag@example.com").path
     == "/api/atlas/users/lookup?email=name%2Btag%40example.com"
+}
+
+pub fn the_strava_requests_test() {
+  assert api.strava_status() == Request(Get, "/api/atlas/strava/status", None)
+  assert api.strava_connect() == Request(Get, "/api/atlas/strava/connect", None)
+  assert api.strava_sync() == Request(Post, "/api/atlas/strava/sync", None)
+  assert api.strava_disconnect()
+    == Request(Delete, "/api/atlas/strava/connection", None)
+}
+
+pub fn the_strava_answers_are_read_test() {
+  assert api.parse_strava_status("{\"configured\":true,\"connected\":false}")
+    == Ok(api.StravaStatus(True, False))
+  assert api.parse_strava_status("{\"configured\":true}") == Error(Nil)
+  assert api.parse_strava_status("<html>proxy</html>") == Error(Nil)
+  assert api.parse_strava_url(
+      "{\"url\":\"https://www.strava.com/oauth/authorize?x=1\"}",
+    )
+    == Ok("https://www.strava.com/oauth/authorize?x=1")
+  assert api.parse_strava_url("{\"url\":\"\"}") == Error(Nil)
+  assert api.parse_strava_url("{}") == Error(Nil)
+  assert api.parse_count("{\"imported\":12}", "imported") == Ok(12)
+  assert api.parse_count("{\"removed\":0}", "removed") == Ok(0)
+  assert api.parse_count("{\"removed\":0}", "imported") == Error(Nil)
+}
+
+pub fn strava_errors_are_readable_test() {
+  assert api.strava_error(0, "")
+    == "You are offline. Strava needs a connection."
+  assert api.strava_error(401, "") == "Your session has ended. Sign in again."
+  assert api.strava_error(404, "") == "Strava is not connected."
+  assert api.strava_error(503, "") == "Strava is not set up on this server."
+  assert api.strava_error(502, "")
+    == "Strava could not be reached. Try again later."
+  assert api.strava_error(418, "") == "That did not work (HTTP 418)."
 }

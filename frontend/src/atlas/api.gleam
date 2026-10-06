@@ -22,6 +22,7 @@ pub type Method {
   Get
   Post
   Patch
+  Delete
 }
 
 pub type Request {
@@ -45,6 +46,82 @@ pub fn sign_in(email: String, password: String) -> Request {
 /// makes it the way to check a session.
 pub fn refresh() -> Request {
   Request(Post, "/api/collections/users/auth-refresh", None)
+}
+
+// STRAVA (ADR 0012, 0027) -------------------------------------------------------------------------
+
+pub type StravaStatus {
+  StravaStatus(
+    /// The server has Strava credentials.
+    configured: Bool,
+    connected: Bool,
+  )
+}
+
+pub fn strava_status() -> Request {
+  Request(Get, "/api/atlas/strava/status", None)
+}
+
+/// Asks for the address to send the browser to, to connect.
+pub fn strava_connect() -> Request {
+  Request(Get, "/api/atlas/strava/connect", None)
+}
+
+/// Imports the last 30 days again.
+pub fn strava_sync() -> Request {
+  Request(Post, "/api/atlas/strava/sync", None)
+}
+
+pub fn strava_disconnect() -> Request {
+  Request(Delete, "/api/atlas/strava/connection", None)
+}
+
+pub fn parse_strava_status(body: String) -> Result(StravaStatus, Nil) {
+  let decoder = {
+    use configured <- decode.field("configured", decode.bool)
+    use connected <- decode.field("connected", decode.bool)
+    decode.success(StravaStatus(configured, connected))
+  }
+  case json.parse(body, decoder) {
+    Ok(status) -> Ok(status)
+    Error(_) -> Error(Nil)
+  }
+}
+
+pub fn parse_strava_url(body: String) -> Result(String, Nil) {
+  let decoder = {
+    use url <- decode.field("url", decode.string)
+    decode.success(url)
+  }
+  case json.parse(body, decoder) {
+    Ok(url) if url != "" -> Ok(url)
+    _ -> Error(Nil)
+  }
+}
+
+/// The number in answers such as `{"imported": 12}` or `{"removed": 3}`.
+pub fn parse_count(body: String, field: String) -> Result(Int, Nil) {
+  let decoder = {
+    use count <- decode.field(field, decode.int)
+    decode.success(count)
+  }
+  case json.parse(body, decoder) {
+    Ok(count) -> Ok(count)
+    Error(_) -> Error(Nil)
+  }
+}
+
+/// What to tell the user when a Strava request failed. `status` 0 means no answer.
+pub fn strava_error(status: Int, body: String) -> String {
+  let _ = body
+  case status {
+    0 -> "You are offline. Strava needs a connection."
+    401 -> "Your session has ended. Sign in again."
+    404 -> "Strava is not connected."
+    503 -> "Strava is not set up on this server."
+    _ if status >= 500 -> "Strava could not be reached. Try again later."
+    _ -> "That did not work (HTTP " <> int.to_string(status) <> ")."
+  }
 }
 
 /// Finds a user by exact e-mail address (ADR 0010). The answer has only their ID and name.

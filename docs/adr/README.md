@@ -30,3 +30,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0024 | [Coach access: grants with names, and the Coaches screen](0024-coach-grants-screen.md) | Accepted |
 | 0025 | [Entering activities by hand](0025-manual-activities.md) | Accepted |
 | 0026 | [The Today screen and stored matches](0026-today-screen.md) | Accepted |
+| 0027 | [The Strava section in Settings](0027-strava-screen.md) | Accepted / Proposed |

@@ -22,7 +22,7 @@ routerAdd("GET", "/api/atlas/strava/callback", (e) => {
   const c = strava.requireConfigured()
   const q = e.request.url.query()
   const home = c.publicUrl || ""
-  if (q.get("error")) return e.redirect(302, home + "/?strava=denied")
+  if (q.get("error")) return e.redirect(302, home + "/settings?strava=denied")
   let claims
   try {
     claims = $security.parseJWT(q.get("state") || "", c.clientSecret)
@@ -30,12 +30,12 @@ routerAdd("GET", "/api/atlas/strava/callback", (e) => {
     throw new BadRequestError("The Strava connection request expired. Start again.")
   }
   if (claims.purpose !== "strava-connect") throw new BadRequestError("Invalid state.")
-  if (String(q.get("scope") || "").indexOf("activity:read") === -1) return e.redirect(302, home + "/?strava=scope")
+  if (String(q.get("scope") || "").indexOf("activity:read") === -1) return e.redirect(302, home + "/settings?strava=scope")
 
   const token = strava.exchangeCode(q.get("code") || "")
   const athleteId = token.athlete.id
   const taken = strava.findConnectionByAthlete(athleteId)
-  if (taken && taken.getString("user") !== claims.uid) return e.redirect(302, home + "/?strava=taken")
+  if (taken && taken.getString("user") !== claims.uid) return e.redirect(302, home + "/settings?strava=taken")
 
   const conn = strava.findConnection(claims.uid) || new Record($app.findCollectionByNameOrId("strava_connections"))
   conn.set("user", claims.uid)
@@ -50,8 +50,19 @@ routerAdd("GET", "/api/atlas/strava/callback", (e) => {
   } catch (err) {
     $app.logger().error("strava backfill failed", "error", String(err))
   }
-  return e.redirect(302, home + "/?strava=connected")
+  return e.redirect(302, home + "/settings?strava=connected")
 })
+
+// 2b. Whether Strava is set up on this server and whether this user is connected. The tokens themselves
+// are never exposed: strava_connections has no API rules.
+routerAdd("GET", "/api/atlas/strava/status", (e) => {
+  const strava = require(`${__hooks}/lib/strava.js`)
+  const c = strava.config()
+  return e.json(200, {
+    configured: Boolean(c.clientId && c.clientSecret),
+    connected: strava.findConnection(e.auth.id) !== null,
+  })
+}, $apis.requireAuth("users"))
 
 // 3. Re-import the last 30 days on request.
 routerAdd("POST", "/api/atlas/strava/sync", (e) => {

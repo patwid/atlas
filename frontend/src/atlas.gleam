@@ -18,6 +18,7 @@ import atlas/route.{type Route}
 import atlas/shell
 import atlas/signin
 import atlas/storage
+import atlas/strava_page
 import atlas/sync
 import atlas/syncing
 import atlas/today
@@ -54,6 +55,7 @@ pub type Model {
     coaches: coaches_page.Model,
     activities: activities_page.Model,
     daily: today_page.Model,
+    strava: strava_page.Model,
   )
 }
 
@@ -73,6 +75,7 @@ pub type Msg {
   CoachesPage(coaches_page.Msg)
   ActivitiesPage(activities_page.Msg)
   TodayPage(today_page.Msg)
+  StravaPage(strava_page.Msg)
   ProblemsDismissed
 }
 
@@ -95,6 +98,25 @@ fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
   }
   let is_online = online.is_online()
   let #(syncing_state, load) = load_device_data(auth, syncing.new())
+  // Strava's redirect brings the user back to Settings with the result in the address.
+  let returned =
+    modem.initial_uri()
+    |> result.map(route.strava_result)
+    |> result.unwrap(None)
+  let strava_start = case auth, returned {
+    SignedIn(_), Some(result) ->
+      effect.batch([
+        send(StravaPage(strava_page.Returned(result))),
+        // The address is cleaned so that a reload does not repeat the message.
+        modem.replace("/settings", None, None),
+      ])
+    SignedIn(_), None ->
+      case route {
+        route.Settings -> send(StravaPage(strava_page.Refresh))
+        _ -> effect.none()
+      }
+    SignedOut(_), _ -> effect.none()
+  }
   #(
     Model(
       route:,
@@ -107,12 +129,14 @@ fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
       coaches: coaches_page.new(),
       activities: activities_page.new(),
       daily: today_page.new(),
+      strava: strava_page.new(),
     ),
     effect.batch([
       modem.init(RouteChanged),
       online.listen(OnlineChanged),
       pwa.register_service_worker(),
       load,
+      strava_start,
       case is_online {
         True -> refresh_if_due(auth)
         False -> effect.none()
@@ -123,10 +147,17 @@ fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
 
 pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
-    RouteChanged(uri) -> #(
-      Model(..model, route: route.parse(uri)),
-      effect.none(),
-    )
+    RouteChanged(uri) -> {
+      let next = route.parse(uri)
+      #(
+        Model(..model, route: next),
+        // The Strava state is looked up when Settings is opened.
+        case next, model.auth {
+          route.Settings, SignedIn(_) -> send(StravaPage(strava_page.Refresh))
+          _, _ -> effect.none()
+        },
+      )
+    }
 
     // Coming back online is when an expired or soon-to-expire session gets refreshed.
     OnlineChanged(is_online) -> #(
@@ -198,6 +229,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               coaches: coaches_page.new(),
               activities: activities_page.new(),
               daily: today_page.new(),
+              strava: strava_page.new(),
             ),
             effect.batch([remember(session), load]),
           )
@@ -240,6 +272,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         coaches: coaches_page.new(),
         activities: activities_page.new(),
         daily: today_page.new(),
+        strava: strava_page.new(),
       ),
       forget(),
     )
@@ -428,6 +461,22 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         SignedOut(_) -> #(model, effect.none())
       }
 
+    StravaPage(inner) ->
+      case model.auth {
+        SignedIn(session) -> {
+          let #(page_model, page_effect, actions) =
+            strava_page.update(model.strava, inner)
+          #(
+            Model(..model, strava: page_model),
+            effect.batch([
+              effect.map(page_effect, StravaPage),
+              ..list.map(actions, fn(action) { strava_effect(action, session) })
+            ]),
+          )
+        }
+        SignedOut(_) -> #(model, effect.none())
+      }
+
     ProblemsDismissed -> #(
       Model(..model, syncing: syncing.dismiss_problems(model.syncing)),
       effect.none(),
@@ -491,6 +540,27 @@ fn today_inputs(model: Model, session: Session) -> today.Inputs {
     matches: model.daily.matches,
     offset_at: clock.utc_offset_at_utc,
   )
+}
+
+/// Carries out what the Strava section asked for: a request, a move to Strava's page, or a sync.
+fn strava_effect(action: strava_page.Action, session: Session) -> Effect(Msg) {
+  case action {
+    strava_page.Fetch(request, reply) ->
+      http.send(request, Some(session.token), fn(response) {
+        StravaPage(strava_page.Answered(reply, response))
+      })
+    strava_page.Navigate(url) ->
+      case uri.parse(url) {
+        Ok(target) -> modem.load(target)
+        Error(Nil) -> effect.none()
+      }
+    strava_page.SyncNow -> send(Syncing(syncing.Kick))
+  }
+}
+
+/// A message sent to the app from inside an effect.
+fn send(msg: Msg) -> Effect(Msg) {
+  effect.from(fn(dispatch) { dispatch(msg) })
 }
 
 /// Carries out what the user did with links between activities and workouts.
@@ -662,6 +732,7 @@ fn session_ended(model: Model) -> #(Model, Effect(Msg)) {
         coaches: coaches_page.new(),
         activities: activities_page.new(),
         daily: today_page.new(),
+        strava: strava_page.new(),
       ),
       forget(),
     )
@@ -785,6 +856,7 @@ fn page(model: Model, session: Session) -> Element(Msg) {
           coaches_page.view(model.coaches, session.user_id),
           CoachesPage,
         ),
+        element.map(strava_page.view(model.strava), StravaPage),
       ])
     route.NotFound ->
       shell.empty("Page not found", "Use the tabs below to get back.")

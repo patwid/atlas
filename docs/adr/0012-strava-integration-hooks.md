@@ -58,3 +58,7 @@ Details:
   variables. Moving to Go ([0002](0002-use-pocketbase-as-backend.md)) is still the answer if this grows (it is about 300 lines now).
 - Open for the owner: create the Strava app, set the environment variables, run `subscribe` once after
   deploying behind HTTPS, and write the Strava brand attribution into the UI (0005).
+
+## Addendum (2026-10-06)
+
+The callback now redirects to `/settings?strava=<result>` instead of `/?strava=<result>`, and `GET /api/atlas/strava/status` was added. See [0027](0027-strava-screen.md).

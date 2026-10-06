@@ -1,11 +1,12 @@
 import atlas.{
   ActivitiesPage, AssignmentsPage, EmailChanged, Model, OnlineChanged,
   PasswordChanged, PlansPage, RefreshResponded, RouteChanged, SignInResponded,
-  SignInSubmitted, SignOutClicked, SignedIn, SignedOut, WorkoutsPage,
+  SignInSubmitted, SignOutClicked, SignedIn, SignedOut, StravaPage, WorkoutsPage,
 }
 import atlas/activities_page
 import atlas/activity
 import atlas/activity_form
+import atlas/api
 import atlas/assignment_form
 import atlas/assignments_page
 import atlas/auth.{Session}
@@ -21,6 +22,7 @@ import atlas/plan_form
 import atlas/plans_page.{Creating}
 import atlas/route
 import atlas/signin.{Form}
+import atlas/strava_page
 import atlas/sync
 import atlas/syncing
 import atlas/today_page
@@ -51,6 +53,7 @@ fn signed_out(form: signin.Form) -> atlas.Model {
     coaches_page.new(),
     activities_page.new(),
     today_page.new(),
+    strava_page.new(),
   )
 }
 
@@ -66,6 +69,7 @@ fn signed_in() -> atlas.Model {
     coaches_page.new(),
     activities_page.new(),
     today_page.new(),
+    strava_page.new(),
   )
 }
 
@@ -593,4 +597,43 @@ pub fn signing_out_clears_the_matches_on_screen_test() {
     )
   let #(model, _) = atlas.update(showing, SignOutClicked)
   assert model.daily == today_page.new()
+}
+
+pub fn coming_back_from_strava_shows_the_result_test() {
+  let #(model, _) =
+    atlas.update(signed_in(), StravaPage(strava_page.Returned("connected")))
+  assert model.strava.message
+    == option.Some(strava_page.Info(
+      "Strava is connected. Your last 30 days are being imported.",
+    ))
+  let #(model, _) =
+    atlas.update(signed_in(), StravaPage(strava_page.Returned("denied")))
+  assert model.strava.message
+    == option.Some(strava_page.Problem("Strava access was not granted."))
+}
+
+pub fn the_strava_section_is_shown_in_settings_test() {
+  let html =
+    element.to_string(atlas.view(Model(..signed_in(), route: route.Settings)))
+  assert string.contains(html, "Strava")
+  assert string.contains(html, "Checking")
+}
+
+pub fn strava_messages_are_ignored_when_signed_out_test() {
+  let model = signed_out(Form("", "", False, None))
+  let #(next, _) = atlas.update(model, StravaPage(strava_page.ConnectClicked))
+  assert next == model
+}
+
+pub fn signing_out_clears_the_strava_state_test() {
+  let showing =
+    Model(
+      ..signed_in(),
+      strava: strava_page.Model(
+        ..strava_page.new(),
+        status: strava_page.Known(api.StravaStatus(True, True)),
+      ),
+    )
+  let #(model, _) = atlas.update(showing, SignOutClicked)
+  assert model.strava == strava_page.new()
 }

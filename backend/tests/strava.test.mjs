@@ -53,7 +53,7 @@ test("callback: stores the connection, imports the last 30 days and redirects", 
   strava.state.activities.set(1, strava.activity(1))
   strava.state.activities.set(2, strava.activity(2, { sport_type: "TrailRun", name: "Hills" }))
   const r = await connect("alice")
-  assert.match(r.headers.get("location"), /strava=connected/)
+  assert.match(r.headers.get("location"), /\/settings\?strava=connected$/)
   const conns = await connections()
   const mine = conns.find((c) => c.user === h.people.alice.id)
   assert.equal(mine.strava_athlete_id, strava.state.athleteId)
@@ -200,5 +200,24 @@ test("unconfigured server: Strava endpoints answer 503 instead of failing obscur
     await bare.world()
     assert.equal((await bare.api("GET", "atlas/strava/connect", { token: bare.as("alice") })).status, 503)
     assert.equal((await bare.api("GET", "atlas/strava/webhook?hub.mode=subscribe&hub.verify_token=&hub.challenge=x")).status, 403)
+  } finally { bare.stop() }
+})
+
+test("status: says whether Strava is set up and whether the user is connected, to signed-in users only", async () => {
+  assert.equal((await get("atlas/strava/status", null)).status, 401)
+  assert.deepEqual((await get("atlas/strava/status", "alice")).body, { configured: true, connected: false })
+  await connect("alice")
+  assert.deepEqual((await get("atlas/strava/status", "alice")).body, { configured: true, connected: true })
+  assert.deepEqual((await get("atlas/strava/status", "bob")).body, { configured: true, connected: false })
+  await h.api("DELETE", "atlas/strava/connection", { token: h.as("alice") })
+  assert.deepEqual((await get("atlas/strava/status", "alice")).body, { configured: true, connected: false })
+})
+
+test("status: an unconfigured server says so", async () => {
+  const bare = await startPocketBase({ STRAVA_CLIENT_ID: "", STRAVA_CLIENT_SECRET: "" })
+  try {
+    await bare.world()
+    const r = await bare.api("GET", "atlas/strava/status", { token: bare.as("alice") })
+    assert.deepEqual(r.body, { configured: false, connected: false })
   } finally { bare.stop() }
 })

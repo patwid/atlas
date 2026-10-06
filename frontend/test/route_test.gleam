@@ -1,4 +1,5 @@
 import atlas/route.{Activities, NotFound, Plan, Plans, Settings, Today}
+import gleam/option
 import gleam/uri
 
 fn parse(path: String) -> route.Route {
@@ -35,4 +36,16 @@ fn list_map_parse(routes: List(route.Route)) -> List(route.Route) {
     [] -> []
     [r, ..rest] -> [parse(route.to_path(r)), ..list_map_parse(rest)]
   }
+}
+
+pub fn the_strava_result_is_read_from_the_address_test() {
+  let result = fn(text) {
+    let assert Ok(u) = uri.parse(text)
+    route.strava_result(u)
+  }
+  assert result("/settings?strava=connected") == option.Some("connected")
+  assert result("/settings?x=1&strava=denied") == option.Some("denied")
+  assert result("/settings") == option.None
+  assert result("/settings?other=1") == option.None
+  assert result("/?strava=taken") == option.Some("taken")
 }

@@ -1,36 +1,20 @@
 // The whole stack: the built app (jsdom) with a device IndexedDB (fake-indexeddb) against a real
 // PocketBase. Needs the built frontend in backend/pb_public: scripts/test-frontend-js.sh builds it.
-import "fake-indexeddb/auto"
 import { test, before, after } from "node:test"
 import assert from "node:assert/strict"
-import { existsSync, readFileSync } from "node:fs"
-import { dirname, join } from "node:path"
-import { fileURLToPath } from "node:url"
-import { JSDOM } from "jsdom"
 import { toList } from "../build/dev/javascript/atlas/gleam.mjs"
 import * as store from "../build/dev/javascript/atlas/atlas/store.ffi.mjs"
 import { startPocketBase } from "../../backend/tests/harness.mjs"
+import {
+  appRunner, built, button, byLabel, call, choose, click, daysFromNow, pub, setup, sleep, submit, typeInto, utcOf, waitFor, ymd,
+} from "./support.mjs"
 
-const pub = join(dirname(fileURLToPath(import.meta.url)), "../../backend/pb_public")
-const built = existsSync(join(pub, "atlas.js"))
-const call = (fn, ...a) => new Promise((resolve) => fn(...a, (ok, value) => resolve({ ok, value })))
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 let h
 before(async () => { if (built) h = await startPocketBase({}, { publicDir: pub }) })
 after(() => h?.stop())
 
-const startApp = (path, session) => {
-  const html = readFileSync(join(pub, "index.html"), "utf8").replace(/<script[^>]*src="\/atlas.js"[^>]*><\/script>/, "")
-  const dom = new JSDOM(html, { url: h.url + path, runScripts: "outside-only", pretendToBeVisual: true })
-  const w = dom.window
-  // jsdom's AbortSignal is not Node's, so the signal is left out of the shim.
-  w.fetch = (url, opts) => { const { signal, ...rest } = opts; return fetch(new URL(url, h.url), rest) }
-  w.indexedDB = globalThis.indexedDB
-  if (session) w.localStorage.setItem("atlas.session", JSON.stringify(session))
-  w.eval(readFileSync(join(pub, "atlas.js"), "utf8"))
-  return w
-}
+const startApp = appRunner(() => h)
 
 test("signed in with unsent offline work: pushes it, pulls the rest, keeps a conflicted copy, ends in sync", { skip: !built && "frontend not built" }, async () => {
   await h.world()
@@ -126,19 +110,6 @@ test("an expired session on the server signs the user out and keeps the device d
 
 // Driving the plans screens through the DOM ---------------------------------------------------------
 
-const waitFor = async (what, check, ms = 8000) => {
-  const end = Date.now() + ms
-  let last
-  while (Date.now() < end) {
-    try { last = await check(); if (last) return last } catch {}
-    await sleep(50)
-  }
-  assert.fail(`timed out waiting for: ${what}`)
-}
-const click = (w, el) => el.dispatchEvent(new w.MouseEvent("click", { bubbles: true, cancelable: true, button: 0 }))
-const typeInto = (w, el, value) => { el.value = value; el.dispatchEvent(new w.Event("input", { bubbles: true })) }
-const submit = (w, form) => form.dispatchEvent(new w.Event("submit", { bubbles: true, cancelable: true }))
-const button = (w, text) => [...w.document.querySelectorAll("button")].find((b) => b.textContent.trim() === text)
 
 test("a user creates, edits and deletes a plan on the plans screens and the server follows", { skip: !built && "frontend not built" }, async () => {
   await h.world()
@@ -210,8 +181,6 @@ test("plans shared with the user show up read-only, and a pulled new plan appear
 
 // Workouts inside a plan ------------------------------------------------------------------------------
 
-const choose = (w, select, value) => { select.value = value; select.dispatchEvent(new w.Event("change", { bubbles: true })) }
-const byLabel = (w, label) => [...w.document.querySelectorAll("button")].find((b) => b.getAttribute("aria-label") === label)
 
 test("the owner builds a plan's workouts: add, add to the same day, move, delete, and the server follows", { skip: !built && "frontend not built" }, async () => {
   await h.world()
@@ -372,12 +341,6 @@ test("a public plan of someone else can be started, a private one shared with yo
   w.close()
 })
 
-// Setup calls must work: a silent 400 (for example an ID of the wrong length) would only show up later as a timeout.
-const setup = async (request) => {
-  const response = await request
-  assert.equal(response.status, 200, `setup failed: ${JSON.stringify(response.body)}`)
-  return response
-}
 
 // Coaching -------------------------------------------------------------------------------------------
 
@@ -524,9 +487,6 @@ test("a user adds, edits and deletes an activity by hand; the start is stored in
 
 // The Today screen ------------------------------------------------------------------------------------
 
-const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-const daysFromNow = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d }
-const utcOf = (day, hour, minute) => new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, minute).toISOString().replace("T", " ")
 
 test("Today shows missed, looks-done and rest days; the user confirms, unlinks, re-links and links by hand", { skip: !built && "frontend not built" }, async () => {
   await h.world()

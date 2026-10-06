@@ -1,7 +1,7 @@
 //// Sends an `api.Request` with `fetch`. The browser call is in `http.ffi.mjs`.
 //// The answer is the status and body text; status 0 means no answer at all.
 
-import atlas/api.{type Request, Get, Patch, Post}
+import atlas/api.{type Request, Delete, Get, Patch, Post}
 import gleam/option.{type Option, None, Some}
 import lustre/effect.{type Effect}
 
@@ -48,6 +48,7 @@ fn method_name(request: Request) -> String {
     Get -> "GET"
     Post -> "POST"
     Patch -> "PATCH"
+    Delete -> "DELETE"
   }
 }
 
