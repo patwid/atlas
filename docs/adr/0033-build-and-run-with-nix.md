@@ -24,7 +24,7 @@ build sandbox anyway.
 - **`packages.atlas`** (also `packages.default` and `apps.default`) is a launcher: PocketBase serving the three directories from the store, with
   `--hooksWatch=false --automigrate=false` because the store is read-only. Data lives in `$ATLAS_DATA_DIR`, else `$XDG_DATA_HOME/atlas`, else
   `~/.local/share/atlas`. Further arguments go to `pocketbase serve` (`nix run . -- --http=0.0.0.0:8090`). Strava settings come from the environment ([0012](0012-strava-integration-hooks.md)).
-- The build source is restricted to the files the build reads, so unrelated edits do not rebuild it. New files in those directories must be tracked in git (a flake only sees tracked files).
+- The build source is `frontend/`, `backend/` and `scripts/build-frontend.sh`, minus the test directories, so edits to docs, CI or tests do not rebuild it. New files must be tracked in git (a flake only sees tracked files).
 
 ## Consequences
 

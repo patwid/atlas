@@ -13,18 +13,12 @@
         let
           lib = pkgs.lib;
 
-          # Only what the build reads, so unrelated edits do not rebuild the app.
+          # The frontend and backend without their tests, so unrelated edits do not rebuild the app.
           src = lib.fileset.toSource {
             root = ./.;
-            fileset = lib.fileset.unions [
-              ./frontend/gleam.toml
-              ./frontend/manifest.toml
-              ./frontend/src
-              ./frontend/assets
-              ./backend/pb_hooks
-              ./backend/pb_migrations
-              ./scripts/build-frontend.sh
-            ];
+            fileset = lib.fileset.difference
+              (lib.fileset.unions [ ./frontend ./backend ./scripts/build-frontend.sh ])
+              (lib.fileset.unions [ ./frontend/test ./frontend/test-js ./backend/tests ]);
           };
 
           # Hex packages for the offline build. Gleam keeps downloads in a cache whose file
