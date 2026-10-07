@@ -44,8 +44,8 @@ main { flex: 1; padding: 1rem; max-width: 48rem; width: 100%; margin: 0 auto; }
   background: var(--surface); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom);
 }
 .tabs a { padding: 0.875rem 0.25rem; text-align: center; color: var(--muted); text-decoration: none; font-size: 0.875rem; }
-.tabs a[aria-current="page"] { color: var(--accent); font-weight: 600; box-shadow: inset 0 2px 0 var(--accent); }
-.tabs a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tabs a[aria-current="page"] { color: var(--wa-color-brand-fill-loud); font-weight: 600; box-shadow: inset 0 2px 0 var(--wa-color-brand-fill-loud); }
+.tabs a:focus-visible { outline: 2px solid var(--wa-color-brand-fill-loud); outline-offset: -2px; }
 .signin { max-width: 22rem; margin: 0 auto; padding: 4rem 1rem; }
 .signin h1 { margin: 0 0 0.25rem; }
 .muted { color: var(--muted); margin-top: 0; }
