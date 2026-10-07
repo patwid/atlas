@@ -1,6 +1,6 @@
 # 0013. App shell, routing and PWA build
 
-- Status: Accepted
+- Status: Accepted. The "no CSS framework" styling point is narrowed by [0037](0037-adopt-shoelace-web-components.md).
 - Date: 2026-10-06
 - Deciders: agent (within [0003](0003-use-gleam-lustre-frontend.md) and [0004](0004-offline-first-data-and-sync.md))
 

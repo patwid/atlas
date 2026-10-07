@@ -34,7 +34,17 @@ links = [
   { rel = "manifest", href = "/manifest.json" },
   { rel = "icon", href = "/icon.svg", type = "image/svg+xml" },
 ]
-stylesheets = [{ href = "/app.css" }]
+stylesheets = [
+  { href = "/shoelace/themes/light.css" },
+  { href = "/shoelace/themes/dark.css" },
+  { href = "/app.css" },
+]
+scripts = [
+  # Shoelace's dark theme is scoped to a `.sl-theme-dark` class (ADR 0037); the rest of the
+  # app follows the OS theme through `prefers-color-scheme`, so this keeps Shoelace in step.
+  { content = "(()=>{const m=matchMedia('(prefers-color-scheme: dark)');const set=()=>document.documentElement.classList.toggle('sl-theme-dark',m.matches);set();m.addEventListener('change',set);})();" },
+  { src = "/shoelace/register.js", type = "module" },
+]
 
 # `gleam run -m lustre/dev start` serves the app on its own port; API calls go to PocketBase.
 [tools.lustre.dev.proxy]

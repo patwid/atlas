@@ -40,3 +40,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0034 | [Heart-rate zones as an explicit setting](0034-heart-rate-zone-settings.md) | Accepted |
 | 0035 | [Lactate zones as an explicit setting](0035-lactate-zone-settings.md) | Accepted |
 | 0036 | [Pace zones as an explicit setting](0036-pace-zone-settings.md) | Accepted |
+| 0037 | [Adopt Shoelace web components for UI controls](0037-adopt-shoelace-web-components.md) | Accepted |
