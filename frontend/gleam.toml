@@ -27,7 +27,7 @@ lustre_dev_tools = ">= 2.4.0 and < 3.0.0"
 lang = "en"
 title = "Atlas"
 meta = [
-  { name = "theme-color", content = "#0f766e" },
+  { name = "theme-color", content = "#0d6efd" },
   { name = "description", content = "Plan, share and review your running training." },
 ]
 links = [
