@@ -1,6 +1,6 @@
 # 0041. Run CI on GitHub Actions through the Nix flake
 
-- Status: Accepted
+- Status: Superseded by [0042](0042-ci-through-flake-checks.md)
 - Date: 2026-10-07
 - Deciders: agent (owner asked for GitHub CI; owner picked full-suite scope and a Linux-only runner over two narrower options)
 

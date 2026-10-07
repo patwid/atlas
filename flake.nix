@@ -7,19 +7,12 @@
     let
       systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
       forAll = f: nixpkgs.lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
-    in
-    {
-      packages = forAll (pkgs:
+
+      # Everything the packages and the checks share, per system.
+      atlasFor = pkgs:
         let
           lib = pkgs.lib;
-
-          # The frontend and backend without their tests, so unrelated edits do not rebuild the app.
-          src = lib.fileset.toSource {
-            root = ./.;
-            fileset = lib.fileset.difference
-              (lib.fileset.unions [ ./frontend ./backend ./scripts/build-frontend.sh ])
-              (lib.fileset.unions [ ./frontend/test ./frontend/test-js ./backend/tests ]);
-          };
+          source = fileset: lib.fileset.toSource { root = ./.; inherit fileset; };
 
           # Hex packages for the offline build. Gleam keeps downloads in a cache whose file
           # names are the packages' checksums, and manifest.toml records exactly those.
@@ -34,23 +27,35 @@
             })
             manifest.packages);
 
+          # Shell lines that give a build Gleam's download cache filled from hexPackages.
+          useHexPackages = ''
+            export HOME=$TMPDIR/home
+            mkdir -p $HOME/.cache/gleam/hex/hexpm
+            cp -rL ${hexPackages} $HOME/.cache/gleam/hex/hexpm/packages
+            chmod -R u+w $HOME
+          '';
+
+          # The Bun that lustre_dev_tools would download cannot run in the build sandbox.
+          useSystemBun = ''
+            printf '\n[tools.lustre.bin]\nbun = "system"\n' >> frontend/gleam.toml
+          '';
+
           buildId = "${self.shortRev or self.dirtyShortRev or "dev"}-${self.lastModifiedDate or "0"}";
 
           # The built app: the static frontend plus the PocketBase hooks and migrations.
+          # The source leaves out the tests, so unrelated edits do not rebuild the app.
           atlas-app = pkgs.stdenvNoCC.mkDerivation {
             pname = "atlas-app";
             version = "0-${buildId}";
-            inherit src;
+            src = source (lib.fileset.difference
+              (lib.fileset.unions [ ./frontend ./backend ./scripts/build-frontend.sh ])
+              (lib.fileset.unions [ ./frontend/test ./frontend/test-js ./backend/tests ]));
             nativeBuildInputs = with pkgs; [ gleam beam27Packages.erlang beam27Packages.rebar3 bun git ];
 
             buildPhase = ''
               runHook preBuild
-              export HOME=$TMPDIR/home
-              mkdir -p $HOME/.cache/gleam/hex/hexpm
-              cp -rL ${hexPackages} $HOME/.cache/gleam/hex/hexpm/packages
-              chmod -R u+w $HOME
-              # The Bun that lustre_dev_tools would download cannot run in the build sandbox.
-              printf '\n[tools.lustre.bin]\nbun = "system"\n' >> frontend/gleam.toml
+              ${useHexPackages}
+              ${useSystemBun}
               ATLAS_BUILD_ID=${buildId} ATLAS_PUBLIC_OUT=$PWD/pb_public \
                 bash scripts/build-frontend.sh
               runHook postBuild
@@ -82,11 +87,74 @@
                 "$@"
             '';
           };
+
+          # A test suite as a derivation (ADR 0042): it builds only if the tests pass, and is not run
+          # again until something in its source changes. The source is only what the suite reads.
+          check = name: { fileset, inputs, script }: pkgs.stdenvNoCC.mkDerivation {
+            name = "atlas-${name}";
+            src = source fileset;
+            nativeBuildInputs = inputs;
+            buildPhase = ''
+              runHook preBuild
+              patchShebangs scripts
+              ${script}
+              runHook postBuild
+            '';
+            installPhase = "touch $out";
+          };
+
+          # The npm packages of the browser-side tests, fetched one by one from the lock file.
+          testJsNodeModules = pkgs.importNpmLock.buildNodeModules {
+            npmRoot = ./frontend/test-js;
+            nodejs = pkgs.nodejs_22;
+          };
         in
         {
-          inherit atlas atlas-app;
-          default = atlas;
-        });
+          packages = {
+            inherit atlas atlas-app;
+            default = atlas;
+          };
+
+          checks = {
+            inherit atlas-app;
+
+            gleam-test = check "gleam-test" {
+              fileset = lib.fileset.difference ./frontend ./frontend/test-js;
+              inputs = with pkgs; [ gleam beam27Packages.erlang beam27Packages.rebar3 nodejs_22 ];
+              script = ''
+                ${useHexPackages}
+                cd frontend && gleam test
+              '';
+            };
+
+            backend-test = check "backend-test" {
+              fileset = lib.fileset.unions [ ./backend ./scripts/test-backend.sh ];
+              inputs = with pkgs; [ nodejs_22 pocketbase ];
+              script = "scripts/test-backend.sh";
+            };
+
+            frontend-js-test = check "frontend-js-test" {
+              fileset = lib.fileset.unions [
+                (lib.fileset.difference ./frontend ./frontend/test)
+                ./backend
+                ./scripts/build-frontend.sh
+                ./scripts/test-frontend-js.sh
+              ];
+              inputs = with pkgs; [ gleam beam27Packages.erlang beam27Packages.rebar3 bun nodejs_22 pocketbase ];
+              script = ''
+                ${useHexPackages}
+                ${useSystemBun}
+                ln -s ${testJsNodeModules}/node_modules frontend/test-js/node_modules
+                ATLAS_BUILD_ID=check ATLAS_NPM_INSTALL=0 scripts/test-frontend-js.sh
+              '';
+            };
+          };
+        };
+    in
+    {
+      packages = forAll (pkgs: (atlasFor pkgs).packages);
+
+      checks = forAll (pkgs: (atlasFor pkgs).checks);
 
       apps = forAll (pkgs: {
         default = {

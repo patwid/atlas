@@ -10,34 +10,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  # Each leg builds one of the flake's checks (ADR 0042). A check whose source has not changed is
+  # already in the Nix store cache, so it is not run again; `nix flake check` runs them all locally.
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        check: [atlas-app, gleam-test, backend-test, frontend-js-test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@v16
       - uses: DeterminateSystems/magic-nix-cache-action@v9
-      - run: nix build .#atlas-app --print-build-logs
-
-  gleam-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@v16
-      - uses: DeterminateSystems/magic-nix-cache-action@v9
-      - run: nix develop --command bash -lc 'cd frontend && gleam test'
-
-  backend-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@v16
-      - uses: DeterminateSystems/magic-nix-cache-action@v9
-      - run: nix develop --command bash -lc 'scripts/test-backend.sh'
-
-  frontend-js-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@v16
-      - uses: DeterminateSystems/magic-nix-cache-action@v9
-      - run: nix develop --command bash -lc 'scripts/test-frontend-js.sh'
+      - run: nix build .#checks.x86_64-linux.${{ matrix.check }} --print-build-logs

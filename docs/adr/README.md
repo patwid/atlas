@@ -44,4 +44,5 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0038 | [Migrate from Shoelace to Web Awesome](0038-migrate-shoelace-to-web-awesome.md) | Superseded by 0040 |
 | 0039 | [Adopt Web Awesome's dialog for confirmation prompts](0039-adopt-web-awesome-dialog.md) | Superseded by 0040 |
 | 0040 | [Drop Web Awesome; roll our own styling with Bootstrap's palette](0040-drop-web-awesome.md) | Accepted |
-| 0041 | [Run CI on GitHub Actions through the Nix flake](0041-github-actions-ci.md) | Accepted |
+| 0041 | [Run CI on GitHub Actions through the Nix flake](0041-github-actions-ci.md) | Superseded by 0042 |
+| 0042 | [Run the test suites as flake checks](0042-ci-through-flake-checks.md) | Accepted |

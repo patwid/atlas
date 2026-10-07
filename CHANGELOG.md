@@ -55,6 +55,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Every delete/remove/disconnect/unlink confirmation prompt is now a `wa-dialog` modal instead of
   an inline button swap, with focus trapping, Escape-to-cancel and a light-dismiss backdrop (ADR
   0039).
+- CI builds the flake's checks (`atlas-app`, `gleam-test`, `backend-test`, `frontend-js-test`) offline instead of running the test scripts in `nix develop`; `nix flake check` runs them locally, and a suite whose source is unchanged is not run again. `test-frontend-js.sh` accepts `ATLAS_NPM_INSTALL=0` (ADR 0042).
 
 ### Fixed
 - Drop-downs (day, kind, sport, visibility, athlete) open on the form's current value again instead of the first option: `field.select` marks the selected option instead of setting the `<select>`'s value before its options exist.
