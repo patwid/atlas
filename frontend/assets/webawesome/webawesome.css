@@ -1,0 +1,8 @@
+/* Vendored subset of Web Awesome 3.14.0's stylesheet bundle (ADR 0038). This mirrors
+   dist/styles/webawesome.css but deliberately drops its `native.css` import: that file
+   restyles plain <button>/<input>/<table>/headings globally, which would relitigate
+   ADR 0013/0037's choice to keep native markup (notably Strava's brand-locked connect
+   button) untouched by the component library. */
+@import url('styles/layers.css');
+@import url('styles/utilities.css');
+@import url('styles/themes/default.css');

@@ -8,8 +8,8 @@ import atlas/plan_schedule
 import atlas/random
 import atlas/records
 import atlas/store
-import atlas/ui/event as sl_event
-import atlas/ui/html as sl
+import atlas/ui/event as wa_event
+import atlas/ui/html as wa
 import atlas/units
 import atlas/workout_form.{type Row}
 import gleam/dict
@@ -271,10 +271,10 @@ pub fn view(model: Model, plan_id: String, can_edit: Bool) -> Element(Msg) {
       html.h2([], [html.text("Workouts")]),
       case can_edit, model.mode {
         True, Browsing ->
-          sl.button(
+          wa.button(
             [
               attribute.type_("button"),
-              attribute.attribute("variant", "primary"),
+              attribute.attribute("variant", "brand"),
               event.on_click(AddClicked(next_week(weeks), 1)),
             ],
             [html.text("Add workout")],
@@ -372,10 +372,10 @@ fn day_view(
         [
           case can_edit, model.mode {
             True, Browsing ->
-              sl.button(
+              wa.button(
                 [
                   attribute.type_("button"),
-                  attribute.attribute("variant", "text"),
+                  attribute.attribute("appearance", "plain"),
                   attribute.attribute(
                     "aria-label",
                     "Add a workout to week "
@@ -415,18 +415,18 @@ fn workout_view(row: Row, model: Model, can_edit: Bool) -> Element(Msg) {
       True ->
         html.div([class("actions")], case model.confirming == Some(w.id) {
           False -> [
-            sl.button(
+            wa.button(
               [
                 attribute.type_("button"),
-                attribute.attribute("variant", "default"),
+                attribute.attribute("variant", "neutral"),
                 event.on_click(EditClicked(w.id)),
               ],
               [html.text("Edit")],
             ),
-            sl.button(
+            wa.button(
               [
                 attribute.type_("button"),
-                attribute.attribute("variant", "default"),
+                attribute.attribute("variant", "neutral"),
                 event.on_click(DeleteClicked(w.id)),
               ],
               [html.text("Delete")],
@@ -436,7 +436,7 @@ fn workout_view(row: Row, model: Model, can_edit: Bool) -> Element(Msg) {
             html.span([attribute.role("alert")], [
               html.text("Delete this workout?"),
             ]),
-            sl.button(
+            wa.button(
               [
                 attribute.type_("button"),
                 attribute.attribute("variant", "danger"),
@@ -444,10 +444,10 @@ fn workout_view(row: Row, model: Model, can_edit: Bool) -> Element(Msg) {
               ],
               [html.text("Yes, delete it")],
             ),
-            sl.button(
+            wa.button(
               [
                 attribute.type_("button"),
-                attribute.attribute("variant", "default"),
+                attribute.attribute("variant", "neutral"),
                 event.on_click(CancelClicked),
               ],
               [html.text("Keep it")],
@@ -473,27 +473,27 @@ fn form_view(form: workout_form.Form, submit_label: String) -> Element(Msg) {
     html.div([class("row")], [
       html.div([], [
         html.label([attribute.for("workout-week")], [html.text("Week")]),
-        sl.input([
+        wa.input([
           attribute.id("workout-week"),
           attribute.type_("number"),
           attribute.name("week"),
           attribute.attribute("min", "1"),
           attribute.attribute("max", int.to_string(workout_form.max_weeks)),
-          attribute.value(form.week),
-          sl_event.on_input(WeekChanged),
+          wa.value(form.week),
+          wa_event.on_input(WeekChanged),
         ]),
       ]),
       html.div([], [
         html.label([attribute.for("workout-day")], [html.text("Day")]),
-        sl.select(
+        wa.select(
           [
             attribute.id("workout-day"),
             attribute.name("day"),
             attribute.value(form.day),
-            sl_event.on_change(DayChanged),
+            wa_event.on_change(DayChanged),
           ],
           list.map([1, 2, 3, 4, 5, 6, 7], fn(n) {
-            sl.option([attribute.value(int.to_string(n))], "Day " <> int.to_string(
+            wa.option([attribute.value(int.to_string(n))], "Day " <> int.to_string(
               n,
             ))
           }),
@@ -501,27 +501,27 @@ fn form_view(form: workout_form.Form, submit_label: String) -> Element(Msg) {
       ]),
     ]),
     html.label([attribute.for("workout-title")], [html.text("Title")]),
-    sl.input([
+    wa.input([
       attribute.id("workout-title"),
       attribute.type_("text"),
       attribute.name("title"),
-      attribute.value(form.title),
+      wa.value(form.title),
       attribute.attribute("maxlength", "200"),
       attribute.required(True),
       // No attribute.autofocus: Lustre focuses a newly-inserted element before
-      // Shoelace's first render completes, and sl-input.focus() then throws.
-      sl_event.on_input(TitleChanged),
+      // Web Awesome's first render completes, and wa-input.focus() then throws.
+      wa_event.on_input(TitleChanged),
     ]),
     html.label([attribute.for("workout-kind")], [html.text("Kind")]),
-    sl.select(
+    wa.select(
       [
         attribute.id("workout-kind"),
         attribute.name("kind"),
         attribute.value(plan.kind_to_string(form.kind)),
-        sl_event.on_change(KindChanged),
+        wa_event.on_change(KindChanged),
       ],
       list.map(kinds, fn(kind) {
-        sl.option(
+        wa.option(
           [attribute.value(plan.kind_to_string(kind))],
           workout_form.kind_label(kind),
         )
@@ -532,37 +532,37 @@ fn form_view(form: workout_form.Form, submit_label: String) -> Element(Msg) {
         html.label([attribute.for("workout-distance")], [
           html.text("Distance (km)"),
         ]),
-        sl.input([
+        wa.input([
           attribute.id("workout-distance"),
           attribute.type_("text"),
           attribute.attribute("inputmode", "decimal"),
           attribute.name("distance"),
-          attribute.value(form.distance_km),
+          wa.value(form.distance_km),
           attribute.placeholder("8.5"),
-          sl_event.on_input(DistanceChanged),
+          wa_event.on_input(DistanceChanged),
         ]),
       ]),
       html.div([], [
         html.label([attribute.for("workout-duration")], [
           html.text("Time (minutes or h:mm)"),
         ]),
-        sl.input([
+        wa.input([
           attribute.id("workout-duration"),
           attribute.type_("text"),
           attribute.name("duration"),
-          attribute.value(form.duration),
+          wa.value(form.duration),
           attribute.placeholder("45 or 1:30"),
-          sl_event.on_input(DurationChanged),
+          wa_event.on_input(DurationChanged),
         ]),
       ]),
     ]),
     html.label([attribute.for("workout-description")], [html.text("Notes")]),
-    sl.textarea([
+    wa.textarea([
       attribute.id("workout-description"),
       attribute.name("description"),
       attribute.rows(3),
-      attribute.value(form.description),
-      sl_event.on_input(DescriptionChanged),
+      wa.value(form.description),
+      wa_event.on_input(DescriptionChanged),
     ]),
     case form.error {
       Some(message) ->
@@ -570,14 +570,14 @@ fn form_view(form: workout_form.Form, submit_label: String) -> Element(Msg) {
       None -> element.none()
     },
     html.div([class("actions")], [
-      sl.button(
-        [attribute.type_("submit"), attribute.attribute("variant", "primary")],
+      wa.button(
+        [attribute.type_("submit"), attribute.attribute("variant", "brand")],
         [html.text(submit_label)],
       ),
-      sl.button(
+      wa.button(
         [
           attribute.type_("button"),
-          attribute.attribute("variant", "default"),
+          attribute.attribute("variant", "neutral"),
           event.on_click(CancelClicked),
         ],
         [html.text("Cancel")],

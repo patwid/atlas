@@ -4,7 +4,7 @@
 
 import atlas/api.{type StravaStatus}
 import atlas/http
-import atlas/ui/html as sl
+import atlas/ui/html as wa
 import gleam/int
 import gleam/option.{type Option, None, Some}
 import gleam/uri
@@ -322,19 +322,19 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
         ]),
         html.div([class("actions")], case model.confirming {
           False -> [
-            sl.button(
+            wa.button(
               [
                 attribute.type_("button"),
-                attribute.attribute("variant", "default"),
+                attribute.attribute("variant", "neutral"),
                 attribute.disabled(model.busy),
                 event.on_click(SyncClicked),
               ],
               [html.text("Import the last 30 days again")],
             ),
-            sl.button(
+            wa.button(
               [
                 attribute.type_("button"),
-                attribute.attribute("variant", "default"),
+                attribute.attribute("variant", "neutral"),
                 attribute.disabled(model.busy),
                 event.on_click(DisconnectClicked),
               ],
@@ -347,7 +347,7 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
                 "Disconnect Strava and remove its activities from Atlas?",
               ),
             ]),
-            sl.button(
+            wa.button(
               [
                 attribute.type_("button"),
                 attribute.attribute("variant", "danger"),
@@ -355,10 +355,10 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
               ],
               [html.text("Yes, disconnect")],
             ),
-            sl.button(
+            wa.button(
               [
                 attribute.type_("button"),
-                attribute.attribute("variant", "default"),
+                attribute.attribute("variant", "neutral"),
                 event.on_click(CancelClicked),
               ],
               [html.text("Keep it connected")],

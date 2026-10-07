@@ -1,6 +1,6 @@
 # 0037. Adopt Shoelace web components for UI controls
 
-- Status: Accepted
+- Status: Superseded by [0038](0038-migrate-shoelace-to-web-awesome.md)
 - Date: 2026-10-07
 - Deciders: project owner
 

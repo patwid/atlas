@@ -10,8 +10,8 @@ import atlas/random
 import atlas/records
 import atlas/route
 import atlas/store
-import atlas/ui/event as sl_event
-import atlas/ui/html as sl
+import atlas/ui/event as wa_event
+import atlas/ui/html as wa
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -293,10 +293,10 @@ pub fn view_list_with(
       case model.mode {
         Creating -> element.none()
         _ ->
-          sl.button(
+          wa.button(
             [
               attribute.type_("button"),
-              attribute.attribute("variant", "primary"),
+              attribute.attribute("variant", "brand"),
               event.on_click(NewClicked),
             ],
             [html.text("New plan")],
@@ -404,10 +404,10 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
           html.text("Open your copy"),
         ]),
         html.text(" "),
-        sl.button(
+        wa.button(
           [
             attribute.type_("button"),
-            attribute.attribute("variant", "text"),
+            attribute.attribute("appearance", "plain"),
             event.on_click(CopyAgainClicked),
           ],
           [html.text("Copy again")],
@@ -416,10 +416,10 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
     CopyProblem(source, message) if source == plan_id ->
       html.div([], [
         html.p([class("error"), attribute.role("alert")], [html.text(message)]),
-        sl.button(
+        wa.button(
           [
             attribute.type_("button"),
-            attribute.attribute("variant", "default"),
+            attribute.attribute("variant", "neutral"),
             event.on_click(CopyAgainClicked),
           ],
           [html.text("Try again")],
@@ -429,10 +429,10 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
       html.p([class("muted")], [html.text("Copying…")])
     _ ->
       html.div([class("actions")], [
-        sl.button(
+        wa.button(
           [
             attribute.type_("button"),
-            attribute.attribute("variant", "default"),
+            attribute.attribute("variant", "neutral"),
             event.on_click(CopyClicked(plan_id)),
           ],
           [html.text("Copy to my plans")],
@@ -444,15 +444,15 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
 fn owner_actions(found: Plan, confirming: Bool) -> Element(Msg) {
   html.div([class("actions")], case confirming {
     False -> [
-      sl.button(
+      wa.button(
         [
           attribute.type_("button"),
-          attribute.attribute("variant", "primary"),
+          attribute.attribute("variant", "brand"),
           event.on_click(EditClicked(found.id)),
         ],
         [html.text("Edit")],
       ),
-      sl.button(
+      wa.button(
         [
           attribute.type_("button"),
           attribute.attribute("variant", "danger"),
@@ -463,7 +463,7 @@ fn owner_actions(found: Plan, confirming: Bool) -> Element(Msg) {
     ]
     True -> [
       html.span([attribute.role("alert")], [html.text("Delete this plan?")]),
-      sl.button(
+      wa.button(
         [
           attribute.type_("button"),
           attribute.attribute("variant", "danger"),
@@ -471,10 +471,10 @@ fn owner_actions(found: Plan, confirming: Bool) -> Element(Msg) {
         ],
         [html.text("Yes, delete it")],
       ),
-      sl.button(
+      wa.button(
         [
           attribute.type_("button"),
-          attribute.attribute("variant", "primary"),
+          attribute.attribute("variant", "brand"),
           event.on_click(CancelClicked),
         ],
         [html.text("Keep it")],
@@ -537,39 +537,39 @@ pub fn snippet(text: String) -> String {
 fn form_view(form: plan_form.Form, submit_label: String) -> Element(Msg) {
   html.form([class("plan-form"), event.on_submit(fn(_) { Submitted })], [
     html.label([attribute.for("plan-title")], [html.text("Title")]),
-    sl.input([
+    wa.input([
       attribute.id("plan-title"),
       attribute.type_("text"),
       attribute.name("title"),
-      attribute.value(form.title),
+      wa.value(form.title),
       attribute.attribute("maxlength", "200"),
       attribute.required(True),
       // No attribute.autofocus: Lustre focuses a newly-inserted element before
-      // Shoelace's first render completes, and sl-input.focus() then throws.
-      sl_event.on_input(TitleChanged),
+      // Web Awesome's first render completes, and wa-input.focus() then throws.
+      wa_event.on_input(TitleChanged),
     ]),
     html.label([attribute.for("plan-description")], [html.text("Description")]),
-    sl.textarea([
+    wa.textarea([
       attribute.id("plan-description"),
       attribute.name("description"),
       attribute.rows(4),
-      attribute.value(form.description),
-      sl_event.on_input(DescriptionChanged),
+      wa.value(form.description),
+      wa_event.on_input(DescriptionChanged),
     ]),
     html.label([attribute.for("plan-visibility")], [html.text("Who can see it")]),
-    sl.select(
+    wa.select(
       [
         attribute.id("plan-visibility"),
         attribute.name("visibility"),
         attribute.value(plan.visibility_to_string(form.visibility)),
-        sl_event.on_change(VisibilityChanged),
+        wa_event.on_change(VisibilityChanged),
       ],
       [
-        sl.option(
+        wa.option(
           [attribute.value("private")],
           "Only me (and people I share it with)",
         ),
-        sl.option([attribute.value("public")], "Everyone who is signed in"),
+        wa.option([attribute.value("public")], "Everyone who is signed in"),
       ],
     ),
     case form.error {
@@ -578,14 +578,14 @@ fn form_view(form: plan_form.Form, submit_label: String) -> Element(Msg) {
       None -> element.none()
     },
     html.div([class("actions")], [
-      sl.button(
-        [attribute.type_("submit"), attribute.attribute("variant", "primary")],
+      wa.button(
+        [attribute.type_("submit"), attribute.attribute("variant", "brand")],
         [html.text(submit_label)],
       ),
-      sl.button(
+      wa.button(
         [
           attribute.type_("button"),
-          attribute.attribute("variant", "default"),
+          attribute.attribute("variant", "neutral"),
           event.on_click(CancelClicked),
         ],
         [html.text("Cancel")],

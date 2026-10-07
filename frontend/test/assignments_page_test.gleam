@@ -264,7 +264,9 @@ pub fn the_start_form_offers_the_athletes_and_a_date_test() {
   assert string.contains(html, "Myself")
   assert string.contains(html, ">Ana<")
   assert string.contains(html, "type=\"date\"")
-  assert string.contains(html, "value=\"2026-10-06\"")
+  // The date's value is set as a DOM property (ADR 0038), not a serialized attribute,
+  // so it never appears in `element.to_string`'s static markup; unlike `wa.value`, the
+  // other asserts above still pass through `lustre/attribute`'s plain attributes.
   // Without athletes there is no one to choose.
   assert !string.contains(html_of(model, []), "assign-athlete")
 }

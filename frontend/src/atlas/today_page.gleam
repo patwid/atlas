@@ -13,7 +13,7 @@ import atlas/records
 import atlas/route
 import atlas/store
 import atlas/today.{type Inputs, type Item}
-import atlas/ui/html as sl
+import atlas/ui/html as wa
 import atlas/units
 import atlas/workout_form
 import gleam/dict
@@ -315,10 +315,10 @@ fn status_view(
           html.text("Looks done: " <> summary(inputs, activity_id)),
         ]),
         html.div([class("actions")], [
-          sl.button(
+          wa.button(
             [
               attribute.type_("button"),
-              attribute.attribute("variant", "primary"),
+              attribute.attribute("variant", "brand"),
               event.on_click(ConfirmClicked(key, activity_id)),
             ],
             [html.text("Yes, that is it")],
@@ -342,7 +342,7 @@ fn status_view(
               html.span([attribute.role("alert")], [
                 html.text("Unlink this activity?"),
               ]),
-              sl.button(
+              wa.button(
                 [
                   attribute.type_("button"),
                   attribute.attribute("variant", "danger"),
@@ -358,10 +358,10 @@ fn status_view(
 }
 
 fn link_button(label: String, msg: Msg) -> Element(Msg) {
-  sl.button(
+  wa.button(
     [
       attribute.type_("button"),
-      attribute.attribute("variant", "default"),
+      attribute.attribute("variant", "neutral"),
       event.on_click(msg),
     ],
     [html.text(label)],
@@ -388,10 +388,10 @@ fn choosing_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
             list.map(candidates, fn(row) {
               html.li([], [
                 html.span([], [html.text(describe(row, inputs))]),
-                sl.button(
+                wa.button(
                   [
                     attribute.type_("button"),
-                    attribute.attribute("variant", "primary"),
+                    attribute.attribute("variant", "brand"),
                     event.on_click(PickClicked(key, row.activity.id)),
                   ],
                   [html.text("This one")],

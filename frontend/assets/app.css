@@ -8,23 +8,6 @@
   --warn-bg: #fef3c7;
   --warn-text: #78350f;
   color-scheme: light dark;
-
-  /* Shoelace (ADR 0037): --accent is Tailwind's teal-700/teal-400, so "primary" is just
-     Shoelace's own teal scale. Shoelace's dark theme (loaded as `.sl-theme-dark`) redefines
-     --sl-color-teal-* for dark backgrounds, so this alias tracks both modes without repeating it. */
-  --sl-color-primary-50: var(--sl-color-teal-50);
-  --sl-color-primary-100: var(--sl-color-teal-100);
-  --sl-color-primary-200: var(--sl-color-teal-200);
-  --sl-color-primary-300: var(--sl-color-teal-300);
-  --sl-color-primary-400: var(--sl-color-teal-400);
-  --sl-color-primary-500: var(--sl-color-teal-500);
-  --sl-color-primary-600: var(--sl-color-teal-600);
-  --sl-color-primary-700: var(--sl-color-teal-700);
-  --sl-color-primary-800: var(--sl-color-teal-800);
-  --sl-color-primary-900: var(--sl-color-teal-900);
-  --sl-color-primary-950: var(--sl-color-teal-950);
-  --sl-font-sans: system-ui, sans-serif;
-  --sl-border-radius-medium: 0.5rem;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -40,6 +23,11 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, sans-serif; }
+/* Every form field uses Atlas's own <label>, not Web Awesome's `label` attribute/slot, so the
+   control's internal label is always empty text — but it still renders as a block-level line
+   with a `::after { content: "*" }` on required fields, since Web Awesome doesn't condition that
+   on the label actually having content. Hide it everywhere it could show up (ADR 0038). */
+wa-input::part(label), wa-textarea::part(label), wa-select::part(label) { display: none; }
 .shell { min-height: 100dvh; display: flex; flex-direction: column; }
 .bar {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
