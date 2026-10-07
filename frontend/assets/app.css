@@ -8,6 +8,23 @@
   --warn-bg: #fef3c7;
   --warn-text: #78350f;
   color-scheme: light dark;
+
+  /* Shoelace (ADR 0037): --accent is Tailwind's teal-700/teal-400, so "primary" is just
+     Shoelace's own teal scale. Shoelace's dark theme (loaded as `.sl-theme-dark`) redefines
+     --sl-color-teal-* for dark backgrounds, so this alias tracks both modes without repeating it. */
+  --sl-color-primary-50: var(--sl-color-teal-50);
+  --sl-color-primary-100: var(--sl-color-teal-100);
+  --sl-color-primary-200: var(--sl-color-teal-200);
+  --sl-color-primary-300: var(--sl-color-teal-300);
+  --sl-color-primary-400: var(--sl-color-teal-400);
+  --sl-color-primary-500: var(--sl-color-teal-500);
+  --sl-color-primary-600: var(--sl-color-teal-600);
+  --sl-color-primary-700: var(--sl-color-teal-700);
+  --sl-color-primary-800: var(--sl-color-teal-800);
+  --sl-color-primary-900: var(--sl-color-teal-900);
+  --sl-color-primary-950: var(--sl-color-teal-950);
+  --sl-font-sans: system-ui, sans-serif;
+  --sl-border-radius-medium: 0.5rem;
 }
 @media (prefers-color-scheme: dark) {
   :root {
