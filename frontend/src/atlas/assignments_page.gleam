@@ -11,6 +11,8 @@ import atlas/plan.{type Workout}
 import atlas/random
 import atlas/records
 import atlas/store
+import atlas/ui/event as sl_event
+import atlas/ui/html as sl
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -288,8 +290,12 @@ pub fn view(
       html.h2([], [html.text("Schedule")]),
       case model.mode {
         Browsing if context.can_start ->
-          html.button(
-            [attribute.type_("button"), event.on_click(StartClicked)],
+          sl.button(
+            [
+              attribute.type_("button"),
+              attribute.attribute("variant", "primary"),
+              event.on_click(StartClicked),
+            ],
             [
               html.text(case context.athletes {
                 [] -> "Start this plan"
@@ -379,18 +385,18 @@ fn actions(row: Row, model: Model) -> Element(Msg) {
   let id = row.assignment.id
   html.div([class("actions")], case model.confirming == Some(id) {
     False -> [
-      html.button(
+      sl.button(
         [
           attribute.type_("button"),
-          class("secondary"),
+          attribute.attribute("variant", "default"),
           event.on_click(ChangeDateClicked(id)),
         ],
         [html.text("Change date")],
       ),
-      html.button(
+      sl.button(
         [
           attribute.type_("button"),
-          class("secondary"),
+          attribute.attribute("variant", "default"),
           event.on_click(RemoveClicked(id)),
         ],
         [html.text("Remove")],
@@ -400,18 +406,18 @@ fn actions(row: Row, model: Model) -> Element(Msg) {
       html.span([attribute.role("alert")], [
         html.text("Remove this from the schedule?"),
       ]),
-      html.button(
+      sl.button(
         [
           attribute.type_("button"),
-          class("danger"),
+          attribute.attribute("variant", "danger"),
           event.on_click(RemoveConfirmed(id)),
         ],
         [html.text("Yes, remove it")],
       ),
-      html.button(
+      sl.button(
         [
           attribute.type_("button"),
-          class("secondary"),
+          attribute.attribute("variant", "default"),
           event.on_click(CancelClicked),
         ],
         [html.text("Keep it")],
@@ -445,28 +451,17 @@ fn form_view(
       True ->
         html.div([], [
           html.label([attribute.for("assign-athlete")], [html.text("For")]),
-          html.select(
+          sl.select(
             [
               attribute.id("assign-athlete"),
               attribute.name("athlete"),
-              event.on_change(AthleteChanged),
+              attribute.value(form.athlete_id),
+              sl_event.on_change(AthleteChanged),
             ],
             [
-              html.option(
-                [
-                  attribute.value(context.user_id),
-                  attribute.selected(form.athlete_id == context.user_id),
-                ],
-                "Myself",
-              ),
+              sl.option([attribute.value(context.user_id)], "Myself"),
               ..list.map(context.athletes, fn(person) {
-                html.option(
-                  [
-                    attribute.value(person.id),
-                    attribute.selected(form.athlete_id == person.id),
-                  ],
-                  person.name,
-                )
+                sl.option([attribute.value(person.id)], person.name)
               })
             ],
           ),
@@ -475,13 +470,13 @@ fn form_view(
     html.label([attribute.for("assign-start")], [
       html.text("First day of the plan"),
     ]),
-    html.input([
+    sl.input([
       attribute.id("assign-start"),
       attribute.type_("date"),
       attribute.name("start_date"),
       attribute.value(form.start_date),
       attribute.required(True),
-      event.on_input(DateChanged),
+      sl_event.on_input(DateChanged),
     ]),
     case form.error {
       Some(message) ->
@@ -489,11 +484,14 @@ fn form_view(
       None -> element.none()
     },
     html.div([class("actions")], [
-      html.button([attribute.type_("submit")], [html.text(submit_label)]),
-      html.button(
+      sl.button(
+        [attribute.type_("submit"), attribute.attribute("variant", "primary")],
+        [html.text(submit_label)],
+      ),
+      sl.button(
         [
           attribute.type_("button"),
-          class("secondary"),
+          attribute.attribute("variant", "default"),
           event.on_click(CancelClicked),
         ],
         [html.text("Cancel")],

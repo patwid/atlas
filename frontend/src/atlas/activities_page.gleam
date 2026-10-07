@@ -10,6 +10,8 @@ import atlas/outbox
 import atlas/random
 import atlas/records
 import atlas/store
+import atlas/ui/event as sl_event
+import atlas/ui/html as sl
 import atlas/units
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -300,9 +302,14 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
       html.h2([], [html.text("Your activities")]),
       case model.mode {
         Browsing ->
-          html.button([attribute.type_("button"), event.on_click(AddClicked)], [
-            html.text("Add activity"),
-          ])
+          sl.button(
+            [
+              attribute.type_("button"),
+              attribute.attribute("variant", "primary"),
+              event.on_click(AddClicked),
+            ],
+            [html.text("Add activity")],
+          )
         _ -> element.none()
       },
     ]),
@@ -455,18 +462,18 @@ fn actions(row: Row, model: Model) -> Element(Msg) {
   let id = row.activity.id
   html.div([class("actions")], case model.confirming == Some(id) {
     False -> [
-      html.button(
+      sl.button(
         [
           attribute.type_("button"),
-          class("secondary"),
+          attribute.attribute("variant", "default"),
           event.on_click(EditClicked(id)),
         ],
         [html.text("Edit")],
       ),
-      html.button(
+      sl.button(
         [
           attribute.type_("button"),
-          class("secondary"),
+          attribute.attribute("variant", "default"),
           event.on_click(DeleteClicked(id)),
         ],
         [html.text("Delete")],
@@ -474,18 +481,18 @@ fn actions(row: Row, model: Model) -> Element(Msg) {
     ]
     True -> [
       html.span([attribute.role("alert")], [html.text("Delete this activity?")]),
-      html.button(
+      sl.button(
         [
           attribute.type_("button"),
-          class("danger"),
+          attribute.attribute("variant", "danger"),
           event.on_click(DeleteConfirmed(id)),
         ],
         [html.text("Yes, delete it")],
       ),
-      html.button(
+      sl.button(
         [
           attribute.type_("button"),
-          class("secondary"),
+          attribute.attribute("variant", "default"),
           event.on_click(CancelClicked),
         ],
         [html.text("Keep it")],
@@ -499,79 +506,77 @@ fn form_view(form: activity_form.Form, submit_label: String) -> Element(Msg) {
     html.div([class("row")], [
       html.div([], [
         html.label([attribute.for("activity-date")], [html.text("Day")]),
-        html.input([
+        sl.input([
           attribute.id("activity-date"),
           attribute.type_("date"),
           attribute.name("date"),
           attribute.value(form.date),
           attribute.required(True),
-          event.on_input(DateChanged),
+          sl_event.on_input(DateChanged),
         ]),
       ]),
       html.div([], [
         html.label([attribute.for("activity-time")], [html.text("Start time")]),
-        html.input([
+        sl.input([
           attribute.id("activity-time"),
           attribute.type_("time"),
           attribute.name("time"),
           attribute.value(form.time),
           attribute.required(True),
-          event.on_input(TimeChanged),
+          sl_event.on_input(TimeChanged),
         ]),
       ]),
     ]),
     html.label([attribute.for("activity-sport")], [html.text("Sport")]),
-    html.select(
+    sl.select(
       [
         attribute.id("activity-sport"),
         attribute.name("sport"),
-        event.on_change(SportChanged),
+        attribute.value(activity.sport_to_string(form.sport)),
+        sl_event.on_change(SportChanged),
       ],
       list.map(sports, fn(sport) {
-        html.option(
-          [
-            attribute.value(activity.sport_to_string(sport)),
-            attribute.selected(sport == form.sport),
-          ],
+        sl.option(
+          [attribute.value(activity.sport_to_string(sport))],
           activity_form.sport_label(sport),
         )
       }),
     ),
     html.label([attribute.for("activity-name")], [html.text("Name (optional)")]),
-    html.input([
+    sl.input([
       attribute.id("activity-name"),
       attribute.type_("text"),
       attribute.name("name"),
       attribute.value(form.name),
       attribute.attribute("maxlength", "200"),
-      event.on_input(NameChanged),
+      sl_event.on_input(NameChanged),
     ]),
     html.div([class("row")], [
       html.div([], [
         html.label([attribute.for("activity-distance")], [
           html.text("Distance (km)"),
         ]),
-        html.input([
+        sl.input([
           attribute.id("activity-distance"),
           attribute.type_("text"),
           attribute.attribute("inputmode", "decimal"),
           attribute.name("distance"),
           attribute.value(form.distance_km),
           attribute.placeholder("8.5"),
-          event.on_input(DistanceChanged),
+          sl_event.on_input(DistanceChanged),
         ]),
       ]),
       html.div([], [
         html.label([attribute.for("activity-duration")], [
           html.text("Time (minutes or h:mm)"),
         ]),
-        html.input([
+        sl.input([
           attribute.id("activity-duration"),
           attribute.type_("text"),
           attribute.name("duration"),
           attribute.value(form.duration),
           attribute.placeholder("45 or 1:30"),
-          event.on_input(DurationChanged),
+          sl_event.on_input(DurationChanged),
         ]),
       ]),
     ]),
@@ -580,26 +585,26 @@ fn form_view(form: activity_form.Form, submit_label: String) -> Element(Msg) {
         html.label([attribute.for("activity-elevation")], [
           html.text("Climb (m, optional)"),
         ]),
-        html.input([
+        sl.input([
           attribute.id("activity-elevation"),
           attribute.type_("text"),
           attribute.attribute("inputmode", "numeric"),
           attribute.name("elevation"),
           attribute.value(form.elevation_m),
-          event.on_input(ElevationChanged),
+          sl_event.on_input(ElevationChanged),
         ]),
       ]),
       html.div([], [
         html.label([attribute.for("activity-hr")], [
           html.text("Average heart rate (optional)"),
         ]),
-        html.input([
+        sl.input([
           attribute.id("activity-hr"),
           attribute.type_("text"),
           attribute.attribute("inputmode", "numeric"),
           attribute.name("heart_rate"),
           attribute.value(form.avg_hr),
-          event.on_input(HeartRateChanged),
+          sl_event.on_input(HeartRateChanged),
         ]),
       ]),
     ]),
@@ -609,11 +614,14 @@ fn form_view(form: activity_form.Form, submit_label: String) -> Element(Msg) {
       None -> element.none()
     },
     html.div([class("actions")], [
-      html.button([attribute.type_("submit")], [html.text(submit_label)]),
-      html.button(
+      sl.button(
+        [attribute.type_("submit"), attribute.attribute("variant", "primary")],
+        [html.text(submit_label)],
+      ),
+      sl.button(
         [
           attribute.type_("button"),
-          class("secondary"),
+          attribute.attribute("variant", "default"),
           event.on_click(CancelClicked),
         ],
         [html.text("Cancel")],

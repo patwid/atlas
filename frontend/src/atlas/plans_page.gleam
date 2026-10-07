@@ -10,6 +10,8 @@ import atlas/random
 import atlas/records
 import atlas/route
 import atlas/store
+import atlas/ui/event as sl_event
+import atlas/ui/html as sl
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -291,9 +293,14 @@ pub fn view_list_with(
       case model.mode {
         Creating -> element.none()
         _ ->
-          html.button([attribute.type_("button"), event.on_click(NewClicked)], [
-            html.text("New plan"),
-          ])
+          sl.button(
+            [
+              attribute.type_("button"),
+              attribute.attribute("variant", "primary"),
+              event.on_click(NewClicked),
+            ],
+            [html.text("New plan")],
+          )
       },
     ]),
     case model.mode {
@@ -397,10 +404,10 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
           html.text("Open your copy"),
         ]),
         html.text(" "),
-        html.button(
+        sl.button(
           [
             attribute.type_("button"),
-            class("link"),
+            attribute.attribute("variant", "text"),
             event.on_click(CopyAgainClicked),
           ],
           [html.text("Copy again")],
@@ -409,10 +416,10 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
     CopyProblem(source, message) if source == plan_id ->
       html.div([], [
         html.p([class("error"), attribute.role("alert")], [html.text(message)]),
-        html.button(
+        sl.button(
           [
             attribute.type_("button"),
-            class("secondary"),
+            attribute.attribute("variant", "default"),
             event.on_click(CopyAgainClicked),
           ],
           [html.text("Try again")],
@@ -422,10 +429,10 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
       html.p([class("muted")], [html.text("Copying…")])
     _ ->
       html.div([class("actions")], [
-        html.button(
+        sl.button(
           [
             attribute.type_("button"),
-            class("secondary"),
+            attribute.attribute("variant", "default"),
             event.on_click(CopyClicked(plan_id)),
           ],
           [html.text("Copy to my plans")],
@@ -437,14 +444,18 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
 fn owner_actions(found: Plan, confirming: Bool) -> Element(Msg) {
   html.div([class("actions")], case confirming {
     False -> [
-      html.button(
-        [attribute.type_("button"), event.on_click(EditClicked(found.id))],
-        [html.text("Edit")],
-      ),
-      html.button(
+      sl.button(
         [
           attribute.type_("button"),
-          class("danger"),
+          attribute.attribute("variant", "primary"),
+          event.on_click(EditClicked(found.id)),
+        ],
+        [html.text("Edit")],
+      ),
+      sl.button(
+        [
+          attribute.type_("button"),
+          attribute.attribute("variant", "danger"),
           event.on_click(DeleteClicked),
         ],
         [html.text("Delete")],
@@ -452,17 +463,22 @@ fn owner_actions(found: Plan, confirming: Bool) -> Element(Msg) {
     ]
     True -> [
       html.span([attribute.role("alert")], [html.text("Delete this plan?")]),
-      html.button(
+      sl.button(
         [
           attribute.type_("button"),
-          class("danger"),
+          attribute.attribute("variant", "danger"),
           event.on_click(DeleteConfirmed(found.id)),
         ],
         [html.text("Yes, delete it")],
       ),
-      html.button([attribute.type_("button"), event.on_click(CancelClicked)], [
-        html.text("Keep it"),
-      ]),
+      sl.button(
+        [
+          attribute.type_("button"),
+          attribute.attribute("variant", "primary"),
+          event.on_click(CancelClicked),
+        ],
+        [html.text("Keep it")],
+      ),
     ]
   })
 }
@@ -521,49 +537,39 @@ pub fn snippet(text: String) -> String {
 fn form_view(form: plan_form.Form, submit_label: String) -> Element(Msg) {
   html.form([class("plan-form"), event.on_submit(fn(_) { Submitted })], [
     html.label([attribute.for("plan-title")], [html.text("Title")]),
-    html.input([
+    sl.input([
       attribute.id("plan-title"),
       attribute.type_("text"),
       attribute.name("title"),
       attribute.value(form.title),
       attribute.attribute("maxlength", "200"),
       attribute.required(True),
-      attribute.autofocus(True),
-      event.on_input(TitleChanged),
+      // No attribute.autofocus: Lustre focuses a newly-inserted element before
+      // Shoelace's first render completes, and sl-input.focus() then throws.
+      sl_event.on_input(TitleChanged),
     ]),
     html.label([attribute.for("plan-description")], [html.text("Description")]),
-    html.textarea(
-      [
-        attribute.id("plan-description"),
-        attribute.name("description"),
-        attribute.rows(4),
-        attribute.value(form.description),
-        event.on_input(DescriptionChanged),
-      ],
-      form.description,
-    ),
+    sl.textarea([
+      attribute.id("plan-description"),
+      attribute.name("description"),
+      attribute.rows(4),
+      attribute.value(form.description),
+      sl_event.on_input(DescriptionChanged),
+    ]),
     html.label([attribute.for("plan-visibility")], [html.text("Who can see it")]),
-    html.select(
+    sl.select(
       [
         attribute.id("plan-visibility"),
         attribute.name("visibility"),
-        event.on_change(VisibilityChanged),
+        attribute.value(plan.visibility_to_string(form.visibility)),
+        sl_event.on_change(VisibilityChanged),
       ],
       [
-        html.option(
-          [
-            attribute.value("private"),
-            attribute.selected(form.visibility == plan.Private),
-          ],
+        sl.option(
+          [attribute.value("private")],
           "Only me (and people I share it with)",
         ),
-        html.option(
-          [
-            attribute.value("public"),
-            attribute.selected(form.visibility == plan.Public),
-          ],
-          "Everyone who is signed in",
-        ),
+        sl.option([attribute.value("public")], "Everyone who is signed in"),
       ],
     ),
     case form.error {
@@ -572,11 +578,14 @@ fn form_view(form: plan_form.Form, submit_label: String) -> Element(Msg) {
       None -> element.none()
     },
     html.div([class("actions")], [
-      html.button([attribute.type_("submit")], [html.text(submit_label)]),
-      html.button(
+      sl.button(
+        [attribute.type_("submit"), attribute.attribute("variant", "primary")],
+        [html.text(submit_label)],
+      ),
+      sl.button(
         [
           attribute.type_("button"),
-          class("secondary"),
+          attribute.attribute("variant", "default"),
           event.on_click(CancelClicked),
         ],
         [html.text("Cancel")],
