@@ -9,3 +9,8 @@ import lustre/element/html
 pub fn actions(children: List(Element(msg))) -> Element(msg) {
   html.div([class("actions")], children)
 }
+
+/// A list of cards: plans, coaches, shares, athletes, and the like.
+pub fn cards(children: List(Element(msg))) -> Element(msg) {
+  html.ul([class("cards")], children)
+}

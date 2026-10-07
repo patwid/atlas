@@ -329,10 +329,7 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
             ])
         }
       True, _ ->
-        html.ul(
-          [class("cards")],
-          list.map(rows, fn(row) { row_view(row, model, context) }),
-        )
+        layout.cards(list.map(rows, fn(row) { row_view(row, model, context) }))
     },
   ])
 }

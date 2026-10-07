@@ -9,6 +9,7 @@ import atlas/plan.{type Assignment}
 import atlas/progress
 import atlas/route
 import atlas/today.{type Inputs}
+import atlas/ui/layout
 import atlas/units
 import gleam/float
 import gleam/int
@@ -36,8 +37,7 @@ pub fn view_list(athletes: List(Person)) -> Element(msg) {
           ),
         ])
       people ->
-        html.ul(
-          [class("cards")],
+        layout.cards(
           list.map(people, fn(person) {
             html.li([], [
               html.a([attribute.href(route.to_path(route.Athlete(person.id)))], [
@@ -175,8 +175,7 @@ fn following(inputs: Inputs) -> Element(msg) {
     case mine {
       [] -> html.p([class("muted")], [html.text("Not following a plan.")])
       rows ->
-        html.ul(
-          [class("cards")],
+        layout.cards(
           list.map(rows, fn(row) {
             html.li([], [
               html.strong([], [html.text(plan_title(inputs, row.assignment))]),
@@ -204,11 +203,7 @@ fn recent(inputs: Inputs) -> Element(msg) {
     html.h3([], [html.text("Recent activities")]),
     case rows {
       [] -> html.p([class("muted")], [html.text("No activities yet.")])
-      _ ->
-        html.ul(
-          [class("cards")],
-          list.map(rows, fn(row) { activity_view(row, inputs) }),
-        )
+      _ -> layout.cards(list.map(rows, fn(row) { activity_view(row, inputs) }))
     },
   ])
 }

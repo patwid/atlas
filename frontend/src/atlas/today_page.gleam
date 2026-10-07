@@ -260,8 +260,7 @@ fn group(
     case items {
       [] -> html.p([class("muted")], [html.text(empty)])
       _ ->
-        html.ul(
-          [class("cards")],
+        layout.cards(
           list.map(items, fn(item) { item_view(item, model, inputs) }),
         )
     },

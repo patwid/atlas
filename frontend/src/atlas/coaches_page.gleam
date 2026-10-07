@@ -154,7 +154,7 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
       False, _ -> html.p([class("muted")], [html.text("Loading…")])
       True, [] ->
         html.p([class("muted")], [html.text("Nobody can see your training.")])
-      True, _ -> html.ul([class("cards")], list.map(given, given_view))
+      True, _ -> layout.cards(list.map(given, given_view))
     },
     person_finder.view(
       model.finder,
@@ -175,8 +175,7 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
       people ->
         html.div([], [
           html.h2([], [html.text("Athletes you coach")]),
-          html.ul(
-            [class("cards")],
+          layout.cards(
             list.map(people, fn(p) {
               html.li([], [
                 html.a([attribute.href(route.to_path(route.Athlete(p.id)))], [

@@ -324,8 +324,7 @@ pub fn view(
             ])
         }
       True, _ ->
-        html.ul(
-          [class("cards")],
+        layout.cards(
           list.map(rows, fn(row) {
             row_view(row, model, context, workouts, all_grants)
           }),

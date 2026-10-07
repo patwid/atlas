@@ -456,8 +456,7 @@ fn plan_list(
   plans: List(Plan),
   shared_by: fn(Plan) -> Option(String),
 ) -> Element(Msg) {
-  html.ul(
-    [class("cards")],
+  layout.cards(
     list.map(plans, fn(p) {
       html.li([], [
         html.a([attribute.href(route.to_path(route.Plan(p.id)))], [
