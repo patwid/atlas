@@ -482,14 +482,11 @@ fn form_view(form: workout_form.Form, submit_label: String) -> Element(Msg) {
           [
             attribute.id("workout-day"),
             attribute.name("day"),
-            attribute.value(form.day),
             event.on_change(DayChanged),
           ],
+          form.day,
           list.map([1, 2, 3, 4, 5, 6, 7], fn(n) {
-            html.option(
-              [attribute.value(int.to_string(n))],
-              "Day " <> int.to_string(n),
-            )
+            #(int.to_string(n), "Day " <> int.to_string(n))
           }),
         ),
       ]),
@@ -509,14 +506,11 @@ fn form_view(form: workout_form.Form, submit_label: String) -> Element(Msg) {
       [
         attribute.id("workout-kind"),
         attribute.name("kind"),
-        attribute.value(plan.kind_to_string(form.kind)),
         event.on_change(KindChanged),
       ],
+      plan.kind_to_string(form.kind),
       list.map(kinds, fn(kind) {
-        html.option(
-          [attribute.value(plan.kind_to_string(kind))],
-          workout_form.kind_label(kind),
-        )
+        #(plan.kind_to_string(kind), workout_form.kind_label(kind))
       }),
     ),
     html.div([class("row")], [

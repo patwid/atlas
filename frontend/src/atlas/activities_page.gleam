@@ -514,14 +514,11 @@ fn form_view(form: activity_form.Form, submit_label: String) -> Element(Msg) {
       [
         attribute.id("activity-sport"),
         attribute.name("sport"),
-        attribute.value(activity.sport_to_string(form.sport)),
         event.on_change(SportChanged),
       ],
+      activity.sport_to_string(form.sport),
       list.map(sports, fn(sport) {
-        html.option(
-          [attribute.value(activity.sport_to_string(sport))],
-          activity_form.sport_label(sport),
-        )
+        #(activity.sport_to_string(sport), activity_form.sport_label(sport))
       }),
     ),
     html.label([attribute.for("activity-name")], [html.text("Name (optional)")]),

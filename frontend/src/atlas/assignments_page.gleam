@@ -441,13 +441,13 @@ fn form_view(
             [
               attribute.id("assign-athlete"),
               attribute.name("athlete"),
-              attribute.value(form.athlete_id),
               event.on_change(AthleteChanged),
             ],
+            form.athlete_id,
             [
-              html.option([attribute.value(context.user_id)], "Myself"),
+              #(context.user_id, "Myself"),
               ..list.map(context.athletes, fn(person) {
-                html.option([attribute.value(person.id)], person.name)
+                #(person.id, person.name)
               })
             ],
           ),

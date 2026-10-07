@@ -5,7 +5,7 @@ import { test, before, after } from "node:test"
 import assert from "node:assert/strict"
 import { startPocketBase } from "../../backend/tests/harness.mjs"
 import { startFakeStrava } from "../../backend/tests/fake_strava.mjs"
-import { appRunner, built, button, click, pub, waitFor } from "./support.mjs"
+import { appRunner, built, button, click, dialogButton, openDialog, pub, waitFor } from "./support.mjs"
 
 let h, strava, bare
 const requests = []
@@ -94,9 +94,9 @@ test("connect, import, import again and disconnect", skip, async () => {
   click(w, [...d.querySelectorAll("nav a")].find((a) => a.textContent === "Settings"))
   await waitFor("the disconnect button", () => button(w, "Disconnect"))
   click(w, button(w, "Disconnect"))
-  await waitFor("the question", () => d.body.textContent.includes("Disconnect Strava and remove its activities from Atlas?"))
+  await waitFor("the question", () => openDialog(w)?.textContent.includes("Disconnect Strava and remove its activities from Atlas?"))
   assert.equal((await h.api("GET", "atlas/strava/status", { token: alice.token })).body.connected, true, "asking does not disconnect")
-  click(w, button(w, "Yes, disconnect"))
+  click(w, dialogButton(w, "Yes, disconnect"))
   await waitFor("the message", () => d.body.textContent.includes("Strava is disconnected. 3 activities from Strava were removed from Atlas."))
   await waitFor("the button to connect again", () => d.querySelector("button.strava-connect"))
   assert.equal((await h.api("GET", "atlas/strava/status", { token: alice.token })).body.connected, false)

@@ -77,6 +77,10 @@ export const typeInto = (w, el, value) => { el.value = value; el.dispatchEvent(n
 export const submit = (w, form) => form.dispatchEvent(new w.Event("submit", { bubbles: true, cancelable: true }))
 export const button = (w, text) => [...w.document.querySelectorAll("button")].find((b) => b.textContent.trim() === text)
 export const choose = (w, select, value) => { select.value = value; select.dispatchEvent(new w.Event("change", { bubbles: true })) }
+// Every confirmation <dialog> stays in the page, closed ones too, so a question or its buttons are only looked
+// up in the open one: elsewhere they would match another item's closed dialog.
+export const openDialog = (w) => w.document.querySelector("dialog[open]")
+export const dialogButton = (w, text) => [...(openDialog(w)?.querySelectorAll("button") ?? [])].find((b) => b.textContent.trim() === text)
 export const byLabel = (w, label) => [...w.document.querySelectorAll("button")].find((b) => b.getAttribute("aria-label") === label)
 
 // Setup calls must work: a silent 400 (for example an ID of the wrong length) would only show up later as a timeout.

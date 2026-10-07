@@ -530,15 +530,12 @@ fn form_view(form: plan_form.Form, submit_label: String) -> Element(Msg) {
       [
         attribute.id("plan-visibility"),
         attribute.name("visibility"),
-        attribute.value(plan.visibility_to_string(form.visibility)),
         event.on_change(VisibilityChanged),
       ],
+      plan.visibility_to_string(form.visibility),
       [
-        html.option(
-          [attribute.value("private")],
-          "Only me (and people I share it with)",
-        ),
-        html.option([attribute.value("public")], "Everyone who is signed in"),
+        #("private", "Only me (and people I share it with)"),
+        #("public", "Everyone who is signed in"),
       ],
     ),
     case form.error {

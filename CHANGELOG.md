@@ -57,6 +57,8 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
   0039).
 
 ### Fixed
+- Drop-downs (day, kind, sport, visibility, athlete) open on the form's current value again instead of the first option: `field.select` marks the selected option instead of setting the `<select>`'s value before its options exist.
+- The whole-app tests look for confirmation questions and buttons only in the open dialog, so they no longer press another item's closed one.
 - Removing a plan share or a coach's access now also removes the data from the other person's device, by a periodic membership sweep (ADR 0030).
 - An edit made right after a save is no longer refused as a conflict when the screen has not yet refreshed: the sync engine now remembers the newest `updated` it has seen per record (ADR 0026).
 - E-mail addresses containing `+` are now found by the lookup (`+` is encoded in the request).
