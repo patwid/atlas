@@ -15,6 +15,7 @@ import atlas/store
 import atlas/today.{type Inputs, type Item}
 import atlas/ui/button
 import atlas/ui/dialog
+import atlas/ui/layout
 import atlas/units
 import atlas/workout_form
 import gleam/dict
@@ -314,9 +315,12 @@ fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
         html.p([class("status done")], [
           html.text("Looks done: " <> summary(inputs, activity_id)),
         ]),
-        html.div([class("actions")], [
+        layout.actions([
           button.primary(
-            [attribute.type_("button"), event.on_click(ConfirmClicked(key, activity_id))],
+            [
+              attribute.type_("button"),
+              event.on_click(ConfirmClicked(key, activity_id)),
+            ],
             [html.text("Yes, that is it")],
           ),
           link_button("Choose another", ChooseClicked(key)),
@@ -327,7 +331,7 @@ fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
         html.p([class("status done")], [
           html.text("Done: " <> summary(inputs, activity_id)),
         ]),
-        html.div([class("actions")], [
+        layout.actions([
           link_button("Change", ChooseClicked(key)),
           link_button("Unlink", UnlinkClicked(key)),
           dialog.view(
@@ -336,7 +340,10 @@ fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
             CancelClicked,
             [
               button.danger(
-                [attribute.type_("submit"), event.on_click(UnlinkConfirmed(key))],
+                [
+                  attribute.type_("submit"),
+                  event.on_click(UnlinkConfirmed(key)),
+                ],
                 [html.text("Yes, unlink")],
               ),
               button.secondary(
@@ -351,10 +358,9 @@ fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
 }
 
 fn link_button(label: String, msg: Msg) -> Element(Msg) {
-  button.secondary(
-    [attribute.type_("button"), event.on_click(msg)],
-    [html.text(label)],
-  )
+  button.secondary([attribute.type_("button"), event.on_click(msg)], [
+    html.text(label),
+  ])
 }
 
 fn choosing_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
@@ -378,7 +384,10 @@ fn choosing_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
               html.li([], [
                 html.span([], [html.text(describe(row, inputs))]),
                 button.primary(
-                  [attribute.type_("button"), event.on_click(PickClicked(key, row.activity.id))],
+                  [
+                    attribute.type_("button"),
+                    event.on_click(PickClicked(key, row.activity.id)),
+                  ],
                   [html.text("This one")],
                 ),
               ])

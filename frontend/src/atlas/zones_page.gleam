@@ -14,6 +14,7 @@ import atlas/store
 import atlas/ui/button
 import atlas/ui/error
 import atlas/ui/field
+import atlas/ui/layout
 import gleam/dynamic.{type Dynamic}
 import gleam/int
 import gleam/list
@@ -331,11 +332,8 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
         Some(message) -> error.message(message)
         None -> element.none()
       },
-      html.div([class("actions")], [
-        button.primary(
-          [attribute.type_("submit")],
-          [html.text("Save zones")],
-        ),
+      layout.actions([
+        button.primary([attribute.type_("submit")], [html.text("Save zones")]),
         case model.edited {
           True ->
             button.secondary(

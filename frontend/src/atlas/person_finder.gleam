@@ -9,6 +9,7 @@ import atlas/http
 import atlas/ui/button
 import atlas/ui/error
 import atlas/ui/field
+import atlas/ui/layout
 import gleam/option.{type Option, None, Some}
 import gleam/string
 import lustre/attribute.{class}
@@ -162,7 +163,10 @@ pub fn view(
           event.on_input(fn(text) { wrap(EmailChanged(text)) }),
         ]),
         button.primary(
-          [attribute.type_("submit"), attribute.disabled(model.lookup == Looking)],
+          [
+            attribute.type_("submit"),
+            attribute.disabled(model.lookup == Looking),
+          ],
           [
             html.text(case model.lookup {
               Looking -> "Looking…"
@@ -176,7 +180,7 @@ pub fn view(
         Found(person) ->
           html.div([class("found"), attribute.role("status")], [
             html.p([], [html.text(labels.question(display(person)))]),
-            html.div([class("actions")], [
+            layout.actions([
               button.primary(
                 [attribute.type_("button"), event.on_click(confirm)],
                 [html.text(labels.confirm_label)],

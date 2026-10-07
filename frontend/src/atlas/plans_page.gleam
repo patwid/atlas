@@ -14,6 +14,7 @@ import atlas/ui/button
 import atlas/ui/dialog
 import atlas/ui/error
 import atlas/ui/field
+import atlas/ui/layout
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -420,7 +421,7 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
     Copying(source) if source == plan_id ->
       html.p([class("muted")], [html.text("Copying…")])
     _ ->
-      html.div([class("actions")], [
+      layout.actions([
         button.secondary(
           [attribute.type_("button"), event.on_click(CopyClicked(plan_id))],
           [html.text("Copy to my plans")],
@@ -430,30 +431,24 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
 }
 
 fn owner_actions(found: Plan) -> Element(Msg) {
-  html.div([class("actions")], [
+  layout.actions([
     button.primary(
       [attribute.type_("button"), event.on_click(EditClicked(found.id))],
       [html.text("Edit")],
     ),
-    button.danger(
-      [attribute.type_("button"), event.on_click(DeleteClicked)],
-      [html.text("Delete")],
-    ),
-    dialog.view(
-      confirm_delete_dialog_id,
-      "Delete this plan?",
-      CancelClicked,
-      [
-        button.danger(
-          [attribute.type_("submit"), event.on_click(DeleteConfirmed(found.id))],
-          [html.text("Yes, delete it")],
-        ),
-        button.primary(
-          [attribute.type_("submit"), event.on_click(CancelClicked)],
-          [html.text("Keep it")],
-        ),
-      ],
-    ),
+    button.danger([attribute.type_("button"), event.on_click(DeleteClicked)], [
+      html.text("Delete"),
+    ]),
+    dialog.view(confirm_delete_dialog_id, "Delete this plan?", CancelClicked, [
+      button.danger(
+        [attribute.type_("submit"), event.on_click(DeleteConfirmed(found.id))],
+        [html.text("Yes, delete it")],
+      ),
+      button.primary(
+        [attribute.type_("submit"), event.on_click(CancelClicked)],
+        [html.text("Keep it")],
+      ),
+    ]),
   ])
 }
 
@@ -550,7 +545,7 @@ fn form_view(form: plan_form.Form, submit_label: String) -> Element(Msg) {
       Some(message) -> error.message(message)
       None -> element.none()
     },
-    html.div([class("actions")], [
+    layout.actions([
       button.primary([attribute.type_("submit")], [
         html.text(submit_label),
       ]),

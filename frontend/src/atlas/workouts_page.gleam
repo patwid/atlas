@@ -12,6 +12,7 @@ import atlas/ui/button
 import atlas/ui/dialog
 import atlas/ui/error
 import atlas/ui/field
+import atlas/ui/layout
 import atlas/units
 import atlas/workout_form.{type Row}
 import gleam/dict
@@ -274,7 +275,10 @@ pub fn view(model: Model, plan_id: String, can_edit: Bool) -> Element(Msg) {
       case can_edit, model.mode {
         True, Browsing ->
           button.primary(
-            [attribute.type_("button"), event.on_click(AddClicked(next_week(weeks), 1))],
+            [
+              attribute.type_("button"),
+              event.on_click(AddClicked(next_week(weeks), 1)),
+            ],
             [html.text("Add workout")],
           )
         _, _ -> element.none()
@@ -410,7 +414,7 @@ fn workout_view(row: Row, can_edit: Bool) -> Element(Msg) {
     case can_edit {
       False -> element.none()
       True ->
-        html.div([class("actions")], [
+        layout.actions([
           button.secondary(
             [attribute.type_("button"), event.on_click(EditClicked(w.id))],
             [html.text("Edit")],
@@ -425,7 +429,10 @@ fn workout_view(row: Row, can_edit: Bool) -> Element(Msg) {
             CancelClicked,
             [
               button.danger(
-                [attribute.type_("submit"), event.on_click(DeleteConfirmed(w.id))],
+                [
+                  attribute.type_("submit"),
+                  event.on_click(DeleteConfirmed(w.id)),
+                ],
                 [html.text("Yes, delete it")],
               ),
               button.secondary(
@@ -554,7 +561,7 @@ fn form_view(form: workout_form.Form, submit_label: String) -> Element(Msg) {
       Some(message) -> error.message(message)
       None -> element.none()
     },
-    html.div([class("actions")], [
+    layout.actions([
       button.primary([attribute.type_("submit")], [
         html.text(submit_label),
       ]),

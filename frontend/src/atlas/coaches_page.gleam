@@ -12,6 +12,7 @@ import atlas/route
 import atlas/store
 import atlas/ui/button
 import atlas/ui/dialog
+import atlas/ui/layout
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -153,11 +154,7 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
       False, _ -> html.p([class("muted")], [html.text("Loading…")])
       True, [] ->
         html.p([class("muted")], [html.text("Nobody can see your training.")])
-      True, _ ->
-        html.ul(
-          [class("cards")],
-          list.map(given, given_view),
-        )
+      True, _ -> html.ul([class("cards")], list.map(given, given_view))
     },
     person_finder.view(
       model.finder,
@@ -205,7 +202,7 @@ fn given_view(g: Grant) -> Element(Msg) {
         name -> name
       }),
     ]),
-    html.div([class("actions")], [
+    layout.actions([
       button.secondary(
         [attribute.type_("button"), event.on_click(RemoveClicked(g.id))],
         [html.text("Remove access")],

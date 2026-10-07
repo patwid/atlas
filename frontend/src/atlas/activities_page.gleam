@@ -14,6 +14,7 @@ import atlas/ui/button
 import atlas/ui/dialog
 import atlas/ui/error
 import atlas/ui/field
+import atlas/ui/layout
 import atlas/units
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -462,7 +463,7 @@ fn confirm_dialog_id(id: String) -> String {
 
 fn actions(row: Row) -> Element(Msg) {
   let id = row.activity.id
-  html.div([class("actions")], [
+  layout.actions([
     button.secondary(
       [attribute.type_("button"), event.on_click(EditClicked(id))],
       [html.text("Edit")],
@@ -471,21 +472,16 @@ fn actions(row: Row) -> Element(Msg) {
       [attribute.type_("button"), event.on_click(DeleteClicked(id))],
       [html.text("Delete")],
     ),
-    dialog.view(
-      confirm_dialog_id(id),
-      "Delete this activity?",
-      CancelClicked,
-      [
-        button.danger(
-          [attribute.type_("submit"), event.on_click(DeleteConfirmed(id))],
-          [html.text("Yes, delete it")],
-        ),
-        button.secondary(
-          [attribute.type_("submit"), event.on_click(CancelClicked)],
-          [html.text("Keep it")],
-        ),
-      ],
-    ),
+    dialog.view(confirm_dialog_id(id), "Delete this activity?", CancelClicked, [
+      button.danger(
+        [attribute.type_("submit"), event.on_click(DeleteConfirmed(id))],
+        [html.text("Yes, delete it")],
+      ),
+      button.secondary(
+        [attribute.type_("submit"), event.on_click(CancelClicked)],
+        [html.text("Keep it")],
+      ),
+    ]),
   ])
 }
 
@@ -600,7 +596,7 @@ fn form_view(form: activity_form.Form, submit_label: String) -> Element(Msg) {
       Some(message) -> error.message(message)
       None -> element.none()
     },
-    html.div([class("actions")], [
+    layout.actions([
       button.primary([attribute.type_("submit")], [
         html.text(submit_label),
       ]),

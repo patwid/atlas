@@ -12,6 +12,7 @@ import atlas/shares.{type Share}
 import atlas/store
 import atlas/ui/button
 import atlas/ui/dialog
+import atlas/ui/layout
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -183,11 +184,7 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
       False, _ -> html.p([class("muted")], [html.text("Loading…")])
       True, [] ->
         html.p([class("muted")], [html.text("Not shared with anyone.")])
-      True, _ ->
-        html.ul(
-          [class("cards")],
-          list.map(current, share_view),
-        )
+      True, _ -> html.ul([class("cards")], list.map(current, share_view))
     },
     person_finder.view(
       model.finder,
@@ -217,7 +214,7 @@ fn share_view(share: Share) -> Element(Msg) {
   }
   html.li([], [
     html.strong([], [html.text(name)]),
-    html.div([class("actions")], [
+    layout.actions([
       button.secondary(
         [attribute.type_("button"), event.on_click(StopClicked(share.id))],
         [html.text("Stop sharing")],

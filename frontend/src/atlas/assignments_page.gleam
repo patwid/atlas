@@ -15,6 +15,7 @@ import atlas/ui/button
 import atlas/ui/dialog
 import atlas/ui/error
 import atlas/ui/field
+import atlas/ui/layout
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -385,7 +386,7 @@ fn confirm_dialog_id(id: String) -> String {
 
 fn actions(row: Row) -> Element(Msg) {
   let id = row.assignment.id
-  html.div([class("actions")], [
+  layout.actions([
     button.secondary(
       [attribute.type_("button"), event.on_click(ChangeDateClicked(id))],
       [html.text("Change date")],
@@ -468,7 +469,7 @@ fn form_view(
       Some(message) -> error.message(message)
       None -> element.none()
     },
-    html.div([class("actions")], [
+    layout.actions([
       button.primary([attribute.type_("submit")], [
         html.text(submit_label),
       ]),

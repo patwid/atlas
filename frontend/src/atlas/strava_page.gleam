@@ -7,6 +7,7 @@ import atlas/http
 import atlas/ui/button
 import atlas/ui/dialog
 import atlas/ui/error
+import atlas/ui/layout
 import gleam/int
 import gleam/option.{type Option, None, Some}
 import gleam/uri
@@ -328,7 +329,7 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
         html.p([], [
           html.text("Connected to Strava. New activities arrive by themselves."),
         ]),
-        html.div([class("actions")], [
+        layout.actions([
           button.secondary(
             [
               attribute.type_("button"),
