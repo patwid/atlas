@@ -383,47 +383,52 @@ fn row_view(
 
 fn actions(row: Row, model: Model) -> Element(Msg) {
   let id = row.assignment.id
-  html.div([class("actions")], case model.confirming == Some(id) {
-    False -> [
-      wa.button(
-        [
-          attribute.type_("button"),
-          attribute.attribute("variant", "neutral"),
-          event.on_click(ChangeDateClicked(id)),
-        ],
-        [html.text("Change date")],
-      ),
-      wa.button(
-        [
-          attribute.type_("button"),
-          attribute.attribute("variant", "neutral"),
-          event.on_click(RemoveClicked(id)),
-        ],
-        [html.text("Remove")],
-      ),
-    ]
-    True -> [
-      html.span([attribute.role("alert")], [
-        html.text("Remove this from the schedule?"),
-      ]),
-      wa.button(
-        [
-          attribute.type_("button"),
-          attribute.attribute("variant", "danger"),
-          event.on_click(RemoveConfirmed(id)),
-        ],
-        [html.text("Yes, remove it")],
-      ),
-      wa.button(
-        [
-          attribute.type_("button"),
-          attribute.attribute("variant", "neutral"),
-          event.on_click(CancelClicked),
-        ],
-        [html.text("Keep it")],
-      ),
-    ]
-  })
+  html.div([class("actions")], [
+    wa.button(
+      [
+        attribute.type_("button"),
+        attribute.attribute("variant", "neutral"),
+        event.on_click(ChangeDateClicked(id)),
+      ],
+      [html.text("Change date")],
+    ),
+    wa.button(
+      [
+        attribute.type_("button"),
+        attribute.attribute("variant", "neutral"),
+        event.on_click(RemoveClicked(id)),
+      ],
+      [html.text("Remove")],
+    ),
+    wa.dialog(
+      [
+        attribute.attribute("label", "Remove this from the schedule?"),
+        attribute.attribute("light-dismiss", ""),
+        attribute.open(model.confirming == Some(id)),
+        wa_event.on_hide(CancelClicked),
+      ],
+      [
+        wa.button(
+          [
+            attribute.type_("button"),
+            attribute.attribute("slot", "footer"),
+            attribute.attribute("variant", "danger"),
+            event.on_click(RemoveConfirmed(id)),
+          ],
+          [html.text("Yes, remove it")],
+        ),
+        wa.button(
+          [
+            attribute.type_("button"),
+            attribute.attribute("slot", "footer"),
+            attribute.attribute("variant", "neutral"),
+            event.on_click(CancelClicked),
+          ],
+          [html.text("Keep it")],
+        ),
+      ],
+    ),
+  ])
 }
 
 fn who(user_id: String, me: String, all_grants: List(Grant)) -> String {

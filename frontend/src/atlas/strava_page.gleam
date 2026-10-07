@@ -4,6 +4,7 @@
 
 import atlas/api.{type StravaStatus}
 import atlas/http
+import atlas/ui/event as wa_event
 import atlas/ui/html as wa
 import gleam/int
 import gleam/option.{type Option, None, Some}
@@ -320,51 +321,57 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
         html.p([], [
           html.text("Connected to Strava. New activities arrive by themselves."),
         ]),
-        html.div([class("actions")], case model.confirming {
-          False -> [
-            wa.button(
-              [
-                attribute.type_("button"),
-                attribute.attribute("variant", "neutral"),
-                attribute.disabled(model.busy),
-                event.on_click(SyncClicked),
-              ],
-              [html.text("Import the last 30 days again")],
-            ),
-            wa.button(
-              [
-                attribute.type_("button"),
-                attribute.attribute("variant", "neutral"),
-                attribute.disabled(model.busy),
-                event.on_click(DisconnectClicked),
-              ],
-              [html.text("Disconnect")],
-            ),
-          ]
-          True -> [
-            html.span([attribute.role("alert")], [
-              html.text(
+        html.div([class("actions")], [
+          wa.button(
+            [
+              attribute.type_("button"),
+              attribute.attribute("variant", "neutral"),
+              attribute.disabled(model.busy),
+              event.on_click(SyncClicked),
+            ],
+            [html.text("Import the last 30 days again")],
+          ),
+          wa.button(
+            [
+              attribute.type_("button"),
+              attribute.attribute("variant", "neutral"),
+              attribute.disabled(model.busy),
+              event.on_click(DisconnectClicked),
+            ],
+            [html.text("Disconnect")],
+          ),
+          wa.dialog(
+            [
+              attribute.attribute(
+                "label",
                 "Disconnect Strava and remove its activities from Atlas?",
               ),
-            ]),
-            wa.button(
-              [
-                attribute.type_("button"),
-                attribute.attribute("variant", "danger"),
-                event.on_click(DisconnectConfirmed),
-              ],
-              [html.text("Yes, disconnect")],
-            ),
-            wa.button(
-              [
-                attribute.type_("button"),
-                attribute.attribute("variant", "neutral"),
-                event.on_click(CancelClicked),
-              ],
-              [html.text("Keep it connected")],
-            ),
-          ]
-        }),
+              attribute.attribute("light-dismiss", ""),
+              attribute.open(model.confirming),
+              wa_event.on_hide(CancelClicked),
+            ],
+            [
+              wa.button(
+                [
+                  attribute.type_("button"),
+                  attribute.attribute("slot", "footer"),
+                  attribute.attribute("variant", "danger"),
+                  event.on_click(DisconnectConfirmed),
+                ],
+                [html.text("Yes, disconnect")],
+              ),
+              wa.button(
+                [
+                  attribute.type_("button"),
+                  attribute.attribute("slot", "footer"),
+                  attribute.attribute("variant", "neutral"),
+                  event.on_click(CancelClicked),
+                ],
+                [html.text("Keep it connected")],
+              ),
+            ],
+          ),
+        ]),
         attribution(),
       ])
   }

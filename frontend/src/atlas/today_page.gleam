@@ -13,6 +13,7 @@ import atlas/records
 import atlas/route
 import atlas/store
 import atlas/today.{type Inputs, type Item}
+import atlas/ui/event as wa_event
 import atlas/ui/html as wa
 import atlas/units
 import atlas/workout_form
@@ -331,28 +332,38 @@ fn status_view(
         html.p([class("status done")], [
           html.text("Done: " <> summary(inputs, activity_id)),
         ]),
-        case model.confirming == Some(key) {
-          False ->
-            html.div([class("actions")], [
-              link_button("Change", ChooseClicked(key)),
-              link_button("Unlink", UnlinkClicked(key)),
-            ])
-          True ->
-            html.div([class("actions")], [
-              html.span([attribute.role("alert")], [
-                html.text("Unlink this activity?"),
-              ]),
+        html.div([class("actions")], [
+          link_button("Change", ChooseClicked(key)),
+          link_button("Unlink", UnlinkClicked(key)),
+          wa.dialog(
+            [
+              attribute.attribute("label", "Unlink this activity?"),
+              attribute.attribute("light-dismiss", ""),
+              attribute.open(model.confirming == Some(key)),
+              wa_event.on_hide(CancelClicked),
+            ],
+            [
               wa.button(
                 [
                   attribute.type_("button"),
+                  attribute.attribute("slot", "footer"),
                   attribute.attribute("variant", "danger"),
                   event.on_click(UnlinkConfirmed(key)),
                 ],
                 [html.text("Yes, unlink")],
               ),
-              link_button("Keep it", CancelClicked),
-            ])
-        },
+              wa.button(
+                [
+                  attribute.type_("button"),
+                  attribute.attribute("slot", "footer"),
+                  attribute.attribute("variant", "neutral"),
+                  event.on_click(CancelClicked),
+                ],
+                [html.text("Keep it")],
+              ),
+            ],
+          ),
+        ]),
       ])
   }
 }

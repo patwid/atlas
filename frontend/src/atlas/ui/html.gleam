@@ -1,4 +1,4 @@
-//// Lustre element constructors for the Web Awesome custom elements Atlas uses (ADR 0038).
+//// Lustre element constructors for the Web Awesome custom elements Atlas uses (ADR 0038, 0039).
 //// Each one is `lustre/element.element` under the matching Web Awesome tag, with no
 //// behaviour of its own, mirroring `lustre/element/html`.
 ////
@@ -39,6 +39,13 @@ pub fn select(
 
 pub fn option(attributes: List(Attribute(msg)), label: String) -> Element(msg) {
   element.element("wa-option", attributes, [element.text(label)])
+}
+
+pub fn dialog(
+  attributes: List(Attribute(msg)),
+  children: List(Element(msg)),
+) -> Element(msg) {
+  element.element("wa-dialog", attributes, children)
 }
 
 /// Sets a `wa-input`/`wa-textarea`'s live value as a DOM property, not an attribute.

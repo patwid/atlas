@@ -460,45 +460,52 @@ fn pace(a: activity.Activity) -> Option(String) {
 
 fn actions(row: Row, model: Model) -> Element(Msg) {
   let id = row.activity.id
-  html.div([class("actions")], case model.confirming == Some(id) {
-    False -> [
-      wa.button(
-        [
-          attribute.type_("button"),
-          attribute.attribute("variant", "neutral"),
-          event.on_click(EditClicked(id)),
-        ],
-        [html.text("Edit")],
-      ),
-      wa.button(
-        [
-          attribute.type_("button"),
-          attribute.attribute("variant", "neutral"),
-          event.on_click(DeleteClicked(id)),
-        ],
-        [html.text("Delete")],
-      ),
-    ]
-    True -> [
-      html.span([attribute.role("alert")], [html.text("Delete this activity?")]),
-      wa.button(
-        [
-          attribute.type_("button"),
-          attribute.attribute("variant", "danger"),
-          event.on_click(DeleteConfirmed(id)),
-        ],
-        [html.text("Yes, delete it")],
-      ),
-      wa.button(
-        [
-          attribute.type_("button"),
-          attribute.attribute("variant", "neutral"),
-          event.on_click(CancelClicked),
-        ],
-        [html.text("Keep it")],
-      ),
-    ]
-  })
+  html.div([class("actions")], [
+    wa.button(
+      [
+        attribute.type_("button"),
+        attribute.attribute("variant", "neutral"),
+        event.on_click(EditClicked(id)),
+      ],
+      [html.text("Edit")],
+    ),
+    wa.button(
+      [
+        attribute.type_("button"),
+        attribute.attribute("variant", "neutral"),
+        event.on_click(DeleteClicked(id)),
+      ],
+      [html.text("Delete")],
+    ),
+    wa.dialog(
+      [
+        attribute.attribute("label", "Delete this activity?"),
+        attribute.attribute("light-dismiss", ""),
+        attribute.open(model.confirming == Some(id)),
+        wa_event.on_hide(CancelClicked),
+      ],
+      [
+        wa.button(
+          [
+            attribute.type_("button"),
+            attribute.attribute("slot", "footer"),
+            attribute.attribute("variant", "danger"),
+            event.on_click(DeleteConfirmed(id)),
+          ],
+          [html.text("Yes, delete it")],
+        ),
+        wa.button(
+          [
+            attribute.type_("button"),
+            attribute.attribute("slot", "footer"),
+            attribute.attribute("variant", "neutral"),
+            event.on_click(CancelClicked),
+          ],
+          [html.text("Keep it")],
+        ),
+      ],
+    ),
+  ])
 }
 
 fn form_view(form: activity_form.Form, submit_label: String) -> Element(Msg) {

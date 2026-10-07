@@ -51,6 +51,9 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
   button and attribution images, which keep their brand-locked native markup (ADR 0037).
 - Migrated those components from Shoelace to its successor, Web Awesome (self-hosted, vendored
   under `frontend/assets/webawesome/`), following Web Awesome's own migration guide (ADR 0038).
+- Every delete/remove/disconnect/unlink confirmation prompt is now a `wa-dialog` modal instead of
+  an inline button swap, with focus trapping, Escape-to-cancel and a light-dismiss backdrop (ADR
+  0039).
 
 ### Fixed
 - Removing a plan share or a coach's access now also removes the data from the other person's device, by a periodic membership sweep (ADR 0030).

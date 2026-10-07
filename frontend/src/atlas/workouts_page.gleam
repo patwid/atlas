@@ -413,47 +413,52 @@ fn workout_view(row: Row, model: Model, can_edit: Bool) -> Element(Msg) {
     case can_edit {
       False -> element.none()
       True ->
-        html.div([class("actions")], case model.confirming == Some(w.id) {
-          False -> [
-            wa.button(
-              [
-                attribute.type_("button"),
-                attribute.attribute("variant", "neutral"),
-                event.on_click(EditClicked(w.id)),
-              ],
-              [html.text("Edit")],
-            ),
-            wa.button(
-              [
-                attribute.type_("button"),
-                attribute.attribute("variant", "neutral"),
-                event.on_click(DeleteClicked(w.id)),
-              ],
-              [html.text("Delete")],
-            ),
-          ]
-          True -> [
-            html.span([attribute.role("alert")], [
-              html.text("Delete this workout?"),
-            ]),
-            wa.button(
-              [
-                attribute.type_("button"),
-                attribute.attribute("variant", "danger"),
-                event.on_click(DeleteConfirmed(w.id)),
-              ],
-              [html.text("Yes, delete it")],
-            ),
-            wa.button(
-              [
-                attribute.type_("button"),
-                attribute.attribute("variant", "neutral"),
-                event.on_click(CancelClicked),
-              ],
-              [html.text("Keep it")],
-            ),
-          ]
-        })
+        html.div([class("actions")], [
+          wa.button(
+            [
+              attribute.type_("button"),
+              attribute.attribute("variant", "neutral"),
+              event.on_click(EditClicked(w.id)),
+            ],
+            [html.text("Edit")],
+          ),
+          wa.button(
+            [
+              attribute.type_("button"),
+              attribute.attribute("variant", "neutral"),
+              event.on_click(DeleteClicked(w.id)),
+            ],
+            [html.text("Delete")],
+          ),
+          wa.dialog(
+            [
+              attribute.attribute("label", "Delete this workout?"),
+              attribute.attribute("light-dismiss", ""),
+              attribute.open(model.confirming == Some(w.id)),
+              wa_event.on_hide(CancelClicked),
+            ],
+            [
+              wa.button(
+                [
+                  attribute.type_("button"),
+                  attribute.attribute("slot", "footer"),
+                  attribute.attribute("variant", "danger"),
+                  event.on_click(DeleteConfirmed(w.id)),
+                ],
+                [html.text("Yes, delete it")],
+              ),
+              wa.button(
+                [
+                  attribute.type_("button"),
+                  attribute.attribute("slot", "footer"),
+                  attribute.attribute("variant", "neutral"),
+                  event.on_click(CancelClicked),
+                ],
+                [html.text("Keep it")],
+              ),
+            ],
+          ),
+        ])
     },
   ])
 }

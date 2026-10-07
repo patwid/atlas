@@ -10,6 +10,7 @@ import atlas/random
 import atlas/records
 import atlas/route
 import atlas/store
+import atlas/ui/event as wa_event
 import atlas/ui/html as wa
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -200,45 +201,51 @@ fn given_view(g: Grant, model: Model) -> Element(Msg) {
         name -> name
       }),
     ]),
-    html.div([class("actions")], case model.confirming == Some(g.id) {
-      False -> [
-        wa.button(
-          [
-            attribute.type_("button"),
-            attribute.attribute("variant", "neutral"),
-            event.on_click(RemoveClicked(g.id)),
-          ],
-          [html.text("Remove access")],
-        ),
-      ]
-      True -> [
-        html.span([attribute.role("alert")], [
-          html.text(
+    html.div([class("actions")], [
+      wa.button(
+        [
+          attribute.type_("button"),
+          attribute.attribute("variant", "neutral"),
+          event.on_click(RemoveClicked(g.id)),
+        ],
+        [html.text("Remove access")],
+      ),
+      wa.dialog(
+        [
+          attribute.attribute(
+            "label",
             "Stop "
-            <> case g.coach_name {
+              <> case g.coach_name {
               "" -> "this coach"
               name -> name
             }
-            <> " from seeing your training?",
+              <> " from seeing your training?",
           ),
-        ]),
-        wa.button(
-          [
-            attribute.type_("button"),
-            attribute.attribute("variant", "danger"),
-            event.on_click(RemoveConfirmed(g.id)),
-          ],
-          [html.text("Yes, remove access")],
-        ),
-        wa.button(
-          [
-            attribute.type_("button"),
-            attribute.attribute("variant", "neutral"),
-            event.on_click(CancelClicked),
-          ],
-          [html.text("Keep it")],
-        ),
-      ]
-    }),
+          attribute.attribute("light-dismiss", ""),
+          attribute.open(model.confirming == Some(g.id)),
+          wa_event.on_hide(CancelClicked),
+        ],
+        [
+          wa.button(
+            [
+              attribute.type_("button"),
+              attribute.attribute("slot", "footer"),
+              attribute.attribute("variant", "danger"),
+              event.on_click(RemoveConfirmed(g.id)),
+            ],
+            [html.text("Yes, remove access")],
+          ),
+          wa.button(
+            [
+              attribute.type_("button"),
+              attribute.attribute("slot", "footer"),
+              attribute.attribute("variant", "neutral"),
+              event.on_click(CancelClicked),
+            ],
+            [html.text("Keep it")],
+          ),
+        ],
+      ),
+    ]),
   ])
 }

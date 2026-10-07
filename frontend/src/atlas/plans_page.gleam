@@ -442,45 +442,52 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
 }
 
 fn owner_actions(found: Plan, confirming: Bool) -> Element(Msg) {
-  html.div([class("actions")], case confirming {
-    False -> [
-      wa.button(
-        [
-          attribute.type_("button"),
-          attribute.attribute("variant", "brand"),
-          event.on_click(EditClicked(found.id)),
-        ],
-        [html.text("Edit")],
-      ),
-      wa.button(
-        [
-          attribute.type_("button"),
-          attribute.attribute("variant", "danger"),
-          event.on_click(DeleteClicked),
-        ],
-        [html.text("Delete")],
-      ),
-    ]
-    True -> [
-      html.span([attribute.role("alert")], [html.text("Delete this plan?")]),
-      wa.button(
-        [
-          attribute.type_("button"),
-          attribute.attribute("variant", "danger"),
-          event.on_click(DeleteConfirmed(found.id)),
-        ],
-        [html.text("Yes, delete it")],
-      ),
-      wa.button(
-        [
-          attribute.type_("button"),
-          attribute.attribute("variant", "brand"),
-          event.on_click(CancelClicked),
-        ],
-        [html.text("Keep it")],
-      ),
-    ]
-  })
+  html.div([class("actions")], [
+    wa.button(
+      [
+        attribute.type_("button"),
+        attribute.attribute("variant", "brand"),
+        event.on_click(EditClicked(found.id)),
+      ],
+      [html.text("Edit")],
+    ),
+    wa.button(
+      [
+        attribute.type_("button"),
+        attribute.attribute("variant", "danger"),
+        event.on_click(DeleteClicked),
+      ],
+      [html.text("Delete")],
+    ),
+    wa.dialog(
+      [
+        attribute.attribute("label", "Delete this plan?"),
+        attribute.attribute("light-dismiss", ""),
+        attribute.open(confirming),
+        wa_event.on_hide(CancelClicked),
+      ],
+      [
+        wa.button(
+          [
+            attribute.type_("button"),
+            attribute.attribute("slot", "footer"),
+            attribute.attribute("variant", "danger"),
+            event.on_click(DeleteConfirmed(found.id)),
+          ],
+          [html.text("Yes, delete it")],
+        ),
+        wa.button(
+          [
+            attribute.type_("button"),
+            attribute.attribute("slot", "footer"),
+            attribute.attribute("variant", "brand"),
+            event.on_click(CancelClicked),
+          ],
+          [html.text("Keep it")],
+        ),
+      ],
+    ),
+  ])
 }
 
 fn plan_list(
