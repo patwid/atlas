@@ -6,6 +6,7 @@ import atlas/api.{type StravaStatus}
 import atlas/http
 import atlas/ui/button
 import atlas/ui/dialog
+import atlas/ui/error
 import gleam/int
 import gleam/option.{type Option, None, Some}
 import gleam/uri
@@ -283,8 +284,7 @@ pub fn view(model: Model) -> Element(Msg) {
     },
     case model.message {
       Some(Info(text)) -> html.p([attribute.role("status")], [html.text(text)])
-      Some(Problem(text)) ->
-        html.p([class("error"), attribute.role("alert")], [html.text(text)])
+      Some(Problem(text)) -> error.message(text)
       None -> element.none()
     },
   ])

@@ -13,6 +13,7 @@ import atlas/records
 import atlas/store
 import atlas/ui/button
 import atlas/ui/dialog
+import atlas/ui/error
 import atlas/ui/field
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -464,8 +465,7 @@ fn form_view(
       event.on_input(DateChanged),
     ]),
     case form.error {
-      Some(message) ->
-        html.p([class("error"), attribute.role("alert")], [html.text(message)])
+      Some(message) -> error.message(message)
       None -> element.none()
     },
     html.div([class("actions")], [

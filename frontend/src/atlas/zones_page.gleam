@@ -12,6 +12,7 @@ import atlas/pace_zones
 import atlas/records
 import atlas/store
 import atlas/ui/button
+import atlas/ui/error
 import atlas/ui/field
 import gleam/dynamic.{type Dynamic}
 import gleam/int
@@ -327,10 +328,7 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
         PaceStartChanged(n, v)
       }),
       case model.error {
-        Some(message) ->
-          html.p([class("error"), attribute.role("alert")], [
-            html.text(message),
-          ])
+        Some(message) -> error.message(message)
         None -> element.none()
       },
       html.div([class("actions")], [

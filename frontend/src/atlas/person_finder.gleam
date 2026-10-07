@@ -7,6 +7,7 @@ import atlas/api
 import atlas/grants.{type Person}
 import atlas/http
 import atlas/ui/button
+import atlas/ui/error
 import atlas/ui/field
 import gleam/option.{type Option, None, Some}
 import gleam/string
@@ -171,8 +172,7 @@ pub fn view(
         ),
       ]),
       case model.lookup {
-        Failed(message) ->
-          html.p([class("error"), attribute.role("alert")], [html.text(message)])
+        Failed(message) -> error.message(message)
         Found(person) ->
           html.div([class("found"), attribute.role("status")], [
             html.p([], [html.text(labels.question(display(person)))]),

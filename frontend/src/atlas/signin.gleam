@@ -1,6 +1,7 @@
 //// The sign-in page. Messages are passed in so this module does not depend on the app's `Msg`.
 
 import atlas/ui/button
+import atlas/ui/error
 import atlas/ui/field
 import gleam/option.{type Option, None, Some}
 import lustre/attribute.{class}
@@ -47,8 +48,7 @@ pub fn view(
         event.on_input(on_password),
       ]),
       case form.error {
-        Some(message) ->
-          html.p([class("error"), attribute.role("alert")], [html.text(message)])
+        Some(message) -> error.message(message)
         None -> element.none()
       },
       button.primary(

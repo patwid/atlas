@@ -10,6 +10,7 @@ import atlas/records
 import atlas/store
 import atlas/ui/button
 import atlas/ui/dialog
+import atlas/ui/error
 import atlas/ui/field
 import atlas/units
 import atlas/workout_form.{type Row}
@@ -550,8 +551,7 @@ fn form_view(form: workout_form.Form, submit_label: String) -> Element(Msg) {
       form.description,
     ),
     case form.error {
-      Some(message) ->
-        html.p([class("error"), attribute.role("alert")], [html.text(message)])
+      Some(message) -> error.message(message)
       None -> element.none()
     },
     html.div([class("actions")], [

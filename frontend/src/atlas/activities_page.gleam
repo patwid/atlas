@@ -12,6 +12,7 @@ import atlas/records
 import atlas/store
 import atlas/ui/button
 import atlas/ui/dialog
+import atlas/ui/error
 import atlas/ui/field
 import atlas/units
 import gleam/dict
@@ -596,8 +597,7 @@ fn form_view(form: activity_form.Form, submit_label: String) -> Element(Msg) {
       ]),
     ]),
     case form.error {
-      Some(message) ->
-        html.p([class("error"), attribute.role("alert")], [html.text(message)])
+      Some(message) -> error.message(message)
       None -> element.none()
     },
     html.div([class("actions")], [

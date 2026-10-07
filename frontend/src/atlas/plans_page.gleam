@@ -12,6 +12,7 @@ import atlas/route
 import atlas/store
 import atlas/ui/button
 import atlas/ui/dialog
+import atlas/ui/error
 import atlas/ui/field
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -410,7 +411,7 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
       ])
     CopyProblem(source, message) if source == plan_id ->
       html.div([], [
-        html.p([class("error"), attribute.role("alert")], [html.text(message)]),
+        error.message(message),
         button.secondary(
           [attribute.type_("button"), event.on_click(CopyAgainClicked)],
           [html.text("Try again")],
@@ -546,8 +547,7 @@ fn form_view(form: plan_form.Form, submit_label: String) -> Element(Msg) {
       ],
     ),
     case form.error {
-      Some(message) ->
-        html.p([class("error"), attribute.role("alert")], [html.text(message)])
+      Some(message) -> error.message(message)
       None -> element.none()
     },
     html.div([class("actions")], [
