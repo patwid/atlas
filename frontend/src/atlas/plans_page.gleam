@@ -10,7 +10,9 @@ import atlas/random
 import atlas/records
 import atlas/route
 import atlas/store
+import atlas/ui/button
 import atlas/ui/dialog
+import atlas/ui/field
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -294,12 +296,8 @@ pub fn view_list_with(
       case model.mode {
         Creating -> element.none()
         _ ->
-          html.button(
-            [
-              class("btn btn-primary"),
-              attribute.type_("button"),
-              event.on_click(NewClicked),
-            ],
+          button.primary(
+            [attribute.type_("button"), event.on_click(NewClicked)],
             [html.text("New plan")],
           )
       },
@@ -405,24 +403,16 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
           html.text("Open your copy"),
         ]),
         html.text(" "),
-        html.button(
-          [
-            class("btn btn-link"),
-            attribute.type_("button"),
-            event.on_click(CopyAgainClicked),
-          ],
+        button.link(
+          [attribute.type_("button"), event.on_click(CopyAgainClicked)],
           [html.text("Copy again")],
         ),
       ])
     CopyProblem(source, message) if source == plan_id ->
       html.div([], [
         html.p([class("error"), attribute.role("alert")], [html.text(message)]),
-        html.button(
-          [
-            class("btn btn-secondary"),
-            attribute.type_("button"),
-            event.on_click(CopyAgainClicked),
-          ],
+        button.secondary(
+          [attribute.type_("button"), event.on_click(CopyAgainClicked)],
           [html.text("Try again")],
         ),
       ])
@@ -430,12 +420,8 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
       html.p([class("muted")], [html.text("Copying…")])
     _ ->
       html.div([class("actions")], [
-        html.button(
-          [
-            class("btn btn-secondary"),
-            attribute.type_("button"),
-            event.on_click(CopyClicked(plan_id)),
-          ],
+        button.secondary(
+          [attribute.type_("button"), event.on_click(CopyClicked(plan_id))],
           [html.text("Copy to my plans")],
         ),
       ])
@@ -444,20 +430,12 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
 
 fn owner_actions(found: Plan) -> Element(Msg) {
   html.div([class("actions")], [
-    html.button(
-      [
-        class("btn btn-primary"),
-        attribute.type_("button"),
-        event.on_click(EditClicked(found.id)),
-      ],
+    button.primary(
+      [attribute.type_("button"), event.on_click(EditClicked(found.id))],
       [html.text("Edit")],
     ),
-    html.button(
-      [
-        class("btn btn-danger"),
-        attribute.type_("button"),
-        event.on_click(DeleteClicked),
-      ],
+    button.danger(
+      [attribute.type_("button"), event.on_click(DeleteClicked)],
       [html.text("Delete")],
     ),
     dialog.view(
@@ -465,20 +443,12 @@ fn owner_actions(found: Plan) -> Element(Msg) {
       "Delete this plan?",
       CancelClicked,
       [
-        html.button(
-          [
-            class("btn btn-danger"),
-            attribute.type_("submit"),
-            event.on_click(DeleteConfirmed(found.id)),
-          ],
+        button.danger(
+          [attribute.type_("submit"), event.on_click(DeleteConfirmed(found.id))],
           [html.text("Yes, delete it")],
         ),
-        html.button(
-          [
-            class("btn btn-primary"),
-            attribute.type_("submit"),
-            event.on_click(CancelClicked),
-          ],
+        button.primary(
+          [attribute.type_("submit"), event.on_click(CancelClicked)],
           [html.text("Keep it")],
         ),
       ],
@@ -540,8 +510,7 @@ pub fn snippet(text: String) -> String {
 fn form_view(form: plan_form.Form, submit_label: String) -> Element(Msg) {
   html.form([class("plan-form"), event.on_submit(fn(_) { Submitted })], [
     html.label([attribute.for("plan-title")], [html.text("Title")]),
-    html.input([
-      class("form-control"),
+    field.input([
       attribute.id("plan-title"),
       attribute.type_("text"),
       attribute.name("title"),
@@ -551,9 +520,8 @@ fn form_view(form: plan_form.Form, submit_label: String) -> Element(Msg) {
       event.on_input(TitleChanged),
     ]),
     html.label([attribute.for("plan-description")], [html.text("Description")]),
-    html.textarea(
+    field.textarea(
       [
-        class("form-control"),
         attribute.id("plan-description"),
         attribute.name("description"),
         attribute.rows(4),
@@ -562,9 +530,8 @@ fn form_view(form: plan_form.Form, submit_label: String) -> Element(Msg) {
       form.description,
     ),
     html.label([attribute.for("plan-visibility")], [html.text("Who can see it")]),
-    html.select(
+    field.select(
       [
-        class("form-select"),
         attribute.id("plan-visibility"),
         attribute.name("visibility"),
         attribute.value(plan.visibility_to_string(form.visibility)),
@@ -584,16 +551,11 @@ fn form_view(form: plan_form.Form, submit_label: String) -> Element(Msg) {
       None -> element.none()
     },
     html.div([class("actions")], [
-      html.button(
-        [class("btn btn-primary"), attribute.type_("submit")],
-        [html.text(submit_label)],
-      ),
-      html.button(
-        [
-          class("btn btn-secondary"),
-          attribute.type_("button"),
-          event.on_click(CancelClicked),
-        ],
+      button.primary([attribute.type_("submit")], [
+        html.text(submit_label),
+      ]),
+      button.secondary(
+        [attribute.type_("button"), event.on_click(CancelClicked)],
         [html.text("Cancel")],
       ),
     ]),

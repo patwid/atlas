@@ -8,7 +8,9 @@ import atlas/plan_schedule
 import atlas/random
 import atlas/records
 import atlas/store
+import atlas/ui/button
 import atlas/ui/dialog
+import atlas/ui/field
 import atlas/units
 import atlas/workout_form.{type Row}
 import gleam/dict
@@ -270,12 +272,8 @@ pub fn view(model: Model, plan_id: String, can_edit: Bool) -> Element(Msg) {
       html.h2([], [html.text("Workouts")]),
       case can_edit, model.mode {
         True, Browsing ->
-          html.button(
-            [
-              class("btn btn-primary"),
-              attribute.type_("button"),
-              event.on_click(AddClicked(next_week(weeks), 1)),
-            ],
+          button.primary(
+            [attribute.type_("button"), event.on_click(AddClicked(next_week(weeks), 1))],
             [html.text("Add workout")],
           )
         _, _ -> element.none()
@@ -371,9 +369,8 @@ fn day_view(
         [
           case can_edit, model.mode {
             True, Browsing ->
-              html.button(
+              button.link(
                 [
-                  class("btn btn-link"),
                   attribute.type_("button"),
                   attribute.attribute(
                     "aria-label",
@@ -413,20 +410,12 @@ fn workout_view(row: Row, can_edit: Bool) -> Element(Msg) {
       False -> element.none()
       True ->
         html.div([class("actions")], [
-          html.button(
-            [
-              class("btn btn-secondary"),
-              attribute.type_("button"),
-              event.on_click(EditClicked(w.id)),
-            ],
+          button.secondary(
+            [attribute.type_("button"), event.on_click(EditClicked(w.id))],
             [html.text("Edit")],
           ),
-          html.button(
-            [
-              class("btn btn-secondary"),
-              attribute.type_("button"),
-              event.on_click(DeleteClicked(w.id)),
-            ],
+          button.secondary(
+            [attribute.type_("button"), event.on_click(DeleteClicked(w.id))],
             [html.text("Delete")],
           ),
           dialog.view(
@@ -434,20 +423,12 @@ fn workout_view(row: Row, can_edit: Bool) -> Element(Msg) {
             "Delete this workout?",
             CancelClicked,
             [
-              html.button(
-                [
-                  class("btn btn-danger"),
-                  attribute.type_("submit"),
-                  event.on_click(DeleteConfirmed(w.id)),
-                ],
+              button.danger(
+                [attribute.type_("submit"), event.on_click(DeleteConfirmed(w.id))],
                 [html.text("Yes, delete it")],
               ),
-              html.button(
-                [
-                  class("btn btn-secondary"),
-                  attribute.type_("submit"),
-                  event.on_click(CancelClicked),
-                ],
+              button.secondary(
+                [attribute.type_("submit"), event.on_click(CancelClicked)],
                 [html.text("Keep it")],
               ),
             ],
@@ -476,8 +457,7 @@ fn form_view(form: workout_form.Form, submit_label: String) -> Element(Msg) {
     html.div([class("row")], [
       html.div([], [
         html.label([attribute.for("workout-week")], [html.text("Week")]),
-        html.input([
-          class("form-control"),
+        field.input([
           attribute.id("workout-week"),
           attribute.type_("number"),
           attribute.name("week"),
@@ -489,9 +469,8 @@ fn form_view(form: workout_form.Form, submit_label: String) -> Element(Msg) {
       ]),
       html.div([], [
         html.label([attribute.for("workout-day")], [html.text("Day")]),
-        html.select(
+        field.select(
           [
-            class("form-select"),
             attribute.id("workout-day"),
             attribute.name("day"),
             attribute.value(form.day),
@@ -507,8 +486,7 @@ fn form_view(form: workout_form.Form, submit_label: String) -> Element(Msg) {
       ]),
     ]),
     html.label([attribute.for("workout-title")], [html.text("Title")]),
-    html.input([
-      class("form-control"),
+    field.input([
       attribute.id("workout-title"),
       attribute.type_("text"),
       attribute.name("title"),
@@ -518,9 +496,8 @@ fn form_view(form: workout_form.Form, submit_label: String) -> Element(Msg) {
       event.on_input(TitleChanged),
     ]),
     html.label([attribute.for("workout-kind")], [html.text("Kind")]),
-    html.select(
+    field.select(
       [
-        class("form-select"),
         attribute.id("workout-kind"),
         attribute.name("kind"),
         attribute.value(plan.kind_to_string(form.kind)),
@@ -538,8 +515,7 @@ fn form_view(form: workout_form.Form, submit_label: String) -> Element(Msg) {
         html.label([attribute.for("workout-distance")], [
           html.text("Distance (km)"),
         ]),
-        html.input([
-          class("form-control"),
+        field.input([
           attribute.id("workout-distance"),
           attribute.type_("text"),
           attribute.attribute("inputmode", "decimal"),
@@ -553,8 +529,7 @@ fn form_view(form: workout_form.Form, submit_label: String) -> Element(Msg) {
         html.label([attribute.for("workout-duration")], [
           html.text("Time (minutes or h:mm)"),
         ]),
-        html.input([
-          class("form-control"),
+        field.input([
           attribute.id("workout-duration"),
           attribute.type_("text"),
           attribute.name("duration"),
@@ -565,9 +540,8 @@ fn form_view(form: workout_form.Form, submit_label: String) -> Element(Msg) {
       ]),
     ]),
     html.label([attribute.for("workout-description")], [html.text("Notes")]),
-    html.textarea(
+    field.textarea(
       [
-        class("form-control"),
         attribute.id("workout-description"),
         attribute.name("description"),
         attribute.rows(3),
@@ -581,16 +555,11 @@ fn form_view(form: workout_form.Form, submit_label: String) -> Element(Msg) {
       None -> element.none()
     },
     html.div([class("actions")], [
-      html.button(
-        [class("btn btn-primary"), attribute.type_("submit")],
-        [html.text(submit_label)],
-      ),
-      html.button(
-        [
-          class("btn btn-secondary"),
-          attribute.type_("button"),
-          event.on_click(CancelClicked),
-        ],
+      button.primary([attribute.type_("submit")], [
+        html.text(submit_label),
+      ]),
+      button.secondary(
+        [attribute.type_("button"), event.on_click(CancelClicked)],
         [html.text("Cancel")],
       ),
     ]),

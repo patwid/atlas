@@ -11,6 +11,8 @@ import atlas/outbox
 import atlas/pace_zones
 import atlas/records
 import atlas/store
+import atlas/ui/button
+import atlas/ui/field
 import gleam/dynamic.{type Dynamic}
 import gleam/int
 import gleam/list
@@ -262,8 +264,7 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
         html.text("Maximum heart rate (bpm)"),
       ]),
       html.div([class("row")], [
-        html.input([
-          class("form-control"),
+        field.input([
           attribute.id("hr-max"),
           attribute.type_("text"),
           attribute.attribute("inputmode", "numeric"),
@@ -271,12 +272,8 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
           attribute.value(model.hr.max_hr),
           event.on_input(MaxChanged),
         ]),
-        html.button(
-          [
-            class("btn btn-secondary"),
-            attribute.type_("button"),
-            event.on_click(FillFromMaxClicked),
-          ],
+        button.secondary(
+          [attribute.type_("button"), event.on_click(FillFromMaxClicked)],
           [html.text("Work out zones from maximum")],
         ),
       ]),
@@ -306,8 +303,7 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
         html.text("Threshold pace (min:s per km)"),
       ]),
       html.div([class("row")], [
-        html.input([
-          class("form-control"),
+        field.input([
           attribute.id("pace-threshold"),
           attribute.type_("text"),
           attribute.name("threshold_pace"),
@@ -315,12 +311,8 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
           attribute.placeholder("5:00"),
           event.on_input(ThresholdChanged),
         ]),
-        html.button(
-          [
-            class("btn btn-secondary"),
-            attribute.type_("button"),
-            event.on_click(FillFromThresholdClicked),
-          ],
+        button.secondary(
+          [attribute.type_("button"), event.on_click(FillFromThresholdClicked)],
           [html.text("Work out zones from threshold pace")],
         ),
       ]),
@@ -342,18 +334,14 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
         None -> element.none()
       },
       html.div([class("actions")], [
-        html.button(
-          [class("btn btn-primary"), attribute.type_("submit")],
+        button.primary(
+          [attribute.type_("submit")],
           [html.text("Save zones")],
         ),
         case model.edited {
           True ->
-            html.button(
-              [
-                class("btn btn-secondary"),
-                attribute.type_("button"),
-                event.on_click(ResetClicked),
-              ],
+            button.secondary(
+              [attribute.type_("button"), event.on_click(ResetClicked)],
               [html.text("Undo changes")],
             )
           False -> element.none()
@@ -387,8 +375,7 @@ fn zones_view(
           html.label([attribute.for(id)], [
             html.text("Zone " <> int.to_string(number) <> " from"),
           ]),
-          html.input([
-            class("form-control"),
+          field.input([
             attribute.id(id),
             attribute.type_("text"),
             attribute.attribute("inputmode", input_mode),

@@ -11,7 +11,9 @@ import atlas/plan.{type Workout}
 import atlas/random
 import atlas/records
 import atlas/store
+import atlas/ui/button
 import atlas/ui/dialog
+import atlas/ui/field
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -289,12 +291,8 @@ pub fn view(
       html.h2([], [html.text("Schedule")]),
       case model.mode {
         Browsing if context.can_start ->
-          html.button(
-            [
-              class("btn btn-primary"),
-              attribute.type_("button"),
-              event.on_click(StartClicked),
-            ],
+          button.primary(
+            [attribute.type_("button"), event.on_click(StartClicked)],
             [
               html.text(case context.athletes {
                 [] -> "Start this plan"
@@ -387,20 +385,12 @@ fn confirm_dialog_id(id: String) -> String {
 fn actions(row: Row) -> Element(Msg) {
   let id = row.assignment.id
   html.div([class("actions")], [
-    html.button(
-      [
-        class("btn btn-secondary"),
-        attribute.type_("button"),
-        event.on_click(ChangeDateClicked(id)),
-      ],
+    button.secondary(
+      [attribute.type_("button"), event.on_click(ChangeDateClicked(id))],
       [html.text("Change date")],
     ),
-    html.button(
-      [
-        class("btn btn-secondary"),
-        attribute.type_("button"),
-        event.on_click(RemoveClicked(id)),
-      ],
+    button.secondary(
+      [attribute.type_("button"), event.on_click(RemoveClicked(id))],
       [html.text("Remove")],
     ),
     dialog.view(
@@ -408,20 +398,12 @@ fn actions(row: Row) -> Element(Msg) {
       "Remove this from the schedule?",
       CancelClicked,
       [
-        html.button(
-          [
-            class("btn btn-danger"),
-            attribute.type_("submit"),
-            event.on_click(RemoveConfirmed(id)),
-          ],
+        button.danger(
+          [attribute.type_("submit"), event.on_click(RemoveConfirmed(id))],
           [html.text("Yes, remove it")],
         ),
-        html.button(
-          [
-            class("btn btn-secondary"),
-            attribute.type_("submit"),
-            event.on_click(CancelClicked),
-          ],
+        button.secondary(
+          [attribute.type_("submit"), event.on_click(CancelClicked)],
           [html.text("Keep it")],
         ),
       ],
@@ -454,9 +436,8 @@ fn form_view(
       True ->
         html.div([], [
           html.label([attribute.for("assign-athlete")], [html.text("For")]),
-          html.select(
+          field.select(
             [
-              class("form-select"),
               attribute.id("assign-athlete"),
               attribute.name("athlete"),
               attribute.value(form.athlete_id),
@@ -474,8 +455,7 @@ fn form_view(
     html.label([attribute.for("assign-start")], [
       html.text("First day of the plan"),
     ]),
-    html.input([
-      class("form-control"),
+    field.input([
       attribute.id("assign-start"),
       attribute.type_("date"),
       attribute.name("start_date"),
@@ -489,16 +469,11 @@ fn form_view(
       None -> element.none()
     },
     html.div([class("actions")], [
-      html.button(
-        [class("btn btn-primary"), attribute.type_("submit")],
-        [html.text(submit_label)],
-      ),
-      html.button(
-        [
-          class("btn btn-secondary"),
-          attribute.type_("button"),
-          event.on_click(CancelClicked),
-        ],
+      button.primary([attribute.type_("submit")], [
+        html.text(submit_label),
+      ]),
+      button.secondary(
+        [attribute.type_("button"), event.on_click(CancelClicked)],
         [html.text("Cancel")],
       ),
     ]),

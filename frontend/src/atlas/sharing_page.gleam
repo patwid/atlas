@@ -10,6 +10,7 @@ import atlas/random
 import atlas/records
 import atlas/shares.{type Share}
 import atlas/store
+import atlas/ui/button
 import atlas/ui/dialog
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -217,12 +218,8 @@ fn share_view(share: Share) -> Element(Msg) {
   html.li([], [
     html.strong([], [html.text(name)]),
     html.div([class("actions")], [
-      html.button(
-        [
-          class("btn btn-secondary"),
-          attribute.type_("button"),
-          event.on_click(StopClicked(share.id)),
-        ],
+      button.secondary(
+        [attribute.type_("button"), event.on_click(StopClicked(share.id))],
         [html.text("Stop sharing")],
       ),
       dialog.view(
@@ -230,20 +227,12 @@ fn share_view(share: Share) -> Element(Msg) {
         "Stop sharing this plan with " <> name <> "?",
         CancelClicked,
         [
-          html.button(
-            [
-              class("btn btn-danger"),
-              attribute.type_("submit"),
-              event.on_click(StopConfirmed(share.id)),
-            ],
+          button.danger(
+            [attribute.type_("submit"), event.on_click(StopConfirmed(share.id))],
             [html.text("Yes, stop sharing")],
           ),
-          html.button(
-            [
-              class("btn btn-secondary"),
-              attribute.type_("submit"),
-              event.on_click(CancelClicked),
-            ],
+          button.secondary(
+            [attribute.type_("submit"), event.on_click(CancelClicked)],
             [html.text("Keep sharing")],
           ),
         ],

@@ -13,6 +13,7 @@ import atlas/records
 import atlas/route
 import atlas/store
 import atlas/today.{type Inputs, type Item}
+import atlas/ui/button
 import atlas/ui/dialog
 import atlas/units
 import atlas/workout_form
@@ -314,12 +315,8 @@ fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
           html.text("Looks done: " <> summary(inputs, activity_id)),
         ]),
         html.div([class("actions")], [
-          html.button(
-            [
-              class("btn btn-primary"),
-              attribute.type_("button"),
-              event.on_click(ConfirmClicked(key, activity_id)),
-            ],
+          button.primary(
+            [attribute.type_("button"), event.on_click(ConfirmClicked(key, activity_id))],
             [html.text("Yes, that is it")],
           ),
           link_button("Choose another", ChooseClicked(key)),
@@ -338,20 +335,12 @@ fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
             "Unlink this activity?",
             CancelClicked,
             [
-              html.button(
-                [
-                  class("btn btn-danger"),
-                  attribute.type_("submit"),
-                  event.on_click(UnlinkConfirmed(key)),
-                ],
+              button.danger(
+                [attribute.type_("submit"), event.on_click(UnlinkConfirmed(key))],
                 [html.text("Yes, unlink")],
               ),
-              html.button(
-                [
-                  class("btn btn-secondary"),
-                  attribute.type_("submit"),
-                  event.on_click(CancelClicked),
-                ],
+              button.secondary(
+                [attribute.type_("submit"), event.on_click(CancelClicked)],
                 [html.text("Keep it")],
               ),
             ],
@@ -362,8 +351,8 @@ fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
 }
 
 fn link_button(label: String, msg: Msg) -> Element(Msg) {
-  html.button(
-    [class("btn btn-secondary"), attribute.type_("button"), event.on_click(msg)],
+  button.secondary(
+    [attribute.type_("button"), event.on_click(msg)],
     [html.text(label)],
   )
 }
@@ -388,12 +377,8 @@ fn choosing_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
             list.map(candidates, fn(row) {
               html.li([], [
                 html.span([], [html.text(describe(row, inputs))]),
-                html.button(
-                  [
-                    class("btn btn-primary"),
-                    attribute.type_("button"),
-                    event.on_click(PickClicked(key, row.activity.id)),
-                  ],
+                button.primary(
+                  [attribute.type_("button"), event.on_click(PickClicked(key, row.activity.id))],
                   [html.text("This one")],
                 ),
               ])

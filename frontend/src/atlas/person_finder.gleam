@@ -6,6 +6,8 @@
 import atlas/api
 import atlas/grants.{type Person}
 import atlas/http
+import atlas/ui/button
+import atlas/ui/field
 import gleam/option.{type Option, None, Some}
 import gleam/string
 import lustre/attribute.{class}
@@ -150,8 +152,7 @@ pub fn view(
         html.text(labels.field_label),
       ]),
       html.div([class("row")], [
-        html.input([
-          class("form-control"),
+        field.input([
           attribute.id(labels.field_id),
           attribute.type_("email"),
           attribute.name("email"),
@@ -159,12 +160,8 @@ pub fn view(
           attribute.value(model.email),
           event.on_input(fn(text) { wrap(EmailChanged(text)) }),
         ]),
-        html.button(
-          [
-            class("btn btn-primary"),
-            attribute.type_("submit"),
-            attribute.disabled(model.lookup == Looking),
-          ],
+        button.primary(
+          [attribute.type_("submit"), attribute.disabled(model.lookup == Looking)],
           [
             html.text(case model.lookup {
               Looking -> "Looking…"
@@ -180,20 +177,12 @@ pub fn view(
           html.div([class("found"), attribute.role("status")], [
             html.p([], [html.text(labels.question(display(person)))]),
             html.div([class("actions")], [
-              html.button(
-                [
-                  class("btn btn-primary"),
-                  attribute.type_("button"),
-                  event.on_click(confirm),
-                ],
+              button.primary(
+                [attribute.type_("button"), event.on_click(confirm)],
                 [html.text(labels.confirm_label)],
               ),
-              html.button(
-                [
-                  class("btn btn-secondary"),
-                  attribute.type_("button"),
-                  event.on_click(wrap(CancelClicked)),
-                ],
+              button.secondary(
+                [attribute.type_("button"), event.on_click(wrap(CancelClicked))],
                 [html.text("Cancel")],
               ),
             ]),

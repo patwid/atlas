@@ -1,5 +1,7 @@
 //// The sign-in page. Messages are passed in so this module does not depend on the app's `Msg`.
 
+import atlas/ui/button
+import atlas/ui/field
 import gleam/option.{type Option, None, Some}
 import lustre/attribute.{class}
 import lustre/element.{type Element}
@@ -25,8 +27,7 @@ pub fn view(
     html.p([class("muted")], [html.text("Sign in to see your training.")]),
     html.form([event.on_submit(fn(_) { on_submit })], [
       html.label([attribute.for("email")], [html.text("E-mail")]),
-      html.input([
-        class("form-control"),
+      field.input([
         attribute.id("email"),
         attribute.type_("email"),
         attribute.name("email"),
@@ -36,8 +37,7 @@ pub fn view(
         event.on_input(on_email),
       ]),
       html.label([attribute.for("password")], [html.text("Password")]),
-      html.input([
-        class("form-control"),
+      field.input([
         attribute.id("password"),
         attribute.type_("password"),
         attribute.name("password"),
@@ -51,12 +51,8 @@ pub fn view(
           html.p([class("error"), attribute.role("alert")], [html.text(message)])
         None -> element.none()
       },
-      html.button(
-        [
-          class("btn btn-primary"),
-          attribute.type_("submit"),
-          attribute.disabled(form.busy),
-        ],
+      button.primary(
+        [attribute.type_("submit"), attribute.disabled(form.busy)],
         [
           html.text(case form.busy {
             True -> "Signing in…"

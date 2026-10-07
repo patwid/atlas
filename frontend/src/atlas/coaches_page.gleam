@@ -10,6 +10,7 @@ import atlas/random
 import atlas/records
 import atlas/route
 import atlas/store
+import atlas/ui/button
 import atlas/ui/dialog
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -205,12 +206,8 @@ fn given_view(g: Grant) -> Element(Msg) {
       }),
     ]),
     html.div([class("actions")], [
-      html.button(
-        [
-          attribute.type_("button"),
-          class("btn btn-secondary"),
-          event.on_click(RemoveClicked(g.id)),
-        ],
+      button.secondary(
+        [attribute.type_("button"), event.on_click(RemoveClicked(g.id))],
         [html.text("Remove access")],
       ),
       dialog.view(
@@ -223,20 +220,12 @@ fn given_view(g: Grant) -> Element(Msg) {
           <> " from seeing your training?",
         CancelClicked,
         [
-          html.button(
-            [
-              attribute.type_("submit"),
-              class("btn btn-danger"),
-              event.on_click(RemoveConfirmed(g.id)),
-            ],
+          button.danger(
+            [attribute.type_("submit"), event.on_click(RemoveConfirmed(g.id))],
             [html.text("Yes, remove access")],
           ),
-          html.button(
-            [
-              attribute.type_("submit"),
-              class("btn btn-secondary"),
-              event.on_click(CancelClicked),
-            ],
+          button.secondary(
+            [attribute.type_("submit"), event.on_click(CancelClicked)],
             [html.text("Keep it")],
           ),
         ],

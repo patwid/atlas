@@ -4,6 +4,7 @@
 
 import atlas/api.{type StravaStatus}
 import atlas/http
+import atlas/ui/button
 import atlas/ui/dialog
 import gleam/int
 import gleam/option.{type Option, None, Some}
@@ -302,8 +303,9 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
             "Bring your runs in from Strava automatically. Atlas can then match them to your plans.",
           ),
         ]),
-        // Strava's own button image, unchanged, as their brand rules require.
-        html.button(
+        // Strava's own button image, unchanged, as their brand rules require: the plain, unstyled
+        // base, not one of Atlas's own button variants.
+        button.button(
           [
             attribute.type_("button"),
             class("strava-connect"),
@@ -327,18 +329,16 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
           html.text("Connected to Strava. New activities arrive by themselves."),
         ]),
         html.div([class("actions")], [
-          html.button(
+          button.secondary(
             [
-              class("btn btn-secondary"),
               attribute.type_("button"),
               attribute.disabled(model.busy),
               event.on_click(SyncClicked),
             ],
             [html.text("Import the last 30 days again")],
           ),
-          html.button(
+          button.secondary(
             [
-              class("btn btn-secondary"),
               attribute.type_("button"),
               attribute.disabled(model.busy),
               event.on_click(DisconnectClicked),
@@ -350,20 +350,12 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
             "Disconnect Strava and remove its activities from Atlas?",
             CancelClicked,
             [
-              html.button(
-                [
-                  class("btn btn-danger"),
-                  attribute.type_("submit"),
-                  event.on_click(DisconnectConfirmed),
-                ],
+              button.danger(
+                [attribute.type_("submit"), event.on_click(DisconnectConfirmed)],
                 [html.text("Yes, disconnect")],
               ),
-              html.button(
-                [
-                  class("btn btn-secondary"),
-                  attribute.type_("submit"),
-                  event.on_click(CancelClicked),
-                ],
+              button.secondary(
+                [attribute.type_("submit"), event.on_click(CancelClicked)],
                 [html.text("Keep it connected")],
               ),
             ],
