@@ -46,6 +46,9 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 
 ### Changed
 - Strava's redirect now returns to `/settings?strava=<result>` (ADR 0027).
+- All buttons, inputs, selects and textareas now use Shoelace web components instead of plain HTML
+  elements (self-hosted, vendored under `frontend/assets/shoelace/`), except the Strava "Connect"
+  button and attribution images, which keep their brand-locked native markup (ADR 0037).
 
 ### Fixed
 - Removing a plan share or a coach's access now also removes the data from the other person's device, by a periodic membership sweep (ADR 0030).
