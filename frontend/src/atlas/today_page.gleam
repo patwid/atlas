@@ -13,6 +13,7 @@ import atlas/records
 import atlas/route
 import atlas/store
 import atlas/today.{type Inputs, type Item}
+import atlas/ui/badge
 import atlas/ui/button
 import atlas/ui/dialog
 import atlas/ui/layout
@@ -273,7 +274,7 @@ fn item_view(item: Item, model: Model, inputs: Inputs) -> Element(Msg) {
   html.li([class("item")], [
     html.div([], [
       html.strong([], [html.text(w.title)]),
-      html.span([class("badge")], [html.text(workout_form.kind_label(w.kind))]),
+      badge.badge(workout_form.kind_label(w.kind)),
       html.span([class("muted")], [
         html.text(
           " · " <> item.plan_title <> " · " <> date.format(item.scheduled.date),

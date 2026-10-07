@@ -8,6 +8,7 @@ import atlas/plan_schedule
 import atlas/random
 import atlas/records
 import atlas/store
+import atlas/ui/badge
 import atlas/ui/button
 import atlas/ui/dialog
 import atlas/ui/error
@@ -401,7 +402,7 @@ fn workout_view(row: Row, can_edit: Bool) -> Element(Msg) {
   html.div([class("workout")], [
     html.div([], [
       html.strong([], [html.text(w.title)]),
-      html.span([class("badge")], [html.text(workout_form.kind_label(w.kind))]),
+      badge.badge(workout_form.kind_label(w.kind)),
     ]),
     case targets(w) {
       "" -> element.none()

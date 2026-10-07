@@ -10,6 +10,7 @@ import atlas/random
 import atlas/records
 import atlas/route
 import atlas/store
+import atlas/ui/badge
 import atlas/ui/button
 import atlas/ui/dialog
 import atlas/ui/error
@@ -480,11 +481,11 @@ fn plan_list(
 fn badges(p: Plan) -> Element(Msg) {
   html.span([class("badges")], [
     case p.visibility {
-      plan.Public -> html.span([class("badge")], [html.text("Public")])
+      plan.Public -> badge.badge("Public")
       plan.Private -> element.none()
     },
     case p.updated {
-      "" -> html.span([class("badge")], [html.text("Not synced yet")])
+      "" -> badge.badge("Not synced yet")
       _ -> element.none()
     },
   ])

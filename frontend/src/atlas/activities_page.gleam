@@ -10,6 +10,7 @@ import atlas/outbox
 import atlas/random
 import atlas/records
 import atlas/store
+import atlas/ui/badge
 import atlas/ui/button
 import atlas/ui/dialog
 import atlas/ui/error
@@ -345,9 +346,9 @@ fn row_view(row: Row, model: Model, context: Context) -> Element(Msg) {
           html.div([], [
             html.strong([], [html.text(title(row))]),
             html.span([class("badges")], [
-              html.span([class("badge")], [html.text(source_label(a.source))]),
+              badge.badge(source_label(a.source)),
               case row.updated {
-                "" -> html.span([class("badge")], [html.text("Not synced yet")])
+                "" -> badge.badge("Not synced yet")
                 _ -> element.none()
               },
             ]),
