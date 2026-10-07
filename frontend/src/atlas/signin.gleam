@@ -1,5 +1,7 @@
 //// The sign-in page. Messages are passed in so this module does not depend on the app's `Msg`.
 
+import atlas/ui/event as sl_event
+import atlas/ui/html as sl
 import gleam/option.{type Option, None, Some}
 import lustre/attribute.{class}
 import lustre/element.{type Element}
@@ -25,36 +27,43 @@ pub fn view(
     html.p([class("muted")], [html.text("Sign in to see your training.")]),
     html.form([event.on_submit(fn(_) { on_submit })], [
       html.label([attribute.for("email")], [html.text("E-mail")]),
-      html.input([
+      sl.input([
         attribute.id("email"),
         attribute.type_("email"),
         attribute.name("email"),
         attribute.autocomplete("username"),
         attribute.value(form.email),
         attribute.required(True),
-        event.on_input(on_email),
+        sl_event.on_input(on_email),
       ]),
       html.label([attribute.for("password")], [html.text("Password")]),
-      html.input([
+      sl.input([
         attribute.id("password"),
         attribute.type_("password"),
         attribute.name("password"),
         attribute.autocomplete("current-password"),
         attribute.value(form.password),
         attribute.required(True),
-        event.on_input(on_password),
+        sl_event.on_input(on_password),
       ]),
       case form.error {
         Some(message) ->
           html.p([class("error"), attribute.role("alert")], [html.text(message)])
         None -> element.none()
       },
-      html.button([attribute.type_("submit"), attribute.disabled(form.busy)], [
-        html.text(case form.busy {
-          True -> "Signing in…"
-          False -> "Sign in"
-        }),
-      ]),
+      sl.button(
+        [
+          attribute.type_("submit"),
+          attribute.attribute("variant", "primary"),
+          attribute.disabled(form.busy),
+        ],
+        [
+          html.text(case form.busy {
+            True -> "Signing in…"
+            False -> "Sign in"
+          }),
+        ],
+      ),
     ]),
   ])
 }

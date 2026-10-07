@@ -4,6 +4,7 @@
 
 import atlas/api.{type StravaStatus}
 import atlas/http
+import atlas/ui/html as sl
 import gleam/int
 import gleam/option.{type Option, None, Some}
 import gleam/uri
@@ -321,19 +322,19 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
         ]),
         html.div([class("actions")], case model.confirming {
           False -> [
-            html.button(
+            sl.button(
               [
                 attribute.type_("button"),
-                class("secondary"),
+                attribute.attribute("variant", "default"),
                 attribute.disabled(model.busy),
                 event.on_click(SyncClicked),
               ],
               [html.text("Import the last 30 days again")],
             ),
-            html.button(
+            sl.button(
               [
                 attribute.type_("button"),
-                class("secondary"),
+                attribute.attribute("variant", "default"),
                 attribute.disabled(model.busy),
                 event.on_click(DisconnectClicked),
               ],
@@ -346,18 +347,18 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
                 "Disconnect Strava and remove its activities from Atlas?",
               ),
             ]),
-            html.button(
+            sl.button(
               [
                 attribute.type_("button"),
-                class("danger"),
+                attribute.attribute("variant", "danger"),
                 event.on_click(DisconnectConfirmed),
               ],
               [html.text("Yes, disconnect")],
             ),
-            html.button(
+            sl.button(
               [
                 attribute.type_("button"),
-                class("secondary"),
+                attribute.attribute("variant", "default"),
                 event.on_click(CancelClicked),
               ],
               [html.text("Keep it connected")],

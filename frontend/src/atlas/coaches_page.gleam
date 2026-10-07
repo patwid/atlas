@@ -10,6 +10,7 @@ import atlas/random
 import atlas/records
 import atlas/route
 import atlas/store
+import atlas/ui/html as sl
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -201,10 +202,10 @@ fn given_view(g: Grant, model: Model) -> Element(Msg) {
     ]),
     html.div([class("actions")], case model.confirming == Some(g.id) {
       False -> [
-        html.button(
+        sl.button(
           [
             attribute.type_("button"),
-            class("secondary"),
+            attribute.attribute("variant", "default"),
             event.on_click(RemoveClicked(g.id)),
           ],
           [html.text("Remove access")],
@@ -221,18 +222,18 @@ fn given_view(g: Grant, model: Model) -> Element(Msg) {
             <> " from seeing your training?",
           ),
         ]),
-        html.button(
+        sl.button(
           [
             attribute.type_("button"),
-            class("danger"),
+            attribute.attribute("variant", "danger"),
             event.on_click(RemoveConfirmed(g.id)),
           ],
           [html.text("Yes, remove access")],
         ),
-        html.button(
+        sl.button(
           [
             attribute.type_("button"),
-            class("secondary"),
+            attribute.attribute("variant", "default"),
             event.on_click(CancelClicked),
           ],
           [html.text("Keep it")],

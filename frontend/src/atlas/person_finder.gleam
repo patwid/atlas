@@ -6,6 +6,8 @@
 import atlas/api
 import atlas/grants.{type Person}
 import atlas/http
+import atlas/ui/event as sl_event
+import atlas/ui/html as sl
 import gleam/option.{type Option, None, Some}
 import gleam/string
 import lustre/attribute.{class}
@@ -150,17 +152,18 @@ pub fn view(
         html.text(labels.field_label),
       ]),
       html.div([class("row")], [
-        html.input([
+        sl.input([
           attribute.id(labels.field_id),
           attribute.type_("email"),
           attribute.name("email"),
           attribute.autocomplete("off"),
           attribute.value(model.email),
-          event.on_input(fn(text) { wrap(EmailChanged(text)) }),
+          sl_event.on_input(fn(text) { wrap(EmailChanged(text)) }),
         ]),
-        html.button(
+        sl.button(
           [
             attribute.type_("submit"),
+            attribute.attribute("variant", "primary"),
             attribute.disabled(model.lookup == Looking),
           ],
           [
@@ -178,13 +181,18 @@ pub fn view(
           html.div([class("found"), attribute.role("status")], [
             html.p([], [html.text(labels.question(display(person)))]),
             html.div([class("actions")], [
-              html.button([attribute.type_("button"), event.on_click(confirm)], [
-                html.text(labels.confirm_label),
-              ]),
-              html.button(
+              sl.button(
                 [
                   attribute.type_("button"),
-                  class("secondary"),
+                  attribute.attribute("variant", "primary"),
+                  event.on_click(confirm),
+                ],
+                [html.text(labels.confirm_label)],
+              ),
+              sl.button(
+                [
+                  attribute.type_("button"),
+                  attribute.attribute("variant", "default"),
                   event.on_click(wrap(CancelClicked)),
                 ],
                 [html.text("Cancel")],

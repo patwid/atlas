@@ -10,6 +10,7 @@ import atlas/random
 import atlas/records
 import atlas/shares.{type Share}
 import atlas/store
+import atlas/ui/html as sl
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -213,10 +214,10 @@ fn share_view(share: Share, model: Model) -> Element(Msg) {
     html.strong([], [html.text(name)]),
     html.div([class("actions")], case model.confirming == Some(share.id) {
       False -> [
-        html.button(
+        sl.button(
           [
             attribute.type_("button"),
-            class("secondary"),
+            attribute.attribute("variant", "default"),
             event.on_click(StopClicked(share.id)),
           ],
           [html.text("Stop sharing")],
@@ -226,18 +227,18 @@ fn share_view(share: Share, model: Model) -> Element(Msg) {
         html.span([attribute.role("alert")], [
           html.text("Stop sharing this plan with " <> name <> "?"),
         ]),
-        html.button(
+        sl.button(
           [
             attribute.type_("button"),
-            class("danger"),
+            attribute.attribute("variant", "danger"),
             event.on_click(StopConfirmed(share.id)),
           ],
           [html.text("Yes, stop sharing")],
         ),
-        html.button(
+        sl.button(
           [
             attribute.type_("button"),
-            class("secondary"),
+            attribute.attribute("variant", "default"),
             event.on_click(CancelClicked),
           ],
           [html.text("Keep sharing")],

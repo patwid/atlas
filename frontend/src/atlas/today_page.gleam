@@ -13,6 +13,7 @@ import atlas/records
 import atlas/route
 import atlas/store
 import atlas/today.{type Inputs, type Item}
+import atlas/ui/html as sl
 import atlas/units
 import atlas/workout_form
 import gleam/dict
@@ -314,9 +315,10 @@ fn status_view(
           html.text("Looks done: " <> summary(inputs, activity_id)),
         ]),
         html.div([class("actions")], [
-          html.button(
+          sl.button(
             [
               attribute.type_("button"),
+              attribute.attribute("variant", "primary"),
               event.on_click(ConfirmClicked(key, activity_id)),
             ],
             [html.text("Yes, that is it")],
@@ -340,10 +342,10 @@ fn status_view(
               html.span([attribute.role("alert")], [
                 html.text("Unlink this activity?"),
               ]),
-              html.button(
+              sl.button(
                 [
                   attribute.type_("button"),
-                  class("danger"),
+                  attribute.attribute("variant", "danger"),
                   event.on_click(UnlinkConfirmed(key)),
                 ],
                 [html.text("Yes, unlink")],
@@ -356,8 +358,12 @@ fn status_view(
 }
 
 fn link_button(label: String, msg: Msg) -> Element(Msg) {
-  html.button(
-    [attribute.type_("button"), class("secondary"), event.on_click(msg)],
+  sl.button(
+    [
+      attribute.type_("button"),
+      attribute.attribute("variant", "default"),
+      event.on_click(msg),
+    ],
     [html.text(label)],
   )
 }
@@ -382,9 +388,10 @@ fn choosing_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
             list.map(candidates, fn(row) {
               html.li([], [
                 html.span([], [html.text(describe(row, inputs))]),
-                html.button(
+                sl.button(
                   [
                     attribute.type_("button"),
+                    attribute.attribute("variant", "primary"),
                     event.on_click(PickClicked(key, row.activity.id)),
                   ],
                   [html.text("This one")],
