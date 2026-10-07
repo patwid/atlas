@@ -29,7 +29,6 @@ import atlas/sync
 import atlas/syncing
 import atlas/today
 import atlas/today_page
-import atlas/ui/html as wa
 import atlas/workouts_page
 import atlas/zones_page
 import gleam/list
@@ -1139,10 +1138,10 @@ fn settings(session: Session, sync_state: syncing.State) -> Element(Msg) {
         name -> name <> " (" <> session.email <> ")"
       }),
     ]),
-    wa.button(
+    html.button(
       [
+        attribute.class("btn btn-secondary"),
         attribute.type_("button"),
-        attribute.attribute("variant", "neutral"),
         event.on_click(SignOutClicked),
       ],
       [html.text("Sign out")],
@@ -1175,10 +1174,10 @@ fn settings(session: Session, sync_state: syncing.State) -> Element(Msg) {
             [],
             list.map(problems, fn(message) { html.li([], [html.text(message)]) }),
           ),
-          wa.button(
+          html.button(
             [
+              attribute.class("btn btn-secondary"),
               attribute.type_("button"),
-              attribute.attribute("variant", "neutral"),
               event.on_click(ProblemsDismissed),
             ],
             [html.text("Dismiss")],

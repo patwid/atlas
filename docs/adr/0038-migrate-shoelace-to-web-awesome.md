@@ -1,6 +1,6 @@
 # 0038. Migrate from Shoelace to Web Awesome
 
-- Status: Accepted
+- Status: Superseded by [0040](0040-drop-web-awesome.md)
 - Date: 2026-10-07
 - Deciders: project owner
 

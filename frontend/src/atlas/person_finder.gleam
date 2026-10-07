@@ -6,8 +6,6 @@
 import atlas/api
 import atlas/grants.{type Person}
 import atlas/http
-import atlas/ui/event as wa_event
-import atlas/ui/html as wa
 import gleam/option.{type Option, None, Some}
 import gleam/string
 import lustre/attribute.{class}
@@ -152,18 +150,19 @@ pub fn view(
         html.text(labels.field_label),
       ]),
       html.div([class("row")], [
-        wa.input([
+        html.input([
+          class("form-control"),
           attribute.id(labels.field_id),
           attribute.type_("email"),
           attribute.name("email"),
           attribute.autocomplete("off"),
-          wa.value(model.email),
-          wa_event.on_input(fn(text) { wrap(EmailChanged(text)) }),
+          attribute.value(model.email),
+          event.on_input(fn(text) { wrap(EmailChanged(text)) }),
         ]),
-        wa.button(
+        html.button(
           [
+            class("btn btn-primary"),
             attribute.type_("submit"),
-            attribute.attribute("variant", "brand"),
             attribute.disabled(model.lookup == Looking),
           ],
           [
@@ -181,18 +180,18 @@ pub fn view(
           html.div([class("found"), attribute.role("status")], [
             html.p([], [html.text(labels.question(display(person)))]),
             html.div([class("actions")], [
-              wa.button(
+              html.button(
                 [
+                  class("btn btn-primary"),
                   attribute.type_("button"),
-                  attribute.attribute("variant", "brand"),
                   event.on_click(confirm),
                 ],
                 [html.text(labels.confirm_label)],
               ),
-              wa.button(
+              html.button(
                 [
+                  class("btn btn-secondary"),
                   attribute.type_("button"),
-                  attribute.attribute("variant", "neutral"),
                   event.on_click(wrap(CancelClicked)),
                 ],
                 [html.text("Cancel")],

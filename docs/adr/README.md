@@ -40,4 +40,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0034 | [Heart-rate zones as an explicit setting](0034-heart-rate-zone-settings.md) | Accepted |
 | 0035 | [Lactate zones as an explicit setting](0035-lactate-zone-settings.md) | Accepted |
 | 0036 | [Pace zones as an explicit setting](0036-pace-zone-settings.md) | Accepted |
-| 0037 | [Adopt Shoelace web components for UI controls](0037-adopt-shoelace-web-components.md) | Accepted |
+| 0037 | [Adopt Shoelace web components for UI controls](0037-adopt-shoelace-web-components.md) | Superseded by 0038 |
+| 0038 | [Migrate from Shoelace to Web Awesome](0038-migrate-shoelace-to-web-awesome.md) | Superseded by 0040 |
+| 0039 | [Adopt Web Awesome's dialog for confirmation prompts](0039-adopt-web-awesome-dialog.md) | Superseded by 0040 |
+| 0040 | [Drop Web Awesome; roll our own styling with Bootstrap's palette](0040-drop-web-awesome.md) | Accepted |

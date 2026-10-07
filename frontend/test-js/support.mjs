@@ -20,6 +20,15 @@ export const appRunner = (getHarness, fetched = () => {}) => (path, session) => 
   const html = readFileSync(join(pub, "index.html"), "utf8").replace(/<script[^>]*src="\/atlas.js"[^>]*><\/script>/, "")
   const dom = new JSDOM(html, { url: h.url + path, runScripts: "outside-only", pretendToBeVisual: true })
   const w = dom.window
+  // jsdom doesn't implement HTMLDialogElement's showModal()/close() (jsdom/jsdom#3294); the app's
+  // confirmation dialogs call them, so polyfill the minimal behavior the app relies on: showModal
+  // opens it, close() closes it and fires the native "close" event the app listens for.
+  w.HTMLDialogElement.prototype.showModal = function () { this.setAttribute("open", "") }
+  w.HTMLDialogElement.prototype.close = function (returnValue) {
+    if (returnValue !== undefined) this.returnValue = returnValue
+    this.removeAttribute("open")
+    this.dispatchEvent(new w.Event("close"))
+  }
   // jsdom's AbortSignal is not Node's, so the signal is left out of the shim.
   // A closed tab does nothing more. jsdom's own close() stops timers but not requests already under way, whose
   // answers would still run the app's code, for example a sync run that finishes and removes records from the

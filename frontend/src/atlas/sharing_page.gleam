@@ -10,8 +10,7 @@ import atlas/random
 import atlas/records
 import atlas/shares.{type Share}
 import atlas/store
-import atlas/ui/event as wa_event
-import atlas/ui/html as wa
+import atlas/ui/dialog
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -123,7 +122,7 @@ pub fn update(
 
     StopClicked(id) -> #(
       Model(..model, confirming: Some(id)),
-      effect.none(),
+      dialog.show(confirm_dialog_id(id)),
       [],
     )
 
@@ -186,7 +185,7 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
       True, _ ->
         html.ul(
           [class("cards")],
-          list.map(current, fn(share) { share_view(share, model) }),
+          list.map(current, share_view),
         )
     },
     person_finder.view(
@@ -206,7 +205,11 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
   ])
 }
 
-fn share_view(share: Share, model: Model) -> Element(Msg) {
+fn confirm_dialog_id(id: String) -> String {
+  "confirm-stop-share-" <> id
+}
+
+fn share_view(share: Share) -> Element(Msg) {
   let name = case share.user_name {
     "" -> "Unnamed person"
     named -> named
@@ -214,39 +217,31 @@ fn share_view(share: Share, model: Model) -> Element(Msg) {
   html.li([], [
     html.strong([], [html.text(name)]),
     html.div([class("actions")], [
-      wa.button(
+      html.button(
         [
+          class("btn btn-secondary"),
           attribute.type_("button"),
-          attribute.attribute("variant", "neutral"),
           event.on_click(StopClicked(share.id)),
         ],
         [html.text("Stop sharing")],
       ),
-      wa.dialog(
+      dialog.view(
+        confirm_dialog_id(share.id),
+        "Stop sharing this plan with " <> name <> "?",
+        CancelClicked,
         [
-          attribute.attribute(
-            "label",
-            "Stop sharing this plan with " <> name <> "?",
-          ),
-          attribute.attribute("light-dismiss", ""),
-          attribute.open(model.confirming == Some(share.id)),
-          wa_event.on_hide(CancelClicked),
-        ],
-        [
-          wa.button(
+          html.button(
             [
-              attribute.type_("button"),
-              attribute.attribute("slot", "footer"),
-              attribute.attribute("variant", "danger"),
+              class("btn btn-danger"),
+              attribute.type_("submit"),
               event.on_click(StopConfirmed(share.id)),
             ],
             [html.text("Yes, stop sharing")],
           ),
-          wa.button(
+          html.button(
             [
-              attribute.type_("button"),
-              attribute.attribute("slot", "footer"),
-              attribute.attribute("variant", "neutral"),
+              class("btn btn-secondary"),
+              attribute.type_("submit"),
               event.on_click(CancelClicked),
             ],
             [html.text("Keep sharing")],

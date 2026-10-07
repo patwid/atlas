@@ -4,8 +4,7 @@
 
 import atlas/api.{type StravaStatus}
 import atlas/http
-import atlas/ui/event as wa_event
-import atlas/ui/html as wa
+import atlas/ui/dialog
 import gleam/int
 import gleam/option.{type Option, None, Some}
 import gleam/uri
@@ -14,6 +13,8 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
+
+const confirm_dialog_id = "confirm-disconnect-strava"
 
 pub type Status {
   /// Not asked yet.
@@ -94,7 +95,11 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg), List(Action)) {
         ])
       }
 
-    DisconnectClicked -> #(Model(..model, confirming: True), effect.none(), [])
+    DisconnectClicked -> #(
+      Model(..model, confirming: True),
+      dialog.show(confirm_dialog_id),
+      [],
+    )
 
     CancelClicked -> #(Model(..model, confirming: False), effect.none(), [])
 
@@ -322,49 +327,41 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
           html.text("Connected to Strava. New activities arrive by themselves."),
         ]),
         html.div([class("actions")], [
-          wa.button(
+          html.button(
             [
+              class("btn btn-secondary"),
               attribute.type_("button"),
-              attribute.attribute("variant", "neutral"),
               attribute.disabled(model.busy),
               event.on_click(SyncClicked),
             ],
             [html.text("Import the last 30 days again")],
           ),
-          wa.button(
+          html.button(
             [
+              class("btn btn-secondary"),
               attribute.type_("button"),
-              attribute.attribute("variant", "neutral"),
               attribute.disabled(model.busy),
               event.on_click(DisconnectClicked),
             ],
             [html.text("Disconnect")],
           ),
-          wa.dialog(
+          dialog.view(
+            confirm_dialog_id,
+            "Disconnect Strava and remove its activities from Atlas?",
+            CancelClicked,
             [
-              attribute.attribute(
-                "label",
-                "Disconnect Strava and remove its activities from Atlas?",
-              ),
-              attribute.attribute("light-dismiss", ""),
-              attribute.open(model.confirming),
-              wa_event.on_hide(CancelClicked),
-            ],
-            [
-              wa.button(
+              html.button(
                 [
-                  attribute.type_("button"),
-                  attribute.attribute("slot", "footer"),
-                  attribute.attribute("variant", "danger"),
+                  class("btn btn-danger"),
+                  attribute.type_("submit"),
                   event.on_click(DisconnectConfirmed),
                 ],
                 [html.text("Yes, disconnect")],
               ),
-              wa.button(
+              html.button(
                 [
-                  attribute.type_("button"),
-                  attribute.attribute("slot", "footer"),
-                  attribute.attribute("variant", "neutral"),
+                  class("btn btn-secondary"),
+                  attribute.type_("submit"),
                   event.on_click(CancelClicked),
                 ],
                 [html.text("Keep it connected")],

@@ -10,8 +10,7 @@ import atlas/outbox
 import atlas/random
 import atlas/records
 import atlas/store
-import atlas/ui/event as wa_event
-import atlas/ui/html as wa
+import atlas/ui/dialog
 import atlas/units
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -246,7 +245,7 @@ pub fn update(
 
     DeleteClicked(id) -> #(
       Model(..model, confirming: Some(id)),
-      effect.none(),
+      dialog.show(confirm_dialog_id(id)),
       [],
     )
 
@@ -302,10 +301,10 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
       html.h2([], [html.text("Your activities")]),
       case model.mode {
         Browsing ->
-          wa.button(
+          html.button(
             [
+              class("btn btn-primary"),
               attribute.type_("button"),
-              attribute.attribute("variant", "brand"),
               event.on_click(AddClicked),
             ],
             [html.text("Add activity")],
@@ -364,7 +363,7 @@ fn row_view(row: Row, model: Model, context: Context) -> Element(Msg) {
           view_on_strava(row),
           case editable(row, context.user_id) {
             False -> element.none()
-            True -> actions(row, model)
+            True -> actions(row)
           },
         ])
     },
@@ -458,47 +457,46 @@ fn pace(a: activity.Activity) -> Option(String) {
   }
 }
 
-fn actions(row: Row, model: Model) -> Element(Msg) {
+fn confirm_dialog_id(id: String) -> String {
+  "confirm-delete-activity-" <> id
+}
+
+fn actions(row: Row) -> Element(Msg) {
   let id = row.activity.id
   html.div([class("actions")], [
-    wa.button(
+    html.button(
       [
+        class("btn btn-secondary"),
         attribute.type_("button"),
-        attribute.attribute("variant", "neutral"),
         event.on_click(EditClicked(id)),
       ],
       [html.text("Edit")],
     ),
-    wa.button(
+    html.button(
       [
+        class("btn btn-secondary"),
         attribute.type_("button"),
-        attribute.attribute("variant", "neutral"),
         event.on_click(DeleteClicked(id)),
       ],
       [html.text("Delete")],
     ),
-    wa.dialog(
+    dialog.view(
+      confirm_dialog_id(id),
+      "Delete this activity?",
+      CancelClicked,
       [
-        attribute.attribute("label", "Delete this activity?"),
-        attribute.attribute("light-dismiss", ""),
-        attribute.open(model.confirming == Some(id)),
-        wa_event.on_hide(CancelClicked),
-      ],
-      [
-        wa.button(
+        html.button(
           [
-            attribute.type_("button"),
-            attribute.attribute("slot", "footer"),
-            attribute.attribute("variant", "danger"),
+            class("btn btn-danger"),
+            attribute.type_("submit"),
             event.on_click(DeleteConfirmed(id)),
           ],
           [html.text("Yes, delete it")],
         ),
-        wa.button(
+        html.button(
           [
-            attribute.type_("button"),
-            attribute.attribute("slot", "footer"),
-            attribute.attribute("variant", "neutral"),
+            class("btn btn-secondary"),
+            attribute.type_("submit"),
             event.on_click(CancelClicked),
           ],
           [html.text("Keep it")],
@@ -513,77 +511,83 @@ fn form_view(form: activity_form.Form, submit_label: String) -> Element(Msg) {
     html.div([class("row")], [
       html.div([], [
         html.label([attribute.for("activity-date")], [html.text("Day")]),
-        wa.input([
+        html.input([
+          class("form-control"),
           attribute.id("activity-date"),
           attribute.type_("date"),
           attribute.name("date"),
-          wa.value(form.date),
+          attribute.value(form.date),
           attribute.required(True),
-          wa_event.on_input(DateChanged),
+          event.on_input(DateChanged),
         ]),
       ]),
       html.div([], [
         html.label([attribute.for("activity-time")], [html.text("Start time")]),
-        wa.input([
+        html.input([
+          class("form-control"),
           attribute.id("activity-time"),
           attribute.type_("time"),
           attribute.name("time"),
-          wa.value(form.time),
+          attribute.value(form.time),
           attribute.required(True),
-          wa_event.on_input(TimeChanged),
+          event.on_input(TimeChanged),
         ]),
       ]),
     ]),
     html.label([attribute.for("activity-sport")], [html.text("Sport")]),
-    wa.select(
+    html.select(
       [
+        class("form-select"),
         attribute.id("activity-sport"),
         attribute.name("sport"),
         attribute.value(activity.sport_to_string(form.sport)),
-        wa_event.on_change(SportChanged),
+        event.on_change(SportChanged),
       ],
       list.map(sports, fn(sport) {
-        wa.option(
+        html.option(
           [attribute.value(activity.sport_to_string(sport))],
           activity_form.sport_label(sport),
         )
       }),
     ),
     html.label([attribute.for("activity-name")], [html.text("Name (optional)")]),
-    wa.input([
+    html.input([
+      class("form-control"),
       attribute.id("activity-name"),
       attribute.type_("text"),
       attribute.name("name"),
-      wa.value(form.name),
+      attribute.value(form.name),
       attribute.attribute("maxlength", "200"),
-      wa_event.on_input(NameChanged),
+      event.on_input(NameChanged),
     ]),
     html.div([class("row")], [
       html.div([], [
         html.label([attribute.for("activity-distance")], [
           html.text("Distance (km)"),
         ]),
-        wa.input([
+        html.input([
+          class("form-control"),
           attribute.id("activity-distance"),
           attribute.type_("text"),
           attribute.attribute("inputmode", "decimal"),
           attribute.name("distance"),
-          wa.value(form.distance_km),
+          attribute.value(form.distance_km),
           attribute.placeholder("8.5"),
-          wa_event.on_input(DistanceChanged),
+          event.on_input(DistanceChanged),
         ]),
       ]),
       html.div([], [
         html.label([attribute.for("activity-duration")], [
           html.text("Time (minutes or h:mm)"),
         ]),
-        wa.input([
+        html.input([
+          class("form-control"),
           attribute.id("activity-duration"),
           attribute.type_("text"),
           attribute.name("duration"),
-          wa.value(form.duration),
+          attribute.value(form.duration),
           attribute.placeholder("45 or 1:30"),
-          wa_event.on_input(DurationChanged),
+          event.on_input(DurationChanged),
         ]),
       ]),
     ]),
@@ -592,26 +596,28 @@ fn form_view(form: activity_form.Form, submit_label: String) -> Element(Msg) {
         html.label([attribute.for("activity-elevation")], [
           html.text("Climb (m, optional)"),
         ]),
-        wa.input([
+        html.input([
+          class("form-control"),
           attribute.id("activity-elevation"),
           attribute.type_("text"),
           attribute.attribute("inputmode", "numeric"),
           attribute.name("elevation"),
-          wa.value(form.elevation_m),
-          wa_event.on_input(ElevationChanged),
+          attribute.value(form.elevation_m),
+          event.on_input(ElevationChanged),
         ]),
       ]),
       html.div([], [
         html.label([attribute.for("activity-hr")], [
           html.text("Average heart rate (optional)"),
         ]),
-        wa.input([
+        html.input([
+          class("form-control"),
           attribute.id("activity-hr"),
           attribute.type_("text"),
           attribute.attribute("inputmode", "numeric"),
           attribute.name("heart_rate"),
-          wa.value(form.avg_hr),
-          wa_event.on_input(HeartRateChanged),
+          attribute.value(form.avg_hr),
+          event.on_input(HeartRateChanged),
         ]),
       ]),
     ]),
@@ -621,14 +627,14 @@ fn form_view(form: activity_form.Form, submit_label: String) -> Element(Msg) {
       None -> element.none()
     },
     html.div([class("actions")], [
-      wa.button(
-        [attribute.type_("submit"), attribute.attribute("variant", "brand")],
+      html.button(
+        [class("btn btn-primary"), attribute.type_("submit")],
         [html.text(submit_label)],
       ),
-      wa.button(
+      html.button(
         [
+          class("btn btn-secondary"),
           attribute.type_("button"),
-          attribute.attribute("variant", "neutral"),
           event.on_click(CancelClicked),
         ],
         [html.text("Cancel")],

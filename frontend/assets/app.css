@@ -7,6 +7,18 @@
   --border: #d9e2df;
   --warn-bg: #fef3c7;
   --warn-text: #78350f;
+  /* Bootstrap's palette, for buttons and form controls (no Bootstrap file involved); same
+     shades in light and dark mode, since this mid-tone blue/gray/red reads fine on both of
+     Atlas's surface colors. */
+  --bs-primary: #0d6efd;
+  --bs-primary-hover: #0b5ed7;
+  --bs-primary-active: #0a58ca;
+  --bs-secondary: #6c757d;
+  --bs-secondary-hover: #5c636a;
+  --bs-secondary-active: #565e64;
+  --bs-danger: #dc3545;
+  --bs-danger-hover: #bb2d3b;
+  --bs-danger-active: #b02a37;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
@@ -23,11 +35,44 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, sans-serif; }
-/* Every form field uses Atlas's own <label>, not Web Awesome's `label` attribute/slot, so the
-   control's internal label is always empty text — but it still renders as a block-level line
-   with a `::after { content: "*" }` on required fields, since Web Awesome doesn't condition that
-   on the label actually having content. Hide it everywhere it could show up (ADR 0038). */
-wa-input::part(label), wa-textarea::part(label), wa-select::part(label) { display: none; }
+
+/* Buttons and form controls (ADR 0040): hand-written, Bootstrap's class names and colors, no
+   Bootstrap file involved. */
+.btn {
+  display: inline-block; font: inherit; font-weight: 500; text-align: center; vertical-align: middle;
+  cursor: pointer; user-select: none; border: 1px solid transparent; border-radius: 0.375rem;
+  padding: 0.375rem 0.75rem; line-height: 1.5; transition: background-color .15s, border-color .15s;
+}
+.btn:disabled { opacity: 0.65; cursor: not-allowed; }
+.btn-primary { background: var(--bs-primary); border-color: var(--bs-primary); color: #fff; }
+.btn-primary:not(:disabled):hover { background: var(--bs-primary-hover); border-color: var(--bs-primary-hover); }
+.btn-primary:not(:disabled):active { background: var(--bs-primary-active); border-color: var(--bs-primary-active); }
+.btn-secondary { background: var(--bs-secondary); border-color: var(--bs-secondary); color: #fff; }
+.btn-secondary:not(:disabled):hover { background: var(--bs-secondary-hover); border-color: var(--bs-secondary-hover); }
+.btn-secondary:not(:disabled):active { background: var(--bs-secondary-active); border-color: var(--bs-secondary-active); }
+.btn-danger { background: var(--bs-danger); border-color: var(--bs-danger); color: #fff; }
+.btn-danger:not(:disabled):hover { background: var(--bs-danger-hover); border-color: var(--bs-danger-hover); }
+.btn-danger:not(:disabled):active { background: var(--bs-danger-active); border-color: var(--bs-danger-active); }
+.btn-link { background: none; border-color: transparent; color: var(--bs-primary); padding: 0.375rem 0; text-decoration: underline; }
+.btn-link:not(:disabled):hover { color: var(--bs-primary-hover); }
+.btn:focus-visible { outline: 0; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.35); }
+
+.form-control, .form-select {
+  display: block; width: 100%; font: inherit; color: var(--text); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.375rem 0.75rem; line-height: 1.5;
+}
+.form-control:focus, .form-select:focus {
+  outline: 0; border-color: var(--bs-primary); box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+.form-control:disabled, .form-select:disabled { background: var(--bg); color: var(--muted); cursor: not-allowed; }
+
+dialog {
+  border: none; border-radius: 0.5rem; padding: 1rem 1.25rem 1.25rem; margin: auto;
+  background: var(--surface); color: var(--text); max-width: 26rem; width: calc(100% - 2rem);
+}
+dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
+dialog p { margin-top: 0; }
+
 .shell { min-height: 100dvh; display: flex; flex-direction: column; }
 .bar {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
@@ -44,8 +89,8 @@ main { flex: 1; padding: 1rem; max-width: 48rem; width: 100%; margin: 0 auto; }
   background: var(--surface); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom);
 }
 .tabs a { padding: 0.875rem 0.25rem; text-align: center; color: var(--muted); text-decoration: none; font-size: 0.875rem; }
-.tabs a[aria-current="page"] { color: var(--wa-color-brand-fill-loud); font-weight: 600; box-shadow: inset 0 2px 0 var(--wa-color-brand-fill-loud); }
-.tabs a:focus-visible { outline: 2px solid var(--wa-color-brand-fill-loud); outline-offset: -2px; }
+.tabs a[aria-current="page"] { color: var(--accent); font-weight: 600; box-shadow: inset 0 2px 0 var(--accent); }
+.tabs a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .signin { max-width: 22rem; margin: 0 auto; padding: 4rem 1rem; }
 .signin h1 { margin: 0 0 0.25rem; }
 .muted { color: var(--muted); margin-top: 0; }

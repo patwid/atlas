@@ -11,8 +11,7 @@ import atlas/plan.{type Workout}
 import atlas/random
 import atlas/records
 import atlas/store
-import atlas/ui/event as wa_event
-import atlas/ui/html as wa
+import atlas/ui/dialog
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -234,7 +233,7 @@ pub fn update(
 
     RemoveClicked(id) -> #(
       Model(..model, confirming: Some(id)),
-      effect.none(),
+      dialog.show(confirm_dialog_id(id)),
       [],
     )
 
@@ -290,10 +289,10 @@ pub fn view(
       html.h2([], [html.text("Schedule")]),
       case model.mode {
         Browsing if context.can_start ->
-          wa.button(
+          html.button(
             [
+              class("btn btn-primary"),
               attribute.type_("button"),
-              attribute.attribute("variant", "brand"),
               event.on_click(StartClicked),
             ],
             [
@@ -374,54 +373,53 @@ fn row_view(
           },
           case may_change(row, context.user_id) {
             False -> element.none()
-            True -> actions(row, model)
+            True -> actions(row)
           },
         ])
     },
   ])
 }
 
-fn actions(row: Row, model: Model) -> Element(Msg) {
+fn confirm_dialog_id(id: String) -> String {
+  "confirm-remove-assignment-" <> id
+}
+
+fn actions(row: Row) -> Element(Msg) {
   let id = row.assignment.id
   html.div([class("actions")], [
-    wa.button(
+    html.button(
       [
+        class("btn btn-secondary"),
         attribute.type_("button"),
-        attribute.attribute("variant", "neutral"),
         event.on_click(ChangeDateClicked(id)),
       ],
       [html.text("Change date")],
     ),
-    wa.button(
+    html.button(
       [
+        class("btn btn-secondary"),
         attribute.type_("button"),
-        attribute.attribute("variant", "neutral"),
         event.on_click(RemoveClicked(id)),
       ],
       [html.text("Remove")],
     ),
-    wa.dialog(
+    dialog.view(
+      confirm_dialog_id(id),
+      "Remove this from the schedule?",
+      CancelClicked,
       [
-        attribute.attribute("label", "Remove this from the schedule?"),
-        attribute.attribute("light-dismiss", ""),
-        attribute.open(model.confirming == Some(id)),
-        wa_event.on_hide(CancelClicked),
-      ],
-      [
-        wa.button(
+        html.button(
           [
-            attribute.type_("button"),
-            attribute.attribute("slot", "footer"),
-            attribute.attribute("variant", "danger"),
+            class("btn btn-danger"),
+            attribute.type_("submit"),
             event.on_click(RemoveConfirmed(id)),
           ],
           [html.text("Yes, remove it")],
         ),
-        wa.button(
+        html.button(
           [
-            attribute.type_("button"),
-            attribute.attribute("slot", "footer"),
-            attribute.attribute("variant", "neutral"),
+            class("btn btn-secondary"),
+            attribute.type_("submit"),
             event.on_click(CancelClicked),
           ],
           [html.text("Keep it")],
@@ -456,17 +454,18 @@ fn form_view(
       True ->
         html.div([], [
           html.label([attribute.for("assign-athlete")], [html.text("For")]),
-          wa.select(
+          html.select(
             [
+              class("form-select"),
               attribute.id("assign-athlete"),
               attribute.name("athlete"),
               attribute.value(form.athlete_id),
-              wa_event.on_change(AthleteChanged),
+              event.on_change(AthleteChanged),
             ],
             [
-              wa.option([attribute.value(context.user_id)], "Myself"),
+              html.option([attribute.value(context.user_id)], "Myself"),
               ..list.map(context.athletes, fn(person) {
-                wa.option([attribute.value(person.id)], person.name)
+                html.option([attribute.value(person.id)], person.name)
               })
             ],
           ),
@@ -475,13 +474,14 @@ fn form_view(
     html.label([attribute.for("assign-start")], [
       html.text("First day of the plan"),
     ]),
-    wa.input([
+    html.input([
+      class("form-control"),
       attribute.id("assign-start"),
       attribute.type_("date"),
       attribute.name("start_date"),
-      wa.value(form.start_date),
+      attribute.value(form.start_date),
       attribute.required(True),
-      wa_event.on_input(DateChanged),
+      event.on_input(DateChanged),
     ]),
     case form.error {
       Some(message) ->
@@ -489,14 +489,14 @@ fn form_view(
       None -> element.none()
     },
     html.div([class("actions")], [
-      wa.button(
-        [attribute.type_("submit"), attribute.attribute("variant", "brand")],
+      html.button(
+        [class("btn btn-primary"), attribute.type_("submit")],
         [html.text(submit_label)],
       ),
-      wa.button(
+      html.button(
         [
+          class("btn btn-secondary"),
           attribute.type_("button"),
-          attribute.attribute("variant", "neutral"),
           event.on_click(CancelClicked),
         ],
         [html.text("Cancel")],

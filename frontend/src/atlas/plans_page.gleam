@@ -10,8 +10,7 @@ import atlas/random
 import atlas/records
 import atlas/route
 import atlas/store
-import atlas/ui/event as wa_event
-import atlas/ui/html as wa
+import atlas/ui/dialog
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -23,6 +22,8 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
+
+const confirm_delete_dialog_id = "confirm-delete-plan"
 
 pub type Mode {
   Browsing
@@ -211,7 +212,7 @@ pub fn update(
 
     DeleteClicked -> #(
       Model(..model, confirming_delete: True),
-      effect.none(),
+      dialog.show(confirm_delete_dialog_id),
       [],
     )
 
@@ -293,10 +294,10 @@ pub fn view_list_with(
       case model.mode {
         Creating -> element.none()
         _ ->
-          wa.button(
+          html.button(
             [
+              class("btn btn-primary"),
               attribute.type_("button"),
-              attribute.attribute("variant", "brand"),
               event.on_click(NewClicked),
             ],
             [html.text("New plan")],
@@ -385,7 +386,7 @@ pub fn view_detail_with(
                         "This plan was shared with you. Only its owner can change it. Copy it to make a version of your own."
                     }),
                   ])
-                True -> owner_actions(found, model.confirming_delete)
+                True -> owner_actions(found)
               },
               copy_view(model.copy, found.id),
             ])
@@ -404,10 +405,10 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
           html.text("Open your copy"),
         ]),
         html.text(" "),
-        wa.button(
+        html.button(
           [
+            class("btn btn-link"),
             attribute.type_("button"),
-            attribute.attribute("appearance", "plain"),
             event.on_click(CopyAgainClicked),
           ],
           [html.text("Copy again")],
@@ -416,10 +417,10 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
     CopyProblem(source, message) if source == plan_id ->
       html.div([], [
         html.p([class("error"), attribute.role("alert")], [html.text(message)]),
-        wa.button(
+        html.button(
           [
+            class("btn btn-secondary"),
             attribute.type_("button"),
-            attribute.attribute("variant", "neutral"),
             event.on_click(CopyAgainClicked),
           ],
           [html.text("Try again")],
@@ -429,10 +430,10 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
       html.p([class("muted")], [html.text("Copying…")])
     _ ->
       html.div([class("actions")], [
-        wa.button(
+        html.button(
           [
+            class("btn btn-secondary"),
             attribute.type_("button"),
-            attribute.attribute("variant", "neutral"),
             event.on_click(CopyClicked(plan_id)),
           ],
           [html.text("Copy to my plans")],
@@ -441,46 +442,41 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
   }
 }
 
-fn owner_actions(found: Plan, confirming: Bool) -> Element(Msg) {
+fn owner_actions(found: Plan) -> Element(Msg) {
   html.div([class("actions")], [
-    wa.button(
+    html.button(
       [
+        class("btn btn-primary"),
         attribute.type_("button"),
-        attribute.attribute("variant", "brand"),
         event.on_click(EditClicked(found.id)),
       ],
       [html.text("Edit")],
     ),
-    wa.button(
+    html.button(
       [
+        class("btn btn-danger"),
         attribute.type_("button"),
-        attribute.attribute("variant", "danger"),
         event.on_click(DeleteClicked),
       ],
       [html.text("Delete")],
     ),
-    wa.dialog(
+    dialog.view(
+      confirm_delete_dialog_id,
+      "Delete this plan?",
+      CancelClicked,
       [
-        attribute.attribute("label", "Delete this plan?"),
-        attribute.attribute("light-dismiss", ""),
-        attribute.open(confirming),
-        wa_event.on_hide(CancelClicked),
-      ],
-      [
-        wa.button(
+        html.button(
           [
-            attribute.type_("button"),
-            attribute.attribute("slot", "footer"),
-            attribute.attribute("variant", "danger"),
+            class("btn btn-danger"),
+            attribute.type_("submit"),
             event.on_click(DeleteConfirmed(found.id)),
           ],
           [html.text("Yes, delete it")],
         ),
-        wa.button(
+        html.button(
           [
-            attribute.type_("button"),
-            attribute.attribute("slot", "footer"),
-            attribute.attribute("variant", "brand"),
+            class("btn btn-primary"),
+            attribute.type_("submit"),
             event.on_click(CancelClicked),
           ],
           [html.text("Keep it")],
@@ -544,39 +540,42 @@ pub fn snippet(text: String) -> String {
 fn form_view(form: plan_form.Form, submit_label: String) -> Element(Msg) {
   html.form([class("plan-form"), event.on_submit(fn(_) { Submitted })], [
     html.label([attribute.for("plan-title")], [html.text("Title")]),
-    wa.input([
+    html.input([
+      class("form-control"),
       attribute.id("plan-title"),
       attribute.type_("text"),
       attribute.name("title"),
-      wa.value(form.title),
+      attribute.value(form.title),
       attribute.attribute("maxlength", "200"),
       attribute.required(True),
-      // No attribute.autofocus: Lustre focuses a newly-inserted element before
-      // Web Awesome's first render completes, and wa-input.focus() then throws.
-      wa_event.on_input(TitleChanged),
+      event.on_input(TitleChanged),
     ]),
     html.label([attribute.for("plan-description")], [html.text("Description")]),
-    wa.textarea([
-      attribute.id("plan-description"),
-      attribute.name("description"),
-      attribute.rows(4),
-      wa.value(form.description),
-      wa_event.on_input(DescriptionChanged),
-    ]),
-    html.label([attribute.for("plan-visibility")], [html.text("Who can see it")]),
-    wa.select(
+    html.textarea(
       [
+        class("form-control"),
+        attribute.id("plan-description"),
+        attribute.name("description"),
+        attribute.rows(4),
+        event.on_input(DescriptionChanged),
+      ],
+      form.description,
+    ),
+    html.label([attribute.for("plan-visibility")], [html.text("Who can see it")]),
+    html.select(
+      [
+        class("form-select"),
         attribute.id("plan-visibility"),
         attribute.name("visibility"),
         attribute.value(plan.visibility_to_string(form.visibility)),
-        wa_event.on_change(VisibilityChanged),
+        event.on_change(VisibilityChanged),
       ],
       [
-        wa.option(
+        html.option(
           [attribute.value("private")],
           "Only me (and people I share it with)",
         ),
-        wa.option([attribute.value("public")], "Everyone who is signed in"),
+        html.option([attribute.value("public")], "Everyone who is signed in"),
       ],
     ),
     case form.error {
@@ -585,14 +584,14 @@ fn form_view(form: plan_form.Form, submit_label: String) -> Element(Msg) {
       None -> element.none()
     },
     html.div([class("actions")], [
-      wa.button(
-        [attribute.type_("submit"), attribute.attribute("variant", "brand")],
+      html.button(
+        [class("btn btn-primary"), attribute.type_("submit")],
         [html.text(submit_label)],
       ),
-      wa.button(
+      html.button(
         [
+          class("btn btn-secondary"),
           attribute.type_("button"),
-          attribute.attribute("variant", "neutral"),
           event.on_click(CancelClicked),
         ],
         [html.text("Cancel")],

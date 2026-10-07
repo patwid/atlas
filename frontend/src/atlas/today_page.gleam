@@ -13,8 +13,7 @@ import atlas/records
 import atlas/route
 import atlas/store
 import atlas/today.{type Inputs, type Item}
-import atlas/ui/event as wa_event
-import atlas/ui/html as wa
+import atlas/ui/dialog
 import atlas/units
 import atlas/workout_form
 import gleam/dict
@@ -106,7 +105,7 @@ pub fn update(
 
     UnlinkClicked(key) -> #(
       Model(..model, confirming: Some(key), choosing: None),
-      effect.none(),
+      dialog.show(confirm_dialog_id(key)),
       [],
     )
 
@@ -284,7 +283,7 @@ fn item_view(item: Item, model: Model, inputs: Inputs) -> Element(Msg) {
       "" -> element.none()
       text -> html.p([class("muted")], [html.text("Planned: " <> text)])
     },
-    status_view(item, key, model, inputs),
+    status_view(item, key, inputs),
     case model.choosing == Some(key) {
       True -> choosing_view(item, key, inputs)
       False -> element.none()
@@ -292,12 +291,11 @@ fn item_view(item: Item, model: Model, inputs: Inputs) -> Element(Msg) {
   ])
 }
 
-fn status_view(
-  item: Item,
-  key: Key,
-  model: Model,
-  inputs: Inputs,
-) -> Element(Msg) {
+fn confirm_dialog_id(key: Key) -> String {
+  "confirm-unlink-" <> key.assignment_id <> "-" <> key.workout_id
+}
+
+fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
   case item.status {
     today.RestDay -> html.p([class("status")], [html.text("Rest day")])
     today.Planned ->
@@ -316,10 +314,10 @@ fn status_view(
           html.text("Looks done: " <> summary(inputs, activity_id)),
         ]),
         html.div([class("actions")], [
-          wa.button(
+          html.button(
             [
+              class("btn btn-primary"),
               attribute.type_("button"),
-              attribute.attribute("variant", "brand"),
               event.on_click(ConfirmClicked(key, activity_id)),
             ],
             [html.text("Yes, that is it")],
@@ -335,28 +333,23 @@ fn status_view(
         html.div([class("actions")], [
           link_button("Change", ChooseClicked(key)),
           link_button("Unlink", UnlinkClicked(key)),
-          wa.dialog(
+          dialog.view(
+            confirm_dialog_id(key),
+            "Unlink this activity?",
+            CancelClicked,
             [
-              attribute.attribute("label", "Unlink this activity?"),
-              attribute.attribute("light-dismiss", ""),
-              attribute.open(model.confirming == Some(key)),
-              wa_event.on_hide(CancelClicked),
-            ],
-            [
-              wa.button(
+              html.button(
                 [
-                  attribute.type_("button"),
-                  attribute.attribute("slot", "footer"),
-                  attribute.attribute("variant", "danger"),
+                  class("btn btn-danger"),
+                  attribute.type_("submit"),
                   event.on_click(UnlinkConfirmed(key)),
                 ],
                 [html.text("Yes, unlink")],
               ),
-              wa.button(
+              html.button(
                 [
-                  attribute.type_("button"),
-                  attribute.attribute("slot", "footer"),
-                  attribute.attribute("variant", "neutral"),
+                  class("btn btn-secondary"),
+                  attribute.type_("submit"),
                   event.on_click(CancelClicked),
                 ],
                 [html.text("Keep it")],
@@ -369,12 +362,8 @@ fn status_view(
 }
 
 fn link_button(label: String, msg: Msg) -> Element(Msg) {
-  wa.button(
-    [
-      attribute.type_("button"),
-      attribute.attribute("variant", "neutral"),
-      event.on_click(msg),
-    ],
+  html.button(
+    [class("btn btn-secondary"), attribute.type_("button"), event.on_click(msg)],
     [html.text(label)],
   )
 }
@@ -399,10 +388,10 @@ fn choosing_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
             list.map(candidates, fn(row) {
               html.li([], [
                 html.span([], [html.text(describe(row, inputs))]),
-                wa.button(
+                html.button(
                   [
+                    class("btn btn-primary"),
                     attribute.type_("button"),
-                    attribute.attribute("variant", "brand"),
                     event.on_click(PickClicked(key, row.activity.id)),
                   ],
                   [html.text("This one")],
