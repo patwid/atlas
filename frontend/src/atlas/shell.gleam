@@ -16,14 +16,16 @@ pub fn view(
 ) -> Element(msg) {
   html.div([class("shell")], [
     html.header([class("bar")], [
-      html.h1([], [html.text(route.title(route))]),
-      case online {
-        True -> element.none()
-        False ->
-          html.span([class("pill"), attribute.role("status")], [
-            html.text("Offline"),
-          ])
-      },
+      html.div([class("bar-content")], [
+        html.h1([], [html.text(route.title(route))]),
+        case online {
+          True -> element.none()
+          False ->
+            html.span([class("pill"), attribute.role("status")], [
+              html.text("Offline"),
+            ])
+        },
+      ]),
     ]),
     html.main([attribute.id("main")], [page]),
     nav(route, coaching),
@@ -46,22 +48,24 @@ fn nav(current: Route, coaching: Bool) -> Element(msg) {
       #(route.Settings, "Settings"),
     ]
   }
-  html.nav([class("tabs"), attribute.aria_label("Main")], {
-    list.map(items, fn(item) {
-      let #(target, label) = item
-      let active = section(target) == section(current)
-      html.a(
-        [
-          attribute.href(route.to_path(target)),
-          ..case active {
-            True -> [attribute.attribute("aria-current", "page")]
-            False -> []
-          }
-        ],
-        [html.text(label)],
-      )
-    })
-  })
+  html.nav([class("tabs"), attribute.aria_label("Main")], [
+    html.div([class("tabs-content")], {
+      list.map(items, fn(item) {
+        let #(target, label) = item
+        let active = section(target) == section(current)
+        html.a(
+          [
+            attribute.href(route.to_path(target)),
+            ..case active {
+              True -> [attribute.attribute("aria-current", "page")]
+              False -> []
+            }
+          ],
+          [html.text(label)],
+        )
+      })
+    }),
+  ])
 }
 
 /// Pages under the same tab share a section, so a plan keeps "Plans" highlighted.
