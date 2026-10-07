@@ -43,6 +43,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Pace zones in Settings: a threshold pace and where each of the five zones starts in min/km, filled with defaults (from a 5:00 /km threshold) until you save your own, with a button to work the zones out from the threshold pace (migration `1760000600_athlete_settings_pace_zones.js`, ADR 0036).
 - Coach's view: an Athletes tab for coaches, with each athlete's last six weeks (planned, done, missed, distances), the plans they follow and their latest activities, read-only (ADR 0031).
 - Strava's official "Connect with Strava" button and "Powered by Strava" logo (unchanged, checked by checksum), and a "View on Strava" link on Strava activities (ADR 0027).
+- GitHub Actions CI (`.github/workflows/ci.yml`): builds the Nix package and runs the Gleam, backend and frontend-JS test suites on every push and pull request (ADR 0041).
 
 ### Changed
 - Strava's redirect now returns to `/settings?strava=<result>` (ADR 0027).
