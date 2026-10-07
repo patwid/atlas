@@ -34,6 +34,13 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, sans-serif; }
 
+/* Plain text links (ADR 0040): Bootstrap's default link color, same --bs-primary used by buttons
+   and form controls. More specific selectors below (.tabs a, .cards a, .back, .strava-link, …)
+   override this as needed. */
+a { color: var(--bs-primary); text-decoration: underline; }
+a:hover { color: var(--bs-primary-hover); }
+a:active { color: var(--bs-primary-active); }
+
 /* Buttons and form controls (ADR 0040): hand-written, Bootstrap's class names and colors, no
    Bootstrap file involved. */
 .btn {
