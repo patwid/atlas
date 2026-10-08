@@ -15,6 +15,7 @@ import atlas/ui/button
 import atlas/ui/date_picker
 import atlas/ui/error
 import atlas/ui/field
+import atlas/ui/form_dialog
 import atlas/ui/icon
 import atlas/ui/layout
 import atlas/ui/menu
@@ -347,10 +348,7 @@ pub fn view(
         _ -> element.none()
       },
     ]),
-    case model.mode {
-      Starting -> form_view(model, context, "Start plan", True)
-      _ -> element.none()
-    },
+    form_view(model, context),
     case model.loaded, rows {
       False, _ -> progress.loading("Loading…")
       True, [] ->
@@ -368,7 +366,7 @@ pub fn view(
       True, _ ->
         layout.list(
           list.map(rows, fn(row) {
-            row_view(row, model, context, workouts, all_grants)
+            row_view(row, context, workouts, all_grants)
           }),
         )
     },
@@ -377,47 +375,41 @@ pub fn view(
 
 fn row_view(
   row: Row,
-  model: Model,
   context: Context,
   workouts: List(Workout),
   all_grants: List(Grant),
 ) -> Element(Msg) {
   let a = row.assignment
   html.li([], [
-    case model.mode {
-      ChangingDate(editing) if editing == a.id ->
-        form_view(model, context, "Save date", False)
-      _ ->
-        html.div([], [
-          html.strong([], [
-            html.text(who(a.athlete_id, context.user_id, all_grants)),
-          ]),
+    html.div([], [
+      html.strong([], [
+        html.text(who(a.athlete_id, context.user_id, all_grants)),
+      ]),
+      html.p([class("muted")], [
+        html.text(
+          "Starts "
+          <> date.format(a.start_date)
+          <> case plan.end_date(a, workouts) {
+            Ok(end) -> " · ends " <> date.format(end)
+            Error(Nil) -> ""
+          },
+        ),
+      ]),
+      case row.assigned_by != a.athlete_id && row.assigned_by != "" {
+        True ->
           html.p([class("muted")], [
             html.text(
-              "Starts "
-              <> date.format(a.start_date)
-              <> case plan.end_date(a, workouts) {
-                Ok(end) -> " · ends " <> date.format(end)
-                Error(Nil) -> ""
-              },
+              "Assigned by "
+              <> who(row.assigned_by, context.user_id, all_grants),
             ),
-          ]),
-          case row.assigned_by != a.athlete_id && row.assigned_by != "" {
-            True ->
-              html.p([class("muted")], [
-                html.text(
-                  "Assigned by "
-                  <> who(row.assigned_by, context.user_id, all_grants),
-                ),
-              ])
-            False -> element.none()
-          },
-          case may_change(row, context.user_id) {
-            False -> element.none()
-            True -> actions(row)
-          },
-        ])
-    },
+          ])
+        False -> element.none()
+      },
+      case may_change(row, context.user_id) {
+        False -> element.none()
+        True -> actions(row)
+      },
+    ]),
   ])
 }
 
@@ -457,79 +449,87 @@ fn who(user_id: String, me: String, all_grants: List(Grant)) -> String {
 /// `new_assignment`: starting a plan (the athlete can be chosen) rather than changing a date (it cannot).
 const date_picker_id = "assign-start-picker"
 
-fn form_view(
-  model: Model,
-  context: Context,
-  submit_label: String,
-  new_assignment: Bool,
-) -> Element(Msg) {
-  // The picker's dialog holds a form of its own, so it sits beside this form, not in it.
-  element.fragment([
-    form_fields(model.form, context, submit_label, new_assignment),
-    date_picker.view(
-      date_picker_id,
-      model.date_picker,
-      context.today,
-      DatePicker,
-    ),
-  ])
+const form_id = "schedule-form"
+
+/// Starting a plan and changing a start date happen in a full-screen dialog (ADR 0057).
+fn form_view(model: Model, context: Context) -> Element(Msg) {
+  let #(open, title, new_assignment) = case model.mode {
+    Starting -> #(True, "Start plan", True)
+    ChangingDate(_) -> #(True, "Change start date", False)
+    Browsing -> #(False, "", False)
+  }
+  form_dialog.view(
+    "schedule-form-dialog",
+    open,
+    title,
+    form_id,
+    "Save",
+    CancelClicked,
+    // The picker's dialog holds a form of its own, so it sits beside this form, not in it.
+    [
+      form_fields(model.form, context, new_assignment),
+      date_picker.view(
+        date_picker_id,
+        model.date_picker,
+        context.today,
+        DatePicker,
+      ),
+    ],
+  )
 }
 
 fn form_fields(
   form: assignment_form.Form,
   context: Context,
-  submit_label: String,
   new_assignment: Bool,
 ) -> Element(Msg) {
   let choosing_athlete = new_assignment && context.athletes != []
-  html.form([class("schedule-form"), event.on_submit(fn(_) { Submitted })], [
-    case choosing_athlete {
-      False -> element.none()
-      True ->
-        html.div([], [
-          html.label([attribute.for("assign-athlete")], [html.text("For")]),
-          field.select(
-            [
-              attribute.id("assign-athlete"),
-              attribute.name("athlete"),
-              event.on_change(AthleteChanged),
-            ],
-            form.athlete_id,
-            [
-              #(context.user_id, "Myself"),
-              ..list.map(context.athletes, fn(person) {
-                #(person.id, person.name)
-              })
-            ],
-          ),
-        ])
-    },
-    html.label([attribute.for("assign-start")], [
-      html.text("First day of the plan"),
-    ]),
-    field.with_trigger(
-      field.input([
-        attribute.id("assign-start"),
-        attribute.type_("date"),
-        attribute.name("start_date"),
-        attribute.value(form.start_date),
-        attribute.required(True),
-        event.on_input(DateChanged),
+  html.form(
+    [
+      attribute.id(form_id),
+      class("schedule-form"),
+      event.on_submit(fn(_) { Submitted }),
+    ],
+    [
+      case choosing_athlete {
+        False -> element.none()
+        True ->
+          html.div([], [
+            html.label([attribute.for("assign-athlete")], [html.text("For")]),
+            field.select(
+              [
+                attribute.id("assign-athlete"),
+                attribute.name("athlete"),
+                event.on_change(AthleteChanged),
+              ],
+              form.athlete_id,
+              [
+                #(context.user_id, "Myself"),
+                ..list.map(context.athletes, fn(person) {
+                  #(person.id, person.name)
+                })
+              ],
+            ),
+          ])
+      },
+      html.label([attribute.for("assign-start")], [
+        html.text("First day of the plan"),
       ]),
-      date_picker.trigger(date_picker_id, DatePickerOpened),
-    ),
-    case form.error {
-      Some(message) -> error.message(message)
-      None -> element.none()
-    },
-    layout.actions([
-      button.filled([attribute.type_("submit")], [
-        html.text(submit_label),
-      ]),
-      button.outlined(
-        [attribute.type_("button"), event.on_click(CancelClicked)],
-        [html.text("Cancel")],
+      field.with_trigger(
+        field.input([
+          attribute.id("assign-start"),
+          attribute.type_("date"),
+          attribute.name("start_date"),
+          attribute.value(form.start_date),
+          attribute.required(True),
+          event.on_input(DateChanged),
+        ]),
+        date_picker.trigger(date_picker_id, DatePickerOpened),
       ),
-    ]),
-  ])
+      case form.error {
+        Some(message) -> error.message(message)
+        None -> element.none()
+      },
+    ],
+  )
 }

@@ -17,6 +17,7 @@ import atlas/ui/empty
 import atlas/ui/error
 import atlas/ui/field
 import atlas/ui/focus
+import atlas/ui/form_dialog
 import atlas/ui/icon
 import atlas/ui/layout
 import atlas/ui/plan_settings
@@ -140,7 +141,7 @@ pub fn update(
 
     NewClicked -> #(
       Model(..model, mode: Creating, form: plan_form.empty()),
-      // The form opens at the top of the page, away from the floating button (ADR 0047).
+      // The form opens in a dialog (ADR 0057); its first field takes the focus.
       focus.soon("plan-title"),
       [],
     )
@@ -353,10 +354,7 @@ pub fn view_list_with(
           )
       },
     ]),
-    case model.mode {
-      Creating -> form_view(model.form, "Create plan")
-      _ -> element.none()
-    },
+    form_view(model, model.mode == Creating, "New plan"),
     case model.loaded, mine {
       False, _ -> progress.loading("Loading…")
       True, [] ->
@@ -409,33 +407,29 @@ pub fn view_detail_with(
     Ok(found) -> {
       let mine = found.owner_id == user_id
       html.section([class("plans")], [
-        case model.mode {
-          Editing(editing) if editing == id ->
-            form_view(model.form, "Save changes")
-          _ ->
-            html.div([], [
-              badges(found),
-              case found.description {
-                "" -> element.none()
-                text -> html.p([class("description")], [html.text(text)])
-              },
-              case mine {
-                False ->
-                  html.p([class("muted")], [
-                    html.text(case shared_by(found) {
-                      Some(name) ->
-                        "Shared with you by "
-                        <> name
-                        <> ". Only its owner can change it. Copy it to make a version of your own."
-                      None ->
-                        "This plan was shared with you. Only its owner can change it. Copy it to make a version of your own."
-                    }),
-                  ])
-                True -> owner_actions(found)
-              },
-              copy_view(model.copy, found.id),
-            ])
-        },
+        form_view(model, model.mode == Editing(id), "Edit plan"),
+        html.div([], [
+          badges(found),
+          case found.description {
+            "" -> element.none()
+            text -> html.p([class("description")], [html.text(text)])
+          },
+          case mine {
+            False ->
+              html.p([class("muted")], [
+                html.text(case shared_by(found) {
+                  Some(name) ->
+                    "Shared with you by "
+                    <> name
+                    <> ". Only its owner can change it. Copy it to make a version of your own."
+                  None ->
+                    "This plan was shared with you. Only its owner can change it. Copy it to make a version of your own."
+                }),
+              ])
+            True -> owner_actions(found)
+          },
+          copy_view(model.copy, found.id),
+        ]),
       ])
     }
   }
@@ -540,63 +534,76 @@ pub fn snippet(text: String) -> String {
   }
 }
 
-fn form_view(form: plan_form.Form, submit_label: String) -> Element(Msg) {
-  html.form([class("plan-form"), event.on_submit(fn(_) { Submitted })], [
-    html.label([attribute.for("plan-title")], [html.text("Title")]),
-    field.input([
-      attribute.id("plan-title"),
-      attribute.type_("text"),
-      attribute.name("title"),
-      attribute.value(form.title),
-      attribute.attribute("maxlength", "200"),
-      attribute.required(True),
-      event.on_input(TitleChanged),
-    ]),
-    html.label([attribute.for("plan-description")], [html.text("Description")]),
-    field.textarea(
-      [
-        attribute.id("plan-description"),
-        attribute.name("description"),
-        attribute.rows(4),
-        event.on_input(DescriptionChanged),
-      ],
-      form.description,
-    ),
-    choice.segmented(
-      "visibility",
-      "Who can see it",
-      plan.visibility_to_string(form.visibility),
-      [#("private", "Only me"), #("public", "Everyone")],
-      VisibilityChanged,
-    ),
-    html.p([class("supporting")], [
-      html.text(case form.visibility {
-        plan.Private -> "You, and the people you share it with."
-        plan.Public -> "Everyone who is signed in."
-      }),
-    ]),
-    plan_settings.inputs(
-      "plan",
-      form.settings,
-      plan_settings.Messages(
-        base_weeks: BaseWeeksChanged,
-        pre_competition_weeks: PreCompetitionWeeksChanged,
-        competition_weeks: CompetitionWeeksChanged,
-        goal_km: GoalChanged,
-      ),
-    ),
-    case form.error {
-      Some(message) -> error.message(message)
-      None -> element.none()
-    },
-    layout.actions([
-      button.filled([attribute.type_("submit")], [
-        html.text(submit_label),
+const form_id = "plan-form"
+
+/// Creating and editing a plan happen in a full-screen dialog (ADR 0057).
+fn form_view(model: Model, open: Bool, title: String) -> Element(Msg) {
+  form_dialog.view(
+    "plan-form-dialog",
+    open,
+    title,
+    form_id,
+    "Save",
+    CancelClicked,
+    [form_fields(model.form)],
+  )
+}
+
+fn form_fields(form: plan_form.Form) -> Element(Msg) {
+  html.form(
+    [
+      attribute.id(form_id),
+      class("plan-form"),
+      event.on_submit(fn(_) { Submitted }),
+    ],
+    [
+      html.label([attribute.for("plan-title")], [html.text("Title")]),
+      field.input([
+        attribute.id("plan-title"),
+        attribute.type_("text"),
+        attribute.name("title"),
+        attribute.value(form.title),
+        attribute.attribute("maxlength", "200"),
+        attribute.required(True),
+        event.on_input(TitleChanged),
       ]),
-      button.outlined(
-        [attribute.type_("button"), event.on_click(CancelClicked)],
-        [html.text("Cancel")],
+      html.label([attribute.for("plan-description")], [html.text("Description")]),
+      field.textarea(
+        [
+          attribute.id("plan-description"),
+          attribute.name("description"),
+          attribute.rows(4),
+          event.on_input(DescriptionChanged),
+        ],
+        form.description,
       ),
-    ]),
-  ])
+      choice.segmented(
+        "visibility",
+        "Who can see it",
+        plan.visibility_to_string(form.visibility),
+        [#("private", "Only me"), #("public", "Everyone")],
+        VisibilityChanged,
+      ),
+      html.p([class("supporting")], [
+        html.text(case form.visibility {
+          plan.Private -> "You, and the people you share it with."
+          plan.Public -> "Everyone who is signed in."
+        }),
+      ]),
+      plan_settings.inputs(
+        "plan",
+        form.settings,
+        plan_settings.Messages(
+          base_weeks: BaseWeeksChanged,
+          pre_competition_weeks: PreCompetitionWeeksChanged,
+          competition_weeks: CompetitionWeeksChanged,
+          goal_km: GoalChanged,
+        ),
+      ),
+      case form.error {
+        Some(message) -> error.message(message)
+        None -> element.none()
+      },
+    ],
+  )
 }

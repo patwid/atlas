@@ -19,6 +19,7 @@ import atlas/ui/empty
 import atlas/ui/error
 import atlas/ui/field
 import atlas/ui/focus
+import atlas/ui/form_dialog
 import atlas/ui/icon
 import atlas/ui/layout
 import atlas/ui/menu
@@ -172,7 +173,7 @@ pub fn update(
 
     AddClicked -> #(
       Model(..model, mode: Adding, form: activity_form.empty_for(context.today)),
-      // The form opens at the top of the page, away from the floating button (ADR 0047).
+      // The form opens in a dialog (ADR 0057); its first field takes the focus.
       focus.soon("activity-date"),
       [],
     )
@@ -365,10 +366,7 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
         _ -> element.none()
       },
     ]),
-    case model.mode {
-      Adding -> form_view(model, context.today, "Save activity")
-      _ -> element.none()
-    },
+    form_view(model, context.today),
     case model.loaded, rows {
       False, _ -> progress.loading("Loading…")
       True, [] ->
@@ -389,41 +387,34 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
         layout.list(
           rows
           |> list.filter(fn(row) { !undo.hides(model.undo, row.activity.id) })
-          |> list.map(fn(row) { row_view(row, model, context) }),
+          |> list.map(fn(row) { row_view(row, context) }),
         )
     },
   ])
 }
 
-fn row_view(row: Row, model: Model, context: Context) -> Element(Msg) {
+fn row_view(row: Row, context: Context) -> Element(Msg) {
   let a = row.activity
   html.li([], [
-    case model.mode {
-      Editing(editing) if editing == a.id ->
-        form_view(model, context.today, "Save changes")
-      _ ->
-        html.div([], [
-          html.div([], [
-            html.strong([], [html.text(title(row))]),
-            html.span([class("badges")], [
-              source_badge(a.source),
-              case row.updated {
-                "" -> badge.with_icon(icon.CloudUpload, "Not synced yet")
-                _ -> element.none()
-              },
-            ]),
-          ]),
-          html.p([class("muted")], [html.text(when(row, context))]),
-          case figures(row) {
-            "" -> element.none()
-            text -> html.p([], [html.text(text)])
-          },
-          view_on_strava(row),
-          case editable(row, context.user_id) {
-            False -> element.none()
-            True -> actions(row)
-          },
-        ])
+    html.div([], [
+      html.strong([], [html.text(title(row))]),
+      html.span([class("badges")], [
+        source_badge(a.source),
+        case row.updated {
+          "" -> badge.with_icon(icon.CloudUpload, "Not synced yet")
+          _ -> element.none()
+        },
+      ]),
+    ]),
+    html.p([class("muted")], [html.text(when(row, context))]),
+    case figures(row) {
+      "" -> element.none()
+      text -> html.p([], [html.text(text)])
+    },
+    view_on_strava(row),
+    case editable(row, context.user_id) {
+      False -> element.none()
+      True -> actions(row)
     },
   ])
 }
@@ -550,137 +541,152 @@ const date_picker_id = "activity-date-picker"
 
 const time_picker_id = "activity-time-picker"
 
-fn form_view(model: Model, today: Date, submit_label: String) -> Element(Msg) {
-  let form = model.form
-  // The pickers' dialogs hold forms of their own, so they sit beside this form, not in it.
-  element.fragment([
-    form_fields(form, submit_label),
-    date_picker.view(date_picker_id, model.date_picker, today, DatePicker),
-    time_picker.view(time_picker_id, model.time_picker, TimePicker),
-  ])
+const form_id = "activity-form"
+
+/// Adding and editing happen in a full-screen dialog (ADR 0057).
+fn form_view(model: Model, today: Date) -> Element(Msg) {
+  let #(open, title, submit_label) = case model.mode {
+    Adding -> #(True, "New activity", "Save")
+    Editing(_) -> #(True, "Edit activity", "Save")
+    Browsing -> #(False, "", "")
+  }
+  form_dialog.view(
+    "activity-form-dialog",
+    open,
+    title,
+    form_id,
+    submit_label,
+    CancelClicked,
+    // The pickers' dialogs hold forms of their own, so they sit beside this form, not in it.
+    [
+      form_fields(model.form),
+      date_picker.view(date_picker_id, model.date_picker, today, DatePicker),
+      time_picker.view(time_picker_id, model.time_picker, TimePicker),
+    ],
+  )
 }
 
-fn form_fields(form: activity_form.Form, submit_label: String) -> Element(Msg) {
-  html.form([class("activity-form"), event.on_submit(fn(_) { Submitted })], [
-    html.div([class("row")], [
-      html.div([], [
-        html.label([attribute.for("activity-date")], [html.text("Day")]),
-        field.with_trigger(
-          field.input([
-            attribute.id("activity-date"),
-            attribute.type_("date"),
-            attribute.name("date"),
-            attribute.value(form.date),
-            attribute.required(True),
-            event.on_input(DateChanged),
-          ]),
-          date_picker.trigger(date_picker_id, DatePickerOpened),
-        ),
-      ]),
-      html.div([], [
-        html.label([attribute.for("activity-time")], [html.text("Start time")]),
-        field.with_trigger(
-          field.input([
-            attribute.id("activity-time"),
-            attribute.type_("time"),
-            attribute.name("time"),
-            attribute.value(form.time),
-            attribute.required(True),
-            event.on_input(TimeChanged),
-          ]),
-          time_picker.trigger(time_picker_id, TimePickerOpened),
-        ),
-      ]),
-    ]),
-    choice.chips(
-      "sport",
-      "Sport",
-      activity.sport_to_string(form.sport),
-      list.map(sports, fn(sport) {
-        #(activity.sport_to_string(sport), activity_form.sport_label(sport))
-      }),
-      SportChanged,
-    ),
-    html.label([attribute.for("activity-name")], [html.text("Name (optional)")]),
-    field.input([
-      attribute.id("activity-name"),
-      attribute.type_("text"),
-      attribute.name("name"),
-      attribute.value(form.name),
-      attribute.attribute("maxlength", "200"),
-      event.on_input(NameChanged),
-    ]),
-    html.div([class("row")], [
-      html.div([], [
-        html.label([attribute.for("activity-distance")], [
-          html.text("Distance (km)"),
+fn form_fields(form: activity_form.Form) -> Element(Msg) {
+  html.form(
+    [
+      attribute.id(form_id),
+      class("activity-form"),
+      event.on_submit(fn(_) { Submitted }),
+    ],
+    [
+      html.div([class("row")], [
+        html.div([], [
+          html.label([attribute.for("activity-date")], [html.text("Day")]),
+          field.with_trigger(
+            field.input([
+              attribute.id("activity-date"),
+              attribute.type_("date"),
+              attribute.name("date"),
+              attribute.value(form.date),
+              attribute.required(True),
+              event.on_input(DateChanged),
+            ]),
+            date_picker.trigger(date_picker_id, DatePickerOpened),
+          ),
         ]),
-        field.input([
-          attribute.id("activity-distance"),
-          attribute.type_("text"),
-          attribute.attribute("inputmode", "decimal"),
-          attribute.name("distance"),
-          attribute.value(form.distance_km),
-          attribute.placeholder("8.5"),
-          event.on_input(DistanceChanged),
+        html.div([], [
+          html.label([attribute.for("activity-time")], [html.text("Start time")]),
+          field.with_trigger(
+            field.input([
+              attribute.id("activity-time"),
+              attribute.type_("time"),
+              attribute.name("time"),
+              attribute.value(form.time),
+              attribute.required(True),
+              event.on_input(TimeChanged),
+            ]),
+            time_picker.trigger(time_picker_id, TimePickerOpened),
+          ),
         ]),
       ]),
-      html.div([], [
-        html.label([attribute.for("activity-duration")], [
-          html.text("Time (minutes or h:mm)"),
-        ]),
-        field.input([
-          attribute.id("activity-duration"),
-          attribute.type_("text"),
-          attribute.name("duration"),
-          attribute.value(form.duration),
-          attribute.placeholder("45 or 1:30"),
-          event.on_input(DurationChanged),
-        ]),
-      ]),
-    ]),
-    html.div([class("row")], [
-      html.div([], [
-        html.label([attribute.for("activity-elevation")], [
-          html.text("Climb (m, optional)"),
-        ]),
-        field.input([
-          attribute.id("activity-elevation"),
-          attribute.type_("text"),
-          attribute.attribute("inputmode", "numeric"),
-          attribute.name("elevation"),
-          attribute.value(form.elevation_m),
-          event.on_input(ElevationChanged),
-        ]),
-      ]),
-      html.div([], [
-        html.label([attribute.for("activity-hr")], [
-          html.text("Average heart rate (optional)"),
-        ]),
-        field.input([
-          attribute.id("activity-hr"),
-          attribute.type_("text"),
-          attribute.attribute("inputmode", "numeric"),
-          attribute.name("heart_rate"),
-          attribute.value(form.avg_hr),
-          event.on_input(HeartRateChanged),
-        ]),
-      ]),
-    ]),
-    case form.error {
-      Some(message) -> error.message(message)
-      None -> element.none()
-    },
-    layout.actions([
-      button.filled([attribute.type_("submit")], [
-        html.text(submit_label),
-      ]),
-      button.outlined(
-        [attribute.type_("button"), event.on_click(CancelClicked)],
-        [html.text("Cancel")],
+      choice.chips(
+        "sport",
+        "Sport",
+        activity.sport_to_string(form.sport),
+        list.map(sports, fn(sport) {
+          #(activity.sport_to_string(sport), activity_form.sport_label(sport))
+        }),
+        SportChanged,
       ),
-    ]),
-  ])
+      html.label([attribute.for("activity-name")], [
+        html.text("Name (optional)"),
+      ]),
+      field.input([
+        attribute.id("activity-name"),
+        attribute.type_("text"),
+        attribute.name("name"),
+        attribute.value(form.name),
+        attribute.attribute("maxlength", "200"),
+        event.on_input(NameChanged),
+      ]),
+      html.div([class("row")], [
+        html.div([], [
+          html.label([attribute.for("activity-distance")], [
+            html.text("Distance (km)"),
+          ]),
+          field.input([
+            attribute.id("activity-distance"),
+            attribute.type_("text"),
+            attribute.attribute("inputmode", "decimal"),
+            attribute.name("distance"),
+            attribute.value(form.distance_km),
+            attribute.placeholder("8.5"),
+            event.on_input(DistanceChanged),
+          ]),
+        ]),
+        html.div([], [
+          html.label([attribute.for("activity-duration")], [
+            html.text("Time (minutes or h:mm)"),
+          ]),
+          field.input([
+            attribute.id("activity-duration"),
+            attribute.type_("text"),
+            attribute.name("duration"),
+            attribute.value(form.duration),
+            attribute.placeholder("45 or 1:30"),
+            event.on_input(DurationChanged),
+          ]),
+        ]),
+      ]),
+      html.div([class("row")], [
+        html.div([], [
+          html.label([attribute.for("activity-elevation")], [
+            html.text("Climb (m, optional)"),
+          ]),
+          field.input([
+            attribute.id("activity-elevation"),
+            attribute.type_("text"),
+            attribute.attribute("inputmode", "numeric"),
+            attribute.name("elevation"),
+            attribute.value(form.elevation_m),
+            event.on_input(ElevationChanged),
+          ]),
+        ]),
+        html.div([], [
+          html.label([attribute.for("activity-hr")], [
+            html.text("Average heart rate (optional)"),
+          ]),
+          field.input([
+            attribute.id("activity-hr"),
+            attribute.type_("text"),
+            attribute.attribute("inputmode", "numeric"),
+            attribute.name("heart_rate"),
+            attribute.value(form.avg_hr),
+            event.on_input(HeartRateChanged),
+          ]),
+        ]),
+      ]),
+      case form.error {
+        Some(message) -> error.message(message)
+        None -> element.none()
+      },
+    ],
+  )
 }
 
 fn pad2(n: Int) -> String {

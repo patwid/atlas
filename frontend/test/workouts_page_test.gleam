@@ -407,7 +407,7 @@ pub fn the_form_is_labelled_and_shows_errors_test() {
   assert string.contains(html, "Rest day")
 }
 
-pub fn the_edit_form_opens_in_the_sidebar_test() {
+pub fn the_edit_form_opens_in_a_dialog_over_the_calendar_test() {
   let model =
     Model(
       ..with_rows([
@@ -418,8 +418,13 @@ pub fn the_edit_form_opens_in_the_sidebar_test() {
       form: workout_form.from_row(row("a", "p1", 0, 0, "Easy run")),
     )
   let html = html_of(model, True)
-  assert string.contains(html, "Save changes")
+  assert string.contains(html, "data-open=\"true\"")
+  assert string.contains(html, "Edit workout")
   assert string.contains(html, "Second")
+  assert !string.contains(
+    html_of(Model(..model, mode: workouts_page.Browsing), True),
+    "Edit workout",
+  )
 }
 
 pub fn the_bottom_sheet_starts_collapsed_and_its_handle_toggles_it_test() {
@@ -446,6 +451,4 @@ pub fn picking_a_workout_pulls_the_sheet_up_and_names_it_test() {
   )
   let #(week, _) = update(model, workouts_page.WeekSelected(2))
   assert week.sheet_expanded
-  let #(adding, _) = update(model, workouts_page.AddClicked(1, 1))
-  assert adding.sheet_expanded
 }

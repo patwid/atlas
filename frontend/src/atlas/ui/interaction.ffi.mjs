@@ -1,5 +1,5 @@
 // Material 3 touch feedback, the app bar's scrolled state (ADR 0051), dragging a bottom sheet (ADR 0052) and
-// placing and moving through menus (ADR 0056). Both only set data attributes and CSS
+// placing and moving through menus (ADR 0056), and opening and closing form dialogs (ADR 0057). Both only set data attributes and CSS
 // variables, never add or remove nodes, so Lustre's view of the DOM stays right.
 
 const rippling = ".md-button, .md-fab, .md-icon-button, .choice-label, .link-list a, .tabs a .nav-indicator"
@@ -67,6 +67,19 @@ export function install() {
     event.preventDefault()
     items[(next + items.length) % items.length]?.focus()
   })
+
+  // Form dialogs (ADR 0057) say with data-open whether they should show; this keeps the native modal in step.
+  const syncDialogs = () => {
+    for (const dialog of document.querySelectorAll("dialog[data-open]")) {
+      const wanted = dialog.dataset.open === "true"
+      if (wanted && !dialog.open) dialog.showModal()
+      else if (!wanted && dialog.open) dialog.close()
+    }
+  }
+  new MutationObserver(syncDialogs).observe(document.body, {
+    subtree: true, childList: true, attributes: true, attributeFilter: ["data-open"],
+  })
+  syncDialogs()
 
   // The top app bar takes a container color once the page has scrolled under it.
   const scrolled = () => {

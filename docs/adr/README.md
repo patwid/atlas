@@ -60,3 +60,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0054 | [Material 3 date and time pickers beside the native fields](0054-material-date-and-time-pickers.md) | Accepted |
 | 0055 | [Material review, quick fixes: titles, dialogs, offline, badges, loading, icons, Settings](0055-material-review-quick-fixes.md) | Accepted |
 | 0056 | [Menus for item actions, and Undo instead of confirming deletes](0056-menus-and-undo.md) | Accepted |
+| 0057 | [Create and edit forms in full-screen dialogs](0057-forms-in-full-screen-dialogs.md) | Accepted |

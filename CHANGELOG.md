@@ -69,6 +69,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Date and time fields (an activity's day and start time, a plan's first day) have a button that opens Material 3's date picker or 24-hour time dial; the fields can still be typed in (ADR 0054).
 - Material review fixes: the app bar shows the plan's or athlete's name and pages no longer repeat their title; confirmation dialogs have a headline, a sentence on what happens and actions named by what they do (Cancel, Delete); being offline is an icon in the app bar plus a snackbar instead of a banner; sync problems show as a badge on the Settings tab; loading uses the loading indicator everywhere; icons are outlined, filled for the selected tab; the account and sync state are rows of the Settings list (ADR 0055).
 - Deleting a plan, workout, activity or schedule entry happens at once with Undo in a snackbar, instead of a confirmation; unlinking on Today has Undo too. List items' actions are in a ⋮ menu (ADR 0056).
+- Creating and editing plans, workouts, activities and schedule entries happens in a full-screen dialog on a phone (a dialog on larger screens) instead of inside the list or the calendar's sidebar (ADR 0057).
 - CI builds the flake's checks (`atlas-app`, `gleam-test`, `backend-test`, `frontend-js-test`) offline instead of running the test scripts in `nix develop`; `nix flake check` runs them locally, and a suite whose source is unchanged is not run again. `test-frontend-js.sh` accepts `ATLAS_NPM_INSTALL=0` (ADR 0042).
 
 ### Fixed

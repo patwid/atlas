@@ -919,3 +919,30 @@ dialog .dialog-supporting { margin: 0 0 1.5rem; font-size: 0.875rem; line-height
 .list .actions:has(> .md-menu-button) { margin: 0; }
 @media (prefers-reduced-motion: reduce) { .md-menu:popover-open { animation: none; } }
 
+/* Full-screen dialogs for forms (ADR 0057): on a phone the whole screen, with a top bar of Close, the title and
+   the submit button; from 600px a dialog in the middle. A click outside does not close it. */
+dialog.form-dialog {
+  width: 100%; height: 100%; max-width: none; max-height: none; min-width: 0; margin: 0; padding: 0;
+  border-radius: 0; background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface);
+  box-shadow: none;
+}
+dialog.form-dialog[open] { display: flex; flex-direction: column; }
+.form-dialog-bar {
+  position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 0.25rem;
+  min-height: 3.5rem; padding: max(0.25rem, env(safe-area-inset-top)) 0.5rem 0.25rem 0.25rem;
+  background: var(--md-sys-color-surface);
+}
+.form-dialog-bar form { display: contents; }
+.form-dialog-bar h2 { flex: 1; min-width: 0; margin: 0 0 0 0.25rem; font: 400 1.375rem/1.75rem var(--md-ref-typeface); }
+.form-dialog-body { flex: 1; overflow-y: auto; padding: 0 1.5rem 1.5rem; padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
+.form-dialog .plan-form { background: none; padding: 0; margin: 0; border-radius: 0; }
+@media (min-width: 37.5rem) {
+  dialog.form-dialog {
+    width: calc(100% - 3rem); max-width: 35rem; height: auto; max-height: calc(100dvh - 3rem); margin: auto;
+    border-radius: var(--md-sys-shape-corner-extra-large); background: var(--md-sys-color-surface-container-high);
+    box-shadow: var(--md-sys-elevation-3);
+  }
+  .form-dialog-bar { padding: 0.75rem 0.75rem 0.25rem 0.5rem; background: inherit; }
+  .form-dialog-bar h2 { font-size: 1.5rem; line-height: 2rem; }
+}
+

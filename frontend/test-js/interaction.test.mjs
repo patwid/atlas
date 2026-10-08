@@ -14,7 +14,11 @@ const dom = new JSDOM(`<!doctype html><body>
     <button role="menuitem">Edit</button><button role="menuitem">Delete</button><button role="menuitem">Share</button>
   </div>
 </body>`, { pretendToBeVisual: true })
-Object.assign(globalThis, { document: dom.window.document, window: dom.window, Element: dom.window.Element })
+Object.assign(globalThis, {
+  document: dom.window.document, window: dom.window, Element: dom.window.Element, MutationObserver: dom.window.MutationObserver,
+})
+dom.window.HTMLDialogElement.prototype.showModal = function () { this.setAttribute("open", "") }
+dom.window.HTMLDialogElement.prototype.close = function () { this.removeAttribute("open") }
 const { install } = await import("../build/dev/javascript/atlas/atlas/ui/interaction.ffi.mjs")
 install()
 install() // a second call adds no second set of listeners
@@ -86,5 +90,19 @@ test("the arrow keys, Home and End move between a menu's items, wrapping around"
   assert.equal(d.activeElement, items[2])
   key(items[2], "Home")
   assert.equal(d.activeElement, items[0])
+})
+
+test("a form dialog opens and closes with its data-open attribute", async () => {
+  const dialog = d.createElement("dialog")
+  dialog.dataset.open = "true"
+  d.body.append(dialog)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  assert.ok(dialog.hasAttribute("open"), "opened when added open")
+  dialog.dataset.open = "false"
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  assert.ok(!dialog.hasAttribute("open"), "closed")
+  dialog.dataset.open = "true"
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  assert.ok(dialog.hasAttribute("open"), "opened again")
 })
 

@@ -280,7 +280,7 @@ pub fn changing_a_date_does_not_offer_another_athlete_test() {
       form: assignment_form.from_row(row("a", "me", "me", Date(2026, 11, 2))),
     )
   let html = html_of(model, [Person("ana", "Ana")])
-  assert string.contains(html, "Save date")
+  assert string.contains(html, "Change start date")
   assert !string.contains(html, "assign-athlete")
 }
 

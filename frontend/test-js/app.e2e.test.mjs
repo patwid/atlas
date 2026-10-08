@@ -124,7 +124,7 @@ test("a user creates, edits and deletes a plan on the plans screens and the serv
   // Create
   click(w, button(w, "New plan"))
   await waitFor("the form", () => d.querySelector("#plan-title"))
-  submit(w, d.querySelector("form"))
+  submit(w, d.querySelector(".plan-form"))
   await waitFor("a title error", () => d.querySelector(".error")?.textContent === "Give the plan a title.")
   assert.deepEqual(await onServer(), [], "an empty title is not sent")
   typeInto(w, d.querySelector("#plan-title"), "Autumn 10k")
@@ -132,7 +132,7 @@ test("a user creates, edits and deletes a plan on the plans screens and the serv
   assert.equal(d.querySelector("#plan-base-weeks").value, "4", "phases start at 4 weeks each")
   typeInto(w, d.querySelector("#plan-competition-weeks"), "2")
   typeInto(w, d.querySelector("#plan-goal"), "35")
-  submit(w, d.querySelector("form"))
+  submit(w, d.querySelector(".plan-form"))
   const link = await waitFor("the plan in the list", () => [...d.querySelectorAll(".list a")].find((a) => a.textContent === "Autumn 10k"))
   const created = await waitFor("the plan on the server", async () => (await onServer()).find((p) => p.title === "Autumn 10k"))
   assert.equal(created.owner, alice.id)
@@ -149,7 +149,7 @@ test("a user creates, edits and deletes a plan on the plans screens and the serv
   click(w, button(w, "Edit"))
   await waitFor("the edit form", () => d.querySelector("#plan-title")?.value === "Autumn 10k")
   typeInto(w, d.querySelector("#plan-title"), "Autumn half marathon")
-  submit(w, d.querySelector("form"))
+  submit(w, d.querySelector(".plan-form"))
   await waitFor("the new title on screen", () => d.querySelector(".bar h1")?.textContent === "Autumn half marathon")
   await waitFor("the new title on the server", async () => (await onServer()).some((p) => p.title === "Autumn half marathon"))
   assert.equal((await onServer()).find((p) => p.id === created.id).description, "Eight weeks, three runs a week", "unchanged fields stay")
@@ -861,14 +861,15 @@ test("the date and time pickers fill the activity form's fields", { skip: !built
   await waitFor("the headline", () => openDialog(w).textContent.includes("Tue, 17 Nov"))
   click(w, dialogButton(w, "OK"))
   await waitFor("the date in the field", () => d.querySelector("#activity-date").value === "2026-11-17")
-  assert.equal(openDialog(w), null, "the picker closed")
+  assert.equal(d.querySelector(".date-picker[open]"), null, "the picker closed")
+  assert.ok(d.querySelector(".form-dialog[open]"), "the form's dialog is still open")
 
   // Cancel leaves the field as it was.
   click(w, byLabel(w, "Choose a date"))
   await waitFor("the date picker again", () => openDialog(w)?.textContent.includes("November 2026"))
   click(w, [...openDialog(w).querySelectorAll(".date-picker-day")].find((b) => b.textContent === "3"))
   click(w, dialogButton(w, "Cancel"))
-  await waitFor("closed", () => openDialog(w) === null)
+  await waitFor("closed", () => d.querySelector(".date-picker[open]") === null)
   assert.equal(d.querySelector("#activity-date").value, "2026-11-17")
 
   // The time picker: an hour, then the minutes, then OK.
