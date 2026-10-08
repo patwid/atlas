@@ -27,9 +27,7 @@ pub fn view(
     html.h1([], [html.text("Atlas")]),
     html.p([class("muted")], [html.text("Sign in to see your training.")]),
     html.form([event.on_submit(fn(_) { on_submit })], [
-      html.label([attribute.for("email")], [html.text("E-mail")]),
-      field.input([
-        attribute.id("email"),
+      field.text("email", "E-mail", field.plain, [
         attribute.type_("email"),
         attribute.name("email"),
         attribute.autocomplete("username"),
@@ -37,9 +35,7 @@ pub fn view(
         attribute.required(True),
         event.on_input(on_email),
       ]),
-      html.label([attribute.for("password")], [html.text("Password")]),
-      field.input([
-        attribute.id("password"),
+      field.text("password", "Password", field.plain, [
         attribute.type_("password"),
         attribute.name("password"),
         attribute.autocomplete("current-password"),

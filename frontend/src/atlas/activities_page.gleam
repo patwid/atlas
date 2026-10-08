@@ -567,6 +567,11 @@ fn form_view(model: Model, today: Date) -> Element(Msg) {
 }
 
 fn form_fields(form: activity_form.Form) -> Element(Msg) {
+  // A problem shows under the field it is about (ADR 0059).
+  let wrong = activity_form.error_field(form)
+  let on = fn(help, field_name) {
+    field.with_error(help, field_name, wrong, form.error)
+  }
   html.form(
     [
       attribute.id(form_id),
@@ -575,34 +580,26 @@ fn form_fields(form: activity_form.Form) -> Element(Msg) {
     ],
     [
       html.div([class("row")], [
-        html.div([], [
-          html.label([attribute.for("activity-date")], [html.text("Day")]),
-          field.with_trigger(
-            field.input([
-              attribute.id("activity-date"),
-              attribute.type_("date"),
-              attribute.name("date"),
-              attribute.value(form.date),
-              attribute.required(True),
-              event.on_input(DateChanged),
-            ]),
-            date_picker.trigger(date_picker_id, DatePickerOpened),
-          ),
-        ]),
-        html.div([], [
-          html.label([attribute.for("activity-time")], [html.text("Start time")]),
-          field.with_trigger(
-            field.input([
-              attribute.id("activity-time"),
-              attribute.type_("time"),
-              attribute.name("time"),
-              attribute.value(form.time),
-              attribute.required(True),
-              event.on_input(TimeChanged),
-            ]),
-            time_picker.trigger(time_picker_id, TimePickerOpened),
-          ),
-        ]),
+        field.with_trigger(
+          field.text("activity-date", "Day", on(field.plain, "date"), [
+            attribute.type_("date"),
+            attribute.name("date"),
+            attribute.value(form.date),
+            attribute.required(True),
+            event.on_input(DateChanged),
+          ]),
+          date_picker.trigger(date_picker_id, DatePickerOpened),
+        ),
+        field.with_trigger(
+          field.text("activity-time", "Start time", on(field.plain, "time"), [
+            attribute.type_("time"),
+            attribute.name("time"),
+            attribute.value(form.time),
+            attribute.required(True),
+            event.on_input(TimeChanged),
+          ]),
+          time_picker.trigger(time_picker_id, TimePickerOpened),
+        ),
       ]),
       choice.chips(
         "sport",
@@ -613,11 +610,7 @@ fn form_fields(form: activity_form.Form) -> Element(Msg) {
         }),
         SportChanged,
       ),
-      html.label([attribute.for("activity-name")], [
-        html.text("Name (optional)"),
-      ]),
-      field.input([
-        attribute.id("activity-name"),
+      field.text("activity-name", "Name", on(field.help("Optional"), "name"), [
         attribute.type_("text"),
         attribute.name("name"),
         attribute.value(form.name),
@@ -625,65 +618,63 @@ fn form_fields(form: activity_form.Form) -> Element(Msg) {
         event.on_input(NameChanged),
       ]),
       html.div([class("row")], [
-        html.div([], [
-          html.label([attribute.for("activity-distance")], [
-            html.text("Distance (km)"),
-          ]),
-          field.input([
-            attribute.id("activity-distance"),
+        field.text(
+          "activity-distance",
+          "Distance",
+          on(field.suffix("km"), "distance"),
+          [
             attribute.type_("text"),
             attribute.attribute("inputmode", "decimal"),
             attribute.name("distance"),
             attribute.value(form.distance_km),
-            attribute.placeholder("8.5"),
             event.on_input(DistanceChanged),
-          ]),
-        ]),
-        html.div([], [
-          html.label([attribute.for("activity-duration")], [
-            html.text("Time (minutes or h:mm)"),
-          ]),
-          field.input([
-            attribute.id("activity-duration"),
+          ],
+        ),
+        field.text(
+          "activity-duration",
+          "Time",
+          on(
+            field.help("Minutes, or hours and minutes: 45 or 1:30"),
+            "duration",
+          ),
+          [
             attribute.type_("text"),
             attribute.name("duration"),
             attribute.value(form.duration),
-            attribute.placeholder("45 or 1:30"),
             event.on_input(DurationChanged),
-          ]),
-        ]),
+          ],
+        ),
       ]),
       html.div([class("row")], [
-        html.div([], [
-          html.label([attribute.for("activity-elevation")], [
-            html.text("Climb (m, optional)"),
-          ]),
-          field.input([
-            attribute.id("activity-elevation"),
+        field.text(
+          "activity-elevation",
+          "Climb",
+          on(field.Help("Optional", "m", None), "elevation"),
+          [
             attribute.type_("text"),
             attribute.attribute("inputmode", "numeric"),
             attribute.name("elevation"),
             attribute.value(form.elevation_m),
             event.on_input(ElevationChanged),
-          ]),
-        ]),
-        html.div([], [
-          html.label([attribute.for("activity-hr")], [
-            html.text("Average heart rate (optional)"),
-          ]),
-          field.input([
-            attribute.id("activity-hr"),
+          ],
+        ),
+        field.text(
+          "activity-hr",
+          "Average heart rate",
+          on(field.Help("Optional", "bpm", None), "avg_hr"),
+          [
             attribute.type_("text"),
             attribute.attribute("inputmode", "numeric"),
             attribute.name("heart_rate"),
             attribute.value(form.avg_hr),
             event.on_input(HeartRateChanged),
-          ]),
-        ]),
+          ],
+        ),
       ]),
-      case form.error {
-        Some(message) -> error.message(message)
-        None -> element.none()
+      // A problem that is about no single field shows at the end.
+      case form.error, wrong {
+        Some(message), "" -> error.message(message)
+        _, _ -> element.none()
       },
     ],
   )

@@ -450,7 +450,6 @@ label {
   font: 500 0.75rem/1rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
   color: var(--md-sys-color-on-surface-variant); margin-top: 0.75rem;
 }
-label:has(+ .md-text-field:focus) { color: var(--md-sys-color-primary); }
 .error { color: var(--md-sys-color-error); margin: 0.25rem 0 0; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; }
 .settings h2, .toolbar h2 { font: 400 1.375rem/1.75rem var(--md-ref-typeface); }
 .toolbar h2 { margin: 1.5rem 0 0.75rem; }
@@ -969,4 +968,45 @@ html[data-scrolled] .md-tab-bar { background: var(--md-sys-color-surface-contain
   border-radius: 3px 3px 0 0; background: var(--md-sys-color-primary);
 }
 @media (min-width: 37.5rem) { .md-tab { flex: none; min-width: 6rem; } }
+
+/* Outlined text fields with a floating label (ADR 0059): the label sits in the field and moves onto its outline
+   when the field has focus or a value; date, time and select fields always show something, so their label always
+   sits on the outline. The label's background hides the outline behind it: --field-container is the colour of
+   what the field is on. */
+.md-field { position: relative; margin-top: 0.5rem; }
+.md-field-label {
+  position: absolute; left: 0.75rem; top: 1rem; max-width: calc(100% - 1.5rem); margin: 0; padding: 0 0.25rem;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis; pointer-events: none; transform-origin: left top;
+  color: var(--md-sys-color-on-surface-variant); font: 400 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
+  transition: transform var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+}
+.md-field:focus-within .md-field-label,
+.md-field .md-text-field:not(:placeholder-shown) ~ .md-field-label,
+.md-field:has(select) .md-field-label,
+.md-field:has(input[type="date"], input[type="time"]) .md-field-label {
+  transform: translateY(-1.5625rem) scale(0.75); background: var(--field-container, var(--md-sys-color-surface));
+}
+.md-field:focus-within .md-field-label { color: var(--md-sys-color-primary); }
+.md-field.has-error .md-field-label { color: var(--md-sys-color-error); }
+/* A field's own placeholder (an example) shows only while it has focus, when the label is out of its way. */
+.md-field .md-text-field::placeholder { color: transparent; }
+.md-field .md-text-field:focus::placeholder { color: var(--md-sys-color-on-surface-variant); }
+/* A unit at the end, shown once the label has moved up. */
+.md-field.has-suffix .md-text-field { padding-right: 3.5rem; }
+.md-field-suffix {
+  position: absolute; right: 1rem; top: 1rem; line-height: 1.5rem; pointer-events: none; opacity: 0;
+  color: var(--md-sys-color-on-surface-variant);
+}
+.md-field:focus-within .md-field-suffix, .md-field .md-text-field:not(:placeholder-shown) ~ .md-field-suffix { opacity: 1; }
+.md-field-supporting, .phases-error {
+  margin: 0.25rem 1rem 0; color: var(--md-sys-color-on-surface-variant);
+  font-size: 0.75rem; line-height: 1rem; letter-spacing: 0.025rem;
+}
+.md-field.has-error .md-field-supporting, .phases-error { color: var(--md-sys-color-error); }
+@media (prefers-reduced-motion: reduce) { .md-field-label { transition: none; } }
+/* What fields sit on. */
+.sidebar-panel { --field-container: var(--md-sys-color-surface-container-low); }
+@media (max-width: 71.99rem) { .sheet-content .sidebar-panel { --field-container: var(--md-sys-color-surface-container); } }
+@media (min-width: 37.5rem) { dialog.form-dialog { --field-container: var(--md-sys-color-surface-container-high); } }
 

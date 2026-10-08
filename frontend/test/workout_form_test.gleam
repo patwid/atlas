@@ -189,3 +189,39 @@ pub fn labels_for_every_kind_test() {
   assert workout_form.kind_label(plan.Rest) == "Rest day"
   assert workout_form.kind_label(plan.Cross) == "Cross-training"
 }
+
+pub fn a_problem_names_its_field_test() {
+  let assert Error(#("title", "Give the workout a title.")) =
+    workout_form.validate_fields(workout_form.Form(
+      "1",
+      "1",
+      "",
+      plan.Easy,
+      "",
+      "",
+      "",
+      None,
+    ))
+  assert workout_form.error_field(workout_form.Form(
+      "1",
+      "1",
+      "Run",
+      plan.Easy,
+      "x",
+      "",
+      "",
+      None,
+    ))
+    == "distance"
+  assert workout_form.error_field(workout_form.Form(
+      "1",
+      "1",
+      "Run",
+      plan.Easy,
+      "",
+      "",
+      "",
+      None,
+    ))
+    == ""
+}

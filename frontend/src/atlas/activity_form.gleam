@@ -12,6 +12,7 @@ import gleam/float
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/result
 import gleam/string
 
 const max_name = 200
@@ -104,18 +105,25 @@ pub fn from_row(row: Row, offset: Int) -> Form {
   )
 }
 
-pub fn validate(form: Form) -> Result(Valid, String) {
+/// Checks the form; a problem names the field it is about: `date`, `time`, `name`, `distance`, `duration`,
+/// `elevation` or `avg_hr`.
+pub fn validate_fields(form: Form) -> Result(Valid, #(String, String)) {
   let name = string.trim(form.name)
   case date.parse(string.trim(form.date)), parse_time(form.time) {
-    Error(Nil), _ -> Error("Pick the day of the activity.")
+    Error(Nil), _ -> Error(#("date", "Pick the day of the activity."))
     _, Error(Nil) ->
-      Error("Enter the start time as hours and minutes, for example 07:30.")
+      Error(#(
+        "time",
+        "Enter the start time as hours and minutes, for example 07:30.",
+      ))
     Ok(day), Ok(#(hour, minute)) ->
       case day.year < 2000 || day.year > 2100 {
-        True -> Error("The date must be between the years 2000 and 2100.")
+        True ->
+          Error(#("date", "The date must be between the years 2000 and 2100."))
         False ->
           case string.length(name) > max_name {
-            True -> Error("The name can have at most 200 characters.")
+            True ->
+              Error(#("name", "The name can have at most 200 characters."))
             False ->
               case
                 optional(form.distance_km, 0.0, distance),
@@ -128,13 +136,17 @@ pub fn validate(form: Form) -> Result(Valid, String) {
                   max_heart_rate,
                 )
               {
-                Error(message), _, _, _ -> Error(message)
-                _, Error(message), _, _ -> Error(message)
-                _, _, Error(message), _ -> Error(message)
-                _, _, _, Error(message) -> Error(message)
+                Error(message), _, _, _ -> Error(#("distance", message))
+                _, Error(message), _, _ -> Error(#("duration", message))
+                _, _, Error(message), _ -> Error(#("elevation", message))
+                _, _, _, Error(message) -> Error(#("avg_hr", message))
                 Ok(distance_m), Ok(duration_s), Ok(elevation), Ok(heart_rate) ->
                   case distance_m <=. 0.0 && duration_s <= 0 {
-                    True -> Error("Enter a distance or a time, or both.")
+                    True ->
+                      Error(#(
+                        "distance",
+                        "Enter a distance or a time, or both.",
+                      ))
                     False ->
                       Ok(Valid(
                         day: day,
@@ -308,4 +320,17 @@ pub fn strava_url(row: Row) -> Option(String) {
 
 fn is_digit(character: String) -> Bool {
   string.contains("0123456789", character)
+}
+
+/// The form's problem without the field it is about (ADR 0059).
+pub fn validate(form: Form) -> Result(Valid, String) {
+  validate_fields(form) |> result.map_error(fn(problem) { problem.1 })
+}
+
+/// The field the form's problem is about, `""` when there is none: its error is shown under that field (ADR 0059).
+pub fn error_field(form: Form) -> String {
+  case validate_fields(form) {
+    Error(#(field, _)) -> field
+    Ok(_) -> ""
+  }
 }

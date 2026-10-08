@@ -481,6 +481,11 @@ fn form_fields(
   new_assignment: Bool,
 ) -> Element(Msg) {
   let choosing_athlete = new_assignment && context.athletes != []
+  // A problem shows under the field it is about (ADR 0059).
+  let wrong = assignment_form.error_field(form)
+  let on = fn(help, field_name) {
+    field.with_error(help, field_name, wrong, form.error)
+  }
   html.form(
     [
       attribute.id(form_id),
@@ -491,41 +496,38 @@ fn form_fields(
       case choosing_athlete {
         False -> element.none()
         True ->
-          html.div([], [
-            html.label([attribute.for("assign-athlete")], [html.text("For")]),
-            field.select(
-              [
-                attribute.id("assign-athlete"),
-                attribute.name("athlete"),
-                event.on_change(AthleteChanged),
-              ],
-              form.athlete_id,
-              [
-                #(context.user_id, "Myself"),
-                ..list.map(context.athletes, fn(person) {
-                  #(person.id, person.name)
-                })
-              ],
-            ),
-          ])
+          field.choose(
+            "assign-athlete",
+            "For",
+            on(field.plain, "athlete"),
+            [attribute.name("athlete"), event.on_change(AthleteChanged)],
+            form.athlete_id,
+            [
+              #(context.user_id, "Myself"),
+              ..list.map(context.athletes, fn(person) {
+                #(person.id, person.name)
+              })
+            ],
+          )
       },
-      html.label([attribute.for("assign-start")], [
-        html.text("First day of the plan"),
-      ]),
       field.with_trigger(
-        field.input([
-          attribute.id("assign-start"),
-          attribute.type_("date"),
-          attribute.name("start_date"),
-          attribute.value(form.start_date),
-          attribute.required(True),
-          event.on_input(DateChanged),
-        ]),
+        field.text(
+          "assign-start",
+          "First day of the plan",
+          on(field.plain, "start"),
+          [
+            attribute.type_("date"),
+            attribute.name("start_date"),
+            attribute.value(form.start_date),
+            attribute.required(True),
+            event.on_input(DateChanged),
+          ],
+        ),
         date_picker.trigger(date_picker_id, DatePickerOpened),
       ),
-      case form.error {
-        Some(message) -> error.message(message)
-        None -> element.none()
+      case form.error, wrong {
+        Some(message), "" -> error.message(message)
+        _, _ -> element.none()
       },
     ],
   )

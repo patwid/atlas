@@ -578,6 +578,11 @@ fn form_view(model: Model, open: Bool, title: String) -> Element(Msg) {
 }
 
 fn form_fields(form: plan_form.Form) -> Element(Msg) {
+  // A problem shows under the field it is about (ADR 0059).
+  let wrong = plan_form.error_field(form)
+  let on = fn(help, field_name) {
+    field.with_error(help, field_name, wrong, form.error)
+  }
   html.form(
     [
       attribute.id(form_id),
@@ -585,9 +590,7 @@ fn form_fields(form: plan_form.Form) -> Element(Msg) {
       event.on_submit(fn(_) { Submitted }),
     ],
     [
-      html.label([attribute.for("plan-title")], [html.text("Title")]),
-      field.input([
-        attribute.id("plan-title"),
+      field.text("plan-title", "Title", on(field.plain, "title"), [
         attribute.type_("text"),
         attribute.name("title"),
         attribute.value(form.title),
@@ -595,10 +598,11 @@ fn form_fields(form: plan_form.Form) -> Element(Msg) {
         attribute.required(True),
         event.on_input(TitleChanged),
       ]),
-      html.label([attribute.for("plan-description")], [html.text("Description")]),
-      field.textarea(
+      field.area(
+        "plan-description",
+        "Description",
+        on(field.help("Optional"), "description"),
         [
-          attribute.id("plan-description"),
           attribute.name("description"),
           attribute.rows(4),
           event.on_input(DescriptionChanged),
@@ -627,10 +631,11 @@ fn form_fields(form: plan_form.Form) -> Element(Msg) {
           competition_weeks: CompetitionWeeksChanged,
           goal_km: GoalChanged,
         ),
+        form.error,
       ),
-      case form.error {
-        Some(message) -> error.message(message)
-        None -> element.none()
+      case form.error, wrong {
+        Some(message), "" -> error.message(message)
+        _, _ -> element.none()
       },
     ],
   )

@@ -11,6 +11,7 @@ import gleam/int
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/result
 import gleam/string
 
 pub const max_title = 200
@@ -90,14 +91,18 @@ fn settings_of(phases: Phases, goal: Option(Float)) -> Settings {
   )
 }
 
-pub fn validate_settings(settings: Settings) -> Result(ValidSettings, String) {
+/// Checks the phases and goal; a problem names the field it is about: `phases` or `goal` (ADR 0059).
+pub fn validate_settings_fields(
+  settings: Settings,
+) -> Result(ValidSettings, #(String, String)) {
   let weeks = fn(text, name) {
     case int.parse(string.trim(text)) {
       Ok(n) if n >= 0 && n <= max_phase_weeks -> Ok(n)
       _ ->
-        Error(
+        Error(#(
+          "phases",
           "The " <> name <> " phase must be a number of weeks from 0 to 52.",
-        )
+        ))
     }
   }
   let goal = case string.trim(settings.goal_km) {
@@ -105,9 +110,13 @@ pub fn validate_settings(settings: Settings) -> Result(ValidSettings, String) {
     typed ->
       case workout_form.parse_decimal(typed) {
         Ok(km) if km <=. max_goal_km -> Ok(km *. 1000.0)
-        Ok(_) -> Error("The weekly distance goal can be at most 1000 km.")
+        Ok(_) ->
+          Error(#("goal", "The weekly distance goal can be at most 1000 km."))
         Error(Nil) ->
-          Error("Enter the weekly distance goal in kilometres, for example 40.")
+          Error(#(
+            "goal",
+            "Enter the weekly distance goal in kilometres, for example 40.",
+          ))
       }
   }
   case
@@ -124,9 +133,9 @@ pub fn validate_settings(settings: Settings) -> Result(ValidSettings, String) {
     Ok(base), Ok(pre), Ok(competition), Ok(goal_m) -> {
       let phases = Phases(base, pre, competition)
       case plan.phase_weeks(phases) {
-        0 -> Error("The plan needs at least one week.")
+        0 -> Error(#("phases", "The plan needs at least one week."))
         n if n > workout_form.max_weeks ->
-          Error("The phases can last at most 60 weeks together.")
+          Error(#("phases", "The phases can last at most 60 weeks together."))
         _ -> Ok(ValidSettings(phases, goal_m))
       }
     }
@@ -140,18 +149,23 @@ pub fn visibility_from_string(text: String) -> plan.Visibility {
   }
 }
 
-pub fn validate(form: Form) -> Result(Valid, String) {
+/// Checks the form; a problem names the field it is about: `title`, `description`, `phases` or `goal`.
+pub fn validate_fields(form: Form) -> Result(Valid, #(String, String)) {
   let title = string.trim(form.title)
   let description = string.trim(form.description)
   case string.length(title), string.length(description) {
-    0, _ -> Error("Give the plan a title.")
-    n, _ if n > max_title -> Error("The title can have at most 200 characters.")
+    0, _ -> Error(#("title", "Give the plan a title."))
+    n, _ if n > max_title ->
+      Error(#("title", "The title can have at most 200 characters."))
     _, n if n > max_description ->
-      Error("The description can have at most 5000 characters.")
+      Error(#(
+        "description",
+        "The description can have at most 5000 characters.",
+      ))
     _, _ ->
-      case validate_settings(form.settings) {
+      case validate_settings_fields(form.settings) {
         Ok(settings) -> Ok(Valid(title, description, form.visibility, settings))
-        Error(message) -> Error(message)
+        Error(problem) -> Error(problem)
       }
   }
 }
@@ -269,4 +283,30 @@ pub fn changed_fields(original: Plan, valid: Valid) -> outbox.Fields {
   |> list.map(fn(item) { item.1 })
   |> list.append(settings_changes(original, valid.settings))
   |> dict.from_list
+}
+
+/// The form's problem without the field it is about (ADR 0059).
+pub fn validate(form: Form) -> Result(Valid, String) {
+  validate_fields(form) |> result.map_error(fn(problem) { problem.1 })
+}
+
+/// The field the form's problem is about, `""` when there is none: its error is shown under that field (ADR 0059).
+pub fn error_field(form: Form) -> String {
+  case validate_fields(form) {
+    Error(#(field, _)) -> field
+    Ok(_) -> ""
+  }
+}
+
+pub fn validate_settings(settings: Settings) -> Result(ValidSettings, String) {
+  validate_settings_fields(settings)
+  |> result.map_error(fn(problem) { problem.1 })
+}
+
+/// The field of the phases-and-goal problem, `""` when there is none (ADR 0059).
+pub fn settings_error_field(settings: Settings) -> String {
+  case validate_settings_fields(settings) {
+    Error(#(field, _)) -> field
+    Ok(_) -> ""
+  }
 }

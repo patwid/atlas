@@ -150,12 +150,8 @@ pub fn view(
   html.form(
     [class(labels.form_class), event.on_submit(fn(_) { wrap(FindClicked) })],
     [
-      html.label([attribute.for(labels.field_id)], [
-        html.text(labels.field_label),
-      ]),
       html.div([class("row")], [
-        field.input([
-          attribute.id(labels.field_id),
+        field.text(labels.field_id, labels.field_label, field.plain, [
           attribute.type_("email"),
           attribute.name("email"),
           attribute.autocomplete("off"),

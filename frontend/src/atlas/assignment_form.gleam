@@ -6,6 +6,7 @@ import atlas/outbox
 import atlas/plan.{type Assignment}
 import gleam/dict
 import gleam/option.{type Option, None}
+import gleam/result
 
 /// Dates outside this range are certainly typing mistakes.
 const earliest_year = 2000
@@ -43,13 +44,18 @@ pub fn from_row(row: Row) -> Form {
   )
 }
 
-pub fn validate(form: Form) -> Result(Valid, String) {
+/// Checks the form; a problem names the field it is about: `athlete` or `start`.
+pub fn validate_fields(form: Form) -> Result(Valid, #(String, String)) {
   case form.athlete_id, date.parse(form.start_date) {
-    "", _ -> Error("Choose who the plan is for.")
-    _, Error(Nil) -> Error("Pick a start date.")
+    "", _ -> Error(#("athlete", "Choose who the plan is for."))
+    _, Error(Nil) -> Error(#("start", "Pick a start date."))
     _, Ok(start) ->
       case start.year < earliest_year || start.year > latest_year {
-        True -> Error("The start date must be between the years 2000 and 2100.")
+        True ->
+          Error(#(
+            "start",
+            "The start date must be between the years 2000 and 2100.",
+          ))
         False -> Ok(Valid(form.athlete_id, start))
       }
   }
@@ -78,5 +84,18 @@ pub fn changed_fields(row: Row, valid: Valid) -> outbox.Fields {
       dict.from_list([
         outbox.field_string("start_date", date.to_string(valid.start)),
       ])
+  }
+}
+
+/// The form's problem without the field it is about (ADR 0059).
+pub fn validate(form: Form) -> Result(Valid, String) {
+  validate_fields(form) |> result.map_error(fn(problem) { problem.1 })
+}
+
+/// The field the form's problem is about, `""` when there is none: its error is shown under that field (ADR 0059).
+pub fn error_field(form: Form) -> String {
+  case validate_fields(form) {
+    Error(#(field, _)) -> field
+    Ok(_) -> ""
   }
 }

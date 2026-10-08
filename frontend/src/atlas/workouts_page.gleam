@@ -1035,10 +1035,15 @@ fn plan_panel(model: Model, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
                 competition_weeks: CompetitionWeeksChanged,
                 goal_km: GoalChanged,
               ),
+              model.settings_error,
             ),
-            case model.settings_error {
-              Some(message) -> error.message(message)
-              None -> element.none()
+            // A problem about the phases or the goal shows there (ADR 0059); any other at the end.
+            case
+              model.settings_error,
+              plan_form.settings_error_field(settings)
+            {
+              Some(message), "" -> error.message(message)
+              _, _ -> element.none()
             },
             layout.actions([
               button.filled([attribute.type_("submit")], [
@@ -1189,6 +1194,11 @@ fn form_fields(
   on_screen: Plan,
   weeks: List(plan_schedule.Week),
 ) -> Element(Msg) {
+  // A problem shows under the field it is about (ADR 0059).
+  let wrong = workout_form.error_field(form)
+  let on = fn(help, field_name) {
+    field.with_error(help, field_name, wrong, form.error)
+  }
   html.form(
     [
       attribute.id(form_id),
@@ -1196,9 +1206,7 @@ fn form_fields(
       event.on_submit(fn(_) { Submitted }),
     ],
     [
-      html.label([attribute.for(form_title_id)], [html.text("Title")]),
-      field.input([
-        attribute.id(form_title_id),
+      field.text(form_title_id, "Title", on(field.plain, "title"), [
         attribute.type_("text"),
         attribute.name("title"),
         attribute.value(form.title),
@@ -1207,32 +1215,24 @@ fn form_fields(
         event.on_input(TitleChanged),
       ]),
       html.div([class("row")], [
-        html.div([], [
-          html.label([attribute.for("workout-week")], [html.text("Week")]),
-          field.select(
-            [
-              attribute.id("workout-week"),
-              attribute.name("week"),
-              event.on_change(WeekChanged),
-            ],
-            form.week,
-            week_options(on_screen, weeks, form.week),
-          ),
-        ]),
-        html.div([], [
-          html.label([attribute.for("workout-day")], [html.text("Day")]),
-          field.select(
-            [
-              attribute.id("workout-day"),
-              attribute.name("day"),
-              event.on_change(DayChanged),
-            ],
-            form.day,
-            list.map([1, 2, 3, 4, 5, 6, 7], fn(n) {
-              #(int.to_string(n), "Day " <> int.to_string(n))
-            }),
-          ),
-        ]),
+        field.choose(
+          "workout-week",
+          "Week",
+          on(field.plain, "week"),
+          [attribute.name("week"), event.on_change(WeekChanged)],
+          form.week,
+          week_options(on_screen, weeks, form.week),
+        ),
+        field.choose(
+          "workout-day",
+          "Day",
+          on(field.plain, "day"),
+          [attribute.name("day"), event.on_change(DayChanged)],
+          form.day,
+          list.map([1, 2, 3, 4, 5, 6, 7], fn(n) {
+            #(int.to_string(n), "Day " <> int.to_string(n))
+          }),
+        ),
       ]),
       choice.chips(
         "kind",
@@ -1244,47 +1244,47 @@ fn form_fields(
         KindChanged,
       ),
       html.div([class("row")], [
-        html.div([], [
-          html.label([attribute.for("workout-distance")], [
-            html.text("Distance (km)"),
-          ]),
-          field.input([
-            attribute.id("workout-distance"),
+        field.text(
+          "workout-distance",
+          "Distance",
+          on(field.Help("Optional", "km", None), "distance"),
+          [
             attribute.type_("text"),
             attribute.attribute("inputmode", "decimal"),
             attribute.name("distance"),
             attribute.value(form.distance_km),
-            attribute.placeholder("8.5"),
             event.on_input(DistanceChanged),
-          ]),
-        ]),
-        html.div([], [
-          html.label([attribute.for("workout-duration")], [
-            html.text("Time (minutes or h:mm)"),
-          ]),
-          field.input([
-            attribute.id("workout-duration"),
+          ],
+        ),
+        field.text(
+          "workout-duration",
+          "Time",
+          on(
+            field.help("Minutes, or hours and minutes: 45 or 1:30"),
+            "duration",
+          ),
+          [
             attribute.type_("text"),
             attribute.name("duration"),
             attribute.value(form.duration),
-            attribute.placeholder("45 or 1:30"),
             event.on_input(DurationChanged),
-          ]),
-        ]),
+          ],
+        ),
       ]),
-      html.label([attribute.for("workout-description")], [html.text("Notes")]),
-      field.textarea(
+      field.area(
+        "workout-description",
+        "Notes",
+        on(field.help("Optional"), "description"),
         [
-          attribute.id("workout-description"),
           attribute.name("description"),
           attribute.rows(3),
           event.on_input(DescriptionChanged),
         ],
         form.description,
       ),
-      case form.error {
-        Some(message) -> error.message(message)
-        None -> element.none()
+      case form.error, wrong {
+        Some(message), "" -> error.message(message)
+        _, _ -> element.none()
       },
     ],
   )

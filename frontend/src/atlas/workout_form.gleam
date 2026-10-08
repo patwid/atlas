@@ -8,6 +8,7 @@ import gleam/float
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/result
 import gleam/string
 
 pub const max_title = 200
@@ -77,7 +78,9 @@ pub fn from_row(row: Row) -> Form {
   )
 }
 
-pub fn validate(form: Form) -> Result(Valid, String) {
+/// Checks the form; a problem names the field it is about: `week`, `day`, `title`, `description`, `distance` or
+/// `duration`.
+pub fn validate_fields(form: Form) -> Result(Valid, #(String, String)) {
   let title = string.trim(form.title)
   let description = string.trim(form.description)
   case
@@ -85,25 +88,29 @@ pub fn validate(form: Form) -> Result(Valid, String) {
     int.parse(string.trim(form.day)),
     string.length(title)
   {
-    Error(_), _, _ -> Error("Enter the week as a number.")
+    Error(_), _, _ -> Error(#("week", "Enter the week as a number."))
     Ok(week), _, _ if week < 1 || week > max_weeks ->
-      Error("The week must be between 1 and 60.")
-    _, Error(_), _ -> Error("Choose the day of the week.")
+      Error(#("week", "The week must be between 1 and 60."))
+    _, Error(_), _ -> Error(#("day", "Choose the day of the week."))
     _, Ok(day), _ if day < 1 || day > 7 ->
-      Error("The day must be between 1 and 7.")
-    _, _, 0 -> Error("Give the workout a title.")
+      Error(#("day", "The day must be between 1 and 7."))
+    _, _, 0 -> Error(#("title", "Give the workout a title."))
     _, _, n if n > max_title ->
-      Error("The title can have at most 200 characters.")
+      Error(#("title", "The title can have at most 200 characters."))
     Ok(week), Ok(day), _ ->
       case string.length(description) > max_description {
-        True -> Error("The description can have at most 5000 characters.")
+        True ->
+          Error(#(
+            "description",
+            "The description can have at most 5000 characters.",
+          ))
         False ->
           case
             target_distance(form.distance_km),
             target_duration(form.duration)
           {
-            Error(message), _ -> Error(message)
-            _, Error(message) -> Error(message)
+            Error(message), _ -> Error(#("distance", message))
+            _, Error(message) -> Error(#("duration", message))
             Ok(distance), Ok(duration) ->
               Ok(Valid(
                 day_index: { week - 1 } * 7 + { day - 1 },
@@ -287,5 +294,18 @@ pub fn kind_label(kind: Kind) -> String {
     plan.Rest -> "Rest day"
     plan.Cross -> "Cross-training"
     plan.Strength -> "Strength"
+  }
+}
+
+/// The form's problem without the field it is about (ADR 0059).
+pub fn validate(form: Form) -> Result(Valid, String) {
+  validate_fields(form) |> result.map_error(fn(problem) { problem.1 })
+}
+
+/// The field the form's problem is about, `""` when there is none: its error is shown under that field (ADR 0059).
+pub fn error_field(form: Form) -> String {
+  case validate_fields(form) {
+    Error(#(field, _)) -> field
+    Ok(_) -> ""
   }
 }

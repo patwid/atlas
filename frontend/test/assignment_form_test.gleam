@@ -73,3 +73,9 @@ pub fn only_a_changed_start_date_is_sent_test() {
 pub fn editing_starts_from_the_stored_assignment_test() {
   assert assignment_form.from_row(row()) == Form("u1", "2026-11-02", None)
 }
+
+pub fn a_problem_names_its_field_test() {
+  assert assignment_form.error_field(form("", "2026-11-02")) == "athlete"
+  assert assignment_form.error_field(form("u1", "")) == "start"
+  assert assignment_form.error_field(form("u1", "2026-11-02")) == ""
+}

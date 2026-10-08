@@ -172,3 +172,14 @@ pub fn editing_starts_from_the_plan_test() {
   assert plan_form.empty()
     == Form("", "", plan.Private, Settings("4", "4", "4", ""), None)
 }
+
+pub fn a_problem_names_its_field_test() {
+  assert plan_form.error_field(form("", "x")) == "title"
+  assert plan_form.error_field(
+      Form(..form("Plan", ""), settings: Settings("0", "0", "0", "")),
+    )
+    == "phases"
+  assert plan_form.settings_error_field(Settings("4", "4", "4", "far"))
+    == "goal"
+  assert plan_form.error_field(form("Plan", "")) == ""
+}

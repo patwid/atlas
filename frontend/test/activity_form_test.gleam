@@ -294,3 +294,12 @@ pub fn only_strava_activities_with_a_numeric_id_get_a_link_test() {
     == None
   assert activity_form.strava_url(strava_row(activity.Strava, "1e5")) == None
 }
+
+pub fn a_problem_names_its_field_test() {
+  assert activity_form.error_field(Form(..form(), date: "")) == "date"
+  assert activity_form.error_field(Form(..form(), time: "")) == "time"
+  assert activity_form.error_field(Form(..form(), distance_km: "far"))
+    == "distance"
+  assert activity_form.error_field(Form(..form(), avg_hr: "999")) == "avg_hr"
+  assert activity_form.error_field(form()) == ""
+}

@@ -4,6 +4,7 @@
 //// `plan_form.Form`), which would shadow a module of that name.
 
 import gleam/list
+import gleam/option.{type Option, None, Some}
 import lustre/attribute.{type Attribute, class}
 import lustre/element.{type Element}
 import lustre/element/html
@@ -45,4 +46,161 @@ pub fn with_trigger(
   trigger: Element(msg),
 ) -> Element(msg) {
   html.div([class("field-with-trigger")], [field, trigger])
+}
+
+// OUTLINED FIELDS WITH A FLOATING LABEL (ADR 0059) -------------------------------------------------
+
+/// What a field says besides its label: a line of help under it, a unit at its end (`km`), and its error, which
+/// replaces the help and marks the field.
+pub type Help {
+  Help(supporting: String, suffix: String, error: Option(String))
+}
+
+pub const plain = Help("", "", None)
+
+pub fn help(supporting: String) -> Help {
+  Help(..plain, supporting: supporting)
+}
+
+pub fn suffix(unit: String) -> Help {
+  Help(..plain, suffix: unit)
+}
+
+/// Shows `error` when `error_field` is `field`: the form's problem is about this field (ADR 0059).
+pub fn with_error(
+  help: Help,
+  field: String,
+  error_field: String,
+  error: Option(String),
+) -> Help {
+  case error_field == field {
+    True -> Help(..help, error: error)
+    False -> help
+  }
+}
+
+/// An outlined text field whose label sits in the field and moves onto its outline when the field has focus or a
+/// value, as Material 3 draws it.
+pub fn text(
+  id: String,
+  label: String,
+  help: Help,
+  attributes: List(Attribute(msg)),
+) -> Element(msg) {
+  outlined(id, label, help, html.input(control(id, help, attributes)))
+}
+
+pub fn area(
+  id: String,
+  label: String,
+  help: Help,
+  attributes: List(Attribute(msg)),
+  content: String,
+) -> Element(msg) {
+  outlined(
+    id,
+    label,
+    help,
+    html.textarea(control(id, help, attributes), content),
+  )
+}
+
+/// A select with its label on the outline. `options` are `#(value, label)` pairs; see `select` for why the value
+/// is marked on its option.
+pub fn choose(
+  id: String,
+  label: String,
+  help: Help,
+  attributes: List(Attribute(msg)),
+  value: String,
+  options: List(#(String, String)),
+) -> Element(msg) {
+  outlined(
+    id,
+    label,
+    help,
+    html.select(
+      control(id, help, attributes),
+      list.map(options, fn(option) {
+        html.option(
+          [attribute.value(option.0), attribute.selected(option.0 == value)],
+          option.1,
+        )
+      }),
+    ),
+  )
+}
+
+fn control(
+  id: String,
+  help: Help,
+  attributes: List(Attribute(msg)),
+) -> List(Attribute(msg)) {
+  [
+    attribute.id(id),
+    class("md-text-field"),
+    // A blank placeholder lets CSS tell an empty field (`:placeholder-shown`) from a filled one; a field's own
+    // placeholder, given in `attributes`, takes its place.
+    attribute.placeholder(" "),
+    case help.error, help.supporting {
+      None, "" -> attribute.none()
+      _, _ -> attribute.attribute("aria-describedby", id <> "-help")
+    },
+    case help.error {
+      Some(_) -> attribute.attribute("aria-invalid", "true")
+      None -> attribute.none()
+    },
+    ..attributes
+  ]
+}
+
+fn outlined(
+  id: String,
+  label: String,
+  help: Help,
+  input: Element(msg),
+) -> Element(msg) {
+  html.div(
+    [
+      class("md-field"),
+      attribute.classes([
+        #("has-error", help.error != None),
+        #("has-suffix", help.suffix != ""),
+      ]),
+    ],
+    [
+      input,
+      html.label([attribute.for(id), class("md-field-label")], [
+        html.text(label),
+      ]),
+      case help.suffix {
+        "" -> element.none()
+        unit ->
+          html.span(
+            [
+              class("md-field-suffix"),
+              attribute.attribute("aria-hidden", "true"),
+            ],
+            [html.text(unit)],
+          )
+      },
+      case help.error, help.supporting {
+        // An error is announced when it appears, as the form-level message was (`atlas/ui/error`).
+        Some(message), _ ->
+          html.p(
+            [
+              attribute.id(id <> "-help"),
+              class("md-field-supporting"),
+              attribute.role("alert"),
+            ],
+            [html.text(message)],
+          )
+        None, "" -> element.none()
+        None, text ->
+          html.p([attribute.id(id <> "-help"), class("md-field-supporting")], [
+            html.text(text),
+          ])
+      },
+    ],
+  )
 }

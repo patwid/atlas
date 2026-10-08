@@ -399,10 +399,14 @@ pub fn the_form_is_labelled_and_shows_errors_test() {
   let html = html_of(model, True)
   assert string.contains(html, "for=\"workout-title\"")
   assert string.contains(html, "for=\"workout-distance\"")
-  assert string.contains(html, "Distance (km)")
-  assert string.contains(html, "Time (minutes or h:mm)")
-  assert string.contains(html, "role=\"alert\"")
-  assert string.contains(html, "Give the workout a title.")
+  assert string.contains(html, ">km<")
+  assert string.contains(html, "Minutes, or hours and minutes")
+  // The error is under the field it is about, which is marked (ADR 0059).
+  assert string.contains(html, "aria-invalid=\"true\"")
+  assert string.contains(
+    html,
+    "class=\"md-field-supporting\" id=\"workout-title-help\" role=\"alert\">Give the workout a title.",
+  )
   assert string.contains(html, "Easy run")
   assert string.contains(html, "Rest day")
 }

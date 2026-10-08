@@ -266,12 +266,8 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
     ]),
     html.form([class("zones-form"), event.on_submit(fn(_) { Submitted })], [
       html.h3([], [html.text("Heart rate")]),
-      html.label([attribute.for("hr-max")], [
-        html.text("Maximum heart rate (bpm)"),
-      ]),
       html.div([class("row")], [
-        field.input([
-          attribute.id("hr-max"),
+        field.text("hr-max", "Maximum heart rate", field.suffix("bpm"), [
           attribute.type_("text"),
           attribute.attribute("inputmode", "numeric"),
           attribute.name("max_hr"),
@@ -305,12 +301,8 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
         fn(n, v) { LactateStartChanged(n, v) },
       ),
       html.h3([], [html.text("Pace")]),
-      html.label([attribute.for("pace-threshold")], [
-        html.text("Threshold pace (min:s per km)"),
-      ]),
       html.div([class("row")], [
-        field.input([
-          attribute.id("pace-threshold"),
+        field.text("pace-threshold", "Threshold pace", field.suffix("min/km"), [
           attribute.type_("text"),
           attribute.name("threshold_pace"),
           attribute.value(model.pace.threshold),
