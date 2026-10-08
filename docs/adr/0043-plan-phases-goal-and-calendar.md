@@ -19,8 +19,7 @@ target volume per week and harder and easier weeks. The owner asked for:
 
 ## Options considered
 
-1. **Fields on `plans`** — three week counts, a distance goal, and the week intensities as a JSON object keyed by
-   week number. One record syncs it all; copying and conflicted copies (0020, 0028) carry it without new code.
+1. **Fields on `plans`** — three week counts, a distance goal, and the week intensities as JSON. One record syncs it all; copying and conflicted copies (0020, 0028) carry it without new code.
    An intensity change and an edit of the title on another device conflict as one record (a conflicted copy of
    the plan), which is rare and visible.
 2. **A `plan_weeks` collection** (plan, week, intensity) — finer-grained conflicts, but a new collection with
@@ -33,7 +32,9 @@ We take option 1.
 
 - **Schema** (migration `1760000700_plan_phases.js`): `plans` gets `base_weeks`, `pre_competition_weeks`,
   `competition_weeks` (whole numbers 0-52), `weekly_distance_m` (metres, 0-1 000 000, 0 = no goal) and
-  `week_intensity` (JSON, `{"3": "high"}`; week numbers from 1). None is required, so app versions that do not know
+  `week_intensity` (JSON: one level per week in week order, `""` for none, so `["", "high"]` makes week 2 hard; a
+  list rather than an object keyed by week, because the stdlib's decoder accepts plain objects only from the app's
+  own JavaScript realm, and IndexedDB need not hand back objects from it). None is required, so app versions that do not know
   them keep working.
 - **Phases**: the plan's weeks are the base weeks, then the pre-competition weeks, then the competition weeks. A new
   plan starts with 4 + 4 + 4. A phase may have 0 weeks, but a plan has at least one week and at most 60 (the

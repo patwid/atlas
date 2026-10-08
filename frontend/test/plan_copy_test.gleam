@@ -44,7 +44,7 @@ pub fn the_copy_is_private_owned_by_the_copier_and_remembers_its_source_test() {
       outbox.field_int("pre_competition_weeks", 0),
       outbox.field_int("competition_weeks", 0),
       outbox.field_float("weekly_distance_m", 0.0),
-      #("week_intensity", "{}"),
+      #("week_intensity", "[]"),
     ])
   assert copy.workouts == []
 }
@@ -62,7 +62,7 @@ pub fn phases_goal_and_intensities_are_copied_test() {
   assert dict.get(copy.plan_fields, "competition_weeks") == Ok("2")
   assert dict.get(copy.plan_fields, "weekly_distance_m")
     == Ok(outbox.field_float("weekly_distance_m", 50_000.0).1)
-  assert dict.get(copy.plan_fields, "week_intensity") == Ok("{\"2\":\"high\"}")
+  assert dict.get(copy.plan_fields, "week_intensity") == Ok("[\"\",\"high\"]")
 }
 
 pub fn a_public_plan_is_copied_as_private_test() {

@@ -34,7 +34,7 @@ pub fn reads_a_plan_test() {
 
 pub fn reads_a_plans_phases_goal_and_week_intensities_test() {
   let json =
-    "{\"id\":\"p4\",\"title\":\"Season\",\"base_weeks\":6,\"pre_competition_weeks\":4,\"competition_weeks\":2,\"weekly_distance_m\":45000,\"week_intensity\":{\"1\":\"low\",\"7\":\"high\",\"x\":\"high\",\"2\":\"extreme\"}}"
+    "{\"id\":\"p4\",\"title\":\"Season\",\"base_weeks\":6,\"pre_competition_weeks\":4,\"competition_weeks\":2,\"weekly_distance_m\":45000,\"week_intensity\":[\"low\",\"extreme\",\"\",null,\"\",\"\",\"high\"]}"
   let assert Ok(read) = records.plan(parse(json))
   assert read.phases == plan.Phases(6, 4, 2)
   assert read.weekly_distance_m == Some(45_000.0)

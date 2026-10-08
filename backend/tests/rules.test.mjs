@@ -68,17 +68,17 @@ test("plans: cannot create for someone else, cannot change owner, cannot edit ot
 })
 
 test("plans: phase weeks, a weekly distance goal and week intensities are stored; out-of-range phases are refused (ADR 0043)", async () => {
-  const p = await mkPlan("alice", { base_weeks: 4, pre_competition_weeks: 3, competition_weeks: 2, weekly_distance_m: 40000, week_intensity: { "2": "high" } })
+  const p = await mkPlan("alice", { base_weeks: 4, pre_competition_weeks: 3, competition_weeks: 2, weekly_distance_m: 40000, week_intensity: ["", "high"] })
   assert.equal(p.base_weeks, 4)
   assert.equal(p.weekly_distance_m, 40000)
-  assert.deepEqual(p.week_intensity, { "2": "high" })
+  assert.deepEqual(p.week_intensity, ["", "high"])
   const old = await mkPlan("alice")
   assert.equal(old.base_weeks, 0, "plans without phases stay valid")
   const tooLong = await create("alice", "plans", { id: id(), owner: people.alice.id, title: "x", visibility: "private", base_weeks: 53 })
   assert.equal(tooLong.status, 400)
-  const changed = await update("alice", "plans", p.id, { week_intensity: { "2": "high", "5": "low" } })
+  const changed = await update("alice", "plans", p.id, { week_intensity: ["", "high", "", "", "low"] })
   assert.equal(changed.status, 200)
-  assert.deepEqual(changed.body.week_intensity, { "2": "high", "5": "low" })
+  assert.deepEqual(changed.body.week_intensity, ["", "high", "", "", "low"])
 })
 
 test("plans: clients cannot hard-delete", async () => {

@@ -74,16 +74,17 @@ pub fn plan(record: Dynamic) -> Result(Plan, Nil) {
   })
 }
 
-/// `{"3": "high"}`, or `null` when nothing was set. Entries that are not a week number and a known level
-/// are skipped, so one odd value does not hide the plan.
+/// One level per week, in week order (`["", "high"]`: week 2 is hard), or `null` when nothing was set. An
+/// empty or unknown level means "not set", so one odd value does not hide the plan. A list, not an object
+/// keyed by week, because objects from IndexedDB need not come from the app's own JavaScript realm.
 fn week_intensity_decoder() -> Decoder(Dict(Int, plan.Intensity)) {
   decode.one_of(
-    decode.dict(decode.string, decode.string)
-      |> decode.map(fn(raw) {
-        dict.fold(raw, dict.new(), fn(acc, week, level) {
-          case int.parse(week), plan.intensity_from_string(level) {
-            Ok(n), Ok(intensity) if n >= 1 -> dict.insert(acc, n, intensity)
-            _, _ -> acc
+    decode.list(decode.one_of(decode.string, [decode.success("")]))
+      |> decode.map(fn(levels) {
+        list.index_fold(levels, dict.new(), fn(acc, level, index) {
+          case plan.intensity_from_string(level) {
+            Ok(intensity) -> dict.insert(acc, index + 1, intensity)
+            Error(Nil) -> acc
           }
         })
       }),

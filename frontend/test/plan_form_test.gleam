@@ -115,7 +115,7 @@ pub fn changed_settings_send_only_what_changed_test() {
 pub fn setting_a_week_intensity_writes_all_of_them_test() {
   let p = existing()
   assert plan_form.intensity_fields(p, 3, Some(plan.High))
-    == dict.from_list([#("week_intensity", "{\"3\":\"high\"}")])
+    == dict.from_list([#("week_intensity", "[\"\",\"\",\"high\"]")])
   let with_two =
     plan.Plan(
       ..p,
@@ -123,10 +123,18 @@ pub fn setting_a_week_intensity_writes_all_of_them_test() {
     )
   assert plan_form.intensity_fields(with_two, 2, Some(plan.Medium))
     == dict.from_list([
-      #("week_intensity", "{\"2\":\"medium\",\"3\":\"high\",\"10\":\"low\"}"),
+      #(
+        "week_intensity",
+        "[\"\",\"medium\",\"high\",\"\",\"\",\"\",\"\",\"\",\"\",\"low\"]",
+      ),
     ])
   assert plan_form.intensity_fields(with_two, 3, None)
-    == dict.from_list([#("week_intensity", "{\"10\":\"low\"}")])
+    == dict.from_list([
+      #(
+        "week_intensity",
+        "[\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"low\"]",
+      ),
+    ])
   assert plan_form.intensity_fields(with_two, 3, Some(plan.High)) == dict.new()
   assert plan_form.intensity_fields(with_two, 4, None) == dict.new()
 }

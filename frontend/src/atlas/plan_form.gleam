@@ -232,15 +232,18 @@ pub fn intensity_fields(
   }
 }
 
-/// `{"3":"high"}`, in week order so the same intensities always give the same text.
+/// One level per week up to the last one set, `""` for a week without one: `["","high"]`.
 pub fn encode_intensities(intensities: dict.Dict(Int, Intensity)) -> String {
-  intensities
-  |> dict.to_list
-  |> list.sort(fn(a, b) { int.compare(a.0, b.0) })
-  |> list.map(fn(pair) {
-    #(int.to_string(pair.0), json.string(plan.intensity_to_string(pair.1)))
+  let last =
+    dict.fold(intensities, 0, fn(highest, week, _) { int.max(highest, week) })
+  list.repeat(Nil, last)
+  |> list.index_map(fn(_, index) {
+    case dict.get(intensities, index + 1) {
+      Ok(level) -> plan.intensity_to_string(level)
+      Error(Nil) -> ""
+    }
   })
-  |> json.object
+  |> json.array(json.string)
   |> json.to_string
 }
 
