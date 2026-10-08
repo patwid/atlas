@@ -1,4 +1,7 @@
-/* Material Design 3 (ADR 0044, 0045), written by hand: no Material library is loaded. The colors are M3's
+/* Window size classes (ADR 0060), M3's: compact under 600px (37.5rem), medium from 600px, expanded from 840px
+   (52.5rem), large from 1200px (75rem). Media queries use these widths only.
+
+   Material Design 3 (ADR 0044, 0045), written by hand: no Material library is loaded. The colors are M3's
    baseline scheme, unchanged (the values of Google's @material/web tokens, M3 34.0); every color in the app is one
    of these roles, except Strava's brand orange (ADR 0027). The type scale, shapes, state layers and component
    measures follow m3.material.io. */
@@ -136,7 +139,7 @@
   /* The navigation bar's height, which floating things (FAB, snackbar) keep clear of; 0 next to the rail. */
   --nav-bar-height: calc(5rem + env(safe-area-inset-bottom));
 }
-@media (min-width: 60rem) { :root { --nav-bar-height: 0px; } }
+@media (min-width: 37.5rem) { :root { --nav-bar-height: 0px; } }
 
 * { box-sizing: border-box; }
 html, body {
@@ -218,9 +221,15 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 .md-fab:hover::before { opacity: var(--md-sys-state-hover); }
 .md-fab:focus-visible::before, .md-fab:active::before { opacity: var(--md-sys-state-focus); }
 .md-fab:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
-@media (min-width: 60rem) { .md-fab { right: 1.5rem; bottom: 1.5rem; } }
-/* Room under the last item, so the FAB does not cover it. */
-main:has(.md-fab) { padding-bottom: 6rem; }
+/* With a navigation rail (medium and wider, ADR 0060) the FAB sits at the top of the rail, its label read but not
+   shown, and the rail's destinations move down under it. */
+@media (min-width: 37.5rem) {
+  .md-fab { top: max(1rem, env(safe-area-inset-top)); left: 0.75rem; right: auto; bottom: auto; width: 3.5rem; padding: 0; justify-content: center; }
+  .md-fab .fab-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  body:has(.md-fab) .tabs-content { padding-top: max(6rem, calc(env(safe-area-inset-top) + 5rem)); }
+}
+/* Room under the last item, so the FAB does not cover it (compact only: elsewhere it is in the rail). */
+@media (max-width: 37.4375rem) { main:has(.md-fab) { padding-bottom: 6rem; } }
 
 /* Snackbar (ADR 0047): a short message at the bottom, above the FAB when there is one. */
 .snackbar {
@@ -232,8 +241,8 @@ main:has(.md-fab) { padding-bottom: 6rem; }
   font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem;
   animation: snackbar-in var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial);
 }
-body:has(.md-fab) .snackbar { bottom: calc(var(--nav-bar-height) + 5.5rem); }
-@media (min-width: 60rem) { .snackbar { left: calc(50% + 2.5rem); } }
+@media (max-width: 37.4375rem) { body:has(.md-fab) .snackbar { bottom: calc(var(--nav-bar-height) + 5.5rem); } }
+@media (min-width: 37.5rem) { .snackbar { left: calc(50% + 2.5rem); } }
 .snackbar-text { flex: 1; padding: 0.5rem 0; }
 .snackbar .snackbar-action { color: var(--md-sys-color-inverse-primary); text-decoration: none; }
 .snackbar .md-icon-button { color: var(--md-sys-color-inverse-on-surface); }
@@ -420,7 +429,7 @@ main { flex: 1; padding: 0 1rem 1.5rem; max-width: 48rem; width: 100%; margin: 0
 }
 .tabs a:focus-visible { outline: 0; }
 .tabs a:focus-visible .nav-indicator { outline: var(--focus-ring); outline-offset: 2px; }
-@media (min-width: 60rem) {
+@media (min-width: 37.5rem) {
   .shell { padding-left: 5rem; }
   .tabs { position: fixed; top: 0; bottom: 0; left: 0; width: 5rem; background: var(--md-sys-color-surface); }
   .tabs-content {
@@ -552,7 +561,7 @@ label {
 .totals { color: var(--md-sys-color-on-surface-variant); font-weight: 400; margin-left: 0.5rem; font-size: 0.875rem; }
 
 /* Plan calendar with a sidebar (ADR 0043): weeks as rows, days as columns, bands per phase. On a phone the days
-   of a week stack, and below 72rem the sidebar is a bottom sheet (ADR 0052). */
+   of a week stack, and below the large window class (75rem) the sidebar is a bottom sheet (ADR 0052, 0060). */
 /* The header lines up with the wider page. */
 main:has(.plan-calendar), body:has(.plan-calendar) .bar-content { max-width: 80rem; }
 .calendar-layout { display: grid; gap: 1rem; align-items: start; }
@@ -649,7 +658,7 @@ main:has(.plan-calendar), body:has(.plan-calendar) .bar-content { max-width: 80r
 .sheet-handle { display: none; }
 /* Below the width where the sidebar fits beside the calendar, it is a standard (non-modal) bottom sheet (ADR 0052):
    collapsed to its handle and a summary, pulled up by the handle or by picking something on the calendar. */
-@media (max-width: 71.99rem) {
+@media (max-width: 74.9375rem) {
   main:has(.calendar-sidebar) { padding-bottom: 7rem; }
   .calendar-sidebar {
     position: fixed; z-index: 3; left: 0; right: 0; bottom: var(--nav-bar-height); display: block;
@@ -682,7 +691,7 @@ main:has(.plan-calendar), body:has(.plan-calendar) .bar-content { max-width: 80r
   .sheet-content .sidebar-panel { background: var(--md-sys-color-surface-container); }
   .sheet-content .sidebar-panel .intensity-control input[type="range"] { --gap-color: var(--md-sys-color-surface-container); }
 }
-@media (max-width: 71.99rem) and (prefers-reduced-motion: reduce) { .sheet-content { transition: none; } }
+@media (max-width: 74.9375rem) and (prefers-reduced-motion: reduce) { .sheet-content { transition: none; } }
 .sidebar-panel { padding: 1rem; }
 .sidebar-panel h3 { font: 400 1.375rem/1.75rem var(--md-ref-typeface); margin: 0 0 0.25rem; overflow-wrap: anywhere; }
 .sidebar-panel p { margin: 0.25rem 0; }
@@ -710,7 +719,7 @@ main:has(.plan-calendar), body:has(.plan-calendar) .bar-content { max-width: 80r
 .goal-meter.over span { background: var(--intensity-medium); }
 .plan-settings { border: 0; padding: 0; margin: 0.75rem 0 0; min-width: 0; }
 .plan-settings legend { font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem; padding: 0; }
-@media (min-width: 48rem) {
+@media (min-width: 52.5rem) {
   .calendar-head, .calendar-week { grid-template-columns: 6rem repeat(7, minmax(0, 1fr)); }
   .calendar-head {
     display: grid; gap: 1px; padding: 0 0.5rem 0.25rem; text-align: center;
@@ -722,7 +731,7 @@ main:has(.plan-calendar), body:has(.plan-calendar) .bar-content { max-width: 80r
   .add-here { opacity: 0.4; }
   .calendar-day:hover .add-here, .add-here:focus-visible { opacity: 1; }
 }
-@media (min-width: 72rem) {
+@media (min-width: 75rem) {
   .calendar-layout { grid-template-columns: minmax(0, 1fr) 20rem; }
   .calendar-sidebar { position: sticky; top: 8rem; max-height: calc(100vh - 9rem); overflow-y: auto; } /* under the app bar and the plan tabs */
 }
@@ -737,7 +746,7 @@ table.progress th, table.progress td {
 table.progress thead th { color: var(--md-sys-color-on-surface-variant); font-weight: 500; }
 table.progress th[scope="row"], table.progress th:first-child { text-align: left; font-weight: 500; }
 /* On a phone each week is a card of label and value pairs (ADR 0051); the table stays a table for screen readers. */
-@media (max-width: 40rem) {
+@media (max-width: 37.4375rem) {
   table.progress thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   table.progress, table.progress caption, table.progress tbody, table.progress tr, table.progress th, table.progress td { display: block; }
   table.progress tr {
@@ -1007,6 +1016,22 @@ html[data-scrolled] .md-tab-bar { background: var(--md-sys-color-surface-contain
 @media (prefers-reduced-motion: reduce) { .md-field-label { transition: none; } }
 /* What fields sit on. */
 .sidebar-panel { --field-container: var(--md-sys-color-surface-container-low); }
-@media (max-width: 71.99rem) { .sheet-content .sidebar-panel { --field-container: var(--md-sys-color-surface-container); } }
+@media (max-width: 74.9375rem) { .sheet-content .sidebar-panel { --field-container: var(--md-sys-color-surface-container); } }
 @media (min-width: 37.5rem) { dialog.form-dialog { --field-container: var(--md-sys-color-surface-container-high); } }
+
+/* List-detail (ADR 0060): Settings' list and the open section. Narrower than expanded, one pane shows at a time,
+   as two pages; from expanded both show side by side and the list marks the open section, so the app bar's back
+   button goes. */
+.list-detail.showing-detail > .list-pane, .list-detail.showing-list > .detail-pane { display: none; }
+.link-list a[aria-current="page"] {
+  background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container);
+}
+.link-list a[aria-current="page"] .icon { color: inherit; }
+@media (min-width: 52.5rem) {
+  main:has(.list-detail), body:has(.list-detail) .bar-content { max-width: 72rem; }
+  .list-detail { display: grid; grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+  .list-detail.showing-detail > .list-pane, .list-detail.showing-list > .detail-pane { display: block; }
+  .list-detail > .list-pane { position: sticky; top: 5rem; }
+  body:has(.list-detail) .up-link { display: none; }
+}
 

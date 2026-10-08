@@ -72,6 +72,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Creating and editing plans, workouts, activities and schedule entries happens in a full-screen dialog on a phone (a dialog on larger screens) instead of inside the list or the calendar's sidebar (ADR 0057).
 - A plan's page has Calendar, Schedule and Sharing tabs; Edit, Make a copy and Delete (or Copy to my plans) are in the app bar; Add workout and Start this plan are floating action buttons (ADR 0058).
 - Form fields have Material 3 floating labels, units as suffixes (km, bpm), formats as help under the field, and a form's error under the field it is about (ADR 0059).
+- The layout follows Material's window size classes: the navigation rail from 600px with the floating action button at its top, and Settings' list and section side by side from 840px (ADR 0060).
 - CI builds the flake's checks (`atlas-app`, `gleam-test`, `backend-test`, `frontend-js-test`) offline instead of running the test scripts in `nix develop`; `nix flake check` runs them locally, and a suite whose source is unchanged is not run again. `test-frontend-js.sh` accepts `ATLAS_NPM_INSTALL=0` (ADR 0042).
 
 ### Fixed

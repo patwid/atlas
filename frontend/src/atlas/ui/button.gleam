@@ -63,7 +63,8 @@ pub fn fab(
 ) -> Element(msg) {
   button([attribute.class("md-fab"), ..attributes], [
     icon.view(symbol),
-    html.text(label),
+    // In a navigation rail the FAB shows its icon only; the label is still read (ADR 0060).
+    html.span([attribute.class("fab-label")], [html.text(label)]),
   ])
 }
 

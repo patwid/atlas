@@ -63,3 +63,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0057 | [Create and edit forms in full-screen dialogs](0057-forms-in-full-screen-dialogs.md) | Accepted |
 | 0058 | [The plan page: tabs, actions in the app bar, and floating action buttons](0058-plan-page-tabs-and-app-bar-actions.md) | Accepted |
 | 0059 | [Floating labels, units and errors on the field they are about](0059-floating-labels-and-field-errors.md) | Accepted |
+| 0060 | [Material window size classes, the FAB in the rail, and Settings as list-detail](0060-window-size-classes-and-list-detail.md) | Accepted |

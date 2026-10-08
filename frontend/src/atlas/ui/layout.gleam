@@ -19,21 +19,32 @@ pub fn list(children: List(Element(msg))) -> Element(msg) {
 
 /// A list item that opens another page (ADR 0049): a leading icon, a headline, supporting text and a chevron.
 /// The whole row is the link.
+/// `selected` marks the row of the page on show, when the list stays beside it (ADR 0060).
 pub fn link_item(
   href: String,
   symbol: Icon,
   headline: String,
   supporting: String,
+  selected: Bool,
 ) -> Element(msg) {
   html.li([class("link-item")], [
-    html.a([attribute.href(href)], [
-      icon.view(symbol),
-      html.span([class("link-item-text")], [
-        html.span([class("link-item-headline")], [html.text(headline)]),
-        html.span([class("link-item-supporting")], [html.text(supporting)]),
-      ]),
-      icon.view(icon.ChevronRight),
-    ]),
+    html.a(
+      [
+        attribute.href(href),
+        case selected {
+          True -> attribute.attribute("aria-current", "page")
+          False -> attribute.none()
+        },
+      ],
+      [
+        icon.view(symbol),
+        html.span([class("link-item-text")], [
+          html.span([class("link-item-headline")], [html.text(headline)]),
+          html.span([class("link-item-supporting")], [html.text(supporting)]),
+        ]),
+        icon.view(icon.ChevronRight),
+      ],
+    ),
   ])
 }
 

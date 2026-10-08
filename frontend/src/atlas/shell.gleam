@@ -91,7 +91,7 @@ fn up(current: Route) -> Element(msg) {
 fn up_link(target: Route, label: String) -> Element(msg) {
   html.a(
     [
-      class("md-icon-button"),
+      class("md-icon-button up-link"),
       attribute.href(route.to_path(target)),
       attribute.aria_label(label),
       attribute.title(label),
