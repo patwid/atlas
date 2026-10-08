@@ -293,7 +293,7 @@ pub fn view(
       html.h2([], [html.text("Schedule")]),
       case model.mode {
         Browsing if context.can_start ->
-          button.primary(
+          button.filled(
             [attribute.type_("button"), event.on_click(StartClicked)],
             [
               html.text(case context.athletes {
@@ -386,11 +386,11 @@ fn confirm_dialog_id(id: String) -> String {
 fn actions(row: Row) -> Element(Msg) {
   let id = row.assignment.id
   layout.actions([
-    button.secondary(
+    button.outlined(
       [attribute.type_("button"), event.on_click(ChangeDateClicked(id))],
       [html.text("Change date")],
     ),
-    button.secondary(
+    button.outlined(
       [attribute.type_("button"), event.on_click(RemoveClicked(id))],
       [html.text("Remove")],
     ),
@@ -399,13 +399,12 @@ fn actions(row: Row) -> Element(Msg) {
       "Remove this from the schedule?",
       CancelClicked,
       [
-        button.danger(
+        button.text([attribute.type_("submit"), event.on_click(CancelClicked)], [
+          html.text("Keep it"),
+        ]),
+        button.text(
           [attribute.type_("submit"), event.on_click(RemoveConfirmed(id))],
           [html.text("Yes, remove it")],
-        ),
-        button.secondary(
-          [attribute.type_("submit"), event.on_click(CancelClicked)],
-          [html.text("Keep it")],
         ),
       ],
     ),
@@ -469,10 +468,10 @@ fn form_view(
       None -> element.none()
     },
     layout.actions([
-      button.primary([attribute.type_("submit")], [
+      button.filled([attribute.type_("submit")], [
         html.text(submit_label),
       ]),
-      button.secondary(
+      button.outlined(
         [attribute.type_("button"), event.on_click(CancelClicked)],
         [html.text("Cancel")],
       ),

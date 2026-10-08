@@ -51,15 +51,12 @@ pub fn view(
         Some(message) -> error.message(message)
         None -> element.none()
       },
-      button.primary(
-        [attribute.type_("submit"), attribute.disabled(form.busy)],
-        [
-          html.text(case form.busy {
-            True -> "Signing in…"
-            False -> "Sign in"
-          }),
-        ],
-      ),
+      button.filled([attribute.type_("submit"), attribute.disabled(form.busy)], [
+        html.text(case form.busy {
+          True -> "Signing in…"
+          False -> "Sign in"
+        }),
+      ]),
     ]),
   ])
 }

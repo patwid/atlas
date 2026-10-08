@@ -58,6 +58,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
   0039).
 - The app now follows Material Design 3: its color roles (light and dark), type scale, shapes and state layers; filled, outlined and text buttons, outlined text fields, M3 dialogs and cards, and a navigation bar with icons that becomes a navigation rail on wide screens. Still hand-written CSS, no library (ADR 0044).
 - Material Design 3's baseline colors (purple) replace the blue scheme and every custom color: intensity, workout kinds and phase bands now use M3 color roles; only Strava's brand orange remains (ADR 0045).
+- Buttons follow Material Design 3's names and rules: filled, outlined and text buttons, and no red danger button. Confirmation dialogs show two text buttons, the dismissive one first (ADR 0046).
 - CI builds the flake's checks (`atlas-app`, `gleam-test`, `backend-test`, `frontend-js-test`) offline instead of running the test scripts in `nix develop`; `nix flake check` runs them locally, and a suite whose source is unchanged is not run again. `test-frontend-js.sh` accepts `ATLAS_NPM_INSTALL=0` (ADR 0042).
 
 ### Fixed

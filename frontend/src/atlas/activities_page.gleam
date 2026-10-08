@@ -306,7 +306,7 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
       html.h2([], [html.text("Your activities")]),
       case model.mode {
         Browsing ->
-          button.primary(
+          button.filled(
             [attribute.type_("button"), event.on_click(AddClicked)],
             [html.text("Add activity")],
           )
@@ -462,22 +462,21 @@ fn confirm_dialog_id(id: String) -> String {
 fn actions(row: Row) -> Element(Msg) {
   let id = row.activity.id
   layout.actions([
-    button.secondary(
+    button.outlined(
       [attribute.type_("button"), event.on_click(EditClicked(id))],
       [html.text("Edit")],
     ),
-    button.secondary(
+    button.outlined(
       [attribute.type_("button"), event.on_click(DeleteClicked(id))],
       [html.text("Delete")],
     ),
     dialog.view(confirm_dialog_id(id), "Delete this activity?", CancelClicked, [
-      button.danger(
+      button.text([attribute.type_("submit"), event.on_click(CancelClicked)], [
+        html.text("Keep it"),
+      ]),
+      button.text(
         [attribute.type_("submit"), event.on_click(DeleteConfirmed(id))],
         [html.text("Yes, delete it")],
-      ),
-      button.secondary(
-        [attribute.type_("submit"), event.on_click(CancelClicked)],
-        [html.text("Keep it")],
       ),
     ]),
   ])
@@ -592,10 +591,10 @@ fn form_view(form: activity_form.Form, submit_label: String) -> Element(Msg) {
       None -> element.none()
     },
     layout.actions([
-      button.primary([attribute.type_("submit")], [
+      button.filled([attribute.type_("submit")], [
         html.text(submit_label),
       ]),
-      button.secondary(
+      button.outlined(
         [attribute.type_("button"), event.on_click(CancelClicked)],
         [html.text("Cancel")],
       ),

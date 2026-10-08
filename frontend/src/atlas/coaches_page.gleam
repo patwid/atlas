@@ -202,7 +202,7 @@ fn given_view(g: Grant) -> Element(Msg) {
       }),
     ]),
     layout.actions([
-      button.secondary(
+      button.outlined(
         [attribute.type_("button"), event.on_click(RemoveClicked(g.id))],
         [html.text("Remove access")],
       ),
@@ -216,13 +216,13 @@ fn given_view(g: Grant) -> Element(Msg) {
           <> " from seeing your training?",
         CancelClicked,
         [
-          button.danger(
-            [attribute.type_("submit"), event.on_click(RemoveConfirmed(g.id))],
-            [html.text("Yes, remove access")],
-          ),
-          button.secondary(
+          button.text(
             [attribute.type_("submit"), event.on_click(CancelClicked)],
             [html.text("Keep it")],
+          ),
+          button.text(
+            [attribute.type_("submit"), event.on_click(RemoveConfirmed(g.id))],
+            [html.text("Yes, remove access")],
           ),
         ],
       ),

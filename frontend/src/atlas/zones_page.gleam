@@ -274,7 +274,7 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
           attribute.value(model.hr.max_hr),
           event.on_input(MaxChanged),
         ]),
-        button.secondary(
+        button.outlined(
           [attribute.type_("button"), event.on_click(FillFromMaxClicked)],
           [html.text("Work out zones from maximum")],
         ),
@@ -313,7 +313,7 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
           attribute.placeholder("5:00"),
           event.on_input(ThresholdChanged),
         ]),
-        button.secondary(
+        button.outlined(
           [attribute.type_("button"), event.on_click(FillFromThresholdClicked)],
           [html.text("Work out zones from threshold pace")],
         ),
@@ -333,10 +333,10 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
         None -> element.none()
       },
       layout.actions([
-        button.primary([attribute.type_("submit")], [html.text("Save zones")]),
+        button.filled([attribute.type_("submit")], [html.text("Save zones")]),
         case model.edited {
           True ->
-            button.secondary(
+            button.outlined(
               [attribute.type_("button"), event.on_click(ResetClicked)],
               [html.text("Undo changes")],
             )

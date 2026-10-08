@@ -333,7 +333,7 @@ pub fn view_list_with(
       case model.mode {
         Creating -> element.none()
         _ ->
-          button.primary(
+          button.filled(
             [attribute.type_("button"), event.on_click(NewClicked)],
             [html.text("New plan")],
           )
@@ -440,7 +440,7 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
           html.text("Open your copy"),
         ]),
         html.text(" "),
-        button.link(
+        button.text(
           [attribute.type_("button"), event.on_click(CopyAgainClicked)],
           [html.text("Copy again")],
         ),
@@ -448,7 +448,7 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
     CopyProblem(source, message) if source == plan_id ->
       html.div([], [
         error.message(message),
-        button.secondary(
+        button.outlined(
           [attribute.type_("button"), event.on_click(CopyAgainClicked)],
           [html.text("Try again")],
         ),
@@ -457,7 +457,7 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
       html.p([class("muted")], [html.text("Copying…")])
     _ ->
       layout.actions([
-        button.secondary(
+        button.outlined(
           [attribute.type_("button"), event.on_click(CopyClicked(plan_id))],
           [html.text("Copy to my plans")],
         ),
@@ -467,21 +467,20 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
 
 fn owner_actions(found: Plan) -> Element(Msg) {
   layout.actions([
-    button.primary(
+    button.filled(
       [attribute.type_("button"), event.on_click(EditClicked(found.id))],
       [html.text("Edit")],
     ),
-    button.danger([attribute.type_("button"), event.on_click(DeleteClicked)], [
+    button.outlined([attribute.type_("button"), event.on_click(DeleteClicked)], [
       html.text("Delete"),
     ]),
     dialog.view(confirm_delete_dialog_id, "Delete this plan?", CancelClicked, [
-      button.danger(
+      button.text([attribute.type_("submit"), event.on_click(CancelClicked)], [
+        html.text("Keep it"),
+      ]),
+      button.text(
         [attribute.type_("submit"), event.on_click(DeleteConfirmed(found.id))],
         [html.text("Yes, delete it")],
-      ),
-      button.primary(
-        [attribute.type_("submit"), event.on_click(CancelClicked)],
-        [html.text("Keep it")],
       ),
     ]),
   ])
@@ -587,10 +586,10 @@ fn form_view(form: plan_form.Form, submit_label: String) -> Element(Msg) {
       None -> element.none()
     },
     layout.actions([
-      button.primary([attribute.type_("submit")], [
+      button.filled([attribute.type_("submit")], [
         html.text(submit_label),
       ]),
-      button.secondary(
+      button.outlined(
         [attribute.type_("button"), event.on_click(CancelClicked)],
         [html.text("Cancel")],
       ),

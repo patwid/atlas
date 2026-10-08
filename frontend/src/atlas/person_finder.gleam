@@ -162,7 +162,7 @@ pub fn view(
           attribute.value(model.email),
           event.on_input(fn(text) { wrap(EmailChanged(text)) }),
         ]),
-        button.primary(
+        button.filled(
           [
             attribute.type_("submit"),
             attribute.disabled(model.lookup == Looking),
@@ -181,11 +181,11 @@ pub fn view(
           html.div([class("found"), attribute.role("status")], [
             html.p([], [html.text(labels.question(display(person)))]),
             layout.actions([
-              button.primary(
+              button.filled(
                 [attribute.type_("button"), event.on_click(confirm)],
                 [html.text(labels.confirm_label)],
               ),
-              button.secondary(
+              button.outlined(
                 [attribute.type_("button"), event.on_click(wrap(CancelClicked))],
                 [html.text("Cancel")],
               ),

@@ -316,7 +316,7 @@ fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
           html.text("Looks done: " <> summary(inputs, activity_id)),
         ]),
         layout.actions([
-          button.primary(
+          button.filled(
             [
               attribute.type_("button"),
               event.on_click(ConfirmClicked(key, activity_id)),
@@ -339,16 +339,16 @@ fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
             "Unlink this activity?",
             CancelClicked,
             [
-              button.danger(
+              button.text(
+                [attribute.type_("submit"), event.on_click(CancelClicked)],
+                [html.text("Keep it")],
+              ),
+              button.text(
                 [
                   attribute.type_("submit"),
                   event.on_click(UnlinkConfirmed(key)),
                 ],
                 [html.text("Yes, unlink")],
-              ),
-              button.secondary(
-                [attribute.type_("submit"), event.on_click(CancelClicked)],
-                [html.text("Keep it")],
               ),
             ],
           ),
@@ -358,7 +358,7 @@ fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
 }
 
 fn link_button(label: String, msg: Msg) -> Element(Msg) {
-  button.secondary([attribute.type_("button"), event.on_click(msg)], [
+  button.outlined([attribute.type_("button"), event.on_click(msg)], [
     html.text(label),
   ])
 }
@@ -383,7 +383,7 @@ fn choosing_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
             list.map(candidates, fn(row) {
               html.li([], [
                 html.span([], [html.text(describe(row, inputs))]),
-                button.primary(
+                button.filled(
                   [
                     attribute.type_("button"),
                     event.on_click(PickClicked(key, row.activity.id)),

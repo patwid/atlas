@@ -49,3 +49,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0043 | [Plan phases, a weekly distance goal, week intensity and a calendar view](0043-plan-phases-goal-and-calendar.md) | Proposed |
 | 0044 | [Style the app after Material Design 3, by hand](0044-material-design-3-styling.md) | Accepted (colors superseded by 0045) |
 | 0045 | [Use Material Design 3's baseline colors only](0045-material-baseline-colors.md) | Accepted |
+| 0046 | [Name buttons after Material Design 3 and drop the danger button](0046-material-button-names.md) | Accepted |

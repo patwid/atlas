@@ -1144,7 +1144,7 @@ fn settings(session: Session, sync_state: syncing.State) -> Element(Msg) {
         name -> name <> " (" <> session.email <> ")"
       }),
     ]),
-    button.secondary(
+    button.outlined(
       [attribute.type_("button"), event.on_click(SignOutClicked)],
       [html.text("Sign out")],
     ),
@@ -1176,7 +1176,7 @@ fn settings(session: Session, sync_state: syncing.State) -> Element(Msg) {
             [],
             list.map(problems, fn(message) { html.li([], [html.text(message)]) }),
           ),
-          button.secondary(
+          button.outlined(
             [attribute.type_("button"), event.on_click(ProblemsDismissed)],
             [html.text("Dismiss")],
           ),

@@ -330,7 +330,7 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
           html.text("Connected to Strava. New activities arrive by themselves."),
         ]),
         layout.actions([
-          button.secondary(
+          button.outlined(
             [
               attribute.type_("button"),
               attribute.disabled(model.busy),
@@ -338,7 +338,7 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
             ],
             [html.text("Import the last 30 days again")],
           ),
-          button.secondary(
+          button.outlined(
             [
               attribute.type_("button"),
               attribute.disabled(model.busy),
@@ -351,13 +351,13 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
             "Disconnect Strava and remove its activities from Atlas?",
             CancelClicked,
             [
-              button.danger(
-                [attribute.type_("submit"), event.on_click(DisconnectConfirmed)],
-                [html.text("Yes, disconnect")],
-              ),
-              button.secondary(
+              button.text(
                 [attribute.type_("submit"), event.on_click(CancelClicked)],
                 [html.text("Keep it connected")],
+              ),
+              button.text(
+                [attribute.type_("submit"), event.on_click(DisconnectConfirmed)],
+                [html.text("Yes, disconnect")],
               ),
             ],
           ),

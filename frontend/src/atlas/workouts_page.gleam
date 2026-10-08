@@ -488,7 +488,7 @@ pub fn view(model: Model, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
       html.h2([], [html.text("Workouts")]),
       case can_edit, model.mode {
         True, Browsing | True, Viewing(_) ->
-          button.primary(
+          button.filled(
             [
               attribute.type_("button"),
               event.on_click(AddClicked(
@@ -774,11 +774,11 @@ fn workout_details(row: Row, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
       False -> element.none()
       True ->
         layout.actions([
-          button.primary(
+          button.filled(
             [attribute.type_("button"), event.on_click(EditClicked(w.id))],
             [html.text("Edit")],
           ),
-          button.secondary(
+          button.outlined(
             [attribute.type_("button"), event.on_click(DeleteClicked(w.id))],
             [html.text("Delete")],
           ),
@@ -787,16 +787,16 @@ fn workout_details(row: Row, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
             "Delete this workout?",
             CancelClicked,
             [
-              button.danger(
+              button.text(
+                [attribute.type_("submit"), event.on_click(CancelClicked)],
+                [html.text("Keep it")],
+              ),
+              button.text(
                 [
                   attribute.type_("submit"),
                   event.on_click(DeleteConfirmed(w.id)),
                 ],
                 [html.text("Yes, delete it")],
-              ),
-              button.secondary(
-                [attribute.type_("submit"), event.on_click(CancelClicked)],
-                [html.text("Keep it")],
               ),
             ],
           ),
@@ -892,7 +892,7 @@ fn intensity_view(
           ]),
           case stored {
             Ok(_) ->
-              button.link(
+              button.text(
                 [attribute.type_("button"), event.on_click(IntensityCleared)],
                 [html.text("Clear")],
               )
@@ -984,10 +984,10 @@ fn plan_panel(model: Model, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
               None -> element.none()
             },
             layout.actions([
-              button.primary([attribute.type_("submit")], [
+              button.filled([attribute.type_("submit")], [
                 html.text("Save settings"),
               ]),
-              button.secondary(
+              button.outlined(
                 [
                   attribute.type_("button"),
                   event.on_click(SettingsCancelClicked),
@@ -1020,7 +1020,7 @@ fn plan_panel(model: Model, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
         case can_edit {
           True ->
             layout.actions([
-              button.secondary(
+              button.outlined(
                 [
                   attribute.type_("button"),
                   event.on_click(SettingsEditClicked),
@@ -1198,10 +1198,10 @@ fn form_view(
       None -> element.none()
     },
     layout.actions([
-      button.primary([attribute.type_("submit")], [
+      button.filled([attribute.type_("submit")], [
         html.text(submit_label),
       ]),
-      button.secondary(
+      button.outlined(
         [attribute.type_("button"), event.on_click(CancelClicked)],
         [html.text("Cancel")],
       ),

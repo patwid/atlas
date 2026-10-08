@@ -136,13 +136,11 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 
 .md-button-filled { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
 .md-button-filled:not(:disabled):hover { box-shadow: var(--md-sys-elevation-1); }
-.md-button-filled:disabled, .md-button-danger:disabled {
+.md-button-filled:disabled {
   background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent); box-shadow: none;
 }
 .md-button-outlined { border: 1px solid var(--md-sys-color-outline-variant); color: var(--md-sys-color-on-surface-variant); }
 .md-button-outlined:disabled { border-color: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent); }
-.md-button-danger { background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); }
-.md-button-danger:not(:disabled):hover { box-shadow: var(--md-sys-elevation-1); }
 .md-button-text { padding: 0 0.75rem; }
 
 /* Outlined text fields and selects; their labels sit above them. */

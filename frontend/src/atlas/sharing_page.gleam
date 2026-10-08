@@ -215,7 +215,7 @@ fn share_view(share: Share) -> Element(Msg) {
   html.li([], [
     html.strong([], [html.text(name)]),
     layout.actions([
-      button.secondary(
+      button.outlined(
         [attribute.type_("button"), event.on_click(StopClicked(share.id))],
         [html.text("Stop sharing")],
       ),
@@ -224,13 +224,13 @@ fn share_view(share: Share) -> Element(Msg) {
         "Stop sharing this plan with " <> name <> "?",
         CancelClicked,
         [
-          button.danger(
-            [attribute.type_("submit"), event.on_click(StopConfirmed(share.id))],
-            [html.text("Yes, stop sharing")],
-          ),
-          button.secondary(
+          button.text(
             [attribute.type_("submit"), event.on_click(CancelClicked)],
             [html.text("Keep sharing")],
+          ),
+          button.text(
+            [attribute.type_("submit"), event.on_click(StopConfirmed(share.id))],
+            [html.text("Yes, stop sharing")],
           ),
         ],
       ),
