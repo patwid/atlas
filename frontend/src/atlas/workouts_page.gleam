@@ -62,6 +62,8 @@ pub type Model {
     settings_error: Option(String),
     /// Where the intensity slider of a week is while it is being dragged, before it is let go.
     intensity_draft: Option(#(Int, Float)),
+    /// On a phone the sidebar is a bottom sheet (ADR 0052): whether it is pulled up or shows only its summary.
+    sheet_expanded: Bool,
   )
 }
 
@@ -95,6 +97,8 @@ pub type Msg {
   CompetitionWeeksChanged(String)
   GoalChanged(String)
   SettingsSubmitted
+  /// The bottom sheet's handle was pressed (ADR 0052).
+  SheetToggled
 }
 
 pub type Action {
@@ -116,6 +120,7 @@ pub fn new() -> Model {
     None,
     None,
     None,
+    False,
   )
 }
 
@@ -165,8 +170,20 @@ pub fn update(
     }
     WorkoutsRead(Error(Nil)) -> #(model, effect.none(), [])
 
+    SheetToggled -> #(
+      Model(..model, sheet_expanded: !model.sheet_expanded),
+      effect.none(),
+      [],
+    )
+
+    // Picking something on the calendar, or opening a form, pulls the bottom sheet up to show it (ADR 0052).
     WeekSelected(week) -> #(
-      Model(..model, selected_week: week, intensity_draft: None),
+      Model(
+        ..model,
+        selected_week: week,
+        intensity_draft: None,
+        sheet_expanded: True,
+      ),
       effect.none(),
       [],
     )
@@ -179,6 +196,7 @@ pub fn update(
             mode: Viewing(id),
             selected_week: week_of(row.workout),
             confirming: None,
+            sheet_expanded: True,
           ),
           effect.none(),
           [],
@@ -195,6 +213,7 @@ pub fn update(
             form: workout_form.empty_for(week, day),
             selected_week: week,
             confirming: None,
+            sheet_expanded: True,
           ),
           focus.soon(form_title_id),
           [],
@@ -211,6 +230,7 @@ pub fn update(
             form: workout_form.from_row(row),
             selected_week: week_of(row.workout),
             confirming: None,
+            sheet_expanded: True,
           ),
           focus.soon(form_title_id),
           [],
@@ -342,6 +362,7 @@ pub fn update(
             ..model,
             settings: Some(plan_form.settings_from(p)),
             settings_error: None,
+            sheet_expanded: True,
           ),
           focus.soon(settings_first_id),
           [],
@@ -529,19 +550,62 @@ pub fn view(model: Model, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
           },
         ]
       }),
+      // The sidebar beside the calendar on a wide screen; a bottom sheet on a phone (ADR 0052), whose handle
+      // and summary only show there.
       html.aside(
         [
           class("calendar-sidebar"),
+          attribute.classes([#("expanded", model.sheet_expanded)]),
           attribute.attribute("aria-label", "Details"),
         ],
         [
-          workout_panel(model, on_screen, rows, weeks, can_edit),
-          week_panel(model, on_screen, weeks, can_edit),
-          plan_panel(model, on_screen, can_edit),
+          html.button(
+            [
+              class("sheet-handle"),
+              attribute.type_("button"),
+              attribute.attribute("aria-expanded", case model.sheet_expanded {
+                True -> "true"
+                False -> "false"
+              }),
+              attribute.attribute("aria-controls", sheet_content_id),
+              event.on_click(SheetToggled),
+            ],
+            [
+              html.span([class("sheet-grip")], []),
+              html.span([class("sheet-summary")], [
+                html.text(sheet_summary(model, rows, weeks)),
+              ]),
+            ],
+          ),
+          html.div([class("sheet-content"), attribute.id(sheet_content_id)], [
+            workout_panel(model, on_screen, rows, weeks, can_edit),
+            week_panel(model, on_screen, weeks, can_edit),
+            plan_panel(model, on_screen, can_edit),
+          ]),
         ],
       ),
     ]),
   ])
+}
+
+const sheet_content_id = "calendar-sheet-content"
+
+/// What the collapsed bottom sheet says it holds: the open workout, or the selected week.
+fn sheet_summary(
+  model: Model,
+  rows: List(Row),
+  weeks: List(plan_schedule.Week),
+) -> String {
+  let week = "Week " <> int.to_string(clamp_week(model.selected_week, weeks))
+  case model.mode {
+    Adding -> "New workout"
+    Viewing(id) | Editing(id) ->
+      case find(rows, id) {
+        Ok(row) -> row.workout.title
+        Error(Nil) -> week
+      }
+    Browsing -> week
+  }
 }
 
 fn clamp_week(week: Int, weeks: List(plan_schedule.Week)) -> Int {

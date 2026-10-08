@@ -1,4 +1,4 @@
-// Material 3 touch feedback and the app bar's scrolled state (ADR 0051). Both only set data attributes and CSS
+// Material 3 touch feedback, the app bar's scrolled state (ADR 0051) and dragging a bottom sheet (ADR 0052). Both only set data attributes and CSS
 // variables, never add or remove nodes, so Lustre's view of the DOM stays right.
 
 const rippling = ".md-button, .md-fab, .md-icon-button, .choice-label, .link-list a, .tabs a .nav-indicator"
@@ -18,6 +18,24 @@ export function install() {
     target.style.setProperty("--ripple-y", `${event.clientY - box.top}px`)
     target.style.setProperty("--ripple-size", `${size}px`)
     target.dataset.ripple = target.dataset.ripple === "a" ? "b" : "a"
+  }, { passive: true })
+
+  // A bottom sheet's handle can be dragged as well as pressed (ADR 0052): a swipe up opens the sheet and a swipe
+  // down closes it, by clicking the handle, so the page's own message does the work. A swipe that ends on the
+  // handle needs nothing: the browser clicks it anyway.
+  let drag = null
+  document.addEventListener("pointerdown", (event) => {
+    const handle = event.target instanceof Element ? event.target.closest(".sheet-handle") : null
+    drag = handle ? { handle, y: event.clientY } : null
+  }, { passive: true })
+  document.addEventListener("pointerup", (event) => {
+    if (!drag) return
+    const { handle, y } = drag
+    drag = null
+    if (event.target instanceof Element && handle.contains(event.target)) return
+    const moved = event.clientY - y
+    const open = handle.getAttribute("aria-expanded") === "true"
+    if ((moved < -30 && !open) || (moved > 30 && open)) handle.click()
   }, { passive: true })
 
   // The top app bar takes a container color once the page has scrolled under it.

@@ -431,3 +431,31 @@ pub fn the_edit_form_opens_in_the_sidebar_test() {
   assert string.contains(html, "Save changes")
   assert string.contains(html, "Second")
 }
+
+pub fn the_bottom_sheet_starts_collapsed_and_its_handle_toggles_it_test() {
+  let model = with_rows([row("a", "p1", 0, 0, "Easy run")])
+  assert !model.sheet_expanded
+  let html = html_of(model, True)
+  assert string.contains(html, "aria-expanded=\"false\"")
+  assert string.contains(html, "aria-controls=\"calendar-sheet-content\"")
+  assert string.contains(html, ">Week 1<")
+  let #(open, _) = update(model, workouts_page.SheetToggled)
+  assert open.sheet_expanded
+  assert string.contains(html_of(open, True), "aria-expanded=\"true\"")
+  let #(closed, _) = update(open, workouts_page.SheetToggled)
+  assert !closed.sheet_expanded
+}
+
+pub fn picking_a_workout_pulls_the_sheet_up_and_names_it_test() {
+  let model = with_rows([row("a", "p1", 0, 0, "Easy run")])
+  let #(viewing, _) = update(model, workouts_page.WorkoutSelected("a"))
+  assert viewing.sheet_expanded
+  assert string.contains(
+    html_of(viewing, True),
+    "<span class=\"sheet-summary\">Easy run</span>",
+  )
+  let #(week, _) = update(model, workouts_page.WeekSelected(2))
+  assert week.sheet_expanded
+  let #(adding, _) = update(model, workouts_page.AddClicked(1, 1))
+  assert adding.sheet_expanded
+}

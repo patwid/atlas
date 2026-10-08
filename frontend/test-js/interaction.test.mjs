@@ -9,6 +9,7 @@ const dom = new JSDOM(`<!doctype html><body>
   <button class="md-button" disabled>Off</button>
   <nav class="tabs"><a href="/"><span class="nav-indicator"></span>Today</a></nav>
   <p class="plain">text</p>
+  <button class="sheet-handle" aria-expanded="false">Week 1</button>
 </body>`, { pretendToBeVisual: true })
 Object.assign(globalThis, { document: dom.window.document, window: dom.window, Element: dom.window.Element })
 const { install } = await import("../build/dev/javascript/atlas/atlas/ui/interaction.ffi.mjs")
@@ -46,3 +47,25 @@ test("the page is marked as scrolled once it scrolls, and unmarked at the top", 
   dom.window.dispatchEvent(new dom.window.Event("scroll"))
   assert.equal(d.documentElement.dataset.scrolled, undefined)
 })
+
+test("dragging a sheet's handle up opens it and down closes it; a short drag does nothing", () => {
+  const handle = d.querySelector(".sheet-handle")
+  let clicks = 0
+  handle.addEventListener("click", () => {
+    clicks++
+    handle.setAttribute("aria-expanded", handle.getAttribute("aria-expanded") === "true" ? "false" : "true")
+  })
+  const drag = (from, to) => {
+    handle.dispatchEvent(new dom.window.MouseEvent("pointerdown", { bubbles: true, clientY: from }))
+    d.body.dispatchEvent(new dom.window.MouseEvent("pointerup", { bubbles: true, clientY: to }))
+  }
+  drag(500, 490)
+  assert.equal(clicks, 0, "too short")
+  drag(500, 300)
+  assert.equal(handle.getAttribute("aria-expanded"), "true")
+  drag(500, 300)
+  assert.equal(clicks, 1, "up again does not close an open sheet")
+  drag(300, 500)
+  assert.equal(handle.getAttribute("aria-expanded"), "false")
+})
+
