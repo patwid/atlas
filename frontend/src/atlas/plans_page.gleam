@@ -453,7 +453,7 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
           [html.text("Try again")],
         ),
       ])
-    Copying(source) if source == plan_id -> progress.circular("Copying…")
+    Copying(source) if source == plan_id -> progress.loading("Copying…")
     _ ->
       layout.actions([
         button.tonal(

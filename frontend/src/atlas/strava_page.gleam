@@ -285,7 +285,7 @@ pub fn view(model: Model) -> Element(Msg) {
   html.section([class("strava")], [
     html.h2([], [html.text("Strava")]),
     case model.status {
-      Unknown | Checking -> progress.circular("Checking…")
+      Unknown | Checking -> progress.loading("Checking…")
       Unavailable(reason) -> html.p([class("muted")], [html.text(reason)])
       Known(status) -> status_view(model, status)
     },
