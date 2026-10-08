@@ -2,9 +2,10 @@ import atlas/activity
 import atlas/date.{Date}
 import atlas/grants
 import atlas/matching
-import atlas/plan.{Assignment, Plan, Workout}
+import atlas/plan.{Assignment, Workout}
 import atlas/records
 import atlas/shares
+import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/json
@@ -21,7 +22,7 @@ const plan_json =
 
 pub fn reads_a_plan_test() {
   assert records.plan(parse(plan_json))
-    == Ok(Plan(
+    == Ok(plan.new(
       "p1",
       "u1",
       "10k plan",
@@ -31,9 +32,28 @@ pub fn reads_a_plan_test() {
     ))
 }
 
+pub fn reads_a_plans_phases_goal_and_week_intensities_test() {
+  let json =
+    "{\"id\":\"p4\",\"title\":\"Season\",\"base_weeks\":6,\"pre_competition_weeks\":4,\"competition_weeks\":2,\"weekly_distance_m\":45000,\"week_intensity\":{\"1\":\"low\",\"7\":\"high\",\"x\":\"high\",\"2\":\"extreme\"}}"
+  let assert Ok(read) = records.plan(parse(json))
+  assert read.phases == plan.Phases(6, 4, 2)
+  assert read.weekly_distance_m == Some(45_000.0)
+  assert read.week_intensity
+    == dict.from_list([#(1, plan.Low), #(7, plan.High)])
+}
+
+pub fn an_empty_week_intensity_is_read_as_none_set_test() {
+  let assert Ok(read) =
+    records.plan(parse(
+      "{\"id\":\"p5\",\"title\":\"T\",\"week_intensity\":null,\"weekly_distance_m\":0}",
+    ))
+  assert read.week_intensity == dict.new()
+  assert read.weekly_distance_m == None
+}
+
 pub fn a_plan_made_offline_has_fewer_fields_test() {
   assert records.plan(parse("{\"id\":\"p2\",\"title\":\"New\"}"))
-    == Ok(Plan("p2", "", "New", "", plan.Private, ""))
+    == Ok(plan.new("p2", "", "New", "", plan.Private, ""))
 }
 
 pub fn a_plan_without_a_title_is_skipped_test() {

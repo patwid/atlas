@@ -3,7 +3,7 @@ import atlas/activity_form
 import atlas/assignment_form
 import atlas/date.{Date}
 import atlas/matching.{Match, Stored}
-import atlas/plan.{Assignment, Plan, Workout}
+import atlas/plan.{Assignment, Workout}
 import atlas/today.{Done, Inputs, Missed, Planned, RestDay}
 import gleam/list
 import gleam/option.{None, Some}
@@ -76,7 +76,7 @@ fn inputs() -> today.Inputs {
       workout("w3", "p1", 3, 0, plan.Easy),
       workout("w20", "p1", 20, 0, plan.Long),
     ],
-    plans: [Plan("p1", "me", "10k plan", "", plan.Private, "T")],
+    plans: [plan.new("p1", "me", "10k plan", "", plan.Private, "T")],
     activities: [],
     matches: [],
     offset_at: fn(_) { 0 },
@@ -197,8 +197,8 @@ pub fn two_plans_on_the_same_day_are_both_shown_test() {
         workout("v2", "p2", 2, 0, plan.Strength),
       ],
       plans: [
-        Plan("p1", "me", "Running", "", plan.Private, "T"),
-        Plan("p2", "me", "Gym", "", plan.Private, "T"),
+        plan.new("p1", "me", "Running", "", plan.Private, "T"),
+        plan.new("p2", "me", "Gym", "", plan.Private, "T"),
       ],
     )
   let found = today.items(two)

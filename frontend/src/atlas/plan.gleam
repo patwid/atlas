@@ -2,7 +2,7 @@
 //// assignment gives the plan a start date for one athlete (ADR 0009). Pure functions only.
 
 import atlas/date.{type Date}
-import gleam/dict
+import gleam/dict.{type Dict}
 import gleam/int
 import gleam/list
 import gleam/option.{type Option}
@@ -34,7 +34,29 @@ pub type Plan {
     visibility: Visibility,
     /// The `updated` value of the local copy: the base for edits (ADR 0011). Empty until first synced.
     updated: String,
+    phases: Phases,
+    weekly_distance_m: Option(Float),
+    /// By week number, from 1. Weeks without an entry have no intensity set.
+    week_intensity: Dict(Int, Intensity),
   )
+}
+
+/// The periods of a plan, in this order (ADR 0043).
+pub type Phase {
+  Base
+  PreCompetition
+  Competition
+}
+
+/// How many weeks each phase lasts. All 0 for a plan made before phases existed: it has no phases.
+pub type Phases {
+  Phases(base_weeks: Int, pre_competition_weeks: Int, competition_weeks: Int)
+}
+
+pub type Intensity {
+  Low
+  Medium
+  High
 }
 
 pub type Workout {
@@ -61,6 +83,84 @@ pub type Scheduled {
 
 pub type WeekTotal {
   WeekTotal(week_start: Date, workouts: Int, distance_m: Float, duration_s: Int)
+}
+
+/// What a new plan starts with: 4 weeks per phase.
+pub const default_phases = Phases(4, 4, 4)
+
+/// A plan's own fields, without phases, goal or intensities: what plans made before ADR 0043 hold.
+pub fn new(
+  id: String,
+  owner_id: String,
+  title: String,
+  description: String,
+  visibility: Visibility,
+  updated: String,
+) -> Plan {
+  Plan(
+    id,
+    owner_id,
+    title,
+    description,
+    visibility,
+    updated,
+    Phases(0, 0, 0),
+    option.None,
+    dict.new(),
+  )
+}
+
+/// The number of weeks the phases cover; 0 for a plan without phases.
+pub fn phase_weeks(phases: Phases) -> Int {
+  phases.base_weeks + phases.pre_competition_weeks + phases.competition_weeks
+}
+
+/// The phase a week (from 1) belongs to, and its number within that phase (from 1). An error for a week
+/// after the last phase.
+pub fn phase_of_week(phases: Phases, week: Int) -> Result(#(Phase, Int), Nil) {
+  let pre_start = phases.base_weeks
+  let competition_start = pre_start + phases.pre_competition_weeks
+  case week {
+    _ if week < 1 -> Error(Nil)
+    _ if week <= pre_start -> Ok(#(Base, week))
+    _ if week <= competition_start -> Ok(#(PreCompetition, week - pre_start))
+    _ if week <= competition_start + phases.competition_weeks ->
+      Ok(#(Competition, week - competition_start))
+    _ -> Error(Nil)
+  }
+}
+
+pub fn phase_label(phase: Phase) -> String {
+  case phase {
+    Base -> "Base"
+    PreCompetition -> "Pre-competition"
+    Competition -> "Competition"
+  }
+}
+
+pub fn intensity_to_string(intensity: Intensity) -> String {
+  case intensity {
+    Low -> "low"
+    Medium -> "medium"
+    High -> "high"
+  }
+}
+
+pub fn intensity_from_string(text: String) -> Result(Intensity, Nil) {
+  case text {
+    "low" -> Ok(Low)
+    "medium" -> Ok(Medium)
+    "high" -> Ok(High)
+    _ -> Error(Nil)
+  }
+}
+
+pub fn intensity_label(intensity: Intensity) -> String {
+  case intensity {
+    Low -> "Low"
+    Medium -> "Medium"
+    High -> "High"
+  }
 }
 
 pub fn visibility_to_string(visibility: Visibility) -> String {

@@ -4,7 +4,7 @@ import atlas/assignment_form
 import atlas/athletes_page
 import atlas/date.{Date}
 import atlas/grants.{Person}
-import atlas/plan.{Assignment, Plan, Workout}
+import atlas/plan.{Assignment, Workout}
 import atlas/today.{Inputs}
 import gleam/option.{None, Some}
 import gleam/string
@@ -48,7 +48,7 @@ fn inputs() -> today.Inputs {
       Workout("w0", "p1", 0, 0, "Easy", plan.Easy, Some(5000.0), None),
       Workout("w2", "p1", 2, 0, "Tempo", plan.Tempo, Some(8000.0), None),
     ],
-    plans: [Plan("p1", "me", "Base block", "", plan.Private, "T")],
+    plans: [plan.new("p1", "me", "Base block", "", plan.Private, "T")],
     activities: [
       run("x1", "ana", "2026-09-28 06:00:00.000Z", 5000.0, "Morning shake-out"),
       run("x2", "ana", "2026-10-03 06:00:00.000Z", 3000.0, ""),

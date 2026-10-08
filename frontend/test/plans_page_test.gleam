@@ -1,9 +1,10 @@
 import atlas/outbox
-import atlas/plan.{type Plan, Plan}
+import atlas/plan.{type Plan}
 import atlas/plan_form.{Form}
 import atlas/plans_page.{
-  Browsing, Create, Creating, Delete, DeleteClicked, DeleteConfirmed, Edit,
-  EditClicked, Editing, Model, NewClicked, PlansRead, Submitted, TitleChanged,
+  BaseWeeksChanged, Browsing, CompetitionWeeksChanged, Create, Creating, Delete,
+  DeleteClicked, DeleteConfirmed, Edit, EditClicked, Editing, GoalChanged, Model,
+  NewClicked, PlansRead, PreCompetitionWeeksChanged, Submitted, TitleChanged,
 }
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -20,11 +21,14 @@ fn dynamic_of(text: String) -> Dynamic {
 }
 
 fn mine(id: String, title: String) -> Plan {
-  Plan(id, "u1", title, "", plan.Private, "T-" <> id)
+  plan.Plan(
+    ..plan.new(id, "u1", title, "", plan.Private, "T-" <> id),
+    phases: plan.default_phases,
+  )
 }
 
 fn others(id: String, title: String) -> Plan {
-  Plan(id, "u2", title, "", plan.Public, "T-" <> id)
+  plan.new(id, "u2", title, "", plan.Public, "T-" <> id)
 }
 
 fn with_plans(plans: List(Plan)) -> plans_page.Model {
@@ -63,6 +67,33 @@ pub fn a_failed_read_keeps_what_is_on_screen_test() {
   let #(model, actions) = update(before, PlansRead(Error(Nil)))
   assert model == before
   assert actions == []
+}
+
+pub fn a_new_plan_carries_its_phases_and_goal_test() {
+  let #(model, _) = update(plans_page.new(), NewClicked)
+  let #(model, _) = update(model, TitleChanged("Marathon"))
+  let #(model, _) = update(model, BaseWeeksChanged("8"))
+  let #(model, _) = update(model, PreCompetitionWeeksChanged("0"))
+  let #(model, _) = update(model, CompetitionWeeksChanged("3"))
+  let #(model, _) = update(model, GoalChanged("55"))
+  let #(_, actions) = update(model, Submitted)
+  let assert [Create(_, fields)] = actions
+  assert dict.get(fields, "base_weeks") == Ok("8")
+  assert dict.get(fields, "pre_competition_weeks") == Ok("0")
+  assert dict.get(fields, "competition_weeks") == Ok("3")
+  assert dict.get(fields, "weekly_distance_m")
+    == Ok(outbox.field_float("x", 55_000.0).1)
+}
+
+pub fn invalid_phases_keep_the_form_open_with_a_message_test() {
+  let #(model, _) = update(plans_page.new(), NewClicked)
+  let #(model, _) = update(model, TitleChanged("Marathon"))
+  let #(model, _) = update(model, BaseWeeksChanged("0"))
+  let #(model, _) = update(model, PreCompetitionWeeksChanged("0"))
+  let #(model, _) = update(model, CompetitionWeeksChanged("0"))
+  let #(model, actions) = update(model, Submitted)
+  assert actions == []
+  assert model.form.error == Some("The plan needs at least one week.")
 }
 
 pub fn creating_a_plan_asks_the_app_to_save_it_test() {
@@ -105,6 +136,25 @@ pub fn editing_sends_only_the_changed_fields_with_the_local_base_test() {
       ),
     ]
   assert model.mode == Browsing
+}
+
+pub fn editing_a_plan_without_phases_gives_it_the_default_ones_test() {
+  let old = plan.new("o", "u1", "Old", "", plan.Private, "T-o")
+  let model = with_plans([old])
+  let #(model, _, _) = plans_page.update(model, EditClicked("o"), "u1")
+  let #(_, _, actions) = plans_page.update(model, Submitted, "u1")
+  assert actions
+    == [
+      Edit(
+        "o",
+        dict.from_list([
+          outbox.field_int("base_weeks", 4),
+          outbox.field_int("pre_competition_weeks", 4),
+          outbox.field_int("competition_weeks", 4),
+        ]),
+        "T-o",
+      ),
+    ]
 }
 
 pub fn an_edit_without_changes_writes_nothing_test() {
@@ -192,7 +242,7 @@ pub fn the_list_says_loading_before_the_first_read_test() {
 }
 
 pub fn an_unsynced_plan_is_marked_test() {
-  let unsynced = Plan("n", "u1", "New one", "", plan.Private, "")
+  let unsynced = plan.new("n", "u1", "New one", "", plan.Private, "")
   let html = html_of(plans_page.view_list(with_plans([unsynced]), "u1"))
   assert string.contains(html, "Not synced yet")
 }
@@ -202,7 +252,13 @@ pub fn the_form_is_accessible_and_shows_errors_test() {
     Model(
       ..with_plans([]),
       mode: Creating,
-      form: Form("", "", plan.Private, Some("Give the plan a title.")),
+      form: Form(
+        "",
+        "",
+        plan.Private,
+        plan_form.default_settings(),
+        Some("Give the plan a title."),
+      ),
     )
   let html = html_of(plans_page.view_list(model, "u1"))
   assert string.contains(html, "for=\"plan-title\"")

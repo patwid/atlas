@@ -3,7 +3,7 @@ import atlas/activity_form
 import atlas/assignment_form
 import atlas/date.{Date}
 import atlas/matching.{Match, Stored}
-import atlas/plan.{Assignment, Plan, Workout}
+import atlas/plan.{Assignment, Workout}
 import atlas/progress.{Week}
 import atlas/today.{Inputs}
 import gleam/list
@@ -56,7 +56,7 @@ fn inputs() -> today.Inputs {
       workout("wed2", 9, plan.Long, 10_000.0),
       workout("sat2", 12, plan.Easy, 5000.0),
     ],
-    plans: [Plan("p1", "coach", "Base", "", plan.Private, "T")],
+    plans: [plan.new("p1", "coach", "Base", "", plan.Private, "T")],
     activities: [
       run("x1", "ana", "2026-09-28 06:00:00.000Z", 5000.0),
       run("x2", "ana", "2026-10-05 06:00:00.000Z", 6000.0),

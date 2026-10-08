@@ -4,7 +4,7 @@ import atlas/assignment_form
 import atlas/date.{Date}
 import atlas/matching.{Match, Stored}
 import atlas/outbox
-import atlas/plan.{Assignment, Plan, Workout}
+import atlas/plan.{Assignment, Workout}
 import atlas/today.{Inputs}
 import atlas/today_page.{
   CancelClicked, ChooseClicked, ConfirmClicked, Create, Delete, Edit, Key,
@@ -69,7 +69,7 @@ fn inputs(matches: List(matching.Stored)) -> today.Inputs {
       ),
       Workout("w3", "p1", 3, 0, "Thursday rest", plan.Rest, None, None),
     ],
-    plans: [Plan("p1", "me", "10k plan", "", plan.Private, "T")],
+    plans: [plan.new("p1", "me", "10k plan", "", plan.Private, "T")],
     activities: [
       activity_row("x1", "me", "2026-10-07 06:00:00.000Z", activity.Run),
       activity_row("x2", "me", "2026-10-07 18:00:00.000Z", activity.Run),

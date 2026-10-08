@@ -46,3 +46,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0040 | [Drop Web Awesome; roll our own styling with Bootstrap's palette](0040-drop-web-awesome.md) | Accepted |
 | 0041 | [Run CI on GitHub Actions through the Nix flake](0041-github-actions-ci.md) | Superseded by 0042 |
 | 0042 | [Run the test suites as flake checks](0042-ci-through-flake-checks.md) | Accepted |
+| 0043 | [Plan phases, a weekly distance goal, week intensity and a calendar view](0043-plan-phases-goal-and-calendar.md) | Proposed |

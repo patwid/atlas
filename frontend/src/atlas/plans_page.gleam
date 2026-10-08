@@ -16,6 +16,7 @@ import atlas/ui/dialog
 import atlas/ui/error
 import atlas/ui/field
 import atlas/ui/layout
+import atlas/ui/plan_settings
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -68,6 +69,10 @@ pub type Msg {
   TitleChanged(String)
   DescriptionChanged(String)
   VisibilityChanged(String)
+  BaseWeeksChanged(String)
+  PreCompetitionWeeksChanged(String)
+  CompetitionWeeksChanged(String)
+  GoalChanged(String)
   Submitted
   DeleteClicked
   DeleteConfirmed(String)
@@ -182,6 +187,21 @@ pub fn update(
         ),
       )
 
+    BaseWeeksChanged(value) ->
+      change_settings(model, fn(s) {
+        plan_form.Settings(..s, base_weeks: value)
+      })
+    PreCompetitionWeeksChanged(value) ->
+      change_settings(model, fn(s) {
+        plan_form.Settings(..s, pre_competition_weeks: value)
+      })
+    CompetitionWeeksChanged(value) ->
+      change_settings(model, fn(s) {
+        plan_form.Settings(..s, competition_weeks: value)
+      })
+    GoalChanged(value) ->
+      change_settings(model, fn(s) { plan_form.Settings(..s, goal_km: value) })
+
     Submitted ->
       case plan_form.validate(model.form), model.mode {
         Error(message), _ -> #(
@@ -263,6 +283,20 @@ fn change_form(
   form: plan_form.Form,
 ) -> #(Model, Effect(Msg), List(Action)) {
   #(Model(..model, form: form), effect.none(), [])
+}
+
+fn change_settings(
+  model: Model,
+  change: fn(plan_form.Settings) -> plan_form.Settings,
+) -> #(Model, Effect(Msg), List(Action)) {
+  change_form(
+    model,
+    plan_form.Form(
+      ..model.form,
+      settings: change(model.form.settings),
+      error: None,
+    ),
+  )
 }
 
 fn find(plans: List(Plan), id: String) -> Result(Plan, Nil) {
@@ -537,6 +571,16 @@ fn form_view(form: plan_form.Form, submit_label: String) -> Element(Msg) {
         #("private", "Only me (and people I share it with)"),
         #("public", "Everyone who is signed in"),
       ],
+    ),
+    plan_settings.inputs(
+      "plan",
+      form.settings,
+      plan_settings.Messages(
+        base_weeks: BaseWeeksChanged,
+        pre_competition_weeks: PreCompetitionWeeksChanged,
+        competition_weeks: CompetitionWeeksChanged,
+        goal_km: GoalChanged,
+      ),
     ),
     case form.error {
       Some(message) -> error.message(message)

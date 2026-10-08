@@ -1,6 +1,6 @@
 import atlas/id
 import atlas/outbox
-import atlas/plan.{Plan, Workout}
+import atlas/plan.{Workout}
 import atlas/plan_copy
 import atlas/random
 import atlas/workout_form.{Row}
@@ -10,7 +10,7 @@ import gleam/option.{None, Some}
 import gleam/string
 
 fn source() -> plan.Plan {
-  Plan("src", "ana", "10k plan", "Build up slowly", plan.Public, "T")
+  plan.new("src", "ana", "10k plan", "Build up slowly", plan.Public, "T")
 }
 
 fn row(id: String, day: Int, position: Int, title: String) -> workout_form.Row {
@@ -40,8 +40,29 @@ pub fn the_copy_is_private_owned_by_the_copier_and_remembers_its_source_test() {
       outbox.field_string("description", "Build up slowly"),
       outbox.field_string("visibility", "private"),
       outbox.field_string("source_plan", "src"),
+      outbox.field_int("base_weeks", 0),
+      outbox.field_int("pre_competition_weeks", 0),
+      outbox.field_int("competition_weeks", 0),
+      outbox.field_float("weekly_distance_m", 0.0),
+      #("week_intensity", "{}"),
     ])
   assert copy.workouts == []
+}
+
+pub fn phases_goal_and_intensities_are_copied_test() {
+  let source =
+    plan.Plan(
+      ..source(),
+      phases: plan.Phases(6, 3, 2),
+      weekly_distance_m: option.Some(50_000.0),
+      week_intensity: dict.from_list([#(2, plan.High)]),
+    )
+  let copy = plan_copy.build(source, [], "me", fn() { "x" })
+  assert dict.get(copy.plan_fields, "base_weeks") == Ok("6")
+  assert dict.get(copy.plan_fields, "competition_weeks") == Ok("2")
+  assert dict.get(copy.plan_fields, "weekly_distance_m")
+    == Ok(outbox.field_float("weekly_distance_m", 50_000.0).1)
+  assert dict.get(copy.plan_fields, "week_intensity") == Ok("{\"2\":\"high\"}")
 }
 
 pub fn a_public_plan_is_copied_as_private_test() {
@@ -117,7 +138,7 @@ pub fn the_title_is_cut_to_fit_the_servers_limit_test() {
 pub fn an_empty_plan_copies_to_an_empty_plan_test() {
   let copy =
     plan_copy.build(
-      Plan("e", "me", "Empty", "", plan.Private, "T"),
+      plan.new("e", "me", "Empty", "", plan.Private, "T"),
       [],
       "me",
       fn() { "n" },

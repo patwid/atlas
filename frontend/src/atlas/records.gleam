@@ -17,6 +17,7 @@ import atlas/plan.{
 }
 import atlas/shares.{type Share, Share}
 import atlas/workout_form.{type Row, Row}
+import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/float
@@ -36,6 +37,23 @@ pub fn plan(record: Dynamic) -> Result(Plan, Nil) {
       decode.string,
     )
     use updated <- decode.optional_field("updated", "", decode.string)
+    use base_weeks <- decode.optional_field("base_weeks", 0, whole_number())
+    use pre_weeks <- decode.optional_field(
+      "pre_competition_weeks",
+      0,
+      whole_number(),
+    )
+    use competition_weeks <- decode.optional_field(
+      "competition_weeks",
+      0,
+      whole_number(),
+    )
+    use goal <- decode.optional_field("weekly_distance_m", 0.0, number())
+    use intensities <- decode.optional_field(
+      "week_intensity",
+      dict.new(),
+      week_intensity_decoder(),
+    )
     decode.success(Plan(
       id: id,
       owner_id: owner,
@@ -46,8 +64,31 @@ pub fn plan(record: Dynamic) -> Result(Plan, Nil) {
         _ -> plan.Private
       },
       updated: updated,
+      phases: plan.Phases(base_weeks, pre_weeks, competition_weeks),
+      weekly_distance_m: case goal >. 0.0 {
+        True -> Some(goal)
+        False -> None
+      },
+      week_intensity: intensities,
     ))
   })
+}
+
+/// `{"3": "high"}`, or `null` when nothing was set. Entries that are not a week number and a known level
+/// are skipped, so one odd value does not hide the plan.
+fn week_intensity_decoder() -> Decoder(Dict(Int, plan.Intensity)) {
+  decode.one_of(
+    decode.dict(decode.string, decode.string)
+      |> decode.map(fn(raw) {
+        dict.fold(raw, dict.new(), fn(acc, week, level) {
+          case int.parse(week), plan.intensity_from_string(level) {
+            Ok(n), Ok(intensity) if n >= 1 -> dict.insert(acc, n, intensity)
+            _, _ -> acc
+          }
+        })
+      }),
+    [decode.success(dict.new())],
+  )
 }
 
 /// A target of 0 (what PocketBase stores for "none") becomes `None`.

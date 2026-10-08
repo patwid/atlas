@@ -251,7 +251,13 @@ pub fn saving_a_new_plan_queues_it_for_upload_test() {
       plans: plans_page.Model(
         ..plans_page.new(),
         mode: Creating,
-        form: plan_form.Form("Half marathon", "", plan.Public, None),
+        form: plan_form.Form(
+          "Half marathon",
+          "",
+          plan.Public,
+          plan_form.default_settings(),
+          None,
+        ),
       ),
     )
   let #(model, _) = atlas.update(typing, PlansPage(plans_page.Submitted))
@@ -265,6 +271,10 @@ pub fn saving_a_new_plan_queues_it_for_upload_test() {
       outbox.field_string("title", "Half marathon"),
       outbox.field_string("description", ""),
       outbox.field_string("visibility", "public"),
+      outbox.field_int("base_weeks", 4),
+      outbox.field_int("pre_competition_weeks", 4),
+      outbox.field_int("competition_weeks", 4),
+      outbox.field_float("weekly_distance_m", 0.0),
     ])
   assert model.plans.mode == plans_page.Browsing
 }
@@ -287,7 +297,7 @@ pub fn signing_out_clears_the_plans_on_screen_test() {
     Model(
       ..signed_in(),
       plans: plans_page.Model(..plans_page.new(), plans: [
-        plan.Plan("p1", "u1", "Private plan", "", plan.Private, "T"),
+        plan.new("p1", "u1", "Private plan", "", plan.Private, "T"),
       ]),
     )
   let #(model, _) = atlas.update(showing, SignOutClicked)
@@ -301,7 +311,7 @@ fn plan_screen(owner: String) -> atlas.Model {
     syncing: ready_syncing(),
     plans: plans_page.Model(
       ..plans_page.new(),
-      plans: [plan.Plan("p1", owner, "10k plan", "", plan.Private, "T")],
+      plans: [plan.new("p1", owner, "10k plan", "", plan.Private, "T")],
       loaded: True,
     ),
     workouts: workouts_page.Model(
@@ -371,7 +381,7 @@ fn schedule_screen(owner: String, visibility: plan.Visibility) -> atlas.Model {
     syncing: ready_syncing(),
     plans: plans_page.Model(
       ..plans_page.new(),
-      plans: [plan.Plan("p1", owner, "10k plan", "", visibility, "T")],
+      plans: [plan.new("p1", owner, "10k plan", "", visibility, "T")],
       loaded: True,
     ),
     coaches: coaches_page.Model(
@@ -658,7 +668,7 @@ fn copy_screen(workouts_loaded: Bool) -> atlas.Model {
     plans: plans_page.Model(
       ..plans_page.new(),
       plans: [
-        plan.Plan("src", "coach", "10k plan", "Build up", plan.Public, "T"),
+        plan.new("src", "coach", "10k plan", "Build up", plan.Public, "T"),
       ],
       loaded: True,
     ),
@@ -742,7 +752,7 @@ fn sharing_screen(owner: String) -> atlas.Model {
     syncing: ready_syncing(),
     plans: plans_page.Model(
       ..plans_page.new(),
-      plans: [plan.Plan("p1", owner, "10k plan", "", plan.Private, "T")],
+      plans: [plan.new("p1", owner, "10k plan", "", plan.Private, "T")],
       loaded: True,
     ),
     sharing: sharing_page.Model(
@@ -812,7 +822,7 @@ pub fn the_plan_list_says_who_shared_a_plan_test() {
       route: route.Plans,
       plans: plans_page.Model(
         ..plans_page.new(),
-        plans: [plan.Plan("p1", "zed", "Zed's plan", "", plan.Private, "T")],
+        plans: [plan.new("p1", "zed", "Zed's plan", "", plan.Private, "T")],
         loaded: True,
       ),
       sharing: sharing_page.Model(..sharing_page.new(), shares: [
