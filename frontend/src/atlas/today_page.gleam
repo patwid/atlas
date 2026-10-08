@@ -261,7 +261,7 @@ fn group(
     case items {
       [] -> html.p([class("muted")], [html.text(empty)])
       _ ->
-        layout.cards(
+        layout.list(
           list.map(items, fn(item) { item_view(item, model, inputs) }),
         )
     },
@@ -379,11 +379,11 @@ fn choosing_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
         html.div([], [
           html.p([], [html.text("Which activity was it?")]),
           html.ul(
-            [class("choices")],
+            [class("list choices")],
             list.map(candidates, fn(row) {
               html.li([], [
                 html.span([], [html.text(describe(row, inputs))]),
-                button.filled(
+                button.tonal(
                   [
                     attribute.type_("button"),
                     event.on_click(PickClicked(key, row.activity.id)),

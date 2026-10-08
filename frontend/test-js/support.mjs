@@ -77,6 +77,8 @@ export const typeInto = (w, el, value) => { el.value = value; el.dispatchEvent(n
 export const submit = (w, form) => form.dispatchEvent(new w.Event("submit", { bubbles: true, cancelable: true }))
 export const button = (w, text) => [...w.document.querySelectorAll("button")].find((b) => b.textContent.trim() === text)
 export const choose = (w, select, value) => { select.value = value; select.dispatchEvent(new w.Event("change", { bubbles: true })) }
+// Segmented buttons and chips (ADR 0047) are radio buttons: picking one is a click on it.
+export const pick = (w, name, value) => click(w, w.document.querySelector(`input[type="radio"][name="${name}"][value="${value}"]`))
 // Every confirmation <dialog> stays in the page, closed ones too, so a question or its buttons are only looked
 // up in the open one: elsewhere they would match another item's closed dialog.
 export const openDialog = (w) => w.document.querySelector("dialog[open]")

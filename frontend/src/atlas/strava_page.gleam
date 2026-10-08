@@ -8,6 +8,7 @@ import atlas/ui/button
 import atlas/ui/dialog
 import atlas/ui/error
 import atlas/ui/layout
+import atlas/ui/snackbar
 import gleam/int
 import gleam/option.{type Option, None, Some}
 import gleam/uri
@@ -62,6 +63,8 @@ pub type Msg {
   CancelClicked
   /// The browser came back from Strava with this result (`connected`, `denied`, `scope` or `taken`).
   Returned(String)
+  /// The snackbar with an info message was closed (ADR 0047).
+  MessageClosed
 }
 
 pub type Action {
@@ -81,6 +84,8 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg), List(Action)) {
     Refresh -> #(Model(..model, status: Checking), effect.none(), [
       Fetch(api.strava_status(), StatusReply),
     ])
+
+    MessageClosed -> #(Model(..model, message: None), effect.none(), [])
 
     ConnectClicked ->
       case model.busy {
@@ -284,7 +289,7 @@ pub fn view(model: Model) -> Element(Msg) {
       Known(status) -> status_view(model, status)
     },
     case model.message {
-      Some(Info(text)) -> html.p([attribute.role("status")], [html.text(text)])
+      Some(Info(text)) -> snackbar.view(text, None, MessageClosed)
       Some(Problem(text)) -> error.message(text)
       None -> element.none()
     },

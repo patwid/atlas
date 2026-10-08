@@ -6,7 +6,7 @@ import { toList } from "../build/dev/javascript/atlas/gleam.mjs"
 import * as store from "../build/dev/javascript/atlas/atlas/store.ffi.mjs"
 import { startPocketBase } from "../../backend/tests/harness.mjs"
 import {
-  appRunner, built, button, byLabel, call, choose, click, daysFromNow, dialogButton, openDialog, pub, setup, sleep, submit, typeInto,
+  appRunner, built, button, byLabel, call, choose, click, daysFromNow, dialogButton, openDialog, pick, pub, setup, sleep, submit, typeInto,
   utcOf, waitFor, ymd,
 } from "./support.mjs"
 
@@ -133,7 +133,7 @@ test("a user creates, edits and deletes a plan on the plans screens and the serv
   typeInto(w, d.querySelector("#plan-competition-weeks"), "2")
   typeInto(w, d.querySelector("#plan-goal"), "35")
   submit(w, d.querySelector("form"))
-  const link = await waitFor("the plan in the list", () => [...d.querySelectorAll(".cards a")].find((a) => a.textContent === "Autumn 10k"))
+  const link = await waitFor("the plan in the list", () => [...d.querySelectorAll(".list a")].find((a) => a.textContent === "Autumn 10k"))
   const created = await waitFor("the plan on the server", async () => (await onServer()).find((p) => p.title === "Autumn 10k"))
   assert.equal(created.owner, alice.id)
   assert.equal(created.description, "Eight weeks, three runs a week")
@@ -177,7 +177,7 @@ test("plans shared with the user show up read-only, and a pulled new plan appear
   w.dispatchEvent(new w.Event("offline"))
   w.dispatchEvent(new w.Event("online"))
   await waitFor("the shared plan", () => d.body.textContent.includes("Shared with you") && d.body.textContent.includes("Alice's public plan"))
-  click(w, [...d.querySelectorAll(".cards a")].find((a) => a.textContent === "Alice's public plan"))
+  click(w, [...d.querySelectorAll(".list a")].find((a) => a.textContent === "Alice's public plan"))
   await waitFor("the shared plan's screen", () => d.body.textContent.includes("Only its owner can change it"))
   assert.equal(button(w, "Edit"), undefined)
   assert.equal(button(w, "Delete"), undefined)
@@ -223,7 +223,7 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
   click(w, byLabel(w, "Add a workout to week 1, day 2"))
   await waitFor("the form for day 2", () => d.querySelector("#workout-title") && d.querySelector("#workout-day").value === "2")
   typeInto(w, d.querySelector("#workout-title"), "Core session")
-  choose(w, d.querySelector("#workout-kind"), "strength")
+  pick(w, "kind", "strength")
   submit(w, d.querySelector(".workout-form"))
   const second = await waitFor("the second workout", async () => (await workouts()).find((x) => x.title === "Core session"))
   assert.equal(second.kind, "strength")
@@ -377,7 +377,7 @@ test("a public plan of someone else can be started, and so can a private one tha
 
   // The private plan that is shared with Bob can be started too (ADR 0029): a share is enough.
   click(w, [...d.querySelectorAll("a")].find((a) => a.textContent.includes("All plans")))
-  const privateLink = await waitFor("the private plan in the list", () => [...d.querySelectorAll(".cards a")].find((a) => a.textContent === "Private plan"))
+  const privateLink = await waitFor("the private plan in the list", () => [...d.querySelectorAll(".list a")].find((a) => a.textContent === "Private plan"))
   click(w, privateLink)
   await waitFor("the private plan's screen", () => d.querySelector("h2")?.textContent === "Private plan")
   click(w, await waitFor("the start button", () => button(w, "Start this plan")))
@@ -474,7 +474,7 @@ test("an athlete adds a coach by e-mail, the coach assigns a plan, and the athle
   assert.equal(grant.coach, bob.id)
   assert.equal(grant.athlete_name, "alice")
   assert.equal(grant.coach_name, "bob")
-  await waitFor("bob in her list", () => d.querySelector(".coaches .cards")?.textContent.includes("bob"))
+  await waitFor("bob in her list", () => d.querySelector(".coaches .list")?.textContent.includes("bob"))
   w.close()
 
   // 2. Bob, who owns a plan, starts it for Alice.
@@ -500,7 +500,7 @@ test("an athlete adds a coach by e-mail, the coach assigns a plan, and the athle
   // 3. Alice opens the app and finds the plan on her schedule.
   w = startApp("/plans", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
   d = w.document
-  const link = await waitFor("the coach's plan in her list", () => [...d.querySelectorAll(".cards a")].find((a) => a.textContent === "Coach's base plan"))
+  const link = await waitFor("the coach's plan in her list", () => [...d.querySelectorAll(".list a")].find((a) => a.textContent === "Coach's base plan"))
   click(w, link)
   await waitFor("the plan screen with its schedule", () => d.body.textContent.includes("Assigned by bob") && d.body.textContent.includes("Starts Mon 2 Nov 2026"))
   assert.ok(d.body.textContent.includes("Easy run"), "the coach's workouts are readable through the assignment")
@@ -512,7 +512,7 @@ test("an athlete adds a coach by e-mail, the coach assigns a plan, and the athle
   // 4. Taking access back removes it for the coach.
   w = startApp("/settings", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
   d = w.document
-  await waitFor("the coach in the list", () => d.querySelector(".coaches .cards")?.textContent.includes("bob"))
+  await waitFor("the coach in the list", () => d.querySelector(".coaches .list")?.textContent.includes("bob"))
   click(w, button(w, "Remove access"))
   await waitFor("the question", () => openDialog(w)?.textContent.includes("Stop bob from seeing your training?"))
   click(w, dialogButton(w, "Yes, remove access"))
@@ -537,7 +537,7 @@ test("a user adds, edits and deletes an activity by hand; the start is stored in
   const activities = async () => (await h.api("GET", "collections/activities/records?perPage=50&sort=started_at", { token: alice.token })).body.items
 
   await waitFor("the Strava activity", () => d.body.textContent.includes("Lunch run"))
-  const stravaCard = [...d.querySelectorAll(".cards li")].find((li) => li.textContent.includes("Lunch run"))
+  const stravaCard = [...d.querySelectorAll(".list li")].find((li) => li.textContent.includes("Lunch run"))
   assert.ok(stravaCard.textContent.includes("Strava"))
   assert.equal([...stravaCard.querySelectorAll("button")].length, 0, "Strava activities cannot be changed here")
 
@@ -548,7 +548,7 @@ test("a user adds, edits and deletes an activity by hand; the start is stored in
   submit(w, d.querySelector(".activity-form"))
   await waitFor("a distance or time error", () => d.querySelector(".error")?.textContent === "Enter a distance or a time, or both.")
   assert.equal((await activities()).length, 1, "nothing is sent for an invalid form")
-  choose(w, d.querySelector("#activity-sport"), "trail_run")
+  pick(w, "sport", "trail_run")
   typeInto(w, d.querySelector("#activity-name"), "Morning loop")
   typeInto(w, d.querySelector("#activity-distance"), "8,5")
   typeInto(w, d.querySelector("#activity-duration"), "1:05")
@@ -569,7 +569,7 @@ test("a user adds, edits and deletes an activity by hand; the start is stored in
   await waitFor("it on screen in local time", () => d.body.textContent.includes("Mon 5 Oct 2026, 07:30") && d.body.textContent.includes("8.50 km"))
 
   // Edit: only the name changes.
-  const card = () => [...d.querySelectorAll(".cards li")].find((li) => li.textContent.includes("Morning loop") || li.textContent.includes("Easy loop"))
+  const card = () => [...d.querySelectorAll(".list li")].find((li) => li.textContent.includes("Morning loop") || li.textContent.includes("Easy loop"))
   click(w, [...card().querySelectorAll("button")].find((b) => b.textContent === "Edit"))
   await waitFor("the edit form with local values", () => d.querySelector("#activity-time")?.value === "07:30" && d.querySelector("#activity-date")?.value === "2026-10-05")
   assert.equal(d.querySelector("#activity-distance").value, "8.5")
@@ -743,7 +743,7 @@ test("an owner shares a private plan by e-mail, the recipient reads and starts i
   assert.equal(bobShare.user, bob.id)
   assert.equal(bobShare.user_name, "bob")
   assert.equal(bobShare.shared_by_name, "alice")
-  await waitFor("bob in the list", () => d.querySelector(".sharing .cards")?.textContent.includes("bob"))
+  await waitFor("bob in the list", () => d.querySelector(".sharing .list")?.textContent.includes("bob"))
   assert.equal(await seesPlan(bob), true)
   // Sharing with someone who already has it is refused before anything is sent.
   typeInto(w, d.querySelector("#share-email"), bob.email)
@@ -754,7 +754,7 @@ test("an owner shares a private plan by e-mail, the recipient reads and starts i
   // Bob finds it under "Shared with you", read-only, can start it and cannot share it on.
   w = startApp("/plans", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
   d = w.document
-  const link = await waitFor("the plan in his list", () => [...d.querySelectorAll(".cards a")].find((a) => a.textContent === "Winter base"))
+  const link = await waitFor("the plan in his list", () => [...d.querySelectorAll(".list a")].find((a) => a.textContent === "Winter base"))
   // Plans arrive one step before the shares that say who shared them, so the label follows a moment later.
   await waitFor("who shared it", () => d.body.textContent.includes("Shared by alice"))
   click(w, link)
@@ -774,14 +774,14 @@ test("an owner shares a private plan by e-mail, the recipient reads and starts i
   // Carol: shared, then stopped, then shared again through the same row.
   w = startApp("/plans/winterplan00001", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
   d = w.document
-  await waitFor("bob still listed", () => d.querySelector(".sharing .cards")?.textContent.includes("bob"))
+  await waitFor("bob still listed", () => d.querySelector(".sharing .list")?.textContent.includes("bob"))
   typeInto(w, d.querySelector("#share-email"), carol.email)
   submit(w, d.querySelector(".share-form"))
   await waitFor("carol found", () => d.body.textContent.includes("Found carol. Share this plan with them?"))
   click(w, button(w, "Share plan"))
   const carolShare = await waitFor("carol's share", async () => (await shares()).find((s) => s.user === carol.id))
   assert.equal(await seesPlan(carol), true)
-  const carolCard = () => [...d.querySelectorAll(".sharing .cards li")].find((li) => li.textContent.includes("carol"))
+  const carolCard = () => [...d.querySelectorAll(".sharing .list li")].find((li) => li.textContent.includes("carol"))
   await waitFor("carol listed", () => carolCard())
   click(w, [...carolCard().querySelectorAll("button")].find((b) => b.textContent === "Stop sharing"))
   await waitFor("the question", () => openDialog(w)?.textContent.includes("Stop sharing this plan with carol?"))
@@ -883,7 +883,7 @@ test("a coach sees an athlete's weeks, plans and activities read-only, and loses
 
   const w = startApp("/athletes", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
   const d = w.document
-  const link = await waitFor("the athlete in the list", () => [...d.querySelectorAll(".athletes .cards a")].find((a) => a.textContent === "alice"))
+  const link = await waitFor("the athlete in the list", () => [...d.querySelectorAll(".athletes .list a")].find((a) => a.textContent === "alice"))
   assert.ok([...d.querySelectorAll("nav a")].some((a) => a.textContent === "Athletes"), "the tab is there for a coach")
   click(w, link)
   await waitFor("the athlete's page", () => d.querySelector("table.progress") && d.body.textContent.includes("Tempo morning"))

@@ -12,11 +12,15 @@ import atlas/route
 import atlas/store
 import atlas/ui/badge
 import atlas/ui/button
+import atlas/ui/choice
 import atlas/ui/dialog
 import atlas/ui/error
 import atlas/ui/field
+import atlas/ui/focus
+import atlas/ui/icon
 import atlas/ui/layout
 import atlas/ui/plan_settings
+import atlas/ui/snackbar
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -137,7 +141,8 @@ pub fn update(
         form: plan_form.empty(),
         confirming_delete: False,
       ),
-      effect.none(),
+      // The form opens at the top of the page, away from the floating button (ADR 0047).
+      focus.soon("plan-title"),
       [],
     )
 
@@ -333,9 +338,10 @@ pub fn view_list_with(
       case model.mode {
         Creating -> element.none()
         _ ->
-          button.filled(
+          button.fab(
             [attribute.type_("button"), event.on_click(NewClicked)],
-            [html.text("New plan")],
+            icon.Add,
+            "New plan",
           )
       },
     ]),
@@ -433,22 +439,17 @@ pub fn view_detail_with(
 
 fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
   case state {
+    // Closing the snackbar brings the Copy button back, for another copy.
     Copied(source, new_id) if source == plan_id ->
-      html.div([class("copied"), attribute.role("status")], [
-        html.text("Copied to your plans. "),
-        html.a([attribute.href(route.to_path(route.Plan(new_id)))], [
-          html.text("Open your copy"),
-        ]),
-        html.text(" "),
-        button.text(
-          [attribute.type_("button"), event.on_click(CopyAgainClicked)],
-          [html.text("Copy again")],
-        ),
-      ])
+      snackbar.view(
+        "Copied to your plans.",
+        Some(snackbar.Link("Open your copy", route.to_path(route.Plan(new_id)))),
+        CopyAgainClicked,
+      )
     CopyProblem(source, message) if source == plan_id ->
       html.div([], [
         error.message(message),
-        button.outlined(
+        button.tonal(
           [attribute.type_("button"), event.on_click(CopyAgainClicked)],
           [html.text("Try again")],
         ),
@@ -457,7 +458,7 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
       html.p([class("muted")], [html.text("Copying…")])
     _ ->
       layout.actions([
-        button.outlined(
+        button.tonal(
           [attribute.type_("button"), event.on_click(CopyClicked(plan_id))],
           [html.text("Copy to my plans")],
         ),
@@ -490,7 +491,7 @@ fn plan_list(
   plans: List(Plan),
   shared_by: fn(Plan) -> Option(String),
 ) -> Element(Msg) {
-  layout.cards(
+  layout.list(
     list.map(plans, fn(p) {
       html.li([], [
         html.a([attribute.href(route.to_path(route.Plan(p.id)))], [
@@ -558,19 +559,19 @@ fn form_view(form: plan_form.Form, submit_label: String) -> Element(Msg) {
       ],
       form.description,
     ),
-    html.label([attribute.for("plan-visibility")], [html.text("Who can see it")]),
-    field.select(
-      [
-        attribute.id("plan-visibility"),
-        attribute.name("visibility"),
-        event.on_change(VisibilityChanged),
-      ],
+    choice.segmented(
+      "visibility",
+      "Who can see it",
       plan.visibility_to_string(form.visibility),
-      [
-        #("private", "Only me (and people I share it with)"),
-        #("public", "Everyone who is signed in"),
-      ],
+      [#("private", "Only me"), #("public", "Everyone")],
+      VisibilityChanged,
     ),
+    html.p([class("supporting")], [
+      html.text(case form.visibility {
+        plan.Private -> "You, and the people you share it with."
+        plan.Public -> "Everyone who is signed in."
+      }),
+    ]),
     plan_settings.inputs(
       "plan",
       form.settings,

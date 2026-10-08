@@ -37,7 +37,7 @@ pub fn view_list(athletes: List(Person)) -> Element(msg) {
           ),
         ])
       people ->
-        layout.cards(
+        layout.list(
           list.map(people, fn(person) {
             html.li([], [
               html.a([attribute.href(route.to_path(route.Athlete(person.id)))], [
@@ -175,7 +175,7 @@ fn following(inputs: Inputs) -> Element(msg) {
     case mine {
       [] -> html.p([class("muted")], [html.text("Not following a plan.")])
       rows ->
-        layout.cards(
+        layout.list(
           list.map(rows, fn(row) {
             html.li([], [
               html.strong([], [html.text(plan_title(inputs, row.assignment))]),
@@ -203,7 +203,7 @@ fn recent(inputs: Inputs) -> Element(msg) {
     html.h3([], [html.text("Recent activities")]),
     case rows {
       [] -> html.p([class("muted")], [html.text("No activities yet.")])
-      _ -> layout.cards(list.map(rows, fn(row) { activity_view(row, inputs) }))
+      _ -> layout.list(list.map(rows, fn(row) { activity_view(row, inputs) }))
     },
   ])
 }

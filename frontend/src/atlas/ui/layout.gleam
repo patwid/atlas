@@ -10,7 +10,8 @@ pub fn actions(children: List(Element(msg))) -> Element(msg) {
   html.div([class("actions")], children)
 }
 
-/// A list of cards: plans, coaches, shares, athletes, and the like.
-pub fn cards(children: List(Element(msg))) -> Element(msg) {
-  html.ul([class("cards")], children)
+/// A Material 3 list (ADR 0047): plans, coaches, shares, athletes, and the like. Each item's link is its
+/// headline and its paragraphs the supporting text.
+pub fn list(children: List(Element(msg))) -> Element(msg) {
+  html.ul([class("list")], children)
 }

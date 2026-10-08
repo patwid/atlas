@@ -184,7 +184,7 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
       False, _ -> html.p([class("muted")], [html.text("Loading…")])
       True, [] ->
         html.p([class("muted")], [html.text("Not shared with anyone.")])
-      True, _ -> layout.cards(list.map(current, share_view))
+      True, _ -> layout.list(list.map(current, share_view))
     },
     person_finder.view(
       model.finder,

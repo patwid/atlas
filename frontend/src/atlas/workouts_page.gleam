@@ -12,6 +12,7 @@ import atlas/records
 import atlas/store
 import atlas/ui/badge
 import atlas/ui/button
+import atlas/ui/choice
 import atlas/ui/dialog
 import atlas/ui/error
 import atlas/ui/field
@@ -1142,17 +1143,14 @@ fn form_view(
         ),
       ]),
     ]),
-    html.label([attribute.for("workout-kind")], [html.text("Kind")]),
-    field.select(
-      [
-        attribute.id("workout-kind"),
-        attribute.name("kind"),
-        event.on_change(KindChanged),
-      ],
+    choice.chips(
+      "kind",
+      "Kind",
       plan.kind_to_string(form.kind),
       list.map(kinds, fn(kind) {
         #(plan.kind_to_string(kind), workout_form.kind_label(kind))
       }),
+      KindChanged,
     ),
     html.div([class("row")], [
       html.div([], [

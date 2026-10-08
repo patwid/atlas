@@ -72,7 +72,7 @@ test("connect, import, import again and disconnect", skip, async () => {
   assert.equal(w.location.search, "", "the address is cleaned so a reload does not repeat the message")
   click(w, [...d.querySelectorAll("nav a")].find((a) => a.textContent === "Activities"))
   await waitFor("the imported activities", () => d.body.textContent.includes("Lunch run") && d.body.textContent.includes("Hill repeats"))
-  const card = [...d.querySelectorAll(".cards li")].find((li) => li.textContent.includes("Lunch run"))
+  const card = [...d.querySelectorAll(".list li")].find((li) => li.textContent.includes("Lunch run"))
   assert.ok(card.textContent.includes("Strava"))
   assert.equal(card.querySelectorAll("button").length, 0, "Strava activities are read-only")
   // Strava's rules: wherever its data is shown, a link back that says "View on Strava".

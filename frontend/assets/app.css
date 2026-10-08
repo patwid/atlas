@@ -31,6 +31,7 @@
   --md-sys-color-outline-variant: #cac4d0;
   --md-sys-color-inverse-surface: #322f35;
   --md-sys-color-inverse-on-surface: #f5eff7;
+  --md-sys-color-inverse-primary: #d0bcff;
   --md-sys-color-scrim: #000000;
   --md-sys-color-shadow: #000000;
 
@@ -86,6 +87,7 @@
     --md-sys-color-outline-variant: #49454f;
     --md-sys-color-inverse-surface: #e6e0e9;
     --md-sys-color-inverse-on-surface: #322f35;
+    --md-sys-color-inverse-primary: #6750a4;
     --md-sys-color-scrim: #000000;
     --md-sys-color-shadow: #000000;
   }
@@ -102,7 +104,10 @@
   --intensity-medium: var(--md-sys-color-tertiary);
   --intensity-high: var(--md-sys-color-error);
   --focus-ring: 3px solid var(--md-sys-color-secondary);
+  /* The navigation bar's height, which floating things (FAB, snackbar) keep clear of; 0 next to the rail. */
+  --nav-bar-height: calc(5rem + env(safe-area-inset-bottom));
 }
+@media (min-width: 60rem) { :root { --nav-bar-height: 0px; } }
 
 * { box-sizing: border-box; }
 html, body {
@@ -142,6 +147,107 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 .md-button-outlined { border: 1px solid var(--md-sys-color-outline-variant); color: var(--md-sys-color-on-surface-variant); }
 .md-button-outlined:disabled { border-color: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent); }
 .md-button-text { padding: 0 0.75rem; }
+.md-button-tonal { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+.md-button-tonal:not(:disabled):hover { box-shadow: var(--md-sys-elevation-1); }
+.md-button-tonal:disabled { background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent); box-shadow: none; }
+.icon { width: 1.5rem; height: 1.5rem; fill: currentColor; flex: none; }
+.md-button .icon { width: 1.125rem; height: 1.125rem; margin-left: -0.5rem; }
+
+/* Icon button (ADR 0047): a 40px circle around a 24px icon. */
+.md-icon-button {
+  position: relative; display: inline-grid; place-items: center; width: 2.5rem; height: 2.5rem; flex: none;
+  padding: 0; border: 0; border-radius: var(--md-sys-shape-corner-full); background: transparent;
+  color: var(--md-sys-color-on-surface-variant); cursor: pointer; isolation: isolate;
+  -webkit-tap-highlight-color: transparent;
+}
+.md-icon-button::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  background: currentColor; opacity: 0; transition: opacity 0.15s var(--md-sys-motion-easing);
+}
+.md-icon-button:hover::before { opacity: var(--md-sys-state-hover); }
+.md-icon-button:focus-visible::before, .md-icon-button:active::before { opacity: var(--md-sys-state-focus); }
+.md-icon-button:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+
+/* Extended FAB (ADR 0047): the screen's main action, floating above the navigation bar. */
+.md-fab {
+  position: fixed; z-index: 3; right: max(1rem, env(safe-area-inset-right)); bottom: calc(var(--nav-bar-height) + 1rem);
+  display: inline-flex; align-items: center; gap: 0.75rem; height: 3.5rem; padding: 0 1.25rem 0 1rem; isolation: isolate;
+  border: 0; border-radius: var(--md-sys-shape-corner-large); cursor: pointer;
+  background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container);
+  font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem;
+  box-shadow: var(--md-sys-elevation-3); -webkit-tap-highlight-color: transparent;
+}
+.md-fab::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  background: currentColor; opacity: 0; transition: opacity 0.15s var(--md-sys-motion-easing);
+}
+.md-fab:hover::before { opacity: var(--md-sys-state-hover); }
+.md-fab:focus-visible::before, .md-fab:active::before { opacity: var(--md-sys-state-focus); }
+.md-fab:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+@media (min-width: 60rem) { .md-fab { right: 1.5rem; bottom: 1.5rem; } }
+/* Room under the last item, so the FAB does not cover it. */
+main:has(.md-fab) { padding-bottom: 6rem; }
+
+/* Snackbar (ADR 0047): a short message at the bottom, above the FAB when there is one. */
+.snackbar {
+  position: fixed; z-index: 4; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--nav-bar-height) + 1rem); width: min(42rem, calc(100% - 2rem));
+  display: flex; align-items: center; gap: 0.25rem; min-height: 3rem; padding: 0.25rem 0.25rem 0.25rem 1rem;
+  border-radius: var(--md-sys-shape-corner-extra-small); box-shadow: var(--md-sys-elevation-3);
+  background: var(--md-sys-color-inverse-surface); color: var(--md-sys-color-inverse-on-surface);
+  font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem;
+  animation: snackbar-in 0.25s var(--md-sys-motion-easing);
+}
+body:has(.md-fab) .snackbar { bottom: calc(var(--nav-bar-height) + 5.5rem); }
+@media (min-width: 60rem) { .snackbar { left: calc(50% + 2.5rem); } }
+.snackbar-text { flex: 1; padding: 0.5rem 0; }
+.snackbar .snackbar-action { color: var(--md-sys-color-inverse-primary); text-decoration: none; }
+.snackbar .md-icon-button { color: var(--md-sys-color-inverse-on-surface); }
+@keyframes snackbar-in { from { opacity: 0; transform: translate(-50%, 0.5rem); } }
+@media (prefers-reduced-motion: reduce) { .snackbar { animation: none; } }
+
+/* Segmented buttons and filter chips (ADR 0047): a group of radio buttons; the input is hidden but focusable. */
+.choice { border: 0; padding: 0; margin: 0.75rem 0 0; min-width: 0; }
+.choice legend {
+  padding: 0; margin-bottom: 0.5rem;
+  font: 500 0.75rem/1rem var(--md-ref-typeface); letter-spacing: 0.03125rem; color: var(--md-sys-color-on-surface-variant);
+}
+.choice-options { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.choice-option { position: relative; margin: 0; font: inherit; color: inherit; letter-spacing: normal; }
+.choice-option input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
+.choice-label {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; isolation: isolate;
+  height: 2rem; padding: 0 1rem; cursor: pointer; user-select: none; color: var(--md-sys-color-on-surface-variant);
+  border: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-small);
+  font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem;
+  -webkit-tap-highlight-color: transparent;
+}
+.choice-label::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  background: currentColor; opacity: 0; transition: opacity 0.15s var(--md-sys-motion-easing);
+}
+.choice-label:hover::before { opacity: var(--md-sys-state-hover); }
+.choice-label .icon { display: none; width: 1.125rem; height: 1.125rem; margin-left: -0.5rem; }
+.choice-option input:checked + .choice-label {
+  background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); border-color: transparent;
+}
+.choice-option input:checked + .choice-label .icon { display: block; }
+.choice-option input:focus-visible + .choice-label { outline: var(--focus-ring); outline-offset: 2px; }
+/* Segmented: one connected row, pill-shaped ends, outline between the segments. */
+.segmented .choice-options { flex-wrap: nowrap; gap: 0; }
+.segmented .choice-option { flex: 1; display: flex; }
+.segmented .choice-label {
+  flex: 1; height: 2.5rem; padding: 0 0.75rem; border-radius: 0; border-color: var(--md-sys-color-outline);
+  color: var(--md-sys-color-on-surface);
+}
+.segmented .choice-option + .choice-option .choice-label { margin-left: -1px; }
+.segmented .choice-option:first-child .choice-label { border-radius: var(--md-sys-shape-corner-full) 0 0 var(--md-sys-shape-corner-full); }
+.segmented .choice-option:last-child .choice-label { border-radius: 0 var(--md-sys-shape-corner-full) var(--md-sys-shape-corner-full) 0; }
+.segmented .choice-option input:checked + .choice-label { border-color: var(--md-sys-color-outline); }
+.supporting {
+  margin: 0.25rem 1rem 0; font-size: 0.75rem; line-height: 1rem; letter-spacing: 0.025rem;
+  color: var(--md-sys-color-on-surface-variant);
+}
 
 /* Outlined text fields and selects; their labels sit above them. */
 .md-text-field {
@@ -225,7 +331,6 @@ main { flex: 1; padding: 0 1rem 1.5rem; max-width: 48rem; width: 100%; margin: 0
 }
 .tabs a:hover .nav-indicator::before { opacity: var(--md-sys-state-hover); }
 .tabs a:active .nav-indicator::before { opacity: var(--md-sys-state-pressed); }
-.nav-indicator svg { width: 1.5rem; height: 1.5rem; fill: currentColor; }
 .tabs a[aria-current="page"] { color: var(--md-sys-color-on-surface); font-weight: 700; }
 .tabs a[aria-current="page"] .nav-indicator {
   background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container);
@@ -263,15 +368,18 @@ label:has(+ .md-text-field:focus) { color: var(--md-sys-color-primary); }
 .problems ul { margin: 0.5rem 0; padding-left: 1.25rem; }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 
-/* Lists of outlined cards. */
-.cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
-.cards li {
-  background: var(--md-sys-color-surface); border: 1px solid var(--md-sys-color-outline-variant);
-  border-radius: var(--md-sys-shape-corner-medium); padding: 1rem;
+/* Lists (ADR 0047): items in one container with dividers; the link is the headline, paragraphs supporting text. */
+.list {
+  list-style: none; margin: 0; padding: 0.5rem 0; overflow: hidden;
+  background: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-large);
 }
-.cards a { color: var(--md-sys-color-on-surface); font: 500 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.009375rem; text-decoration: none; }
-.cards a:hover { text-decoration: underline; }
-.cards p { margin: 0.25rem 0 0; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; }
+.list li { position: relative; padding: 0.75rem 1rem; min-height: 3.5rem; }
+.list li + li { border-top: 1px solid var(--md-sys-color-outline-variant); }
+.list a { color: var(--md-sys-color-on-surface); font: 400 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem; text-decoration: none; }
+.list a:hover { text-decoration: underline; }
+.list p { margin: 0.125rem 0 0; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; color: var(--md-sys-color-on-surface-variant); }
+.list .actions { margin-top: 0.5rem; }
+.choices li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .badges { margin-left: 0.5rem; }
 .badge {
   display: inline-flex; align-items: center; height: 1.5rem; padding: 0 0.5rem; margin-right: 0.25rem;

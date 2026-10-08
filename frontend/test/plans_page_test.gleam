@@ -381,7 +381,9 @@ pub fn a_copy_links_to_the_new_plan_only_on_the_plan_it_came_from_test() {
   let on_source = html_of(plans_page.view_detail(model, "a", "u1"))
   assert string.contains(on_source, "Copied to your plans.")
   assert string.contains(on_source, "href=\"/plans/new1\"")
-  assert string.contains(on_source, "Copy again")
+  // Closing the snackbar brings the Copy button back (ADR 0047).
+  assert string.contains(on_source, "class=\"snackbar\"")
+  assert string.contains(on_source, "aria-label=\"Close\"")
   let elsewhere = html_of(plans_page.view_detail(model, "b", "u1"))
   assert !string.contains(elsewhere, "Copied to your plans.")
   assert string.contains(elsewhere, "Copy to my plans")

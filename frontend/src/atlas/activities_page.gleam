@@ -12,9 +12,12 @@ import atlas/records
 import atlas/store
 import atlas/ui/badge
 import atlas/ui/button
+import atlas/ui/choice
 import atlas/ui/dialog
 import atlas/ui/error
 import atlas/ui/field
+import atlas/ui/focus
+import atlas/ui/icon
 import atlas/ui/layout
 import atlas/units
 import gleam/dict
@@ -154,7 +157,8 @@ pub fn update(
         form: activity_form.empty_for(context.today),
         confirming: None,
       ),
-      effect.none(),
+      // The form opens at the top of the page, away from the floating button (ADR 0047).
+      focus.soon("activity-date"),
       [],
     )
 
@@ -306,9 +310,10 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
       html.h2([], [html.text("Your activities")]),
       case model.mode {
         Browsing ->
-          button.filled(
+          button.fab(
             [attribute.type_("button"), event.on_click(AddClicked)],
-            [html.text("Add activity")],
+            icon.Add,
+            "Add activity",
           )
         _ -> element.none()
       },
@@ -330,7 +335,7 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
             ])
         }
       True, _ ->
-        layout.cards(list.map(rows, fn(row) { row_view(row, model, context) }))
+        layout.list(list.map(rows, fn(row) { row_view(row, model, context) }))
     },
   ])
 }
@@ -508,17 +513,14 @@ fn form_view(form: activity_form.Form, submit_label: String) -> Element(Msg) {
         ]),
       ]),
     ]),
-    html.label([attribute.for("activity-sport")], [html.text("Sport")]),
-    field.select(
-      [
-        attribute.id("activity-sport"),
-        attribute.name("sport"),
-        event.on_change(SportChanged),
-      ],
+    choice.chips(
+      "sport",
+      "Sport",
       activity.sport_to_string(form.sport),
       list.map(sports, fn(sport) {
         #(activity.sport_to_string(sport), activity_form.sport_label(sport))
       }),
+      SportChanged,
     ),
     html.label([attribute.for("activity-name")], [html.text("Name (optional)")]),
     field.input([

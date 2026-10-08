@@ -15,6 +15,7 @@ import atlas/ui/button
 import atlas/ui/error
 import atlas/ui/field
 import atlas/ui/layout
+import atlas/ui/snackbar
 import gleam/dynamic.{type Dynamic}
 import gleam/int
 import gleam/list
@@ -53,6 +54,8 @@ pub type Msg {
   FillFromThresholdClicked
   ResetClicked
   Submitted
+  /// The "Saved." snackbar was closed (ADR 0047).
+  SavedClosed
 }
 
 pub type Action {
@@ -158,6 +161,8 @@ pub fn update(
       }
 
     ResetClicked -> #(filled(model, me), effect.none(), [])
+
+    SavedClosed -> #(Model(..model, saved: False), effect.none(), [])
 
     Submitted ->
       case parse(model) {
@@ -274,7 +279,7 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
           attribute.value(model.hr.max_hr),
           event.on_input(MaxChanged),
         ]),
-        button.outlined(
+        button.tonal(
           [attribute.type_("button"), event.on_click(FillFromMaxClicked)],
           [html.text("Work out zones from maximum")],
         ),
@@ -313,7 +318,7 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
           attribute.placeholder("5:00"),
           event.on_input(ThresholdChanged),
         ]),
-        button.outlined(
+        button.tonal(
           [attribute.type_("button"), event.on_click(FillFromThresholdClicked)],
           [html.text("Work out zones from threshold pace")],
         ),
@@ -343,10 +348,7 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
           False -> element.none()
         },
         case model.saved {
-          True ->
-            html.span([class("muted"), attribute.role("status")], [
-              html.text("Saved."),
-            ])
+          True -> snackbar.view("Zones saved.", None, SavedClosed)
           False -> element.none()
         },
       ]),
