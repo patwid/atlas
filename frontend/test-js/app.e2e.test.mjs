@@ -401,7 +401,7 @@ test("training zones start as the defaults, are saved under the athlete's ID, an
   const pace = (row) => [row.threshold_pace_s, ...[1, 2, 3, 4, 5].map((n) => row[`pace_zone${n}_start_s`])]
 
   // 1. Nothing saved: the form shows the defaults. Change zone 2 and save.
-  let w = startApp("/settings", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
+  let w = startApp("/settings/zones", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
   let d = w.document
   await waitFor("the default zones", () => d.body.textContent.includes("These are the default zones"))
   assert.equal(d.querySelector("#hr-max").value, "190")
@@ -433,7 +433,7 @@ test("training zones start as the defaults, are saved under the athlete's ID, an
     next_seq: 2,
     entries: [{ seq: 1, collection: "athlete_settings", id: alice.id, kind: "create", fields, base_updated: null, in_flight: false, attempts: 0 }],
   }))
-  w = startApp("/settings", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
+  w = startApp("/settings/zones", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
   d = w.document
   await waitFor("the second device's zones on the server", async () => (await settings())[0]?.max_hr === 200)
   const rows = await settings()
@@ -458,7 +458,7 @@ test("an athlete adds a coach by e-mail, the coach assigns a plan, and the athle
   const grants = async () => (await h.api("GET", "collections/coach_grants/records?perPage=50", { token: alice.token })).body.items
 
   // 1. Alice gives Bob access. Looking him up and confirming are separate steps.
-  let w = startApp("/settings", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
+  let w = startApp("/settings/coaches", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
   let d = w.document
   await waitFor("the coaches section", () => d.body.textContent.includes("Nobody can see your training."))
   typeInto(w, d.querySelector("#coach-email"), "nobody@example.com")
@@ -510,7 +510,7 @@ test("an athlete adds a coach by e-mail, the coach assigns a plan, and the athle
   w.close()
 
   // 4. Taking access back removes it for the coach.
-  w = startApp("/settings", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
+  w = startApp("/settings/coaches", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
   d = w.document
   await waitFor("the coach in the list", () => d.querySelector(".coaches .list")?.textContent.includes("bob"))
   click(w, button(w, "Remove access"))

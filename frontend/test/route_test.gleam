@@ -15,11 +15,13 @@ pub fn parses_each_page_test() {
   assert parse("/plans/abc123") == Plan("abc123")
   assert parse("/activities") == Activities
   assert parse("/settings?strava=connected") == Settings
+  assert parse("/settings/zones") == route.SettingsPage(route.Zones)
 }
 
 pub fn unknown_paths_are_not_found_test() {
   assert parse("/nope") == NotFound
   assert parse("/plans/a/b") == NotFound
+  assert parse("/settings/nope") == NotFound
 }
 
 pub fn to_path_round_trips_test() {
@@ -29,6 +31,11 @@ pub fn to_path_round_trips_test() {
     Plan("abc123"),
     Activities,
     Settings,
+    route.SettingsPage(route.Account),
+    route.SettingsPage(route.SyncStatus),
+    route.SettingsPage(route.Zones),
+    route.SettingsPage(route.Coaches),
+    route.SettingsPage(route.Strava),
     route.Athletes,
     route.Athlete("ana1"),
   ]

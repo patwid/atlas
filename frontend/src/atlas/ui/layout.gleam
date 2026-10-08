@@ -1,6 +1,7 @@
 //// Simple classed container wrappers repeated across almost every page (ADR 0040), so the class
 //// name lives in one place instead of being retyped at each call site.
 
+import atlas/ui/icon.{type Icon}
 import lustre/attribute.{class}
 import lustre/element.{type Element}
 import lustre/element/html
@@ -14,4 +15,24 @@ pub fn actions(children: List(Element(msg))) -> Element(msg) {
 /// headline and its paragraphs the supporting text.
 pub fn list(children: List(Element(msg))) -> Element(msg) {
   html.ul([class("list")], children)
+}
+
+/// A list item that opens another page (ADR 0049): a leading icon, a headline, supporting text and a chevron.
+/// The whole row is the link.
+pub fn link_item(
+  href: String,
+  symbol: Icon,
+  headline: String,
+  supporting: String,
+) -> Element(msg) {
+  html.li([class("link-item")], [
+    html.a([attribute.href(href)], [
+      icon.view(symbol),
+      html.span([class("link-item-text")], [
+        html.span([class("link-item-headline")], [html.text(headline)]),
+        html.span([class("link-item-supporting")], [html.text(supporting)]),
+      ]),
+      icon.view(icon.ChevronRight),
+    ]),
+  ])
 }

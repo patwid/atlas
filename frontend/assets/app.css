@@ -327,12 +327,6 @@ dialog[open] { animation: dialog-in 0.25s var(--md-sys-motion-easing); }
   .md-linear-progress::before { animation-duration: 4s; }
   .md-circular-progress { animation-duration: 3s; }
 }
-.pill {
-  display: inline-flex; align-items: center; height: 2rem; padding: 0 1rem;
-  border-radius: var(--md-sys-shape-corner-small);
-  background: var(--md-sys-color-inverse-surface); color: var(--md-sys-color-inverse-on-surface);
-  font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem;
-}
 main { flex: 1; padding: 0 1rem 1.5rem; max-width: 48rem; width: 100%; margin: 0 auto; }
 
 .tabs { position: sticky; bottom: 0; z-index: 2; background: var(--md-sys-color-surface-container); }
@@ -388,11 +382,43 @@ label:has(+ .md-text-field:focus) { color: var(--md-sys-color-primary); }
 .error { color: var(--md-sys-color-error); margin: 0.25rem 0 0; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; }
 .settings h2, .toolbar h2, .plans h2 { font: 400 1.375rem/1.75rem var(--md-ref-typeface); }
 .toolbar h2, .plans h2 { margin: 1.5rem 0 0.75rem; }
-.problems {
-  border-radius: var(--md-sys-shape-corner-medium); padding: 0.75rem 1rem;
-  background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container);
+/* Banners (ADR 0049): a message at the top of the content until it is resolved, with an icon and actions. */
+.banner {
+  margin: 0 0 1rem; padding: 1rem 1rem 0.5rem; border-radius: var(--md-sys-shape-corner-medium);
+  background: var(--md-sys-color-surface-container-high); color: var(--md-sys-color-on-surface);
 }
-.problems ul { margin: 0.5rem 0; padding-left: 1.25rem; }
+.banner-body { display: flex; gap: 1rem; align-items: flex-start; padding-bottom: 0.5rem; }
+.banner-body > .icon { color: var(--md-sys-color-on-surface-variant); margin-top: -0.0625rem; }
+.banner-text { flex: 1; min-width: 0; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; }
+.banner-text ul { margin: 0; padding-left: 1.25rem; }
+.banner-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-right: -0.5rem; }
+.banner-error, .banner.problems { background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); }
+.banner-error .banner-body > .icon, .banner.problems .banner-body > .icon,
+.banner.problems .md-button { color: var(--md-sys-color-on-error-container); }
+.banner-offline { padding-bottom: 0.5rem; }
+
+/* A list of rows that open other pages, such as Settings (ADR 0049). */
+.link-list { padding: 0.5rem 0; }
+.link-list li { padding: 0; }
+.link-list a {
+  position: relative; display: flex; align-items: center; gap: 1rem; min-height: 4.5rem; padding: 0.75rem 1rem 0.75rem 1rem;
+  color: var(--md-sys-color-on-surface); text-decoration: none; isolation: isolate;
+}
+.link-list a::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; background: var(--md-sys-color-on-surface);
+  opacity: 0; transition: opacity 0.15s var(--md-sys-motion-easing);
+}
+.link-list a:hover { text-decoration: none; }
+.link-list a:hover::before { opacity: var(--md-sys-state-hover); }
+.link-list a:active::before { opacity: var(--md-sys-state-pressed); }
+.link-list a:focus-visible { outline: var(--focus-ring); outline-offset: -3px; }
+.link-list .icon { color: var(--md-sys-color-on-surface-variant); }
+.link-item-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.link-item-headline { font: 400 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem; }
+.link-item-supporting {
+  font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; color: var(--md-sys-color-on-surface-variant);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 
 /* Lists (ADR 0047): items in one container with dividers; the link is the headline, paragraphs supporting text. */

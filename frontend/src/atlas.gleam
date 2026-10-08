@@ -29,9 +29,13 @@ import atlas/sync
 import atlas/syncing
 import atlas/today
 import atlas/today_page
+import atlas/ui/banner
 import atlas/ui/button
+import atlas/ui/icon
+import atlas/ui/layout
 import atlas/workouts_page
 import atlas/zones_page
+import gleam/int
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/result
@@ -115,19 +119,23 @@ fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
     modem.initial_uri()
     |> result.map(route.strava_result)
     |> result.unwrap(None)
-  let strava_start = case auth, returned {
-    SignedIn(_), Some(result) ->
+  // It lands on Strava's own Settings page (ADR 0049); the server's return address stays `/settings`.
+  let strava_page_route = route.SettingsPage(route.Strava)
+  let #(route, strava_start) = case auth, returned {
+    SignedIn(_), Some(result) -> #(
+      strava_page_route,
       effect.batch([
         send(StravaPage(strava_page.Returned(result))),
         // The address is cleaned so that a reload does not repeat the message.
-        modem.replace("/settings", None, None),
-      ])
+        modem.replace(route.to_path(strava_page_route), None, None),
+      ]),
+    )
     SignedIn(_), None ->
-      case route {
-        route.Settings -> send(StravaPage(strava_page.Refresh))
-        _ -> effect.none()
+      case route == strava_page_route {
+        True -> #(route, send(StravaPage(strava_page.Refresh)))
+        False -> #(route, effect.none())
       }
-    SignedOut(_), _ -> effect.none()
+    SignedOut(_), _ -> #(route, effect.none())
   }
   #(
     Model(
@@ -165,9 +173,10 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       let next = route.parse(uri)
       #(
         Model(..model, route: next),
-        // The Strava state is looked up when Settings is opened.
+        // The Strava state is looked up when its Settings page is opened.
         case next, model.auth {
-          route.Settings, SignedIn(_) -> send(StravaPage(strava_page.Refresh))
+          route.SettingsPage(route.Strava), SignedIn(_) ->
+            send(StravaPage(strava_page.Refresh))
           _, _ -> effect.none()
         },
       )
@@ -1104,16 +1113,20 @@ fn page(model: Model, session: Session) -> Element(Msg) {
         activities_page.view(model.activities, activities_context(session)),
         ActivitiesPage,
       )
-    route.Settings ->
-      html.div([], [
-        settings(session, model.syncing),
-        element.map(zones_page.view(model.zones, session.user_id), ZonesPage),
-        element.map(
-          coaches_page.view(model.coaches, session.user_id),
-          CoachesPage,
-        ),
-        element.map(strava_page.view(model.strava), StravaPage),
-      ])
+    route.Settings -> settings_list(session, model.syncing)
+    route.SettingsPage(page) ->
+      settings_page(model.syncing, case page {
+        route.Account -> account_view(session)
+        route.SyncStatus -> sync_view(model.syncing)
+        route.Zones ->
+          element.map(zones_page.view(model.zones, session.user_id), ZonesPage)
+        route.Coaches ->
+          element.map(
+            coaches_page.view(model.coaches, session.user_id),
+            CoachesPage,
+          )
+        route.Strava -> element.map(strava_page.view(model.strava), StravaPage)
+      })
     route.Athletes ->
       athletes_page.view_list(grants.athletes_of(
         model.coaches.grants,
@@ -1136,20 +1149,61 @@ fn page(model: Model, session: Session) -> Element(Msg) {
   }
 }
 
-fn settings(session: Session, sync_state: syncing.State) -> Element(Msg) {
+/// Settings is a list of its sections; each row opens the section's own page (ADR 0049). Sync problems show at
+/// the top of every Settings page, so they are not missed.
+fn settings_list(session: Session, sync_state: syncing.State) -> Element(Msg) {
   html.section([attribute.class("settings")], [
-    html.h2([], [html.text("Account")]),
-    html.p([], [
-      html.text(case session.name {
-        "" -> session.email
-        name -> name <> " (" <> session.email <> ")"
+    sync_banners(sync_state),
+    html.ul(
+      [attribute.class("list link-list")],
+      list.map(route.settings_pages, fn(page) {
+        let #(symbol, supporting) = case page {
+          route.Account -> #(icon.AccountCircle, account_name(session))
+          route.SyncStatus -> #(icon.Sync, sync_summary(sync_state))
+          route.Zones -> #(icon.Favorite, "Heart rate, lactate and pace")
+          route.Coaches -> #(icon.Group, "Who can see your training")
+          route.Strava -> #(icon.Link, "Import your activities")
+        }
+        layout.link_item(
+          route.to_path(route.SettingsPage(page)),
+          symbol,
+          route.settings_title(page),
+          supporting,
+        )
       }),
-    ]),
+    ),
+  ])
+}
+
+fn account_name(session: Session) -> String {
+  case session.name {
+    "" -> session.email
+    name -> name <> " (" <> session.email <> ")"
+  }
+}
+
+fn sync_summary(sync_state: syncing.State) -> String {
+  case sync_state.phase, sync_state.problems {
+    syncing.Unavailable, _ -> "Not available in this browser"
+    _, [] -> "Synced when you are online"
+    _, [_] -> "1 change needs your attention"
+    _, problems ->
+      int.to_string(list.length(problems)) <> " changes need your attention"
+  }
+}
+
+fn account_view(session: Session) -> Element(Msg) {
+  html.section([attribute.class("settings")], [
+    html.p([], [html.text(account_name(session))]),
     button.outlined(
       [attribute.type_("button"), event.on_click(SignOutClicked)],
       [html.text("Sign out")],
     ),
-    html.h2([], [html.text("Sync")]),
+  ])
+}
+
+fn sync_view(sync_state: syncing.State) -> Element(Msg) {
+  html.section([attribute.class("settings")], [
     html.p([attribute.class("muted")], [
       html.text(case sync_state.phase {
         syncing.Ready ->
@@ -1160,28 +1214,55 @@ fn settings(session: Session, sync_state: syncing.State) -> Element(Msg) {
           "This browser could not open its local storage, so nothing is synced. Try reloading."
       }),
     ]),
+  ])
+}
+
+/// A full device and sync problems, as banners (ADR 0049).
+fn sync_banners(sync_state: syncing.State) -> Element(Msg) {
+  element.fragment([
     case sync_state.write_failed {
       True ->
-        html.p([attribute.class("error"), attribute.role("alert")], [
-          html.text(
-            "Your device ran out of storage. Free some space, or recent changes may be lost.",
-          ),
-        ])
+        banner.view(
+          [attribute.class("banner-error"), attribute.role("alert")],
+          icon.ErrorOutline,
+          [
+            html.text(
+              "Your device ran out of storage. Free some space, or recent changes may be lost.",
+            ),
+          ],
+          [],
+        )
       False -> element.none()
     },
     case sync_state.problems {
       [] -> element.none()
       problems ->
-        html.div([attribute.class("problems")], [
-          html.ul(
-            [],
-            list.map(problems, fn(message) { html.li([], [html.text(message)]) }),
-          ),
-          button.outlined(
-            [attribute.type_("button"), event.on_click(ProblemsDismissed)],
-            [html.text("Dismiss")],
-          ),
-        ])
+        banner.view(
+          [attribute.class("problems"), attribute.role("status")],
+          icon.ErrorOutline,
+          [
+            html.ul(
+              [],
+              list.map(problems, fn(message) {
+                html.li([], [html.text(message)])
+              }),
+            ),
+          ],
+          [
+            button.text(
+              [attribute.type_("button"), event.on_click(ProblemsDismissed)],
+              [html.text("Dismiss")],
+            ),
+          ],
+        )
     },
   ])
+}
+
+/// A section of Settings, under the sync banners.
+fn settings_page(
+  sync_state: syncing.State,
+  content: Element(Msg),
+) -> Element(Msg) {
+  html.div([], [sync_banners(sync_state), content])
 }

@@ -27,7 +27,7 @@ const skip = { skip: !built && "frontend not built" }
 
 test("a server without Strava credentials says so and offers no button", skip, async () => {
   await bare.world()
-  const w = startBareApp("/settings", session(bare.people.alice))
+  const w = startBareApp("/settings/strava", session(bare.people.alice))
   await waitFor("the explanation", () => w.document.body.textContent.includes("Strava is not set up on this server."))
   assert.equal(w.document.querySelector("button.strava-connect"), null)
   w.close()
@@ -43,7 +43,7 @@ test("connect, import, import again and disconnect", skip, async () => {
   strava.state.activities.set(12, strava.activity(12, { name: "Hill repeats", start_date: "2026-10-02T06:30:00Z" }))
 
   // 1. Not connected: the button is there, with the attribution. Clicking it asks the server for Strava's address.
-  let w = startApp("/settings", session(alice))
+  let w = startApp("/settings/strava", session(alice))
   const connectButton = () => w.document.querySelector("button.strava-connect")
   await waitFor("the connect button", () => connectButton())
   // Strava's own artwork, as the brand rules require: the official button image and the attribution logo.
@@ -84,6 +84,8 @@ test("connect, import, import again and disconnect", skip, async () => {
   // 4. Importing again picks up an activity that appeared since.
   strava.state.activities.set(13, strava.activity(13, { name: "Easy jog", start_date: "2026-10-03T07:00:00Z" }))
   click(w, [...d.querySelectorAll("nav a")].find((a) => a.textContent === "Settings"))
+  await waitFor("the Strava row", () => d.querySelector('a[href="/settings/strava"]'))
+  click(w, d.querySelector('a[href="/settings/strava"]'))
   await waitFor("the import button", () => button(w, "Import the last 30 days again"))
   click(w, button(w, "Import the last 30 days again"))
   await waitFor("the count", () => d.body.textContent.includes("Imported 3 activities from the last 30 days."))
@@ -92,6 +94,8 @@ test("connect, import, import again and disconnect", skip, async () => {
 
   // 5. Disconnecting asks first, tells Strava, and removes its activities from Atlas.
   click(w, [...d.querySelectorAll("nav a")].find((a) => a.textContent === "Settings"))
+  await waitFor("the Strava row", () => d.querySelector('a[href="/settings/strava"]'))
+  click(w, d.querySelector('a[href="/settings/strava"]'))
   await waitFor("the disconnect button", () => button(w, "Disconnect"))
   click(w, button(w, "Disconnect"))
   await waitFor("the question", () => openDialog(w)?.textContent.includes("Disconnect Strava and remove its activities from Atlas?"))

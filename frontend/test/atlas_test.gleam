@@ -636,9 +636,22 @@ pub fn coming_back_from_strava_shows_the_result_test() {
 
 pub fn the_strava_section_is_shown_in_settings_test() {
   let html =
-    element.to_string(atlas.view(Model(..signed_in(), route: route.Settings)))
+    element.to_string(atlas.view(
+      Model(..signed_in(), route: route.SettingsPage(route.Strava)),
+    ))
   assert string.contains(html, "Strava")
   assert string.contains(html, "Checking")
+}
+
+pub fn settings_is_a_list_of_its_sections_test() {
+  let html =
+    element.to_string(atlas.view(Model(..signed_in(), route: route.Settings)))
+  assert string.contains(html, "href=\"/settings/account\"")
+  assert string.contains(html, "href=\"/settings/sync\"")
+  assert string.contains(html, "href=\"/settings/zones\"")
+  assert string.contains(html, "href=\"/settings/coaches\"")
+  assert string.contains(html, "href=\"/settings/strava\"")
+  assert !string.contains(html, "Checking")
 }
 
 pub fn strava_messages_are_ignored_when_signed_out_test() {
@@ -894,6 +907,9 @@ pub fn nobody_else_can_be_looked_at_test() {
 }
 
 pub fn the_settings_list_of_athletes_links_to_their_pages_test() {
-  let settings = element.to_string(atlas.view(coaching_model(route.Settings)))
+  let settings =
+    element.to_string(
+      atlas.view(coaching_model(route.SettingsPage(route.Coaches))),
+    )
   assert string.contains(settings, "href=\"/athletes/ana\"")
 }

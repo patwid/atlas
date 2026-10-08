@@ -1,7 +1,8 @@
-//// The page frame: header, offline notice, navigation and the page placeholders.
+//// The page frame: header, offline banner, navigation and the page placeholders.
 //// The pages are empty states until the data layer (ADR 0004) is in place.
 
 import atlas/route.{type Route}
+import atlas/ui/banner
 import atlas/ui/icon
 import gleam/list
 import lustre/attribute.{class}
@@ -22,13 +23,6 @@ pub fn view(
       html.div([class("bar-content")], [
         up(route),
         html.h1([], [html.text(route.title(route))]),
-        case online {
-          True -> element.none()
-          False ->
-            html.span([class("pill"), attribute.role("status")], [
-              html.text("Offline"),
-            ])
-        },
       ]),
       case syncing {
         True ->
@@ -43,7 +37,25 @@ pub fn view(
         False -> element.none()
       },
     ]),
-    html.main([attribute.id("main")], [page]),
+    html.main([attribute.id("main")], [
+      case online {
+        True -> element.none()
+        // A banner rather than a chip in the bar (ADR 0049): it says what being offline means.
+        False ->
+          banner.view(
+            [class("banner-offline"), attribute.role("status")],
+            icon.CloudOff,
+            [
+              html.strong([], [html.text("Offline. ")]),
+              html.text(
+                "Your changes are kept on this device and synced when you are back online.",
+              ),
+            ],
+            [],
+          )
+      },
+      page,
+    ]),
     nav(route, coaching),
   ])
 }
@@ -53,6 +65,7 @@ fn up(current: Route) -> Element(msg) {
   case current {
     route.Plan(_) -> up_link(route.Plans, "All plans")
     route.Athlete(_) -> up_link(route.Athletes, "All athletes")
+    route.SettingsPage(_) -> up_link(route.Settings, "All settings")
     _ -> element.none()
   }
 }
@@ -123,6 +136,7 @@ fn section(r: Route) -> Route {
   case r {
     route.Plan(_) -> route.Plans
     route.Athlete(_) -> route.Athletes
+    route.SettingsPage(_) -> route.Settings
     other -> other
   }
 }

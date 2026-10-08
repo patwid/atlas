@@ -52,3 +52,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0046 | [Name buttons after Material Design 3 and drop the danger button](0046-material-button-names.md) | Accepted |
 | 0047 | [Use more Material Design 3 components](0047-more-material-components.md) | Accepted |
 | 0048 | [Material back button, progress indicators and status chips](0048-material-navigation-progress-status.md) | Accepted |
+| 0049 | [Settings as a list of pages, and banners for offline and sync problems](0049-settings-list-and-banners.md) | Accepted |
