@@ -26,11 +26,13 @@ pub fn show(id: String) -> Effect(msg) {
 }
 
 /// `id` must be unique in the page (and stable across re-renders, so `show` can find it);
-/// `label` is the confirmation question, shown as the dialog's heading; `on_hide` fires whenever
-/// the dialog is asked to close, for any reason; `footer` are the dialog's action buttons.
+/// `label` is the short question, shown as the dialog's headline ("Delete workout?"); `supporting` says what
+/// happens, in a sentence (ADR 0055); `on_hide` fires whenever the dialog is asked to close, for any reason;
+/// `footer` are the dialog's action buttons, named by what they do ("Cancel", "Delete"), the dismissive one first.
 pub fn view(
   id: String,
   label: String,
+  supporting: String,
   on_hide: msg,
   footer: List(Element(msg)),
 ) -> Element(msg) {
@@ -45,6 +47,7 @@ pub fn view(
       html.p([attribute.id(label_id), attribute.class("dialog-headline")], [
         html.text(label),
       ]),
+      html.p([attribute.class("dialog-supporting")], [html.text(supporting)]),
       html.form(
         [attribute.attribute("method", "dialog"), attribute.class("actions")],
         footer,

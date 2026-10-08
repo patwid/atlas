@@ -20,6 +20,7 @@ import atlas/ui/focus
 import atlas/ui/icon
 import atlas/ui/layout
 import atlas/ui/plan_settings
+import atlas/ui/progress
 import atlas/units
 import atlas/workout_form.{type Row}
 import gleam/dict
@@ -526,7 +527,7 @@ pub fn view(model: Model, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
     ]),
     html.div([class("calendar-layout")], [
       html.div([class("calendar")], case model.loaded {
-        False -> [html.p([class("muted")], [html.text("Loading…")])]
+        False -> [progress.loading("Loading…")]
         True -> [
           case rows {
             [] ->
@@ -850,19 +851,20 @@ fn workout_details(row: Row, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
           ),
           dialog.view(
             confirm_dialog_id(w.id),
-            "Delete this workout?",
+            "Delete workout?",
+            "It is removed from this plan.",
             CancelClicked,
             [
               button.text(
                 [attribute.type_("submit"), event.on_click(CancelClicked)],
-                [html.text("Keep it")],
+                [html.text("Cancel")],
               ),
               button.text(
                 [
                   attribute.type_("submit"),
                   event.on_click(DeleteConfirmed(w.id)),
                 ],
-                [html.text("Yes, delete it")],
+                [html.text("Delete")],
               ),
             ],
           ),

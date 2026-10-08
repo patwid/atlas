@@ -283,7 +283,6 @@ fn can_open(url: String) -> Bool {
 
 pub fn view(model: Model) -> Element(Msg) {
   html.section([class("strava")], [
-    html.h2([], [html.text("Strava")]),
     case model.status {
       Unknown | Checking -> progress.loading("Checking…")
       Unavailable(reason) -> html.p([class("muted")], [html.text(reason)])
@@ -354,16 +353,17 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
           ),
           dialog.view(
             confirm_dialog_id,
-            "Disconnect Strava and remove its activities from Atlas?",
+            "Disconnect Strava?",
+            "Its activities are removed from Atlas. You can connect again later.",
             CancelClicked,
             [
               button.text(
                 [attribute.type_("submit"), event.on_click(CancelClicked)],
-                [html.text("Keep it connected")],
+                [html.text("Cancel")],
               ),
               button.text(
                 [attribute.type_("submit"), event.on_click(DisconnectConfirmed)],
-                [html.text("Yes, disconnect")],
+                [html.text("Disconnect")],
               ),
             ],
           ),

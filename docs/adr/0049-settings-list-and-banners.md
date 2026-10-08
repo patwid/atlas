@@ -1,6 +1,6 @@
 # 0049. Settings as a list of pages, and banners for offline and sync problems
 
-- Status: Accepted
+- Status: Accepted. The offline banner and the Account and Sync pages are changed by [0055](0055-material-review-quick-fixes.md).
 - Date: 2026-10-08
 - Deciders: owner (asked for the remaining Material Design 3 changes); agent (the details below)
 

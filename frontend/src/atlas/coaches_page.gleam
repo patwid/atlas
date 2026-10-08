@@ -15,6 +15,7 @@ import atlas/ui/dialog
 import atlas/ui/empty
 import atlas/ui/icon
 import atlas/ui/layout
+import atlas/ui/progress
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -146,14 +147,13 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
   let given = grants.given_by(model.grants, me)
   let athletes = grants.athletes_of(model.grants, me)
   html.section([class("coaches")], [
-    html.h2([], [html.text("Coaches")]),
     html.p([class("muted")], [
       html.text(
         "A coach can see your plans, activities and progress, and can give you plans to follow.",
       ),
     ]),
     case model.loaded, given {
-      False, _ -> html.p([class("muted")], [html.text("Loading…")])
+      False, _ -> progress.loading("Loading…")
       True, [] ->
         empty.view(
           icon.Lock,
@@ -215,21 +215,21 @@ fn given_view(g: Grant) -> Element(Msg) {
       ),
       dialog.view(
         confirm_dialog_id(g.id),
-        "Stop "
-          <> case g.coach_name {
-          "" -> "this coach"
+        "Remove access?",
+        case g.coach_name {
+          "" -> "This coach"
           name -> name
         }
-          <> " from seeing your training?",
+          <> " can no longer see your training.",
         CancelClicked,
         [
           button.text(
             [attribute.type_("submit"), event.on_click(CancelClicked)],
-            [html.text("Keep it")],
+            [html.text("Cancel")],
           ),
           button.text(
             [attribute.type_("submit"), event.on_click(RemoveConfirmed(g.id))],
-            [html.text("Yes, remove access")],
+            [html.text("Remove")],
           ),
         ],
       ),

@@ -22,6 +22,7 @@ import atlas/ui/field
 import atlas/ui/focus
 import atlas/ui/icon
 import atlas/ui/layout
+import atlas/ui/progress
 import atlas/ui/time_picker
 import atlas/units
 import gleam/dict
@@ -349,7 +350,6 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
   let rows = mine(model, context.user_id)
   html.section([class("activities")], [
     html.div([class("toolbar")], [
-      html.h2([], [html.text("Your activities")]),
       case model.mode {
         Browsing ->
           button.fab(
@@ -365,7 +365,7 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
       _ -> element.none()
     },
     case model.loaded, rows {
-      False, _ -> html.p([class("muted")], [html.text("Loading…")])
+      False, _ -> progress.loading("Loading…")
       True, [] ->
         case model.mode {
           Adding -> element.none()
@@ -531,15 +531,21 @@ fn actions(row: Row) -> Element(Msg) {
       [attribute.type_("button"), event.on_click(DeleteClicked(id))],
       [icon.view(icon.Delete), html.text("Delete")],
     ),
-    dialog.view(confirm_dialog_id(id), "Delete this activity?", CancelClicked, [
-      button.text([attribute.type_("submit"), event.on_click(CancelClicked)], [
-        html.text("Keep it"),
-      ]),
-      button.text(
-        [attribute.type_("submit"), event.on_click(DeleteConfirmed(id))],
-        [html.text("Yes, delete it")],
-      ),
-    ]),
+    dialog.view(
+      confirm_dialog_id(id),
+      "Delete activity?",
+      "It is removed from your activities.",
+      CancelClicked,
+      [
+        button.text([attribute.type_("submit"), event.on_click(CancelClicked)], [
+          html.text("Cancel"),
+        ]),
+        button.text(
+          [attribute.type_("submit"), event.on_click(DeleteConfirmed(id))],
+          [html.text("Delete")],
+        ),
+      ],
+    ),
   ])
 }
 

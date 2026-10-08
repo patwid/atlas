@@ -36,3 +36,21 @@ pub fn link_item(
     ]),
   ])
 }
+
+/// A list item that shows something rather than opening a page (ADR 0055), laid out like `link_item`, with an
+/// optional control at its end.
+pub fn info_item(
+  symbol: Icon,
+  headline: String,
+  supporting: String,
+  trailing: Element(msg),
+) -> Element(msg) {
+  html.li([class("info-item")], [
+    icon.view(symbol),
+    html.span([class("link-item-text")], [
+      html.span([class("link-item-headline")], [html.text(headline)]),
+      html.span([class("info-item-supporting")], [html.text(supporting)]),
+    ]),
+    trailing,
+  ])
+}

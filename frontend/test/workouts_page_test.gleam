@@ -412,9 +412,9 @@ pub fn the_delete_question_has_a_way_out_test() {
       confirming: Some("a"),
     )
   let html = html_of(model, True)
-  assert string.contains(html, "Delete this workout?")
-  assert string.contains(html, "Yes, delete it")
-  assert string.contains(html, "Keep it")
+  assert string.contains(html, "Delete workout?")
+  assert string.contains(html, ">Delete<")
+  assert string.contains(html, ">Cancel<")
 }
 
 pub fn the_edit_form_opens_in_the_sidebar_test() {

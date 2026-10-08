@@ -250,7 +250,7 @@ pub fn a_suggested_match_asks_for_confirmation_test() {
   // The 6th's run is not on a planned day of this plan except Tuesday: it is suggested there.
   assert string.contains(html, "Looks done</span>")
   assert string.contains(html, "06:00 · Run · 8.00 km · 45:00")
-  assert string.contains(html, "Yes, that is it")
+  assert string.contains(html, ">Confirm<")
   assert string.contains(html, "Choose another")
 }
 
@@ -266,9 +266,9 @@ pub fn a_confirmed_match_can_be_changed_or_unlinked_test() {
 pub fn unlinking_asks_before_it_acts_test() {
   let model = Model(..today_page.new(), confirming: Some(wednesday_key))
   let html = html_of(model, inputs([stored("m1", "x1", "w2", False)]))
-  assert string.contains(html, "Unlink this activity?")
-  assert string.contains(html, "Yes, unlink")
-  assert string.contains(html, "Keep it")
+  assert string.contains(html, "Unlink activity?")
+  assert string.contains(html, ">Unlink<")
+  assert string.contains(html, ">Cancel<")
 }
 
 pub fn missed_workouts_say_so_and_offer_a_link_test() {

@@ -352,7 +352,7 @@ pub fn view_list_with(
       _ -> element.none()
     },
     case model.loaded, mine {
-      False, _ -> html.p([class("muted")], [html.text("Loading…")])
+      False, _ -> progress.loading("Loading…")
       True, [] ->
         case model.mode {
           Creating -> element.none()
@@ -391,7 +391,7 @@ pub fn view_detail_with(
     Error(Nil) ->
       html.section([class("plans")], [
         case model.loaded {
-          False -> html.p([class("muted")], [html.text("Loading…")])
+          False -> progress.loading("Loading…")
           True ->
             html.p([class("muted")], [
               html.text(
@@ -408,7 +408,6 @@ pub fn view_detail_with(
             form_view(model.form, "Save changes")
           _ ->
             html.div([], [
-              html.h2([], [html.text(found.title)]),
               badges(found),
               case found.description {
                 "" -> element.none()
@@ -474,15 +473,21 @@ fn owner_actions(found: Plan) -> Element(Msg) {
       icon.view(icon.Delete),
       html.text("Delete"),
     ]),
-    dialog.view(confirm_delete_dialog_id, "Delete this plan?", CancelClicked, [
-      button.text([attribute.type_("submit"), event.on_click(CancelClicked)], [
-        html.text("Keep it"),
-      ]),
-      button.text(
-        [attribute.type_("submit"), event.on_click(DeleteConfirmed(found.id))],
-        [html.text("Yes, delete it")],
-      ),
-    ]),
+    dialog.view(
+      confirm_delete_dialog_id,
+      "Delete plan?",
+      "It is deleted for you and for everyone you shared it with.",
+      CancelClicked,
+      [
+        button.text([attribute.type_("submit"), event.on_click(CancelClicked)], [
+          html.text("Cancel"),
+        ]),
+        button.text(
+          [attribute.type_("submit"), event.on_click(DeleteConfirmed(found.id))],
+          [html.text("Delete")],
+        ),
+      ],
+    ),
   ])
 }
 

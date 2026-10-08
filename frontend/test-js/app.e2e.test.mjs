@@ -144,21 +144,21 @@ test("a user creates, edits and deletes a plan on the plans screens and the serv
 
   // Edit, on the plan's own screen
   click(w, link)
-  await waitFor("the plan screen", () => d.querySelector("h2")?.textContent === "Autumn 10k" && button(w, "Edit"))
+  await waitFor("the plan screen", () => d.querySelector(".bar h1")?.textContent === "Autumn 10k" && button(w, "Edit"))
   assert.equal(w.location.pathname, `/plans/${created.id}`)
   click(w, button(w, "Edit"))
   await waitFor("the edit form", () => d.querySelector("#plan-title")?.value === "Autumn 10k")
   typeInto(w, d.querySelector("#plan-title"), "Autumn half marathon")
   submit(w, d.querySelector("form"))
-  await waitFor("the new title on screen", () => d.querySelector("h2")?.textContent === "Autumn half marathon")
+  await waitFor("the new title on screen", () => d.querySelector(".bar h1")?.textContent === "Autumn half marathon")
   await waitFor("the new title on the server", async () => (await onServer()).some((p) => p.title === "Autumn half marathon"))
   assert.equal((await onServer()).find((p) => p.id === created.id).description, "Eight weeks, three runs a week", "unchanged fields stay")
 
   // Delete, with the question first
   click(w, button(w, "Delete"))
-  await waitFor("the question", () => openDialog(w)?.textContent.includes("Delete this plan?"))
+  await waitFor("the question", () => openDialog(w)?.textContent.includes("Delete plan?"))
   assert.equal((await onServer()).find((p) => p.id === created.id).deleted, false, "asking does not delete")
-  click(w, dialogButton(w, "Yes, delete it"))
+  click(w, dialogButton(w, "Delete"))
   await waitFor("the plan marked deleted on the server", async () => (await onServer()).find((p) => p.id === created.id)?.deleted === true)
   click(w, d.querySelector('a[aria-label="All plans"]'))
   await waitFor("an empty list again", () => d.body.textContent.includes("You have no plans yet"))
@@ -249,9 +249,9 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
   click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Core session")))
   await waitFor("the second workout in the sidebar", () => d.querySelector(".calendar-sidebar h3")?.textContent === "Core session")
   click(w, [...d.querySelectorAll(".calendar-sidebar button")].find((b) => b.textContent === "Delete"))
-  await waitFor("the question", () => openDialog(w)?.textContent.includes("Delete this workout?"))
+  await waitFor("the question", () => openDialog(w)?.textContent.includes("Delete workout?"))
   assert.equal((await workouts()).find((x) => x.id === second.id).deleted, false)
-  click(w, dialogButton(w, "Yes, delete it"))
+  click(w, dialogButton(w, "Delete"))
   await waitFor("the delete on the server", async () => (await workouts()).find((x) => x.id === second.id)?.deleted === true)
   await waitFor("gone from the screen", () => !d.body.textContent.includes("Core session"))
   w.close()
@@ -347,9 +347,9 @@ test("a user starts a plan on a date, moves the date and removes it, and the ser
 
   // Remove it, after the question.
   click(w, button(w, "Remove"))
-  await waitFor("the question", () => openDialog(w)?.textContent.includes("Remove this from the schedule?"))
+  await waitFor("the question", () => openDialog(w)?.textContent.includes("Remove from schedule?"))
   assert.equal((await assignments())[0].deleted, false)
-  click(w, dialogButton(w, "Yes, remove it"))
+  click(w, dialogButton(w, "Remove"))
   await waitFor("deleted on the server", async () => (await assignments())[0]?.deleted === true)
   await waitFor("an empty schedule again", () => d.body.textContent.includes("Nobody is following this plan yet"))
   w.close()
@@ -365,7 +365,7 @@ test("a public plan of someone else can be started, and so can a private one tha
 
   const w = startApp("/plans/publicplan00001", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
   const d = w.document
-  await waitFor("the public plan", () => d.querySelector("h2")?.textContent === "Public plan" && button(w, "Start this plan"))
+  await waitFor("the public plan", () => d.querySelector(".bar h1")?.textContent === "Public plan" && button(w, "Start this plan"))
   click(w, button(w, "Start this plan"))
   await waitFor("the form", () => d.querySelector("#assign-start"))
   typeInto(w, d.querySelector("#assign-start"), "2026-12-07")
@@ -379,7 +379,7 @@ test("a public plan of someone else can be started, and so can a private one tha
   click(w, d.querySelector('a[aria-label="All plans"]'))
   const privateLink = await waitFor("the private plan in the list", () => [...d.querySelectorAll(".list a")].find((a) => a.textContent === "Private plan"))
   click(w, privateLink)
-  await waitFor("the private plan's screen", () => d.querySelector("h2")?.textContent === "Private plan")
+  await waitFor("the private plan's screen", () => d.querySelector(".bar h1")?.textContent === "Private plan")
   click(w, await waitFor("the start button", () => button(w, "Start this plan")))
   await waitFor("the start form", () => d.querySelector("#assign-start"))
   typeInto(w, d.querySelector("#assign-start"), "2026-12-14")
@@ -514,8 +514,8 @@ test("an athlete adds a coach by e-mail, the coach assigns a plan, and the athle
   d = w.document
   await waitFor("the coach in the list", () => d.querySelector(".coaches .list")?.textContent.includes("bob"))
   click(w, button(w, "Remove access"))
-  await waitFor("the question", () => openDialog(w)?.textContent.includes("Stop bob from seeing your training?"))
-  click(w, dialogButton(w, "Yes, remove access"))
+  await waitFor("the question", () => openDialog(w)?.textContent.includes("bob can no longer see your training."))
+  click(w, dialogButton(w, "Remove"))
   await waitFor("the grant deleted on the server", async () => (await grants())[0]?.deleted === true)
   await waitFor("nobody listed", () => d.body.textContent.includes("Nobody can see your training."))
   const bobsView = await h.api("GET", `collections/coach_grants/records/${grant.id}`, { token: bob.token })
@@ -583,9 +583,9 @@ test("a user adds, edits and deletes an activity by hand; the start is stored in
 
   // Delete, after the question.
   click(w, [...card().querySelectorAll("button")].find((b) => b.textContent === "Delete"))
-  await waitFor("the question", () => openDialog(w)?.textContent.includes("Delete this activity?"))
+  await waitFor("the question", () => openDialog(w)?.textContent.includes("Delete activity?"))
   assert.equal((await activities()).find((a) => a.id === created.id).deleted, false)
-  click(w, dialogButton(w, "Yes, delete it"))
+  click(w, dialogButton(w, "Delete"))
   await waitFor("deleted on the server", async () => (await activities()).find((a) => a.id === created.id)?.deleted === true)
   await waitFor("gone from the list", () => !d.body.textContent.includes("Easy loop"))
   assert.ok(d.body.textContent.includes("Lunch run"), "the Strava activity is still there")
@@ -623,7 +623,7 @@ test("Today shows missed, looks-done and rest days; the user confirms, unlinks, 
   assert.deepEqual(await matches(), [], "a suggestion is not stored")
 
   // Confirm the suggestion: now it is a stored match.
-  click(w, inCard("Tempo intervals", "Yes, that is it"))
+  click(w, inCard("Tempo intervals", "Confirm"))
   const first = await waitFor("the match on the server", async () => (await matches())[0])
   assert.equal(first.owner, alice.id)
   assert.equal(first.activity, "todayact0000001")
@@ -633,13 +633,13 @@ test("Today shows missed, looks-done and rest days; the user confirms, unlinks, 
 
   // Unlink it: the row is removed on the server and the suggestion returns.
   click(w, inCard("Tempo intervals", "Unlink"))
-  await waitFor("the question", () => openDialog(w)?.textContent.includes("Unlink this activity?"))
-  click(w, dialogButton(w, "Yes, unlink"))
+  await waitFor("the question", () => openDialog(w)?.textContent.includes("Unlink activity?"))
+  click(w, dialogButton(w, "Unlink"))
   await waitFor("the row removed", async () => (await matches())[0]?.deleted === true)
   await waitFor("the suggestion again", () => card("Tempo intervals").textContent.includes("Looks done"))
 
   // Link the same activity again: the removed row is reused, not duplicated.
-  click(w, inCard("Tempo intervals", "Yes, that is it"))
+  click(w, inCard("Tempo intervals", "Confirm"))
   await waitFor("the same row live again", async () => { const all = await matches(); return all.length === 1 && all[0].id === first.id && all[0].deleted === false })
 
   // Yesterday's run is not on the device until it is added; then link it to the missed workout by hand.
@@ -681,7 +681,7 @@ test("a user copies someone else's public plan with its workouts, then edits the
   const workoutsOf = async (planId) =>
     (await h.api("GET", `collections/workouts/records?perPage=50&sort=day_index&filter=${encodeURIComponent(`plan = "${planId}"`)}`, { token: bob.token })).body.items
 
-  await waitFor("the plan with its workouts", () => d.querySelector("h2")?.textContent === "Autumn 10k" && d.body.textContent.includes("Easy run") && d.body.textContent.includes("Tempo"))
+  await waitFor("the plan with its workouts", () => d.querySelector(".bar h1")?.textContent === "Autumn 10k" && d.body.textContent.includes("Easy run") && d.body.textContent.includes("Tempo"))
   assert.equal(button(w, "Edit"), undefined, "someone else's plan cannot be edited")
   click(w, button(w, "Copy to my plans"))
   await waitFor("the confirmation with a link", () => d.body.textContent.includes("Copied to your plans.") && [...d.querySelectorAll("a")].some((a) => a.textContent === "Open your copy"))
@@ -705,7 +705,7 @@ test("a user copies someone else's public plan with its workouts, then edits the
 
   // The copy is Bob's: he opens it and can change it.
   click(w, [...d.querySelectorAll("a")].find((a) => a.textContent === "Open your copy"))
-  await waitFor("the copy's screen with edit", () => d.querySelector("h2")?.textContent === "Copy of Autumn 10k" && button(w, "Edit"))
+  await waitFor("the copy's screen with edit", () => d.querySelector(".bar h1")?.textContent === "Copy of Autumn 10k" && button(w, "Edit"))
   assert.ok(d.body.textContent.includes("Tempo") && d.body.textContent.includes("Easy run"), "the workouts came along")
   click(w, button(w, "Edit"))
   await waitFor("the edit form", () => d.querySelector("#plan-title")?.value === "Copy of Autumn 10k")
@@ -784,9 +784,9 @@ test("an owner shares a private plan by e-mail, the recipient reads and starts i
   const carolCard = () => [...d.querySelectorAll(".sharing .list li")].find((li) => li.textContent.includes("carol"))
   await waitFor("carol listed", () => carolCard())
   click(w, [...carolCard().querySelectorAll("button")].find((b) => b.textContent === "Stop sharing"))
-  await waitFor("the question", () => openDialog(w)?.textContent.includes("Stop sharing this plan with carol?"))
+  await waitFor("the question", () => openDialog(w)?.textContent.includes("Stop sharing with carol?"))
   assert.equal(await seesPlan(carol), true, "asking does not stop it")
-  click(w, dialogButton(w, "Yes, stop sharing"))
+  click(w, dialogButton(w, "Stop sharing"))
   await waitFor("the share removed on the server", async () => (await shares()).find((s) => s.id === carolShare.id)?.deleted === true)
   assert.equal(await seesPlan(carol), false, "Carol no longer sees the plan")
   assert.equal(await seesPlan(bob), true, "Bob still does")

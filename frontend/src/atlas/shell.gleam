@@ -1,33 +1,60 @@
-//// The page frame: header, offline banner, navigation and the page placeholders.
+//// The page frame: the app bar, the navigation and the page placeholders.
 //// The pages are empty states until the data layer (ADR 0004) is in place.
 
 import atlas/route.{type Route}
-import atlas/ui/banner
 import atlas/ui/empty as ui_empty
 import atlas/ui/icon
+import gleam/int
 import gleam/list
 import gleam/option.{None}
 import lustre/attribute.{class}
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/element/keyed
+import lustre/event
 
-/// `coaching` adds the Athletes tab, for people whom someone has given access to (ADR 0031). `syncing` shows a
-/// progress bar under the app bar while a sync runs (ADR 0048).
-pub fn view(
-  route: Route,
-  online: Bool,
-  coaching: Bool,
-  syncing: Bool,
-  page: Element(msg),
-) -> Element(msg) {
+/// What the frame shows around a page.
+pub type Frame(msg) {
+  Frame(
+    route: Route,
+    /// The app bar's title: the page's, or the name of the plan or athlete on show (ADR 0055).
+    title: String,
+    online: Bool,
+    /// Adds the Athletes tab, for people whom someone has given access to (ADR 0031).
+    coaching: Bool,
+    /// Shows a progress bar under the app bar while a sync runs (ADR 0048).
+    syncing: Bool,
+    /// Sync problems waiting for the user: a badge on the Settings tab (ADR 0055).
+    problems: Int,
+    /// Pressing the app bar's offline icon, which explains being offline (ADR 0055).
+    on_offline_info: msg,
+  )
+}
+
+pub fn view(frame: Frame(msg), page: Element(msg)) -> Element(msg) {
   html.div([class("shell")], [
     html.header([class("bar")], [
       html.div([class("bar-content")], [
-        up(route),
-        html.h1([], [html.text(route.title(route))]),
+        up(frame.route),
+        html.h1([], [html.text(frame.title)]),
+        case frame.online {
+          True -> element.none()
+          // An icon rather than a banner (ADR 0055): being offline is ordinary for this app, so it is shown
+          // quietly, and a snackbar says what it means when it happens or when the icon is pressed.
+          False ->
+            html.button(
+              [
+                attribute.type_("button"),
+                class("md-icon-button offline-indicator"),
+                attribute.aria_label("Offline. What does this mean?"),
+                attribute.title("Offline"),
+                event.on_click(frame.on_offline_info),
+              ],
+              [icon.view(icon.CloudOff)],
+            )
+        },
       ]),
-      case syncing {
+      case frame.syncing {
         True ->
           html.div(
             [
@@ -41,26 +68,10 @@ pub fn view(
       },
     ]),
     html.main([attribute.id("main")], [
-      case online {
-        True -> element.none()
-        // A banner rather than a chip in the bar (ADR 0049): it says what being offline means.
-        False ->
-          banner.view(
-            [class("banner-offline"), attribute.role("status")],
-            icon.CloudOff,
-            [
-              html.strong([], [html.text("Offline. ")]),
-              html.text(
-                "Your changes are kept on this device and synced when you are back online.",
-              ),
-            ],
-            [],
-          )
-      },
       // Keyed by the address, so a new page is a new element and fades in (ADR 0051).
-      keyed.div([class("page")], [#(route.to_path(route), page)]),
+      keyed.div([class("page")], [#(route.to_path(frame.route), page)]),
     ]),
-    nav(route, coaching),
+    nav(frame.route, frame.coaching, frame.problems),
   ])
 }
 
@@ -86,7 +97,7 @@ fn up_link(target: Route, label: String) -> Element(msg) {
   )
 }
 
-fn nav(current: Route, coaching: Bool) -> Element(msg) {
+fn nav(current: Route, coaching: Bool, problems: Int) -> Element(msg) {
   let items = case coaching {
     True -> [
       #(route.Today, "Today"),
@@ -116,13 +127,36 @@ fn nav(current: Route, coaching: Bool) -> Element(msg) {
             }
           ],
           [
-            html.span([class("nav-indicator")], [icon.view(tab_icon(target))]),
+            html.span([class("nav-indicator")], [
+              // Material 3: the selected destination's icon is filled, the others outlined.
+              case active {
+                True -> icon.filled(tab_icon(target))
+                False -> icon.view(tab_icon(target))
+              },
+              badge(target, problems),
+            ]),
             html.text(label),
           ],
         )
       })
     }),
   ])
+}
+
+/// A Material 3 badge with the number of sync problems on the Settings tab, so they are seen from anywhere. It is
+/// read out with the tab's name.
+fn badge(target: Route, problems: Int) -> Element(msg) {
+  case target, problems {
+    route.Settings, n if n > 0 ->
+      html.span(
+        [
+          class("nav-badge"),
+          attribute.aria_label(int.to_string(n) <> " sync problems"),
+        ],
+        [html.text(int.to_string(int.min(n, 99)))],
+      )
+    _, _ -> element.none()
+  }
 }
 
 fn tab_icon(target: Route) -> icon.Icon {

@@ -27,6 +27,7 @@ import atlas/storage
 import atlas/strava_page
 import atlas/sync
 import atlas/syncing
+import atlas/timer
 import atlas/today
 import atlas/today_page
 import atlas/ui/banner
@@ -34,11 +35,12 @@ import atlas/ui/button
 import atlas/ui/icon
 import atlas/ui/interaction
 import atlas/ui/layout
+import atlas/ui/snackbar
 import atlas/workouts_page
 import atlas/zones_page
 import gleam/int
 import gleam/list
-import gleam/option.{None, Some}
+import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/uri.{type Uri}
 import lustre
@@ -71,12 +73,19 @@ pub type Model {
     strava: strava_page.Model,
     sharing: sharing_page.Model,
     zones: zones_page.Model,
+    /// The app's own snackbar, about the connection (ADR 0055): its number and text.
+    notice: Option(#(Int, String)),
+    /// How many such messages have been shown, so that a timer only closes the one it was started for.
+    notices_shown: Int,
   )
 }
 
 pub type Msg {
   RouteChanged(Uri)
   OnlineChanged(Bool)
+  OfflineInfoClicked
+  NoticeClosed
+  NoticeExpired(Int)
   EmailChanged(String)
   PasswordChanged(String)
   SignInSubmitted
@@ -153,6 +162,8 @@ fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
       strava: strava_page.new(),
       sharing: sharing_page.new(),
       zones: zones_page.new(),
+      notice: None,
+      notices_shown: 0,
     ),
     effect.batch([
       modem.init(RouteChanged),
@@ -185,17 +196,33 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     }
 
     // Coming back online is when an expired or soon-to-expire session gets refreshed.
-    OnlineChanged(is_online) -> #(
-      Model(..model, online: is_online),
-      case is_online {
+    OnlineChanged(is_online) -> {
+      let #(model, shown) =
+        notify(Model(..model, online: is_online), case is_online {
+          True -> "Back online. Your changes are being synced."
+          False -> offline_text
+        })
+      #(model, case is_online {
         True ->
           effect.batch([
+            shown,
             refresh_if_due(model.auth),
             effect.from(fn(dispatch) { dispatch(Syncing(syncing.Kick)) }),
           ])
-        False -> effect.none()
-      },
-    )
+        False -> shown
+      })
+    }
+
+    OfflineInfoClicked -> notify(model, offline_text)
+    NoticeClosed -> #(Model(..model, notice: None), effect.none())
+    NoticeExpired(n) ->
+      case model.notice {
+        Some(#(shown, _)) if shown == n -> #(
+          Model(..model, notice: None),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
 
     EmailChanged(email) ->
       with_form(model, fn(form) { signin.Form(..form, email: email) })
@@ -1034,18 +1061,65 @@ fn refresh_if_due(state: Auth) -> Effect(Msg) {
   }
 }
 
+const offline_text =
+  "You are offline. Your changes are kept on this device and synced when you are back online."
+
+/// Shows a snackbar about the connection, closed by itself after 6 seconds (ADR 0055): it has no action, so it
+/// may go, and the app bar's icon brings it back.
+fn notify(model: Model, text: String) -> #(Model, Effect(Msg)) {
+  let n = model.notices_shown + 1
+  #(
+    Model(..model, notice: Some(#(n, text)), notices_shown: n),
+    timer.after(6, NoticeExpired(n)),
+  )
+}
+
 pub fn view(model: Model) -> Element(Msg) {
   case model.auth {
     SignedOut(form) ->
       signin.view(form, EmailChanged, PasswordChanged, SignInSubmitted)
     SignedIn(session) ->
       shell.view(
-        model.route,
-        model.online,
-        grants.athletes_of(model.coaches.grants, session.user_id) != [],
-        syncing.is_busy(model.syncing),
-        page(model, session),
+        shell.Frame(
+          route: model.route,
+          title: title(model, session),
+          online: model.online,
+          coaching: grants.athletes_of(model.coaches.grants, session.user_id)
+            != [],
+          syncing: syncing.is_busy(model.syncing),
+          problems: list.length(model.syncing.problems),
+          on_offline_info: OfflineInfoClicked,
+        ),
+        element.fragment([
+          page(model, session),
+          case model.notice {
+            Some(#(_, text)) -> snackbar.view(text, None, NoticeClosed)
+            None -> element.none()
+          },
+        ]),
       )
+  }
+}
+
+/// The app bar's title: the plan's or athlete's name on their page, else the page's own (ADR 0055).
+fn title(model: Model, session: Session) -> String {
+  case model.route {
+    route.Plan(id) ->
+      case list.find(model.plans.plans, fn(p) { p.id == id }) {
+        Ok(found) -> found.title
+        Error(Nil) -> route.title(model.route)
+      }
+    route.Athlete(id) ->
+      case
+        list.find(
+          grants.athletes_of(model.coaches.grants, session.user_id),
+          fn(person) { person.id == id },
+        )
+      {
+        Ok(person) -> person.name
+        Error(Nil) -> route.title(model.route)
+      }
+    other -> route.title(other)
   }
 }
 
@@ -1118,8 +1192,6 @@ fn page(model: Model, session: Session) -> Element(Msg) {
     route.Settings -> settings_list(session, model.syncing)
     route.SettingsPage(page) ->
       settings_page(model.syncing, case page {
-        route.Account -> account_view(session)
-        route.SyncStatus -> sync_view(model.syncing)
         route.Zones ->
           element.map(zones_page.view(model.zones, session.user_id), ZonesPage)
         route.Coaches ->
@@ -1151,17 +1223,24 @@ fn page(model: Model, session: Session) -> Element(Msg) {
   }
 }
 
-/// Settings is a list of its sections; each row opens the section's own page (ADR 0049). Sync problems show at
-/// the top of every Settings page, so they are not missed.
+/// Settings is a list (ADR 0049, 0055): the account and the sync state as rows of their own, then a row per section
+/// that opens the section's page. Sync problems show at the top of every Settings page, so they are not missed.
 fn settings_list(session: Session, sync_state: syncing.State) -> Element(Msg) {
   html.section([attribute.class("settings")], [
     sync_banners(sync_state),
-    html.ul(
-      [attribute.class("list link-list")],
-      list.map(route.settings_pages, fn(page) {
+    html.ul([attribute.class("list link-list")], [
+      layout.info_item(
+        icon.AccountCircle,
+        account_name(session),
+        "Signed in",
+        button.text(
+          [attribute.type_("button"), event.on_click(SignOutClicked)],
+          [html.text("Sign out")],
+        ),
+      ),
+      layout.info_item(icon.Sync, "Sync", sync_text(sync_state), element.none()),
+      ..list.map(route.settings_pages, fn(page) {
         let #(symbol, supporting) = case page {
-          route.Account -> #(icon.AccountCircle, account_name(session))
-          route.SyncStatus -> #(icon.Sync, sync_summary(sync_state))
           route.Zones -> #(icon.Favorite, "Heart rate, lactate and pace")
           route.Coaches -> #(icon.Group, "Who can see your training")
           route.Strava -> #(icon.Link, "Import your activities")
@@ -1172,8 +1251,8 @@ fn settings_list(session: Session, sync_state: syncing.State) -> Element(Msg) {
           route.settings_title(page),
           supporting,
         )
-      }),
-    ),
+      })
+    ]),
   ])
 }
 
@@ -1184,39 +1263,19 @@ fn account_name(session: Session) -> String {
   }
 }
 
-fn sync_summary(sync_state: syncing.State) -> String {
+fn sync_text(sync_state: syncing.State) -> String {
   case sync_state.phase, sync_state.problems {
-    syncing.Unavailable, _ -> "Not available in this browser"
-    _, [] -> "Synced when you are online"
-    _, [_] -> "1 change needs your attention"
-    _, problems ->
-      int.to_string(list.length(problems)) <> " changes need your attention"
+    syncing.Unavailable, _ ->
+      "This browser could not open its local storage, so nothing is synced. Try reloading."
+    syncing.Loading, _ -> "Opening the data on this device…"
+    syncing.NotLoaded, _ -> "Not started."
+    syncing.Ready, [] ->
+      "Your data is stored on this device and synced when you are online."
+    syncing.Ready, [_] -> "1 change needs your attention, see above."
+    syncing.Ready, problems ->
+      int.to_string(list.length(problems))
+      <> " changes need your attention, see above."
   }
-}
-
-fn account_view(session: Session) -> Element(Msg) {
-  html.section([attribute.class("settings")], [
-    html.p([], [html.text(account_name(session))]),
-    button.outlined(
-      [attribute.type_("button"), event.on_click(SignOutClicked)],
-      [html.text("Sign out")],
-    ),
-  ])
-}
-
-fn sync_view(sync_state: syncing.State) -> Element(Msg) {
-  html.section([attribute.class("settings")], [
-    html.p([attribute.class("muted")], [
-      html.text(case sync_state.phase {
-        syncing.Ready ->
-          "Your data is stored on this device and synced when you are online."
-        syncing.Loading -> "Opening the data on this device…"
-        syncing.NotLoaded -> "Not started."
-        syncing.Unavailable ->
-          "This browser could not open its local storage, so nothing is synced. Try reloading."
-      }),
-    ]),
-  ])
 }
 
 /// A full device and sync problems, as banners (ADR 0049).

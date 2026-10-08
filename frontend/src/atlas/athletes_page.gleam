@@ -30,7 +30,6 @@ pub const activities_shown = 10
 
 pub fn view_list(athletes: List(Person)) -> Element(msg) {
   html.section([class("athletes")], [
-    html.h2([], [html.text("Athletes you coach")]),
     case athletes {
       [] ->
         empty.view(
@@ -63,7 +62,6 @@ pub fn view_athlete(athlete: Option(Person), inputs: Inputs) -> Element(msg) {
     Some(person) -> {
       let weeks = progress.weeks(inputs, weeks_shown)
       html.section([class("athlete")], [
-        html.h2([], [html.text(person.name)]),
         html.p([class("muted")], [
           html.text(
             "You can see this because "

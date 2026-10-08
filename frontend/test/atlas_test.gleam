@@ -1,8 +1,8 @@
 import atlas.{
-  ActivitiesPage, AssignmentsPage, EmailChanged, Model, OnlineChanged,
-  PasswordChanged, PlansPage, RefreshResponded, RouteChanged, SharingPage,
-  SignInResponded, SignInSubmitted, SignOutClicked, SignedIn, SignedOut,
-  StravaPage, WorkoutsPage,
+  ActivitiesPage, AssignmentsPage, EmailChanged, Model, NoticeClosed,
+  NoticeExpired, OfflineInfoClicked, OnlineChanged, PasswordChanged, PlansPage,
+  RefreshResponded, RouteChanged, SharingPage, SignInResponded, SignInSubmitted,
+  SignOutClicked, SignedIn, SignedOut, StravaPage, WorkoutsPage,
 }
 import atlas/activities_page
 import atlas/activity
@@ -62,6 +62,8 @@ fn signed_out(form: signin.Form) -> atlas.Model {
     strava_page.new(),
     sharing_page.new(),
     zones_page.new(),
+    None,
+    0,
   )
 }
 
@@ -80,6 +82,8 @@ fn signed_in() -> atlas.Model {
     strava_page.new(),
     sharing_page.new(),
     zones_page.new(),
+    None,
+    0,
   )
 }
 
@@ -302,6 +306,34 @@ pub fn signing_out_clears_the_plans_on_screen_test() {
     )
   let #(model, _) = atlas.update(showing, SignOutClicked)
   assert model.plans == plans_page.new()
+}
+
+pub fn the_app_bar_shows_the_name_of_the_plan_on_show_test() {
+  let html = element.to_string(atlas.view(plan_screen("u1")))
+  assert string.contains(html, "<h1>10k plan</h1>")
+  let missing =
+    element.to_string(atlas.view(
+      Model(..plan_screen("u1"), route: route.Plan("nope")),
+    ))
+  assert string.contains(missing, "<h1>Plan</h1>")
+}
+
+pub fn going_offline_shows_a_snackbar_that_the_app_bar_icon_brings_back_test() {
+  let #(offline, _) = atlas.update(signed_in(), OnlineChanged(False))
+  let assert Some(#(first, text)) = offline.notice
+  assert string.contains(text, "You are offline")
+  let #(closed, _) = atlas.update(offline, NoticeClosed)
+  assert closed.notice == None
+  let #(again, _) = atlas.update(closed, OfflineInfoClicked)
+  let assert Some(#(second, _)) = again.notice
+  // An older timer does not close the newer message; its own does.
+  let #(still, _) = atlas.update(again, NoticeExpired(first))
+  assert still.notice == again.notice
+  let #(gone, _) = atlas.update(still, NoticeExpired(second))
+  assert gone.notice == None
+  let #(online, _) = atlas.update(gone, OnlineChanged(True))
+  let assert Some(#(_, back)) = online.notice
+  assert string.contains(back, "Back online")
 }
 
 fn plan_screen(owner: String) -> atlas.Model {
@@ -646,8 +678,9 @@ pub fn the_strava_section_is_shown_in_settings_test() {
 pub fn settings_is_a_list_of_its_sections_test() {
   let html =
     element.to_string(atlas.view(Model(..signed_in(), route: route.Settings)))
-  assert string.contains(html, "href=\"/settings/account\"")
-  assert string.contains(html, "href=\"/settings/sync\"")
+  assert string.contains(html, "Sign out")
+  assert string.contains(html, ">Sync<")
+  assert !string.contains(html, "href=\"/settings/account\"")
   assert string.contains(html, "href=\"/settings/zones\"")
   assert string.contains(html, "href=\"/settings/coaches\"")
   assert string.contains(html, "href=\"/settings/strava\"")

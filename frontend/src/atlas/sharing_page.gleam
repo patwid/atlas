@@ -13,6 +13,7 @@ import atlas/store
 import atlas/ui/button
 import atlas/ui/dialog
 import atlas/ui/layout
+import atlas/ui/progress
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -181,7 +182,7 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
       ),
     ]),
     case model.loaded, current {
-      False, _ -> html.p([class("muted")], [html.text("Loading…")])
+      False, _ -> progress.loading("Loading…")
       True, [] ->
         html.p([class("muted")], [html.text("Not shared with anyone.")])
       True, _ -> layout.list(list.map(current, share_view))
@@ -221,16 +222,17 @@ fn share_view(share: Share) -> Element(Msg) {
       ),
       dialog.view(
         confirm_dialog_id(share.id),
-        "Stop sharing this plan with " <> name <> "?",
+        "Stop sharing with " <> name <> "?",
+        name <> " can no longer open this plan.",
         CancelClicked,
         [
           button.text(
             [attribute.type_("submit"), event.on_click(CancelClicked)],
-            [html.text("Keep sharing")],
+            [html.text("Cancel")],
           ),
           button.text(
             [attribute.type_("submit"), event.on_click(StopConfirmed(share.id))],
-            [html.text("Yes, stop sharing")],
+            [html.text("Stop sharing")],
           ),
         ],
       ),

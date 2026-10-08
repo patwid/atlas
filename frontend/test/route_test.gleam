@@ -31,8 +31,6 @@ pub fn to_path_round_trips_test() {
     Plan("abc123"),
     Activities,
     Settings,
-    route.SettingsPage(route.Account),
-    route.SettingsPage(route.SyncStatus),
     route.SettingsPage(route.Zones),
     route.SettingsPage(route.Coaches),
     route.SettingsPage(route.Strava),

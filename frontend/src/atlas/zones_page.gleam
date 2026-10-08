@@ -257,7 +257,6 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
     Error(_) -> list.map(model.pace.starts, fn(_) { "" })
   }
   html.section([class("training-zones")], [
-    html.h2([], [html.text("Training zones")]),
     html.p([class("muted")], [
       html.text(case model.loaded, athlete_settings.row_of(model.rows, me) {
         True, None ->

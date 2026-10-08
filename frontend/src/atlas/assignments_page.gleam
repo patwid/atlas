@@ -17,6 +17,7 @@ import atlas/ui/dialog
 import atlas/ui/error
 import atlas/ui/field
 import atlas/ui/layout
+import atlas/ui/progress
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -334,7 +335,7 @@ pub fn view(
       _ -> element.none()
     },
     case model.loaded, rows {
-      False, _ -> html.p([class("muted")], [html.text("Loading…")])
+      False, _ -> progress.loading("Loading…")
       True, [] ->
         case model.mode {
           Starting -> element.none()
@@ -420,15 +421,16 @@ fn actions(row: Row) -> Element(Msg) {
     ),
     dialog.view(
       confirm_dialog_id(id),
-      "Remove this from the schedule?",
+      "Remove from schedule?",
+      "Its workouts no longer show on Today.",
       CancelClicked,
       [
         button.text([attribute.type_("submit"), event.on_click(CancelClicked)], [
-          html.text("Keep it"),
+          html.text("Cancel"),
         ]),
         button.text(
           [attribute.type_("submit"), event.on_click(RemoveConfirmed(id))],
-          [html.text("Yes, remove it")],
+          [html.text("Remove")],
         ),
       ],
     ),

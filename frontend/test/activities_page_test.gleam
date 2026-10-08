@@ -342,9 +342,9 @@ pub fn the_delete_question_has_a_way_out_test() {
       confirming: Some("a"),
     )
   let html = html_of(model)
-  assert string.contains(html, "Delete this activity?")
-  assert string.contains(html, "Yes, delete it")
-  assert string.contains(html, "Keep it")
+  assert string.contains(html, "Delete activity?")
+  assert string.contains(html, ">Delete<")
+  assert string.contains(html, ">Cancel<")
 }
 
 fn from_strava(external_id: String) -> activity_form.Row {

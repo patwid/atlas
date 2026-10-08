@@ -183,12 +183,9 @@ pub fn an_unconfigured_server_says_so_and_shows_no_button_test() {
 
 pub fn the_disconnect_question_has_a_way_out_test() {
   let html = html_of(Model(..connected(), confirming: True))
-  assert string.contains(
-    html,
-    "Disconnect Strava and remove its activities from Atlas?",
-  )
-  assert string.contains(html, "Yes, disconnect")
-  assert string.contains(html, "Keep it connected")
+  assert string.contains(html, "Disconnect Strava?")
+  assert string.contains(html, ">Disconnect<")
+  assert string.contains(html, ">Cancel<")
 }
 
 pub fn busy_disables_the_buttons_test() {

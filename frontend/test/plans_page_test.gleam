@@ -275,7 +275,7 @@ pub fn the_detail_of_an_own_plan_offers_edit_and_delete_test() {
       "a",
       "u1",
     ))
-  assert string.contains(html, "My plan")
+  // The plan's name is the app bar's title now (ADR 0055), see atlas_test.
   assert string.contains(html, ">Edit<")
   assert string.contains(html, ">Delete<")
 }
@@ -287,7 +287,7 @@ pub fn the_detail_of_a_shared_plan_is_read_only_test() {
       "o",
       "u1",
     ))
-  assert string.contains(html, "Coach plan")
+  // The plan's name is the app bar's title now (ADR 0055), see atlas_test.
   assert string.contains(html, "Only its owner can change it")
   assert !string.contains(html, ">Edit<")
   assert !string.contains(html, ">Delete<")
@@ -301,9 +301,9 @@ pub fn a_missing_plan_is_explained_test() {
 pub fn the_delete_question_has_a_clear_way_out_test() {
   let model = Model(..with_plans([mine("a", "A")]), confirming_delete: True)
   let html = html_of(plans_page.view_detail(model, "a", "u1"))
-  assert string.contains(html, "Delete this plan?")
-  assert string.contains(html, "Yes, delete it")
-  assert string.contains(html, "Keep it")
+  assert string.contains(html, "Delete plan?")
+  assert string.contains(html, ">Delete<")
+  assert string.contains(html, ">Cancel<")
 }
 
 // Copying -----------------------------------------------------------------------------------------

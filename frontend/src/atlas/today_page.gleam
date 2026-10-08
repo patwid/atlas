@@ -346,7 +346,7 @@ fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
               attribute.type_("button"),
               event.on_click(ConfirmClicked(key, activity_id)),
             ],
-            [html.text("Yes, that is it")],
+            [html.text("Confirm")],
           ),
           link_button("Choose another", ChooseClicked(key)),
         ]),
@@ -359,19 +359,20 @@ fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
           link_button("Unlink", UnlinkClicked(key)),
           dialog.view(
             confirm_dialog_id(key),
-            "Unlink this activity?",
+            "Unlink activity?",
+            "The workout no longer counts as done.",
             CancelClicked,
             [
               button.text(
                 [attribute.type_("submit"), event.on_click(CancelClicked)],
-                [html.text("Keep it")],
+                [html.text("Cancel")],
               ),
               button.text(
                 [
                   attribute.type_("submit"),
                   event.on_click(UnlinkConfirmed(key)),
                 ],
-                [html.text("Yes, unlink")],
+                [html.text("Unlink")],
               ),
             ],
           ),

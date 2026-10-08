@@ -326,7 +326,7 @@ dialog {
   min-width: 17.5rem; max-width: 35rem; width: calc(100% - 3rem); box-shadow: var(--md-sys-elevation-3);
 }
 dialog::backdrop { background: color-mix(in srgb, var(--md-sys-color-scrim) 32%, transparent); }
-dialog .dialog-headline { margin: 0 0 1.5rem; font: 500 1.5rem/2rem var(--md-ref-typeface); letter-spacing: 0; color: var(--md-sys-color-on-surface); }
+dialog .dialog-headline { margin: 0 0 1rem; font: 500 1.5rem/2rem var(--md-ref-typeface); letter-spacing: 0; color: var(--md-sys-color-on-surface); }
 dialog .actions { justify-content: flex-end; margin-top: 0; }
 dialog[open] { animation: dialog-in var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial); }
 @keyframes dialog-in { from { opacity: 0; transform: translateY(-1rem) scale(0.97); } }
@@ -449,8 +449,15 @@ label {
 }
 label:has(+ .md-text-field:focus) { color: var(--md-sys-color-primary); }
 .error { color: var(--md-sys-color-error); margin: 0.25rem 0 0; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; }
-.settings h2, .toolbar h2, .plans h2 { font: 400 1.375rem/1.75rem var(--md-ref-typeface); }
-.toolbar h2, .plans h2 { margin: 1.5rem 0 0.75rem; }
+.settings h2, .toolbar h2 { font: 400 1.375rem/1.75rem var(--md-ref-typeface); }
+.toolbar h2 { margin: 1.5rem 0 0.75rem; }
+/* The plan list's sections ("Your plans", "Shared with you") are list subheaders (ADR 0055): the app bar holds the
+   page's title. */
+.plans h2 {
+  margin: 1.25rem 1rem 0.5rem; color: var(--md-sys-color-on-surface-variant);
+  font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem;
+}
+.toolbar:empty { display: none; }
 /* Banners (ADR 0049): a message at the top of the content until it is resolved, with an icon and actions. */
 .banner {
   margin: 0 0 1rem; padding: 1rem 1rem 0.5rem; border-radius: var(--md-sys-shape-corner-medium);
@@ -464,7 +471,6 @@ label:has(+ .md-text-field:focus) { color: var(--md-sys-color-primary); }
 .banner-error, .banner.problems { background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); }
 .banner-error .banner-body > .icon, .banner.problems .banner-body > .icon,
 .banner.problems .md-button { color: var(--md-sys-color-on-error-container); }
-.banner-offline { padding-bottom: 0.5rem; }
 
 /* A list of rows that open other pages, such as Settings (ADR 0049). */
 .link-list { padding: 0; }
@@ -864,4 +870,25 @@ dialog.time-picker { width: 20.5rem; }
 .time-picker-number.selected { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
 .time-picker-number:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .time-picker-hand { transition: none; } }
+
+/* A confirmation dialog's supporting text (ADR 0055): what happens if the action goes ahead. */
+dialog .dialog-supporting { margin: 0 0 1.5rem; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; }
+
+/* The app bar's offline icon (ADR 0055): pressing it explains being offline. */
+.bar-content > .offline-indicator { margin: 0 -0.5rem 0 0; color: var(--md-sys-color-on-surface-variant); }
+
+/* A Material 3 large badge on a navigation item (ADR 0055): the number of sync problems on Settings. */
+.nav-badge {
+  position: absolute; top: 0.125rem; left: calc(50% + 0.375rem); min-width: 1rem; height: 1rem; padding: 0 0.25rem;
+  border-radius: var(--md-sys-shape-corner-full); background: var(--md-sys-color-error); color: var(--md-sys-color-on-error);
+  font: 500 0.6875rem/1rem var(--md-ref-typeface); letter-spacing: 0.03125rem; text-align: center;
+}
+
+/* A list row that shows something instead of opening a page, such as the account in Settings (ADR 0055). */
+.info-item { display: flex; align-items: center; gap: 1rem; min-height: 4.5rem; }
+.info-item > .icon { color: var(--md-sys-color-on-surface-variant); }
+.info-item-supporting {
+  font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; color: var(--md-sys-color-on-surface-variant);
+}
+.info-item .md-button { margin-right: -0.5rem; }
 

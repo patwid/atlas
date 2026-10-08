@@ -172,7 +172,7 @@ pub fn the_delete_question_has_a_way_out_test() {
       confirming: Some("g1"),
     )
   let html = html_of(model)
-  assert string.contains(html, "Stop Bob Coach from seeing your training?")
-  assert string.contains(html, "Yes, remove access")
-  assert string.contains(html, "Keep it")
+  assert string.contains(html, "Bob Coach can no longer see your training.")
+  assert string.contains(html, ">Remove<")
+  assert string.contains(html, ">Cancel<")
 }

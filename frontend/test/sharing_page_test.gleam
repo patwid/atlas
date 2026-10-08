@@ -253,7 +253,7 @@ pub fn the_stop_question_has_a_way_out_test() {
       confirming: Some("s1"),
     )
   let html = html_of(model)
-  assert string.contains(html, "Stop sharing this plan with Bob?")
-  assert string.contains(html, "Yes, stop sharing")
-  assert string.contains(html, "Keep sharing")
+  assert string.contains(html, "Stop sharing with Bob?")
+  assert string.contains(html, ">Stop sharing<")
+  assert string.contains(html, ">Cancel<")
 }
