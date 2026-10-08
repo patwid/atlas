@@ -177,7 +177,6 @@ fn share_action(model: Model, context: Context, person: Person) -> Action {
 pub fn view(model: Model, context: Context) -> Element(Msg) {
   let current = shares.current_for(model.shares, context.plan_id)
   html.section([class("sharing")], [
-    html.h2([], [html.text("Sharing")]),
     html.p([class("muted")], [
       html.text(
         "People you share this plan with can read it, copy it and start it. They cannot change it.",

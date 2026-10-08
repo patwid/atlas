@@ -20,6 +20,7 @@ import atlas/ui/focus
 import atlas/ui/form_dialog
 import atlas/ui/icon
 import atlas/ui/layout
+import atlas/ui/menu
 import atlas/ui/plan_settings
 import atlas/ui/progress
 import atlas/ui/snackbar
@@ -59,10 +60,11 @@ pub type Model {
     loaded: Bool,
     mode: Mode,
     form: plan_form.Form,
-    /// The first click on "Delete" asks; the second one deletes.
     /// A delete that can still be undone (ADR 0056).
     undo: Undo,
     copy: CopyState,
+    /// The plan page's tab on show (ADR 0058): `"calendar"`, `"schedule"` or `"sharing"`.
+    tab: String,
   )
 }
 
@@ -86,6 +88,8 @@ pub type Msg {
   UndoClicked
   DeleteExpired(Int)
   CopyClicked(String)
+  /// A tab of the plan page was chosen (ADR 0058).
+  TabSelected(String)
   /// The app made the copy: its plan has this ID.
   CopyMade(String, String)
   CopyFailed(String, String)
@@ -103,7 +107,7 @@ pub type Action {
 }
 
 pub fn new() -> Model {
-  Model([], False, Browsing, plan_form.empty(), undo.new(), NoCopy)
+  Model([], False, Browsing, plan_form.empty(), undo.new(), NoCopy, "calendar")
 }
 
 pub fn refresh() -> Effect(Msg) {
@@ -261,6 +265,8 @@ pub fn update(
         option.map(due, delete_of(model, user_id, _)) |> option.unwrap([]),
       )
     }
+
+    TabSelected(tab) -> #(Model(..model, tab: tab), effect.none(), [])
 
     CopyClicked(id) ->
       case model.copy, find(model.plans, id) {
@@ -426,7 +432,7 @@ pub fn view_detail_with(
                     "This plan was shared with you. Only its owner can change it. Copy it to make a version of your own."
                 }),
               ])
-            True -> owner_actions(found)
+            True -> element.none()
           },
           copy_view(model.copy, found.id),
         ]),
@@ -453,27 +459,49 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
         ),
       ])
     Copying(source) if source == plan_id -> progress.loading("Copying…")
-    _ ->
-      layout.actions([
-        button.tonal(
-          [attribute.type_("button"), event.on_click(CopyClicked(plan_id))],
-          [icon.view(icon.ContentCopy), html.text("Copy to my plans")],
-        ),
-      ])
+    _ -> element.none()
   }
 }
 
-fn owner_actions(found: Plan) -> Element(Msg) {
-  layout.actions([
-    button.filled(
-      [attribute.type_("button"), event.on_click(EditClicked(found.id))],
-      [icon.view(icon.Edit), html.text("Edit")],
-    ),
-    button.outlined(
-      [attribute.type_("button"), event.on_click(DeleteClicked(found.id))],
-      [icon.view(icon.Delete), html.text("Delete")],
-    ),
-  ])
+/// The plan page's actions in the app bar (ADR 0058): Edit and a menu with Make a copy and Delete for its owner,
+/// Copy to my plans for everyone else. Copying is not offered again while a copy is being made or just made.
+pub fn app_bar_actions(
+  model: Model,
+  id: String,
+  user_id: String,
+) -> Element(Msg) {
+  let copying = case model.copy {
+    Copying(source) | Copied(source, _) -> source == id
+    _ -> False
+  }
+  case find(model.plans, id) {
+    Error(Nil) -> element.none()
+    Ok(found) if found.owner_id == user_id ->
+      element.fragment([
+        button.icon(
+          [attribute.type_("button"), event.on_click(EditClicked(id))],
+          icon.Edit,
+          "Edit plan",
+        ),
+        menu.view("plan-menu", "More for this plan", case copying {
+          True -> [menu.Item(icon.Delete, "Delete", DeleteClicked(id))]
+          False -> [
+            menu.Item(icon.ContentCopy, "Make a copy", CopyClicked(id)),
+            menu.Item(icon.Delete, "Delete", DeleteClicked(id)),
+          ]
+        }),
+      ])
+    Ok(_) ->
+      case copying {
+        True -> element.none()
+        False ->
+          button.icon(
+            [attribute.type_("button"), event.on_click(CopyClicked(id))],
+            icon.ContentCopy,
+            "Copy to my plans",
+          )
+      }
+  }
 }
 
 /// The delete to write for a plan of the user's own.

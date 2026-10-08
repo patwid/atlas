@@ -332,22 +332,19 @@ pub fn view(
       UndoClicked,
       RemoveExpired,
     ),
-    html.div([class("toolbar")], [
-      html.h2([], [html.text("Schedule")]),
-      case model.mode {
-        Browsing if context.can_start ->
-          button.filled(
-            [attribute.type_("button"), event.on_click(StartClicked)],
-            [
-              html.text(case context.athletes {
-                [] -> "Start this plan"
-                _ -> "Start or assign"
-              }),
-            ],
-          )
-        _ -> element.none()
-      },
-    ]),
+    // The plan's tabs name this section (ADR 0058); starting the plan is its floating action button.
+    case model.mode {
+      Browsing if context.can_start ->
+        button.fab(
+          [attribute.type_("button"), event.on_click(StartClicked)],
+          icon.PlayArrow,
+          case context.athletes {
+            [] -> "Start this plan"
+            _ -> "Start or assign"
+          },
+        )
+      _ -> element.none()
+    },
     form_view(model, context),
     case model.loaded, rows {
       False, _ -> progress.loading("Loading…")

@@ -524,23 +524,19 @@ pub fn view(model: Model, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
   html.section([class("workouts plan-calendar")], [
     undo.snackbar(model.undo, "Workout deleted", UndoClicked, DeleteExpired),
     form_view(model, on_screen, weeks, can_edit),
-    html.div([class("toolbar")], [
-      html.h2([], [html.text("Workouts")]),
-      case can_edit, model.mode {
-        True, Browsing | True, Viewing(_) ->
-          button.filled(
-            [
-              attribute.type_("button"),
-              event.on_click(AddClicked(
-                clamp_week(model.selected_week, weeks),
-                1,
-              )),
-            ],
-            [html.text("Add workout")],
-          )
-        _, _ -> element.none()
-      },
-    ]),
+    // The plan's tabs name this section (ADR 0058); adding a workout is its floating action button.
+    case can_edit, model.mode {
+      True, Browsing | True, Viewing(_) ->
+        button.fab(
+          [
+            attribute.type_("button"),
+            event.on_click(AddClicked(clamp_week(model.selected_week, weeks), 1)),
+          ],
+          icon.Add,
+          "Add workout",
+        )
+      _, _ -> element.none()
+    },
     html.div([class("calendar-layout")], [
       html.div([class("calendar")], case model.loaded {
         False -> [progress.loading("Loading…")]

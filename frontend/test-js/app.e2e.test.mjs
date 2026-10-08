@@ -144,9 +144,9 @@ test("a user creates, edits and deletes a plan on the plans screens and the serv
 
   // Edit, on the plan's own screen
   click(w, link)
-  await waitFor("the plan screen", () => d.querySelector(".bar h1")?.textContent === "Autumn 10k" && button(w, "Edit"))
+  await waitFor("the plan screen", () => d.querySelector(".bar h1")?.textContent === "Autumn 10k" && byLabel(w, "Edit plan"))
   assert.equal(w.location.pathname, `/plans/${created.id}`)
-  click(w, button(w, "Edit"))
+  click(w, byLabel(w, "Edit plan"))
   await waitFor("the edit form", () => d.querySelector("#plan-title")?.value === "Autumn 10k")
   typeInto(w, d.querySelector("#plan-title"), "Autumn half marathon")
   submit(w, d.querySelector(".plan-form"))
@@ -178,7 +178,7 @@ test("plans shared with the user show up read-only, and a pulled new plan appear
   await waitFor("the shared plan", () => d.body.textContent.includes("Shared with you") && d.body.textContent.includes("Alice's public plan"))
   click(w, [...d.querySelectorAll(".list a")].find((a) => a.textContent === "Alice's public plan"))
   await waitFor("the shared plan's screen", () => d.body.textContent.includes("Only its owner can change it"))
-  assert.equal(button(w, "Edit"), undefined)
+  assert.equal(byLabel(w, "Edit plan"), undefined)
   assert.equal(button(w, "Delete"), undefined)
   w.close()
 })
@@ -309,7 +309,7 @@ test("someone else's plan shows its workouts but offers no way to change them", 
   await waitFor("the shared workout", () => d.body.textContent.includes("Hill repeats") && d.body.textContent.includes("6.00 km · 40:00"))
   assert.equal(button(w, "Add workout"), undefined)
   assert.equal(byLabel(w, "Add a workout to week 1, day 1"), undefined)
-  assert.equal(button(w, "Edit"), undefined)
+  assert.equal(byLabel(w, "Edit plan"), undefined)
   assert.equal(button(w, "Delete"), undefined)
   w.close()
 })
@@ -510,7 +510,7 @@ test("an athlete adds a coach by e-mail, the coach assigns a plan, and the athle
   await waitFor("the plan screen with its schedule", () => d.body.textContent.includes("Assigned by bob") && d.body.textContent.includes("Starts Mon 2 Nov 2026"))
   assert.ok(d.body.textContent.includes("Easy run"), "the coach's workouts are readable through the assignment")
   assert.equal(button(w, "Start this plan"), undefined, "a private plan of someone else cannot be started")
-  assert.equal(button(w, "Edit"), undefined, "and its workouts cannot be changed")
+  assert.equal(byLabel(w, "Edit plan"), undefined, "and its workouts cannot be changed")
   assert.ok(button(w, "Change date"), "but the athlete can move her own start date")
   w.close()
 
@@ -686,10 +686,10 @@ test("a user copies someone else's public plan with its workouts, then edits the
     (await h.api("GET", `collections/workouts/records?perPage=50&sort=day_index&filter=${encodeURIComponent(`plan = "${planId}"`)}`, { token: bob.token })).body.items
 
   await waitFor("the plan with its workouts", () => d.querySelector(".bar h1")?.textContent === "Autumn 10k" && d.body.textContent.includes("Easy run") && d.body.textContent.includes("Tempo"))
-  assert.equal(button(w, "Edit"), undefined, "someone else's plan cannot be edited")
-  click(w, button(w, "Copy to my plans"))
+  assert.equal(byLabel(w, "Edit plan"), undefined, "someone else's plan cannot be edited")
+  click(w, byLabel(w, "Copy to my plans"))
   await waitFor("the confirmation with a link", () => d.body.textContent.includes("Copied to your plans.") && [...d.querySelectorAll("a")].some((a) => a.textContent === "Open your copy"))
-  assert.equal(button(w, "Copy to my plans"), undefined, "a second click is not possible while the copy is shown")
+  assert.equal(byLabel(w, "Copy to my plans"), undefined, "a second click is not possible while the copy is shown")
 
   const copy = await waitFor("the copy on the server", async () => (await mine())[0])
   assert.equal(copy.title, "Copy of Autumn 10k")
@@ -709,9 +709,9 @@ test("a user copies someone else's public plan with its workouts, then edits the
 
   // The copy is Bob's: he opens it and can change it.
   click(w, [...d.querySelectorAll("a")].find((a) => a.textContent === "Open your copy"))
-  await waitFor("the copy's screen with edit", () => d.querySelector(".bar h1")?.textContent === "Copy of Autumn 10k" && button(w, "Edit"))
+  await waitFor("the copy's screen with edit", () => d.querySelector(".bar h1")?.textContent === "Copy of Autumn 10k" && byLabel(w, "Edit plan"))
   assert.ok(d.body.textContent.includes("Tempo") && d.body.textContent.includes("Easy run"), "the workouts came along")
-  click(w, button(w, "Edit"))
+  click(w, byLabel(w, "Edit plan"))
   await waitFor("the edit form", () => d.querySelector("#plan-title")?.value === "Copy of Autumn 10k")
   typeInto(w, d.querySelector("#plan-title"), "My autumn 10k")
   submit(w, d.querySelector(".plan-form"))
@@ -763,7 +763,7 @@ test("an owner shares a private plan by e-mail, the recipient reads and starts i
   await waitFor("who shared it", () => d.body.textContent.includes("Shared by alice"))
   click(w, link)
   await waitFor("the plan screen", () => d.body.textContent.includes("Shared with you by alice.") && d.body.textContent.includes("Easy hour"))
-  assert.equal(button(w, "Edit"), undefined)
+  assert.equal(byLabel(w, "Edit plan"), undefined)
   assert.equal(d.querySelector("#share-email"), null, "only the owner sees the sharing section")
   click(w, await waitFor("the start button", () => button(w, "Start this plan")))
   await waitFor("the start form", () => d.querySelector("#assign-start"))

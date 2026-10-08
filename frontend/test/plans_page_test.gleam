@@ -266,15 +266,14 @@ pub fn the_form_is_accessible_and_shows_errors_test() {
   assert string.contains(html, "Give the plan a title.")
 }
 
-pub fn the_detail_of_an_own_plan_offers_edit_and_delete_test() {
-  let html =
-    html_of(plans_page.view_detail(
-      with_plans([mine("a", "My plan")]),
-      "a",
-      "u1",
-    ))
-  // The plan's name is the app bar's title now (ADR 0055), see atlas_test.
-  assert string.contains(html, ">Edit<")
+fn actions_of(model: plans_page.Model, id: String) -> String {
+  html_of(plans_page.app_bar_actions(model, id, "u1"))
+}
+
+pub fn an_own_plan_offers_edit_copy_and_delete_in_the_app_bar_test() {
+  let html = actions_of(with_plans([mine("a", "My plan")]), "a")
+  assert string.contains(html, "aria-label=\"Edit plan\"")
+  assert string.contains(html, ">Make a copy<")
   assert string.contains(html, ">Delete<")
 }
 
@@ -348,17 +347,19 @@ pub fn a_failed_copy_says_why_and_can_be_retried_test() {
 }
 
 pub fn every_plan_on_screen_offers_a_copy_test() {
-  let own =
-    html_of(plans_page.view_detail(with_plans([mine("a", "Mine")]), "a", "u1"))
-  assert string.contains(own, "Copy to my plans")
-  let shared =
-    html_of(plans_page.view_detail(
-      with_plans([others("o", "Theirs")]),
-      "o",
-      "u1",
-    ))
-  assert string.contains(shared, "Copy to my plans")
-  assert string.contains(shared, "Copy it to make a version of your own")
+  assert string.contains(
+    actions_of(with_plans([mine("a", "Mine")]), "a"),
+    "Make a copy",
+  )
+  let theirs = with_plans([others("o", "Theirs")])
+  let actions = actions_of(theirs, "o")
+  assert string.contains(actions, "aria-label=\"Copy to my plans\"")
+  assert !string.contains(actions, "Edit plan")
+  assert !string.contains(actions, ">Delete<")
+  assert string.contains(
+    html_of(plans_page.view_detail(theirs, "o", "u1")),
+    "Copy it to make a version of your own",
+  )
 }
 
 pub fn a_copy_links_to_the_new_plan_only_on_the_plan_it_came_from_test() {
@@ -375,7 +376,9 @@ pub fn a_copy_links_to_the_new_plan_only_on_the_plan_it_came_from_test() {
   assert string.contains(on_source, "aria-label=\"Close\"")
   let elsewhere = html_of(plans_page.view_detail(model, "b", "u1"))
   assert !string.contains(elsewhere, "Copied to your plans.")
-  assert string.contains(elsewhere, "Copy to my plans")
+  assert string.contains(actions_of(model, "b"), "Make a copy")
+  // The plan just copied does not offer another copy until the snackbar goes.
+  assert !string.contains(actions_of(model, "a"), "Make a copy")
 }
 
 pub fn the_copying_state_is_shown_test() {

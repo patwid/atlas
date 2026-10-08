@@ -28,6 +28,8 @@ pub type Frame(msg) {
     problems: Int,
     /// Pressing the app bar's offline icon, which explains being offline (ADR 0055).
     on_offline_info: msg,
+    /// The page's own actions at the end of the app bar, such as a plan's Edit and menu (ADR 0058).
+    actions: Element(msg),
   )
 }
 
@@ -37,6 +39,7 @@ pub fn view(frame: Frame(msg), page: Element(msg)) -> Element(msg) {
       html.div([class("bar-content")], [
         up(frame.route),
         html.h1([], [html.text(frame.title)]),
+        frame.actions,
         case frame.online {
           True -> element.none()
           // An icon rather than a banner (ADR 0055): being offline is ordinary for this app, so it is shown

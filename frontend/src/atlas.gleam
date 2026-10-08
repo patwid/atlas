@@ -36,6 +36,7 @@ import atlas/ui/icon
 import atlas/ui/interaction
 import atlas/ui/layout
 import atlas/ui/snackbar
+import atlas/ui/tabs
 import atlas/workouts_page
 import atlas/zones_page
 import gleam/int
@@ -184,8 +185,13 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
     RouteChanged(uri) -> {
       let next = route.parse(uri)
+      // Another plan opens on its calendar (ADR 0058).
+      let plans = case next == model.route {
+        True -> model.plans
+        False -> plans_page.Model(..model.plans, tab: "calendar")
+      }
       #(
-        Model(..model, route: next),
+        Model(..model, route: next, plans: plans),
         // The Strava state is looked up when its Settings page is opened.
         case next, model.auth {
           route.SettingsPage(route.Strava), SignedIn(_) ->
@@ -1089,6 +1095,14 @@ pub fn view(model: Model) -> Element(Msg) {
           syncing: syncing.is_busy(model.syncing),
           problems: list.length(model.syncing.problems),
           on_offline_info: OfflineInfoClicked,
+          actions: case model.route {
+            route.Plan(id) ->
+              element.map(
+                plans_page.app_bar_actions(model.plans, id, session.user_id),
+                PlansPage,
+              )
+            _ -> element.none()
+          },
         ),
         element.fragment([
           page(model, session),
@@ -1146,17 +1160,14 @@ fn page(model: Model, session: Session) -> Element(Msg) {
           PlansPage,
         )
       case list.find(model.plans.plans, fn(p) { p.id == id }) {
-        Ok(found) ->
-          html.div([], [
-            detail,
+        Ok(found) -> {
+          let owner = found.owner_id == session.user_id
+          let calendar =
             element.map(
-              workouts_page.view(
-                model.workouts,
-                found,
-                found.owner_id == session.user_id,
-              ),
+              workouts_page.view(model.workouts, found, owner),
               WorkoutsPage,
-            ),
+            )
+          let schedule =
             element.map(
               assignments_page.view(
                 model.assignments,
@@ -1167,20 +1178,39 @@ fn page(model: Model, session: Session) -> Element(Msg) {
                 model.coaches.grants,
               ),
               AssignmentsPage,
+            )
+          // The plan's sections are tabs (ADR 0058); only the owner shares a plan.
+          html.div([], [
+            detail,
+            tabs.view(
+              "plan",
+              model.plans.tab,
+              list.flatten([
+                [
+                  tabs.Tab("calendar", "Calendar", calendar),
+                  tabs.Tab("schedule", "Schedule", schedule),
+                ],
+                case owner {
+                  True -> [
+                    tabs.Tab(
+                      "sharing",
+                      "Sharing",
+                      element.map(
+                        sharing_page.view(
+                          model.sharing,
+                          sharing_context(model, session),
+                        ),
+                        SharingPage,
+                      ),
+                    ),
+                  ]
+                  False -> []
+                },
+              ]),
+              fn(tab) { PlansPage(plans_page.TabSelected(tab)) },
             ),
-            // Only the owner shares a plan.
-            case found.owner_id == session.user_id {
-              True ->
-                element.map(
-                  sharing_page.view(
-                    model.sharing,
-                    sharing_context(model, session),
-                  ),
-                  SharingPage,
-                )
-              False -> element.none()
-            },
           ])
+        }
         Error(Nil) -> detail
       }
     }

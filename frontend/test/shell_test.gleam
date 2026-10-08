@@ -13,6 +13,7 @@ fn frame(r: route.Route) -> shell.Frame(Nil) {
     syncing: False,
     problems: 0,
     on_offline_info: Nil,
+    actions: element.none(),
   )
 }
 

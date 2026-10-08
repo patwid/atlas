@@ -336,6 +336,35 @@ pub fn going_offline_shows_a_snackbar_that_the_app_bar_icon_brings_back_test() {
   assert string.contains(back, "Back online")
 }
 
+pub fn a_plan_page_has_tabs_and_only_its_owner_sees_sharing_test() {
+  let own = element.to_string(atlas.view(plan_screen("u1")))
+  assert string.contains(own, "role=\"tablist\"")
+  assert string.contains(own, ">Calendar<")
+  assert string.contains(own, ">Schedule<")
+  assert string.contains(own, ">Sharing<")
+  assert string.contains(own, "aria-label=\"Edit plan\"")
+  let theirs = element.to_string(atlas.view(plan_screen("someone-else")))
+  assert !string.contains(theirs, ">Sharing<")
+  assert string.contains(theirs, "aria-label=\"Copy to my plans\"")
+}
+
+pub fn a_chosen_tab_shows_and_another_plan_opens_on_its_calendar_test() {
+  let #(model, _) =
+    atlas.update(
+      plan_screen("u1"),
+      PlansPage(plans_page.TabSelected("schedule")),
+    )
+  assert model.plans.tab == "schedule"
+  let html = element.to_string(atlas.view(model))
+  let assert [_, after] = string.split(html, "id=\"plan-tab-schedule\"")
+  let assert [tab, ..] = string.split(after, ">")
+  // The selected tab is the one reachable with Tab.
+  assert string.contains(tab, "tabindex=\"0\"")
+  let assert Ok(other) = uri.parse("/plans/p2")
+  let #(moved, _) = atlas.update(model, RouteChanged(other))
+  assert moved.plans.tab == "calendar"
+}
+
 fn plan_screen(owner: String) -> atlas.Model {
   Model(
     ..signed_in(),
