@@ -1,6 +1,6 @@
 # 0045. Use Material Design 3's baseline colors only
 
-- Status: Accepted
+- Status: Accepted. Intensity's colours are changed by [0061](0061-harmonized-intensity-colours.md).
 - Date: 2026-10-08
 - Deciders: owner (asked to drop all custom colors for Material Design defaults); agent (the role mapping below)
 

@@ -3,7 +3,7 @@
 
    Material Design 3 (ADR 0044, 0045), written by hand: no Material library is loaded. The colors are M3's
    baseline scheme, unchanged (the values of Google's @material/web tokens, M3 34.0); every color in the app is one
-   of these roles, except Strava's brand orange (ADR 0027). The type scale, shapes, state layers and component
+   of these roles, except Strava's brand orange (ADR 0027) and the intensity colours (ADR 0061). The type scale, shapes, state layers and component
    measures follow m3.material.io. */
 :root {
   --md-sys-color-primary: #6750a4;
@@ -35,6 +35,15 @@
   --md-sys-color-inverse-surface: #322f35;
   --md-sys-color-inverse-on-surface: #f5eff7;
   --md-sys-color-inverse-primary: #d0bcff;
+  --md-custom-color-low: #006d43;
+  --md-custom-color-low-container: #92f7bc;
+  --md-custom-color-on-low-container: #002111;
+  --md-custom-color-medium: #914c00;
+  --md-custom-color-medium-container: #ffdcc3;
+  --md-custom-color-on-medium-container: #2f1500;
+  --md-custom-color-high: #ba0c4c;
+  --md-custom-color-high-container: #ffd9de;
+  --md-custom-color-on-high-container: #400014;
   --md-sys-color-scrim: #000000;
   --md-sys-color-shadow: #000000;
 
@@ -120,6 +129,15 @@
     --md-sys-color-inverse-surface: #e6e0e9;
     --md-sys-color-inverse-on-surface: #322f35;
     --md-sys-color-inverse-primary: #6750a4;
+    --md-custom-color-low: #76daa1;
+    --md-custom-color-low-container: #005231;
+    --md-custom-color-on-low-container: #92f7bc;
+    --md-custom-color-medium: #ffb77f;
+    --md-custom-color-medium-container: #6e3900;
+    --md-custom-color-on-medium-container: #ffdcc3;
+    --md-custom-color-high: #ffb2be;
+    --md-custom-color-high-container: #900037;
+    --md-custom-color-on-high-container: #ffd9de;
     --md-sys-color-scrim: #000000;
     --md-sys-color-shadow: #000000;
   }
@@ -132,9 +150,11 @@
   --phase-pre: var(--md-sys-color-surface-container-high);
   --phase-competition: var(--md-sys-color-surface-container-highest);
   --selected: var(--md-sys-color-secondary-container);
-  --intensity-low: var(--md-sys-color-primary);
-  --intensity-medium: var(--md-sys-color-tertiary);
-  --intensity-high: var(--md-sys-color-error);
+  /* Training intensity has colours of its own (ADR 0061): M3 custom colours, green, amber and red, harmonized toward
+     the primary by Google's material-color-utilities (customColor, blend). Not the error role: hard is not wrong. */
+  --intensity-low: var(--md-custom-color-low);
+  --intensity-medium: var(--md-custom-color-medium);
+  --intensity-high: var(--md-custom-color-high);
   --focus-ring: 3px solid var(--md-sys-color-secondary);
   /* The navigation bar's height, which floating things (FAB, snackbar) keep clear of; 0 next to the rail. */
   --nav-bar-height: calc(5rem + env(safe-area-inset-bottom));
@@ -614,9 +634,10 @@ main:has(.plan-calendar), body:has(.plan-calendar) .bar-content { max-width: 80r
 }
 .add-here:hover { color: var(--md-sys-color-on-secondary-container); background: var(--md-sys-color-secondary-container); }
 .intensity { font-size: 0.75rem; font-weight: 500; padding: 0 0.375rem; border-radius: var(--md-sys-shape-corner-small); border: 1px solid currentColor; }
-.intensity-low { color: var(--intensity-low); }
-.intensity-medium { color: var(--intensity-medium); }
-.intensity-high { color: var(--intensity-high); }
+/* An intensity chip is filled with its custom colour's container (ADR 0061). */
+.intensity-low { border-color: transparent; background: var(--md-custom-color-low-container); color: var(--md-custom-color-on-low-container); }
+.intensity-medium { border-color: transparent; background: var(--md-custom-color-medium-container); color: var(--md-custom-color-on-medium-container); }
+.intensity-high { border-color: transparent; background: var(--md-custom-color-high-container); color: var(--md-custom-color-on-high-container); }
 .intensity-setting { margin-top: 0.5rem; }
 .intensity-heading { display: flex; justify-content: space-between; align-items: baseline; }
 .intensity-heading label { margin: 0; }
