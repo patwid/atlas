@@ -1,158 +1,299 @@
+/* Material Design 3 (ADR 0044), written by hand: no Material library is loaded. The colors are the
+   tonal-spot scheme that Google's material-color-utilities generates from the seed #0d6efd; the type
+   scale, shapes, state layers and component measures follow m3.material.io. */
 :root {
-  --bg: #f8faf9;
-  --surface: #ffffff;
-  --text: #14211f;
-  --muted: #5b6b68;
-  --border: #d9e2df;
-  --warn-bg: #fef3c7;
-  --warn-text: #78350f;
-  /* Plan calendar (ADR 0043): a tint per phase, a color per intensity. */
-  --phase-base: #e7f1ff;
-  --phase-pre: #fff4e0;
-  --phase-competition: #fde8ea;
-  --selected: #cfe2ff;
-  --intensity-low: #198754;
-  --intensity-medium: #b76e00;
-  --intensity-high: #dc3545;
-  /* Bootstrap's palette, for buttons and form controls (no Bootstrap file involved); same
-     shades in light and dark mode, since this mid-tone blue/gray/red reads fine on both of
-     Atlas's surface colors. */
-  --bs-primary: #0d6efd;
-  --bs-primary-hover: #0b5ed7;
-  --bs-primary-active: #0a58ca;
-  --bs-secondary: #6c757d;
-  --bs-secondary-hover: #5c636a;
-  --bs-secondary-active: #565e64;
-  --bs-danger: #dc3545;
-  --bs-danger-hover: #bb2d3b;
-  --bs-danger-active: #b02a37;
+  --md-sys-color-primary: #485d92;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #dae2ff;
+  --md-sys-color-on-primary-container: #2f4578;
+  --md-sys-color-secondary: #585e71;
+  --md-sys-color-on-secondary: #ffffff;
+  --md-sys-color-secondary-container: #dce2f9;
+  --md-sys-color-on-secondary-container: #404659;
+  --md-sys-color-tertiary: #735572;
+  --md-sys-color-on-tertiary: #ffffff;
+  --md-sys-color-tertiary-container: #fed7fa;
+  --md-sys-color-on-tertiary-container: #593d59;
+  --md-sys-color-error: #ba1a1a;
+  --md-sys-color-on-error: #ffffff;
+  --md-sys-color-error-container: #ffdad6;
+  --md-sys-color-on-error-container: #93000a;
+  --md-sys-color-surface: #faf8ff;
+  --md-sys-color-on-surface: #1a1b21;
+  --md-sys-color-on-surface-variant: #44464f;
+  --md-sys-color-surface-container-lowest: #ffffff;
+  --md-sys-color-surface-container-low: #f4f3fa;
+  --md-sys-color-surface-container: #eeedf4;
+  --md-sys-color-surface-container-high: #e8e7ef;
+  --md-sys-color-surface-container-highest: #e2e2e9;
+  --md-sys-color-outline: #757780;
+  --md-sys-color-outline-variant: #c5c6d0;
+  --md-sys-color-inverse-surface: #2f3036;
+  --md-sys-color-inverse-on-surface: #f1f0f7;
+  --md-sys-color-scrim: #000000;
+  --md-sys-color-shadow: #000000;
+  /* Material 3 has no success or warning role: these extend the scheme for the training intensity (ADR 0043). */
+  --intensity-low: #2e7d32;
+  --intensity-medium: #a15c00;
+  --intensity-high: var(--md-sys-color-error);
+
+  --md-sys-shape-corner-extra-small: 4px;
+  --md-sys-shape-corner-small: 8px;
+  --md-sys-shape-corner-medium: 12px;
+  --md-sys-shape-corner-large: 16px;
+  --md-sys-shape-corner-extra-large: 28px;
+  --md-sys-shape-corner-full: 9999px;
+
+  --md-sys-elevation-1: 0 1px 2px rgb(0 0 0 / 0.3), 0 1px 3px 1px rgb(0 0 0 / 0.15);
+  --md-sys-elevation-3: 0 4px 8px 3px rgb(0 0 0 / 0.15), 0 1px 3px rgb(0 0 0 / 0.3);
+
+  --md-sys-state-hover: 0.08;
+  --md-sys-state-focus: 0.1;
+  --md-sys-state-pressed: 0.1;
+  --md-sys-motion-easing: cubic-bezier(0.2, 0, 0, 1);
+
+  --md-ref-typeface: "Roboto Flex", Roboto, "Segoe UI", system-ui, -apple-system, sans-serif;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0e1514;
-    --surface: #16201e;
-    --text: #e6efed;
-    --muted: #9bb0ac;
-    --border: #263431;
-    --warn-bg: #3b2f0b;
-    --warn-text: #fde68a;
-    --phase-base: #14243a;
-    --phase-pre: #2e2410;
-    --phase-competition: #321a1d;
-    --selected: #1d3a63;
-    --intensity-low: #4cc38a;
+    --md-sys-color-primary: #b1c5ff;
+    --md-sys-color-on-primary: #162e60;
+    --md-sys-color-primary-container: #2f4578;
+    --md-sys-color-on-primary-container: #dae2ff;
+    --md-sys-color-secondary: #c0c6dc;
+    --md-sys-color-on-secondary: #2a3042;
+    --md-sys-color-secondary-container: #404659;
+    --md-sys-color-on-secondary-container: #dce2f9;
+    --md-sys-color-tertiary: #e0bbdd;
+    --md-sys-color-on-tertiary: #412742;
+    --md-sys-color-tertiary-container: #593d59;
+    --md-sys-color-on-tertiary-container: #fed7fa;
+    --md-sys-color-error: #ffb4ab;
+    --md-sys-color-on-error: #690005;
+    --md-sys-color-error-container: #93000a;
+    --md-sys-color-on-error-container: #ffdad6;
+    --md-sys-color-surface: #121318;
+    --md-sys-color-on-surface: #e2e2e9;
+    --md-sys-color-on-surface-variant: #c5c6d0;
+    --md-sys-color-surface-container-lowest: #0d0e13;
+    --md-sys-color-surface-container-low: #1a1b21;
+    --md-sys-color-surface-container: #1e1f25;
+    --md-sys-color-surface-container-high: #282a2f;
+    --md-sys-color-surface-container-highest: #33343a;
+    --md-sys-color-outline: #8f9099;
+    --md-sys-color-outline-variant: #44464f;
+    --md-sys-color-inverse-surface: #e2e2e9;
+    --md-sys-color-inverse-on-surface: #2f3036;
+    --intensity-low: #81c784;
     --intensity-medium: #f0b44c;
-    --intensity-high: #f07580;
   }
 }
+
+/* Plan calendar (ADR 0043): a container tint per phase. */
+:root {
+  --phase-base: color-mix(in srgb, var(--md-sys-color-primary-container) 55%, var(--md-sys-color-surface));
+  --phase-pre: color-mix(in srgb, var(--md-sys-color-tertiary-container) 55%, var(--md-sys-color-surface));
+  --phase-competition: color-mix(in srgb, var(--md-sys-color-error-container) 55%, var(--md-sys-color-surface));
+  --selected: var(--md-sys-color-secondary-container);
+  --focus-ring: 3px solid var(--md-sys-color-secondary);
+}
+
 * { box-sizing: border-box; }
-html, body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, sans-serif; }
-
-/* Plain text links (ADR 0040): Bootstrap's default link color, same --bs-primary used by buttons
-   and form controls. More specific selectors below (.tabs a, .cards a, .back, .strava-link, …)
-   override this as needed. */
-a { color: var(--bs-primary); text-decoration: underline; }
-a:hover { color: var(--bs-primary-hover); }
-a:active { color: var(--bs-primary-active); }
-
-/* Buttons and form controls (ADR 0040): hand-written, Bootstrap's class names and colors, no
-   Bootstrap file involved. */
-.btn {
-  display: inline-block; font: inherit; font-weight: 500; text-align: center; vertical-align: middle;
-  cursor: pointer; user-select: none; border: 1px solid transparent; border-radius: 0.375rem;
-  padding: 0.375rem 0.75rem; line-height: 1.5; transition: background-color .15s, border-color .15s;
+html, body {
+  margin: 0; background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface);
+  font: 400 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
+  -webkit-font-smoothing: antialiased;
 }
-.btn:disabled { opacity: 0.65; cursor: not-allowed; }
-.btn-primary { background: var(--bs-primary); border-color: var(--bs-primary); color: #fff; }
-.btn-primary:not(:disabled):hover { background: var(--bs-primary-hover); border-color: var(--bs-primary-hover); }
-.btn-primary:not(:disabled):active { background: var(--bs-primary-active); border-color: var(--bs-primary-active); }
-.btn-secondary { background: var(--bs-secondary); border-color: var(--bs-secondary); color: #fff; }
-.btn-secondary:not(:disabled):hover { background: var(--bs-secondary-hover); border-color: var(--bs-secondary-hover); }
-.btn-secondary:not(:disabled):active { background: var(--bs-secondary-active); border-color: var(--bs-secondary-active); }
-.btn-danger { background: var(--bs-danger); border-color: var(--bs-danger); color: #fff; }
-.btn-danger:not(:disabled):hover { background: var(--bs-danger-hover); border-color: var(--bs-danger-hover); }
-.btn-danger:not(:disabled):active { background: var(--bs-danger-active); border-color: var(--bs-danger-active); }
-.btn-link { background: none; border-color: transparent; color: var(--bs-primary); padding: 0.375rem 0; text-decoration: underline; }
-.btn-link:not(:disabled):hover { color: var(--bs-primary-hover); }
-.btn:focus-visible { outline: 0; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.35); }
+h1, h2, h3 { font-weight: 400; letter-spacing: 0; }
 
-.form-control, .form-select {
-  display: block; width: 100%; font: inherit; color: var(--text); background: var(--surface);
-  border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.375rem 0.75rem; line-height: 1.5;
-}
-.form-control:focus, .form-select:focus {
-  outline: 0; border-color: var(--bs-primary); box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-.form-control:disabled, .form-select:disabled { background: var(--bg); color: var(--muted); cursor: not-allowed; }
+a { color: var(--md-sys-color-primary); text-underline-offset: 0.15em; }
+a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius: 2px; }
 
+/* Buttons: common buttons with a state layer (::before) for hover, focus and press. */
+.md-button {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  min-height: 2.5rem; padding: 0 1.5rem; border: 0; border-radius: var(--md-sys-shape-corner-full);
+  font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem; text-align: center;
+  cursor: pointer; user-select: none; isolation: isolate; background: transparent; color: var(--md-sys-color-primary);
+  transition: box-shadow 0.2s var(--md-sys-motion-easing);
+  -webkit-tap-highlight-color: transparent;
+}
+.md-button::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  background: currentColor; opacity: 0; transition: opacity 0.15s var(--md-sys-motion-easing);
+}
+.md-button:not(:disabled):hover::before { opacity: var(--md-sys-state-hover); }
+.md-button:not(:disabled):focus-visible::before { opacity: var(--md-sys-state-focus); }
+.md-button:not(:disabled):active::before { opacity: var(--md-sys-state-pressed); }
+.md-button:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+.md-button:disabled { cursor: not-allowed; color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent); }
+
+.md-button-filled { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
+.md-button-filled:not(:disabled):hover { box-shadow: var(--md-sys-elevation-1); }
+.md-button-filled:disabled, .md-button-danger:disabled {
+  background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent); box-shadow: none;
+}
+.md-button-outlined { border: 1px solid var(--md-sys-color-outline-variant); color: var(--md-sys-color-on-surface-variant); }
+.md-button-outlined:disabled { border-color: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent); }
+.md-button-danger { background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); }
+.md-button-danger:not(:disabled):hover { box-shadow: var(--md-sys-elevation-1); }
+.md-button-text { padding: 0 0.75rem; }
+
+/* Outlined text fields and selects; their labels sit above them. */
+.md-text-field {
+  display: block; width: 100%; min-height: 3.5rem; padding: 1rem;
+  font: 400 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
+  color: var(--md-sys-color-on-surface); background: transparent; caret-color: var(--md-sys-color-primary);
+  border: 1px solid var(--md-sys-color-outline); border-radius: var(--md-sys-shape-corner-extra-small);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+textarea.md-text-field { resize: vertical; min-height: 6rem; }
+.md-text-field:hover:not(:disabled):not(:focus) { border-color: var(--md-sys-color-on-surface); }
+.md-text-field:focus { outline: 0; border-color: var(--md-sys-color-primary); box-shadow: inset 0 0 0 1px var(--md-sys-color-primary); }
+.md-text-field[aria-invalid="true"] { border-color: var(--md-sys-color-error); }
+.md-text-field[aria-invalid="true"]:focus { box-shadow: inset 0 0 0 1px var(--md-sys-color-error); }
+.md-text-field:disabled {
+  color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  border-color: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent); cursor: not-allowed;
+}
+.md-text-field::placeholder { color: var(--md-sys-color-on-surface-variant); }
+select.md-text-field {
+  appearance: none; padding-right: 3rem; cursor: pointer;
+  /* The arrow_drop_down icon, in on-surface-variant gray that reads on both schemes. */
+  background: no-repeat right 0.75rem center / 1.5rem
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23757780' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+}
+select.md-text-field option { background: var(--md-sys-color-surface-container); color: var(--md-sys-color-on-surface); }
+input[type="range"] { accent-color: var(--md-sys-color-primary); }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--md-sys-color-primary); width: 1.125rem; height: 1.125rem; }
+
+/* Dialogs: basic dialog, extra-large corners, actions at the end. */
 dialog {
-  border: none; border-radius: 0.5rem; padding: 1rem 1.25rem 1.25rem; margin: auto;
-  background: var(--surface); color: var(--text); max-width: 26rem; width: calc(100% - 2rem);
+  border: none; border-radius: var(--md-sys-shape-corner-extra-large); padding: 1.5rem; margin: auto;
+  background: var(--md-sys-color-surface-container-high); color: var(--md-sys-color-on-surface-variant);
+  min-width: 17.5rem; max-width: 35rem; width: calc(100% - 3rem); box-shadow: var(--md-sys-elevation-3);
 }
-dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
-dialog p { margin-top: 0; }
+dialog::backdrop { background: rgb(0 0 0 / 0.32); }
+dialog .dialog-headline { margin: 0 0 1.5rem; font: 400 1.5rem/2rem var(--md-ref-typeface); letter-spacing: 0; color: var(--md-sys-color-on-surface); }
+dialog .actions { justify-content: flex-end; margin-top: 0; }
+dialog[open] { animation: dialog-in 0.25s var(--md-sys-motion-easing); }
+@keyframes dialog-in { from { opacity: 0; transform: translateY(-1rem) scale(0.97); } }
+@media (prefers-reduced-motion: reduce) { dialog[open] { animation: none; } }
 
+/* The frame: a small top app bar, the page, and a navigation bar (a navigation rail on wide screens). */
 .shell { min-height: 100dvh; display: flex; flex-direction: column; }
-.bar {
-  background: var(--surface); border-bottom: 1px solid var(--border);
-}
+.bar { background: var(--md-sys-color-surface); position: sticky; top: 0; z-index: 2; }
 .bar-content {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-  padding: 0.75rem 1rem; padding-top: max(0.75rem, env(safe-area-inset-top));
+  min-height: 4rem; padding: 0.5rem 1rem; padding-top: max(0.5rem, env(safe-area-inset-top));
   max-width: 48rem; width: 100%; margin: 0 auto;
 }
-.bar h1 { font-size: 1.125rem; margin: 0; }
-.pill { background: var(--warn-bg); color: var(--warn-text); font-size: 0.8125rem; padding: 0.125rem 0.625rem; border-radius: 999px; }
-main { flex: 1; padding: 1rem; max-width: 48rem; width: 100%; margin: 0 auto; }
-.empty { text-align: center; padding: 3rem 1rem; color: var(--muted); }
-.empty h2 { color: var(--text); font-size: 1.25rem; margin: 0 0 0.5rem; }
-.tabs {
-  position: sticky; bottom: 0;
-  background: var(--surface); border-top: 1px solid var(--border);
+.bar h1 { font: 400 1.375rem/1.75rem var(--md-ref-typeface); margin: 0; }
+.pill {
+  display: inline-flex; align-items: center; height: 2rem; padding: 0 1rem;
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-inverse-surface); color: var(--md-sys-color-inverse-on-surface);
+  font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem;
 }
+main { flex: 1; padding: 0 1rem 1.5rem; max-width: 48rem; width: 100%; margin: 0 auto; }
+
+.tabs { position: sticky; bottom: 0; z-index: 2; background: var(--md-sys-color-surface-container); }
 .tabs-content {
-  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0.25rem;
-  max-width: 48rem; width: 100%; margin: 0 auto; padding: 0.375rem 0.5rem;
-  padding-bottom: max(0.375rem, env(safe-area-inset-bottom));
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0.5rem;
+  max-width: 48rem; width: 100%; margin: 0 auto; padding: 0.75rem 0.5rem 1rem;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
 .tabs a {
-  margin: 0.125rem 0; padding: 0.5rem 0.25rem; border-radius: 0.5rem;
-  text-align: center; color: var(--muted); text-decoration: none; font-size: 0.875rem;
-  transition: background-color .15s, color .15s;
+  display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
+  color: var(--md-sys-color-on-surface-variant); text-decoration: none;
+  font: 500 0.75rem/1rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
+  -webkit-tap-highlight-color: transparent;
 }
-.tabs a:hover { color: var(--text); }
-.tabs a[aria-current="page"] { background: var(--bs-primary); color: #fff; font-weight: 600; }
-.tabs a[aria-current="page"]:hover { background: var(--bs-primary-hover); }
-.tabs a:focus-visible { outline: 0; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.35); }
-.signin { max-width: 22rem; margin: 0 auto; padding: 4rem 1rem; }
-.signin h1 { margin: 0 0 0.25rem; }
-.muted { color: var(--muted); margin-top: 0; }
+.nav-indicator {
+  position: relative; display: grid; place-items: center; width: 4rem; height: 2rem;
+  border-radius: var(--md-sys-shape-corner-full); isolation: isolate;
+  transition: background-color 0.2s var(--md-sys-motion-easing);
+}
+.nav-indicator::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  background: var(--md-sys-color-on-surface); opacity: 0; transition: opacity 0.15s;
+}
+.tabs a:hover .nav-indicator::before { opacity: var(--md-sys-state-hover); }
+.tabs a:active .nav-indicator::before { opacity: var(--md-sys-state-pressed); }
+.nav-indicator svg { width: 1.5rem; height: 1.5rem; fill: currentColor; }
+.tabs a[aria-current="page"] { color: var(--md-sys-color-on-surface); font-weight: 700; }
+.tabs a[aria-current="page"] .nav-indicator {
+  background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container);
+}
+.tabs a:focus-visible { outline: 0; }
+.tabs a:focus-visible .nav-indicator { outline: var(--focus-ring); outline-offset: 2px; }
+@media (min-width: 60rem) {
+  .shell { padding-left: 5rem; }
+  .tabs { position: fixed; top: 0; bottom: 0; left: 0; width: 5rem; background: var(--md-sys-color-surface); }
+  .tabs-content {
+    grid-auto-flow: row; grid-auto-rows: max-content; gap: 0.75rem;
+    padding: max(2.75rem, env(safe-area-inset-top)) 0 1rem;
+  }
+}
+
+/* Text and small pieces. */
+.empty { text-align: center; padding: 3rem 1rem; color: var(--md-sys-color-on-surface-variant); }
+.empty h2 { color: var(--md-sys-color-on-surface); font: 400 1.5rem/2rem var(--md-ref-typeface); margin: 0 0 0.5rem; }
+.signin { max-width: 24rem; margin: 0 auto; padding: 4rem 1.5rem; }
+.signin h1 { font: 400 2.25rem/2.75rem var(--md-ref-typeface); margin: 0 0 0.5rem; }
+.muted { color: var(--md-sys-color-on-surface-variant); margin-top: 0; }
 form { display: grid; gap: 0.5rem; }
-label { font-size: 0.875rem; color: var(--muted); margin-top: 0.5rem; }
-.error { color: #b91c1c; margin: 0.25rem 0 0; }
-@media (prefers-color-scheme: dark) { .error { color: #fca5a5; } }
-.settings h2 { font-size: 1.125rem; }
-.problems { border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.5rem 1rem; background: var(--surface); }
+label {
+  font: 500 0.75rem/1rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
+  color: var(--md-sys-color-on-surface-variant); margin-top: 0.75rem;
+}
+label:has(+ .md-text-field:focus) { color: var(--md-sys-color-primary); }
+.error { color: var(--md-sys-color-error); margin: 0.25rem 0 0; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; }
+.settings h2, .toolbar h2, .plans h2 { font: 400 1.375rem/1.75rem var(--md-ref-typeface); }
+.toolbar h2, .plans h2 { margin: 1.5rem 0 0.75rem; }
+.problems {
+  border-radius: var(--md-sys-shape-corner-medium); padding: 0.75rem 1rem;
+  background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container);
+}
 .problems ul { margin: 0.5rem 0; padding-left: 1.25rem; }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-.toolbar h2, .plans h2 { font-size: 1.125rem; margin: 1rem 0 0.5rem; }
-.cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
-.cards li { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem 1rem; }
-.cards a { color: var(--text); font-weight: 600; text-decoration: none; }
-.cards p { margin: 0.25rem 0 0; }
+
+/* Lists of outlined cards. */
+.cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+.cards li {
+  background: var(--md-sys-color-surface); border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium); padding: 1rem;
+}
+.cards a { color: var(--md-sys-color-on-surface); font: 500 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.009375rem; text-decoration: none; }
+.cards a:hover { text-decoration: underline; }
+.cards p { margin: 0.25rem 0 0; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; }
 .badges { margin-left: 0.5rem; }
-.badge { font-size: 0.75rem; padding: 0.0625rem 0.5rem; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); margin-right: 0.25rem; }
-.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.75rem; }
-.back { display: inline-block; margin: 0.5rem 0; color: var(--muted); text-decoration: none; }
+.badge {
+  display: inline-flex; align-items: center; height: 1.5rem; padding: 0 0.5rem; margin-right: 0.25rem;
+  border: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-small);
+  color: var(--md-sys-color-on-surface-variant); font: 500 0.75rem/1rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
+  vertical-align: middle;
+}
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 1rem; }
+.back {
+  display: inline-flex; align-items: center; gap: 0.25rem; margin: 0.25rem 0 0.5rem; min-height: 2.5rem;
+  color: var(--md-sys-color-primary); font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem;
+  text-decoration: none;
+}
+.back:hover { text-decoration: underline; }
 .description { white-space: pre-wrap; }
-.plan-form { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem 1rem 1rem; margin-bottom: 1rem; }
-.row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: end; }
+/* Panels: filled containers on the page surface. */
+.plan-form, .found, .sidebar-panel {
+  background: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-large);
+}
+.plan-form { padding: 1rem 1rem 1.25rem; margin-bottom: 1rem; }
+.row { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: end; }
 .row > div { flex: 1 1 8rem; }
 .coach-form { margin-top: 1rem; }
-.found { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.5rem 1rem; margin-top: 0.5rem; }
+.found { padding: 0.75rem 1rem; margin-top: 0.75rem; }
 .found p { margin: 0.25rem 0; }
-.totals { color: var(--muted); font-weight: 400; margin-left: 0.5rem; font-size: 0.875rem; }
+.totals { color: var(--md-sys-color-on-surface-variant); font-weight: 400; margin-left: 0.5rem; font-size: 0.875rem; }
 
 /* Plan calendar with a sidebar (ADR 0043): weeks as rows, days as columns, bands per phase. On a phone the days
    of a week stack and the sidebar follows the calendar. */
@@ -161,70 +302,87 @@ main:has(.plan-calendar), body:has(.plan-calendar) .bar-content { max-width: 80r
 .calendar-layout { display: grid; gap: 1rem; align-items: start; }
 .calendar { min-width: 0; }
 .calendar-head { display: none; }
-.phase-band { border-radius: 0.5rem; padding: 0.25rem 0.5rem 0.5rem; margin-bottom: 0.5rem; }
+.phase-band { border-radius: var(--md-sys-shape-corner-large); padding: 0.25rem 0.5rem 0.5rem; margin-bottom: 0.75rem; }
 .phase-base { background: var(--phase-base); }
 .phase-pre { background: var(--phase-pre); }
 .phase-competition { background: var(--phase-competition); }
-.phase-none { border: 1px dashed var(--border); }
-.band-title { font-size: 0.9375rem; margin: 0.25rem 0 0.375rem; }
-.calendar-week { display: grid; grid-template-columns: 1fr; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 0.375rem; overflow: hidden; margin-bottom: 0.375rem; }
-.calendar-week.selected { border-color: var(--bs-primary); box-shadow: 0 0 0 1px var(--bs-primary); }
+.phase-none { border: 1px dashed var(--md-sys-color-outline-variant); }
+.band-title { font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem; margin: 0.375rem 0.25rem 0.5rem; }
+.calendar-week {
+  display: grid; grid-template-columns: 1fr; gap: 1px; background: var(--md-sys-color-outline-variant);
+  border: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-medium);
+  overflow: hidden; margin-bottom: 0.375rem;
+}
+.calendar-week.selected { border-color: var(--md-sys-color-primary); box-shadow: 0 0 0 1px var(--md-sys-color-primary); }
 .week-label {
-  font: inherit; text-align: left; cursor: pointer; border: 0; background: var(--surface); color: var(--text);
+  font: inherit; text-align: left; cursor: pointer; border: 0; background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface);
   padding: 0.375rem 0.5rem; display: flex; flex-wrap: wrap; gap: 0.25rem 0.5rem; align-items: baseline;
 }
-.calendar-week.selected .week-label { background: var(--selected); }
-.week-label:focus-visible, .workout:focus-visible, .add-here:focus-visible { outline: 2px solid var(--bs-primary); outline-offset: -2px; }
-.week-distance { color: var(--muted); font-size: 0.8125rem; }
-.calendar-day { background: var(--surface); padding: 0.25rem 0.375rem; display: grid; grid-template-columns: 3.5rem 1fr; gap: 0.5rem; min-height: 2.25rem; }
-.day-name { color: var(--muted); font-size: 0.8125rem; padding-top: 0.125rem; }
+.week-label:hover { background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, var(--md-sys-color-surface)); }
+.calendar-week.selected .week-label { background: var(--selected); color: var(--md-sys-color-on-secondary-container); }
+.week-label:focus-visible, .workout:focus-visible, .add-here:focus-visible { outline: 2px solid var(--md-sys-color-secondary); outline-offset: -2px; }
+.week-distance { color: var(--md-sys-color-on-surface-variant); font-size: 0.8125rem; }
+.calendar-day { background: var(--md-sys-color-surface); padding: 0.25rem 0.375rem; display: grid; grid-template-columns: 3.5rem 1fr; gap: 0.5rem; min-height: 2.25rem; }
+.day-name { color: var(--md-sys-color-on-surface-variant); font-size: 0.8125rem; padding-top: 0.125rem; }
 .day-body { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
 .workout {
-  font: inherit; font-size: 0.8125rem; line-height: 1.3; text-align: left; cursor: pointer; width: 100%;
-  border: 0; border-left: 3px solid var(--bs-secondary); border-radius: 0.25rem; padding: 0.25rem 0.375rem;
-  background: var(--bg); color: var(--text); display: flex; flex-direction: column; overflow-wrap: anywhere;
+  font: inherit; font-size: 0.8125rem; line-height: 1.3; letter-spacing: 0.015625rem; text-align: left; cursor: pointer; width: 100%;
+  border: 0; border-left: 3px solid var(--md-sys-color-outline); border-radius: var(--md-sys-shape-corner-extra-small);
+  padding: 0.25rem 0.375rem; background: var(--md-sys-color-surface-container); color: var(--md-sys-color-on-surface);
+  display: flex; flex-direction: column; overflow-wrap: anywhere;
 }
-.workout.open { background: var(--selected); }
+.workout:hover { background: var(--md-sys-color-surface-container-highest); }
+.workout.open { background: var(--selected); color: var(--md-sys-color-on-secondary-container); }
 .workout.kind-easy, .workout.kind-long { border-left-color: var(--intensity-low); }
 .workout.kind-tempo, .workout.kind-interval { border-left-color: var(--intensity-medium); }
 .workout.kind-race { border-left-color: var(--intensity-high); }
-.workout.kind-rest { border-left-color: var(--border); color: var(--muted); }
-.workout-title { font-weight: 600; }
-.workout-targets { color: var(--muted); }
+.workout.kind-rest { border-left-color: var(--md-sys-color-outline-variant); color: var(--md-sys-color-on-surface-variant); }
+.workout-title { font-weight: 500; }
+.workout-targets { color: var(--md-sys-color-on-surface-variant); }
 .add-here {
-  font: inherit; cursor: pointer; align-self: flex-start; border: 1px dashed var(--border); border-radius: 0.25rem;
-  background: none; color: var(--muted); padding: 0 0.5rem; line-height: 1.5;
+  font: inherit; cursor: pointer; align-self: flex-start; border: 1px dashed var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-small); background: none; color: var(--md-sys-color-on-surface-variant);
+  padding: 0 0.5rem; line-height: 1.5;
 }
-.add-here:hover { color: var(--bs-primary); border-color: var(--bs-primary); }
-.intensity { font-size: 0.75rem; font-weight: 600; padding: 0 0.375rem; border-radius: 999px; border: 1px solid currentColor; }
+.add-here:hover { color: var(--md-sys-color-primary); border-color: var(--md-sys-color-primary); }
+.intensity { font-size: 0.75rem; font-weight: 500; padding: 0 0.375rem; border-radius: var(--md-sys-shape-corner-small); border: 1px solid currentColor; }
 .intensity-low { color: var(--intensity-low); }
 .intensity-medium { color: var(--intensity-medium); }
 .intensity-high { color: var(--intensity-high); }
 .intensity-setting { margin-top: 0.5rem; }
 .intensity-heading { display: flex; justify-content: space-between; align-items: baseline; }
 .intensity-heading label { margin: 0; }
-.intensity-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+.intensity-value { font-weight: 500; font-variant-numeric: tabular-nums; }
 .intensity-control { display: flex; align-items: center; gap: 0.5rem; }
-.intensity-control input[type="range"] { flex: 1; min-width: 0; accent-color: var(--bs-primary); }
+.intensity-control input[type="range"] { flex: 1; min-width: 0; }
 /* A week without an intensity: the slider sits at 0 but looks inactive until it is moved. */
-.intensity-control input[type="range"].unset { opacity: 0.45; }
+.intensity-control input[type="range"].unset { opacity: 0.38; }
 .intensity-meter { margin-top: 0.25rem; }
 .calendar-sidebar { display: grid; gap: 0.75rem; }
-.sidebar-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem 1rem; }
-.sidebar-panel h3 { font-size: 1rem; margin: 0 0 0.25rem; overflow-wrap: anywhere; }
+.sidebar-panel { padding: 1rem; }
+.sidebar-panel h3 { font: 400 1.375rem/1.75rem var(--md-ref-typeface); margin: 0 0 0.25rem; overflow-wrap: anywhere; }
 .sidebar-panel p { margin: 0.25rem 0; }
+/* Denser fields in the narrow sidebar. */
+.sidebar-panel .md-text-field { min-height: 2.5rem; padding: 0.5rem 0.75rem; }
 .facts { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 0.75rem; margin: 0.5rem 0 0; align-items: center; }
-.facts dt { color: var(--muted); font-size: 0.875rem; }
+.facts dt { color: var(--md-sys-color-on-surface-variant); font-size: 0.875rem; }
 .facts dt label { margin: 0; }
 .facts dd { margin: 0; }
-.goal-meter { height: 0.5rem; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; margin-top: 0.75rem; }
-.goal-meter span { display: block; height: 100%; background: var(--bs-primary); }
+/* A linear progress indicator. */
+.goal-meter {
+  height: 0.25rem; border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-secondary-container); overflow: hidden; margin-top: 0.75rem;
+}
+.goal-meter span { display: block; height: 100%; border-radius: inherit; background: var(--md-sys-color-primary); }
 .goal-meter.over span { background: var(--intensity-medium); }
 .plan-settings { border: 0; padding: 0; margin: 0.75rem 0 0; min-width: 0; }
-.plan-settings legend { font-weight: 500; padding: 0; }
+.plan-settings legend { font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem; padding: 0; }
 @media (min-width: 48rem) {
   .calendar-head, .calendar-week { grid-template-columns: 6rem repeat(7, minmax(0, 1fr)); }
-  .calendar-head { display: grid; gap: 1px; padding: 0 0.5rem 0.25rem; color: var(--muted); font-size: 0.8125rem; text-align: center; }
+  .calendar-head {
+    display: grid; gap: 1px; padding: 0 0.5rem 0.25rem; text-align: center;
+    color: var(--md-sys-color-on-surface-variant); font: 500 0.75rem/1rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
+  }
   .calendar-week .week-label { flex-direction: column; gap: 0.125rem; }
   .calendar-day { display: block; min-height: 4.5rem; }
   .calendar-day .day-name { display: none; }
@@ -233,19 +391,22 @@ main:has(.plan-calendar), body:has(.plan-calendar) .bar-content { max-width: 80r
 }
 @media (min-width: 72rem) {
   .calendar-layout { grid-template-columns: minmax(0, 1fr) 20rem; }
-  .calendar-sidebar { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; }
+  .calendar-sidebar { position: sticky; top: 5rem; max-height: calc(100vh - 6rem); overflow-y: auto; }
 }
 
-.summary { font-weight: 600; }
+.summary { font-weight: 500; }
 .table-wrap { overflow-x: auto; }
-table.progress { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-table.progress caption { text-align: left; color: var(--muted); font-size: 0.875rem; padding-bottom: 0.25rem; }
-table.progress th, table.progress td { padding: 0.5rem 0.5rem; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+table.progress { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 0.875rem; line-height: 1.25rem; }
+table.progress caption { text-align: left; color: var(--md-sys-color-on-surface-variant); font-size: 0.875rem; padding-bottom: 0.25rem; }
+table.progress th, table.progress td {
+  padding: 0.75rem 0.5rem; border-bottom: 1px solid var(--md-sys-color-outline-variant); text-align: right; white-space: nowrap;
+}
+table.progress thead th { color: var(--md-sys-color-on-surface-variant); font-weight: 500; }
 table.progress th[scope="row"], table.progress th:first-child { text-align: left; font-weight: 500; }
 
 /* Strava's brand rules: their button image is shown as it is, with no background, border or padding of ours. */
 button.strava-connect { font: inherit; cursor: pointer; background: none; border: 0; padding: 0; margin-top: 0.75rem; line-height: 0; border-radius: 6px; }
-button.strava-connect:focus-visible { outline: 0; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.35); }
+button.strava-connect:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
 button.strava-connect img { display: block; }
 button.strava-connect:disabled { opacity: 0.6; cursor: progress; }
 .attribution { margin: 0.75rem 0 0; line-height: 0; }
@@ -253,8 +414,9 @@ button.strava-connect:disabled { opacity: 0.6; cursor: progress; }
 /* "View on Strava" must be identifiable as a link: bold, underlined and in Strava's orange. */
 a.strava-link { color: #FC5200; font-weight: 700; text-decoration: underline; }
 /* Training zones in Settings (ADR 0034, 0035) */
-.zones-form h3 { font-size: 1rem; margin: 1rem 0 0; }
+.zones-form h3 { font: 500 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.009375rem; margin: 1rem 0 0; }
 .zones-form > .muted { font-size: 0.875rem; margin: 0.25rem 0 0; }
-.zones { display: grid; gap: 0.375rem; margin-top: 0.5rem; }
+.zones { display: grid; gap: 0.5rem; margin-top: 0.5rem; }
 .zone { display: grid; grid-template-columns: 6.5rem minmax(4rem, 6rem) 1fr; align-items: center; gap: 0.5rem; }
 .zone label { margin-top: 0; }
+.zone .md-text-field { min-height: 2.5rem; padding: 0.5rem 0.75rem; }

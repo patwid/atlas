@@ -1,5 +1,5 @@
-//// Small typed wrappers over Atlas's own form-control styling (ADR 0040), so call sites don't
-//// repeat the `"form-control"`/`"form-select"` CSS class by hand. Named `field`, not `form`,
+//// Small typed wrappers over Atlas's own text-field styling (ADR 0040, 0044), so call sites don't
+//// repeat the `"md-text-field"` CSS class by hand. Named `field`, not `form`,
 //// because `form` is already the usual parameter name for a page's form data (e.g.
 //// `plan_form.Form`), which would shadow a module of that name.
 
@@ -9,14 +9,14 @@ import lustre/element.{type Element}
 import lustre/element/html
 
 pub fn input(attributes: List(Attribute(msg))) -> Element(msg) {
-  html.input([class("form-control"), ..attributes])
+  html.input([class("md-text-field"), ..attributes])
 }
 
 pub fn textarea(
   attributes: List(Attribute(msg)),
   content: String,
 ) -> Element(msg) {
-  html.textarea([class("form-control"), ..attributes], content)
+  html.textarea([class("md-text-field"), ..attributes], content)
 }
 
 /// `options` are `#(value, label)` pairs. The current value is marked `selected` on its option
@@ -29,7 +29,7 @@ pub fn select(
   options: List(#(String, String)),
 ) -> Element(msg) {
   html.select(
-    [class("form-select"), ..attributes],
+    [class("md-text-field"), ..attributes],
     list.map(options, fn(option) {
       html.option(
         [attribute.value(option.0), attribute.selected(option.0 == value)],

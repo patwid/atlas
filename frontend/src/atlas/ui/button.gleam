@@ -1,5 +1,5 @@
-//// Atlas's own button styling (ADR 0040): a named constructor per variant instead of a raw CSS
-//// class string typed out at every call site, where a typo (`"btn btn-pirmary"`) would silently
+//// Atlas's own button styling (ADR 0040, 0044): a named constructor per variant instead of a raw CSS
+//// class string typed out at every call site, where a typo (`"md-button md-button-filed"`) would silently
 //// render an unstyled button.
 ////
 //// `button` is the plain, unstyled base the variants below are built from; use it directly for a
@@ -17,33 +17,36 @@ pub fn button(
   html.button(attributes, children)
 }
 
+/// A Material 3 filled button, for the main action.
 pub fn primary(
   attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  variant("btn btn-primary", attributes, children)
+  variant("md-button md-button-filled", attributes, children)
 }
 
+/// A Material 3 outlined button, for the actions next to the main one.
 pub fn secondary(
   attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  variant("btn btn-secondary", attributes, children)
+  variant("md-button md-button-outlined", attributes, children)
 }
 
+/// A filled button in the error color, for an action that deletes or removes.
 pub fn danger(
   attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  variant("btn btn-danger", attributes, children)
+  variant("md-button md-button-danger", attributes, children)
 }
 
-/// A button that reads as a link: no background or border.
+/// A Material 3 text button: no background or border.
 pub fn link(
   attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  variant("btn btn-link", attributes, children)
+  variant("md-button md-button-text", attributes, children)
 }
 
 fn variant(

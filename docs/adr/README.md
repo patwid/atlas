@@ -43,7 +43,8 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0037 | [Adopt Shoelace web components for UI controls](0037-adopt-shoelace-web-components.md) | Superseded by 0038 |
 | 0038 | [Migrate from Shoelace to Web Awesome](0038-migrate-shoelace-to-web-awesome.md) | Superseded by 0040 |
 | 0039 | [Adopt Web Awesome's dialog for confirmation prompts](0039-adopt-web-awesome-dialog.md) | Superseded by 0040 |
-| 0040 | [Drop Web Awesome; roll our own styling with Bootstrap's palette](0040-drop-web-awesome.md) | Accepted |
+| 0040 | [Drop Web Awesome; roll our own styling with Bootstrap's palette](0040-drop-web-awesome.md) | Accepted (palette superseded by 0044) |
 | 0041 | [Run CI on GitHub Actions through the Nix flake](0041-github-actions-ci.md) | Superseded by 0042 |
 | 0042 | [Run the test suites as flake checks](0042-ci-through-flake-checks.md) | Accepted |
 | 0043 | [Plan phases, a weekly distance goal, week intensity and a calendar view](0043-plan-phases-goal-and-calendar.md) | Proposed |
+| 0044 | [Style the app after Material Design 3, by hand](0044-material-design-3-styling.md) | Accepted |

@@ -1,6 +1,6 @@
 # 0040. Drop Web Awesome; roll our own styling with Bootstrap's palette
 
-- Status: Accepted
+- Status: Accepted. The Bootstrap palette and class names are superseded by [0044](0044-material-design-3-styling.md); the native elements and dialog handling stay.
 - Date: 2026-10-07
 - Deciders: project owner
 

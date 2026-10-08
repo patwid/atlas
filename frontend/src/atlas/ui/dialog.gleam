@@ -42,7 +42,9 @@ pub fn view(
       event.on("close", decode.success(on_hide)),
     ],
     [
-      html.p([attribute.id(label_id)], [html.text(label)]),
+      html.p([attribute.id(label_id), attribute.class("dialog-headline")], [
+        html.text(label),
+      ]),
       html.form(
         [attribute.attribute("method", "dialog"), attribute.class("actions")],
         footer,
