@@ -3,8 +3,10 @@
 
 import atlas/route.{type Route}
 import atlas/ui/banner
+import atlas/ui/empty as ui_empty
 import atlas/ui/icon
 import gleam/list
+import gleam/option.{None}
 import lustre/attribute.{class}
 import lustre/element.{type Element}
 import lustre/element/html
@@ -142,8 +144,5 @@ fn section(r: Route) -> Route {
 }
 
 pub fn empty(title: String, hint: String) -> Element(msg) {
-  html.section([class("empty")], [
-    html.h2([], [html.text(title)]),
-    html.p([], [html.text(hint)]),
-  ])
+  html.section([], [ui_empty.view(icon.SearchOff, title, hint, None)])
 }

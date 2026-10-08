@@ -17,6 +17,7 @@ import atlas/ui/dialog
 import atlas/ui/error
 import atlas/ui/field
 import atlas/ui/focus
+import atlas/ui/icon
 import atlas/ui/layout
 import atlas/ui/plan_settings
 import atlas/units
@@ -777,11 +778,11 @@ fn workout_details(row: Row, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
         layout.actions([
           button.filled(
             [attribute.type_("button"), event.on_click(EditClicked(w.id))],
-            [html.text("Edit")],
+            [icon.view(icon.Edit), html.text("Edit")],
           ),
           button.outlined(
             [attribute.type_("button"), event.on_click(DeleteClicked(w.id))],
-            [html.text("Delete")],
+            [icon.view(icon.Delete), html.text("Delete")],
           ),
           dialog.view(
             confirm_dialog_id(w.id),

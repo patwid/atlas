@@ -16,6 +16,7 @@ import atlas/today.{type Inputs, type Item}
 import atlas/ui/badge
 import atlas/ui/button
 import atlas/ui/dialog
+import atlas/ui/empty
 import atlas/ui/icon
 import atlas/ui/layout
 import atlas/units
@@ -208,14 +209,12 @@ pub fn view(model: Model, inputs: Inputs) -> Element(Msg) {
     html.h2([], [html.text(date.format(inputs.today))]),
     case inputs.assignments {
       [] ->
-        html.p([class("muted")], [
-          html.text(
-            "You are not following a plan yet. Open a plan and start it to see your workouts here. ",
-          ),
-          html.a([attribute.href(route.to_path(route.Plans))], [
-            html.text("Go to plans"),
-          ]),
-        ])
+        empty.view(
+          icon.Today,
+          "You are not following a plan yet",
+          "Open a plan and start it to see your workouts here.",
+          Some(empty.link(route.to_path(route.Plans), "Go to plans")),
+        )
       _ ->
         html.div([], [
           group(

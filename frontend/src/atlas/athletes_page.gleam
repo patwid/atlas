@@ -9,6 +9,8 @@ import atlas/plan.{type Assignment}
 import atlas/progress
 import atlas/route
 import atlas/today.{type Inputs}
+import atlas/ui/empty
+import atlas/ui/icon
 import atlas/ui/layout
 import atlas/units
 import gleam/float
@@ -31,11 +33,12 @@ pub fn view_list(athletes: List(Person)) -> Element(msg) {
     html.h2([], [html.text("Athletes you coach")]),
     case athletes {
       [] ->
-        html.p([class("muted")], [
-          html.text(
-            "Nobody has given you access yet. An athlete adds you under Settings, Coaches, with your e-mail address.",
-          ),
-        ])
+        empty.view(
+          icon.Group,
+          "Nobody has given you access yet",
+          "An athlete adds you under Settings, Coaches, with your e-mail address.",
+          None,
+        )
       people ->
         layout.list(
           list.map(people, fn(person) {

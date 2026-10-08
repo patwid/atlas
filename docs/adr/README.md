@@ -53,3 +53,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0047 | [Use more Material Design 3 components](0047-more-material-components.md) | Accepted |
 | 0048 | [Material back button, progress indicators and status chips](0048-material-navigation-progress-status.md) | Accepted |
 | 0049 | [Settings as a list of pages, and banners for offline and sync problems](0049-settings-list-and-banners.md) | Accepted |
+| 0050 | [Badges with icons, empty states and icons in buttons](0050-chips-empty-states-button-icons.md) | Accepted |

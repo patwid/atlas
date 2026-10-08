@@ -12,6 +12,8 @@ import atlas/route
 import atlas/store
 import atlas/ui/button
 import atlas/ui/dialog
+import atlas/ui/empty
+import atlas/ui/icon
 import atlas/ui/layout
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -153,7 +155,12 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
     case model.loaded, given {
       False, _ -> html.p([class("muted")], [html.text("Loading…")])
       True, [] ->
-        html.p([class("muted")], [html.text("Nobody can see your training.")])
+        empty.view(
+          icon.Lock,
+          "Nobody can see your training.",
+          "Give a coach access with their e-mail address below.",
+          None,
+        )
       True, _ -> layout.list(list.map(given, given_view))
     },
     person_finder.view(

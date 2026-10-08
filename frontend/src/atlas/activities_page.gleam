@@ -9,11 +9,13 @@ import atlas/date.{type Date}
 import atlas/outbox
 import atlas/random
 import atlas/records
+import atlas/route
 import atlas/store
 import atlas/ui/badge
 import atlas/ui/button
 import atlas/ui/choice
 import atlas/ui/dialog
+import atlas/ui/empty
 import atlas/ui/error
 import atlas/ui/field
 import atlas/ui/focus
@@ -328,11 +330,15 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
         case model.mode {
           Adding -> element.none()
           _ ->
-            html.p([class("muted")], [
-              html.text(
-                "No activities yet. Add one, or connect Strava to bring them in.",
-              ),
-            ])
+            empty.view(
+              icon.DirectionsRun,
+              "No activities yet",
+              "Add one, or connect Strava to bring them in.",
+              Some(empty.link(
+                route.to_path(route.SettingsPage(route.Strava)),
+                "Connect Strava",
+              )),
+            )
         }
       True, _ ->
         layout.list(list.map(rows, fn(row) { row_view(row, model, context) }))
@@ -351,9 +357,9 @@ fn row_view(row: Row, model: Model, context: Context) -> Element(Msg) {
           html.div([], [
             html.strong([], [html.text(title(row))]),
             html.span([class("badges")], [
-              badge.badge(source_label(a.source)),
+              source_badge(a.source),
               case row.updated {
-                "" -> badge.badge("Not synced yet")
+                "" -> badge.with_icon(icon.CloudUpload, "Not synced yet")
                 _ -> element.none()
               },
             ]),
@@ -396,6 +402,16 @@ fn title(row: Row) -> String {
   case row.name {
     "" -> activity_form.sport_label(row.activity.sport)
     name -> name
+  }
+}
+
+/// Where an activity came from: entered by hand, or from a connected service (ADR 0050).
+fn source_badge(source: Source) -> Element(Msg) {
+  case source {
+    activity.Manual -> badge.with_icon(icon.EditNote, source_label(source))
+    activity.Strava | activity.Garmin ->
+      badge.with_icon(icon.Link, source_label(source))
+    activity.Fit -> badge.badge(source_label(source))
   }
 }
 
@@ -469,11 +485,11 @@ fn actions(row: Row) -> Element(Msg) {
   layout.actions([
     button.outlined(
       [attribute.type_("button"), event.on_click(EditClicked(id))],
-      [html.text("Edit")],
+      [icon.view(icon.Edit), html.text("Edit")],
     ),
     button.outlined(
       [attribute.type_("button"), event.on_click(DeleteClicked(id))],
-      [html.text("Delete")],
+      [icon.view(icon.Delete), html.text("Delete")],
     ),
     dialog.view(confirm_dialog_id(id), "Delete this activity?", CancelClicked, [
       button.text([attribute.type_("submit"), event.on_click(CancelClicked)], [

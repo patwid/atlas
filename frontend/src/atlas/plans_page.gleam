@@ -14,6 +14,7 @@ import atlas/ui/badge
 import atlas/ui/button
 import atlas/ui/choice
 import atlas/ui/dialog
+import atlas/ui/empty
 import atlas/ui/error
 import atlas/ui/field
 import atlas/ui/focus
@@ -356,9 +357,12 @@ pub fn view_list_with(
         case model.mode {
           Creating -> element.none()
           _ ->
-            html.p([class("muted")], [
-              html.text("You have no plans yet. Create one to get started."),
-            ])
+            empty.view(
+              icon.EventNote,
+              "You have no plans yet",
+              "Create one with New plan, or copy a public plan.",
+              None,
+            )
         }
       True, plans -> plan_list(plans, shared_by)
     },
@@ -454,7 +458,7 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
       layout.actions([
         button.tonal(
           [attribute.type_("button"), event.on_click(CopyClicked(plan_id))],
-          [html.text("Copy to my plans")],
+          [icon.view(icon.ContentCopy), html.text("Copy to my plans")],
         ),
       ])
   }
@@ -464,9 +468,10 @@ fn owner_actions(found: Plan) -> Element(Msg) {
   layout.actions([
     button.filled(
       [attribute.type_("button"), event.on_click(EditClicked(found.id))],
-      [html.text("Edit")],
+      [icon.view(icon.Edit), html.text("Edit")],
     ),
     button.outlined([attribute.type_("button"), event.on_click(DeleteClicked)], [
+      icon.view(icon.Delete),
       html.text("Delete"),
     ]),
     dialog.view(confirm_delete_dialog_id, "Delete this plan?", CancelClicked, [
@@ -509,11 +514,11 @@ fn plan_list(
 fn badges(p: Plan) -> Element(Msg) {
   html.span([class("badges")], [
     case p.visibility {
-      plan.Public -> badge.badge("Public")
+      plan.Public -> badge.with_icon(icon.Public, "Public")
       plan.Private -> element.none()
     },
     case p.updated {
-      "" -> badge.badge("Not synced yet")
+      "" -> badge.with_icon(icon.CloudUpload, "Not synced yet")
       _ -> element.none()
     },
   ])

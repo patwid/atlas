@@ -62,6 +62,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - More Material Design 3 components: snackbars for status messages (plan copied, Strava info, zones saved), floating action buttons for New plan and Add activity, segmented buttons for plan visibility, chips for workout kind and sport, lists instead of cards, and tonal buttons for secondary actions (ADR 0047).
 - A back arrow in the app bar replaces the "← All plans" and "← All athletes" links; a progress bar under the app bar shows a running sync; "Checking…" and "Copying…" get a spinner; Today shows each workout's state as a colored chip (ADR 0048).
 - Settings is a list whose rows open each section on its own page (`/settings/account`, `/sync`, `/zones`, `/coaches`, `/strava`); Strava's return address opens the Strava page. Being offline is a banner that explains it, and sync problems are a banner at the top of Settings (ADR 0049).
+- Badges for a state or origin carry an icon (Public, Not synced yet, an activity's source); empty lists and "Page not found" are empty states with an icon and, where it helps, an action; Edit, Delete and Copy to my plans have icons (ADR 0050).
 - CI builds the flake's checks (`atlas-app`, `gleam-test`, `backend-test`, `frontend-js-test`) offline instead of running the test scripts in `nix develop`; `nix flake check` runs them locally, and a suite whose source is unchanged is not run again. `test-frontend-js.sh` accepts `ATLAS_NPM_INSTALL=0` (ADR 0042).
 
 ### Fixed
