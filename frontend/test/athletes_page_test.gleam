@@ -83,7 +83,6 @@ pub fn someone_who_is_not_an_athlete_is_refused_test() {
   let html = html_of(athletes_page.view_athlete(None, inputs()))
   assert string.contains(html, "You do not coach this person.")
   assert !string.contains(html, "Recent activities")
-  assert string.contains(html, "All athletes")
 }
 
 pub fn the_athlete_page_says_whose_data_this_is_and_that_it_is_read_only_test() {

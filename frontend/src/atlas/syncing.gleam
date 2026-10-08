@@ -70,6 +70,15 @@ pub fn new() -> State {
   State(None, NotLoaded, False, [], 0)
 }
 
+/// Whether the device database is being read or a sync is running: the app bar shows a progress bar (ADR 0048).
+pub fn is_busy(state: State) -> Bool {
+  case state.phase, state.sync {
+    Loading, _ -> True
+    _, Some(running) -> sync.is_busy(running)
+    _, None -> False
+  }
+}
+
 pub fn is_ready(state: State) -> Bool {
   state.phase == Ready
 }

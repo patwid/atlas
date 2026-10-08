@@ -155,7 +155,7 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 
 /* Icon button (ADR 0047): a 40px circle around a 24px icon. */
 .md-icon-button {
-  position: relative; display: inline-grid; place-items: center; width: 2.5rem; height: 2.5rem; flex: none;
+  text-decoration: none; position: relative; display: inline-grid; place-items: center; width: 2.5rem; height: 2.5rem; flex: none;
   padding: 0; border: 0; border-radius: var(--md-sys-shape-corner-full); background: transparent;
   color: var(--md-sys-color-on-surface-variant); cursor: pointer; isolation: isolate;
   -webkit-tap-highlight-color: transparent;
@@ -299,7 +299,34 @@ dialog[open] { animation: dialog-in 0.25s var(--md-sys-motion-easing); }
   min-height: 4rem; padding: 0.5rem 1rem; padding-top: max(0.5rem, env(safe-area-inset-top));
   max-width: 48rem; width: 100%; margin: 0 auto;
 }
-.bar h1 { font: 400 1.375rem/1.75rem var(--md-ref-typeface); margin: 0; }
+.bar h1 { flex: 1; min-width: 0; font: 400 1.375rem/1.75rem var(--md-ref-typeface); margin: 0; }
+/* The back button (ADR 0048) sits at the bar's leading edge, its icon lined up with the page's margin. */
+.bar-content > .md-icon-button { margin: 0 -0.25rem 0 -0.5rem; color: var(--md-sys-color-on-surface); }
+/* Linear progress under the app bar while a sync runs (ADR 0048). It fades in late, so a quick sync does not
+   flicker. */
+.md-linear-progress {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 0.25rem; overflow: hidden;
+  background: var(--md-sys-color-secondary-container); opacity: 0;
+  animation: progress-appear 0.2s 0.5s forwards;
+}
+.md-linear-progress::before {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 40%; border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-primary); animation: progress-slide 1.6s var(--md-sys-motion-easing) infinite;
+}
+@keyframes progress-appear { to { opacity: 1; } }
+@keyframes progress-slide { from { left: -40%; } to { left: 100%; } }
+/* An indeterminate circular indicator next to a status text (ADR 0048). */
+.loading { display: flex; align-items: center; gap: 0.75rem; color: var(--md-sys-color-on-surface-variant); }
+.md-circular-progress {
+  flex: none; width: 1.5rem; height: 1.5rem; border-radius: 50%;
+  border: 0.25rem solid var(--md-sys-color-secondary-container); border-top-color: var(--md-sys-color-primary);
+  animation: progress-spin 1s linear infinite;
+}
+@keyframes progress-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .md-linear-progress::before { animation-duration: 4s; }
+  .md-circular-progress { animation-duration: 3s; }
+}
 .pill {
   display: inline-flex; align-items: center; height: 2rem; padding: 0 1rem;
   border-radius: var(--md-sys-shape-corner-small);
@@ -388,12 +415,20 @@ label:has(+ .md-text-field:focus) { color: var(--md-sys-color-primary); }
   vertical-align: middle;
 }
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 1rem; }
-.back {
-  display: inline-flex; align-items: center; gap: 0.25rem; margin: 0.25rem 0 0.5rem; min-height: 2.5rem;
-  color: var(--md-sys-color-primary); font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem;
-  text-decoration: none;
+/* Today's state of a workout (ADR 0048): an assist-chip-shaped label in the color of its kind, then details. */
+.status { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; margin: 0.5rem 0; }
+.status-chip {
+  display: inline-flex; align-items: center; gap: 0.5rem; height: 2rem; padding: 0 1rem;
+  border-radius: var(--md-sys-shape-corner-small); font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem;
+  border: 1px solid transparent;
 }
-.back:hover { text-decoration: underline; }
+.status-chip .icon { width: 1.125rem; height: 1.125rem; margin-left: -0.5rem; }
+.status-rest { background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface-variant); }
+.status-planned { border-color: var(--md-sys-color-outline-variant); color: var(--md-sys-color-on-surface-variant); }
+.status-missed { background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); }
+.status-suggested { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
+.status-done { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+.status-details { color: var(--md-sys-color-on-surface-variant); font-size: 0.875rem; line-height: 1.25rem; }
 .description { white-space: pre-wrap; }
 /* Panels: filled containers on the page surface. */
 .plan-form, .found, .sidebar-panel {

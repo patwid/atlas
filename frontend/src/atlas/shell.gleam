@@ -8,16 +8,19 @@ import lustre/attribute.{class}
 import lustre/element.{type Element}
 import lustre/element/html
 
-/// `coaching` adds the Athletes tab, for people whom someone has given access to (ADR 0031).
+/// `coaching` adds the Athletes tab, for people whom someone has given access to (ADR 0031). `syncing` shows a
+/// progress bar under the app bar while a sync runs (ADR 0048).
 pub fn view(
   route: Route,
   online: Bool,
   coaching: Bool,
+  syncing: Bool,
   page: Element(msg),
 ) -> Element(msg) {
   html.div([class("shell")], [
     html.header([class("bar")], [
       html.div([class("bar-content")], [
+        up(route),
         html.h1([], [html.text(route.title(route))]),
         case online {
           True -> element.none()
@@ -27,10 +30,43 @@ pub fn view(
             ])
         },
       ]),
+      case syncing {
+        True ->
+          html.div(
+            [
+              class("md-linear-progress"),
+              attribute.role("progressbar"),
+              attribute.aria_label("Syncing"),
+            ],
+            [],
+          )
+        False -> element.none()
+      },
     ]),
     html.main([attribute.id("main")], [page]),
     nav(route, coaching),
   ])
+}
+
+/// The app bar's back button on a page inside a tab (ADR 0048): it goes up to that tab's list.
+fn up(current: Route) -> Element(msg) {
+  case current {
+    route.Plan(_) -> up_link(route.Plans, "All plans")
+    route.Athlete(_) -> up_link(route.Athletes, "All athletes")
+    _ -> element.none()
+  }
+}
+
+fn up_link(target: Route, label: String) -> Element(msg) {
+  html.a(
+    [
+      class("md-icon-button"),
+      attribute.href(route.to_path(target)),
+      attribute.aria_label(label),
+      attribute.title(label),
+    ],
+    [icon.view(icon.ArrowBack)],
+  )
 }
 
 fn nav(current: Route, coaching: Bool) -> Element(msg) {

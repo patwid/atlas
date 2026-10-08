@@ -248,7 +248,8 @@ pub fn the_day_and_its_sections_are_shown_test() {
 pub fn a_suggested_match_asks_for_confirmation_test() {
   let html = html_of(today_page.new(), inputs([]))
   // The 6th's run is not on a planned day of this plan except Tuesday: it is suggested there.
-  assert string.contains(html, "Looks done: 06:00 · Run · 8.00 km · 45:00")
+  assert string.contains(html, "Looks done</span>")
+  assert string.contains(html, "06:00 · Run · 8.00 km · 45:00")
   assert string.contains(html, "Yes, that is it")
   assert string.contains(html, "Choose another")
 }
@@ -256,7 +257,8 @@ pub fn a_suggested_match_asks_for_confirmation_test() {
 pub fn a_confirmed_match_can_be_changed_or_unlinked_test() {
   let html =
     html_of(today_page.new(), inputs([stored("m1", "x1", "w2", False)]))
-  assert string.contains(html, "Done: 06:00 · Run · 8.00 km · 45:00")
+  assert string.contains(html, ">Done</span>")
+  assert string.contains(html, "06:00 · Run · 8.00 km · 45:00")
   assert string.contains(html, ">Change<")
   assert string.contains(html, ">Unlink<")
 }

@@ -52,20 +52,14 @@ pub fn view_list(athletes: List(Person)) -> Element(msg) {
 
 /// `athlete` is `None` for someone the user does not coach. `inputs.user_id` must be the athlete.
 pub fn view_athlete(athlete: Option(Person), inputs: Inputs) -> Element(msg) {
-  let back =
-    html.a([attribute.href(route.to_path(route.Athletes)), class("back")], [
-      html.text("← All athletes"),
-    ])
   case athlete {
     None ->
       html.section([class("athlete")], [
-        back,
         html.p([class("muted")], [html.text("You do not coach this person.")]),
       ])
     Some(person) -> {
       let weeks = progress.weeks(inputs, weeks_shown)
       html.section([class("athlete")], [
-        back,
         html.h2([], [html.text(person.name)]),
         html.p([class("muted")], [
           html.text(

@@ -51,3 +51,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0045 | [Use Material Design 3's baseline colors only](0045-material-baseline-colors.md) | Accepted |
 | 0046 | [Name buttons after Material Design 3 and drop the danger button](0046-material-button-names.md) | Accepted |
 | 0047 | [Use more Material Design 3 components](0047-more-material-components.md) | Accepted |
+| 0048 | [Material back button, progress indicators and status chips](0048-material-navigation-progress-status.md) | Accepted |

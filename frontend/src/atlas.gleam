@@ -1032,6 +1032,7 @@ pub fn view(model: Model) -> Element(Msg) {
         model.route,
         model.online,
         grants.athletes_of(model.coaches.grants, session.user_id) != [],
+        syncing.is_busy(model.syncing),
         page(model, session),
       )
   }

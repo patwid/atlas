@@ -16,6 +16,7 @@ import atlas/today.{type Inputs, type Item}
 import atlas/ui/badge
 import atlas/ui/button
 import atlas/ui/dialog
+import atlas/ui/icon
 import atlas/ui/layout
 import atlas/units
 import atlas/workout_form
@@ -297,24 +298,49 @@ fn confirm_dialog_id(key: Key) -> String {
   "confirm-unlink-" <> key.assignment_id <> "-" <> key.workout_id
 }
 
+/// The day's state as a chip in the color of its kind, then what was run, if anything (ADR 0048).
+fn status(
+  kind: String,
+  symbol: Option(icon.Icon),
+  label: String,
+  details: String,
+) -> Element(Msg) {
+  html.p([class("status")], [
+    html.span([class("status-chip status-" <> kind)], [
+      case symbol {
+        Some(s) -> icon.view(s)
+        None -> element.none()
+      },
+      html.text(label),
+    ]),
+    case details {
+      "" -> element.none()
+      text -> html.span([class("status-details")], [html.text(text)])
+    },
+  ])
+}
+
 fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
   case item.status {
-    today.RestDay -> html.p([class("status")], [html.text("Rest day")])
+    today.RestDay -> status("rest", None, "Rest day", "")
     today.Planned ->
       html.div([], [
-        html.p([class("status")], [html.text("To do")]),
+        status("planned", Some(icon.Pending), "To do", ""),
         link_button("Link an activity", ChooseClicked(key)),
       ])
     today.Missed ->
       html.div([], [
-        html.p([class("status missed")], [html.text("Missed")]),
+        status("missed", Some(icon.Close), "Missed", ""),
         link_button("Link an activity", ChooseClicked(key)),
       ])
     today.Done(activity_id, False) ->
       html.div([], [
-        html.p([class("status done")], [
-          html.text("Looks done: " <> summary(inputs, activity_id)),
-        ]),
+        status(
+          "suggested",
+          Some(icon.Check),
+          "Looks done",
+          summary(inputs, activity_id),
+        ),
         layout.actions([
           button.filled(
             [
@@ -328,9 +354,7 @@ fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
       ])
     today.Done(activity_id, True) ->
       html.div([], [
-        html.p([class("status done")], [
-          html.text("Done: " <> summary(inputs, activity_id)),
-        ]),
+        status("done", Some(icon.Check), "Done", summary(inputs, activity_id)),
         layout.actions([
           link_button("Change", ChooseClicked(key)),
           link_button("Unlink", UnlinkClicked(key)),

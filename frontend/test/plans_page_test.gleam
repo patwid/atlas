@@ -296,7 +296,6 @@ pub fn the_detail_of_a_shared_plan_is_read_only_test() {
 pub fn a_missing_plan_is_explained_test() {
   let html = html_of(plans_page.view_detail(with_plans([]), "nope", "u1"))
   assert string.contains(html, "not on this device")
-  assert string.contains(html, "All plans")
 }
 
 pub fn the_delete_question_has_a_clear_way_out_test() {

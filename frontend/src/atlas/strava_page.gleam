@@ -8,6 +8,7 @@ import atlas/ui/button
 import atlas/ui/dialog
 import atlas/ui/error
 import atlas/ui/layout
+import atlas/ui/progress
 import atlas/ui/snackbar
 import gleam/int
 import gleam/option.{type Option, None, Some}
@@ -284,7 +285,7 @@ pub fn view(model: Model) -> Element(Msg) {
   html.section([class("strava")], [
     html.h2([], [html.text("Strava")]),
     case model.status {
-      Unknown | Checking -> html.p([class("muted")], [html.text("Checking…")])
+      Unknown | Checking -> progress.circular("Checking…")
       Unavailable(reason) -> html.p([class("muted")], [html.text(reason)])
       Known(status) -> status_view(model, status)
     },

@@ -20,6 +20,7 @@ import atlas/ui/focus
 import atlas/ui/icon
 import atlas/ui/layout
 import atlas/ui/plan_settings
+import atlas/ui/progress
 import atlas/ui/snackbar
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -382,14 +383,9 @@ pub fn view_detail_with(
   user_id: String,
   shared_by: fn(Plan) -> Option(String),
 ) -> Element(Msg) {
-  let back =
-    html.a([attribute.href(route.to_path(route.Plans)), class("back")], [
-      html.text("← All plans"),
-    ])
   case find(model.plans, id) {
     Error(Nil) ->
       html.section([class("plans")], [
-        back,
         case model.loaded {
           False -> html.p([class("muted")], [html.text("Loading…")])
           True ->
@@ -403,7 +399,6 @@ pub fn view_detail_with(
     Ok(found) -> {
       let mine = found.owner_id == user_id
       html.section([class("plans")], [
-        back,
         case model.mode {
           Editing(editing) if editing == id ->
             form_view(model.form, "Save changes")
@@ -454,8 +449,7 @@ fn copy_view(state: CopyState, plan_id: String) -> Element(Msg) {
           [html.text("Try again")],
         ),
       ])
-    Copying(source) if source == plan_id ->
-      html.p([class("muted")], [html.text("Copying…")])
+    Copying(source) if source == plan_id -> progress.circular("Copying…")
     _ ->
       layout.actions([
         button.tonal(

@@ -160,7 +160,7 @@ test("a user creates, edits and deletes a plan on the plans screens and the serv
   assert.equal((await onServer()).find((p) => p.id === created.id).deleted, false, "asking does not delete")
   click(w, dialogButton(w, "Yes, delete it"))
   await waitFor("the plan marked deleted on the server", async () => (await onServer()).find((p) => p.id === created.id)?.deleted === true)
-  click(w, [...d.querySelectorAll("a")].find((a) => a.textContent.includes("All plans")))
+  click(w, d.querySelector('a[aria-label="All plans"]'))
   await waitFor("an empty list again", () => d.body.textContent.includes("You have no plans yet"))
   w.close()
 })
@@ -376,7 +376,7 @@ test("a public plan of someone else can be started, and so can a private one tha
   assert.equal(started.plan, "publicplan00001")
 
   // The private plan that is shared with Bob can be started too (ADR 0029): a share is enough.
-  click(w, [...d.querySelectorAll("a")].find((a) => a.textContent.includes("All plans")))
+  click(w, d.querySelector('a[aria-label="All plans"]'))
   const privateLink = await waitFor("the private plan in the list", () => [...d.querySelectorAll(".list a")].find((a) => a.textContent === "Private plan"))
   click(w, privateLink)
   await waitFor("the private plan's screen", () => d.querySelector("h2")?.textContent === "Private plan")
@@ -617,7 +617,7 @@ test("Today shows missed, looks-done and rest days; the user confirms, unlinks, 
   const card = (title) => [...d.querySelectorAll(".item")].find((li) => li.textContent.includes(title))
   const inCard = (title, text) => [...card(title).querySelectorAll("button")].find((b) => b.textContent.trim() === text)
 
-  await waitFor("today's tempo workout as a suggestion", () => card("Tempo intervals")?.textContent.includes("Looks done: 07:00 · Run · 8.00 km · 45:00"))
+  await waitFor("today's tempo workout as a suggestion", () => card("Tempo intervals")?.textContent.includes("Looks done") && card("Tempo intervals").textContent.includes("07:00 · Run · 8.00 km · 45:00"))
   assert.ok(card("Easy shake-out").textContent.includes("Missed"), "yesterday's workout without a run is missed")
   assert.ok(card("Recovery day").textContent.includes("Rest day"))
   assert.deepEqual(await matches(), [], "a suggestion is not stored")
@@ -629,7 +629,7 @@ test("Today shows missed, looks-done and rest days; the user confirms, unlinks, 
   assert.equal(first.activity, "todayact0000001")
   assert.equal(first.workout, "todaywork000002")
   assert.equal(first.assignment, "todayasg0000001")
-  await waitFor("done, confirmed", () => card("Tempo intervals").textContent.includes("Done: 07:00") && inCard("Tempo intervals", "Unlink"))
+  await waitFor("done, confirmed", () => card("Tempo intervals").querySelector(".status-done")?.textContent === "Done" && card("Tempo intervals").textContent.includes("07:00") && inCard("Tempo intervals", "Unlink"))
 
   // Unlink it: the row is removed on the server and the suggestion returns.
   click(w, inCard("Tempo intervals", "Unlink"))
@@ -651,7 +651,7 @@ test("Today shows missed, looks-done and rest days; the user confirms, unlinks, 
   await waitFor("the list with yesterday's run", () => d.body.textContent.includes("Which activity was it?") && d.body.textContent.includes("18:00 · Run"))
   click(w, [...d.querySelectorAll(".choices button")].find((b) => b.textContent === "This one"))
   await waitFor("the second match on the server", async () => (await matches()).some((m) => m.activity === "todayact0000002" && m.workout === "todaywork000001"))
-  await waitFor("done by hand", () => card("Easy shake-out").textContent.includes("Done: 18:00"))
+  await waitFor("done by hand", () => card("Easy shake-out").querySelector(".status-done")?.textContent === "Done" && card("Easy shake-out").textContent.includes("18:00"))
   assert.equal((await matches()).length, 2)
   w.close()
 })
