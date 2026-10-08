@@ -143,12 +143,12 @@
   }
 }
 
-/* Plan calendar (ADR 0043, 0045): M3 roles for the phases and the training intensity, which M3 has no roles of
-   its own for. */
+/* Plan calendar (ADR 0043, 0045, 0063): M3 roles for the phases and the training intensity, which M3 has no roles
+   of its own for. Every phase band has the same light container; the band titles tell them apart. */
 :root {
   --phase-base: var(--md-sys-color-surface-container-low);
-  --phase-pre: var(--md-sys-color-surface-container-high);
-  --phase-competition: var(--md-sys-color-surface-container-highest);
+  --phase-pre: var(--md-sys-color-surface-container-low);
+  --phase-competition: var(--md-sys-color-surface-container-low);
   --selected: var(--md-sys-color-secondary-container);
   /* Training intensity has colours of its own (ADR 0061): M3 custom colours, green, amber and red, harmonized toward
      the primary by Google's material-color-utilities (customColor, blend). Not the error role: hard is not wrong. */

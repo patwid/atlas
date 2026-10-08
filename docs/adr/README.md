@@ -48,7 +48,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0042 | [Run the test suites as flake checks](0042-ci-through-flake-checks.md) | Accepted |
 | 0043 | [Plan phases, a weekly distance goal, week intensity and a calendar view](0043-plan-phases-goal-and-calendar.md) | Proposed |
 | 0044 | [Style the app after Material Design 3, by hand](0044-material-design-3-styling.md) | Accepted (colors superseded by 0045) |
-| 0045 | [Use Material Design 3's baseline colors only](0045-material-baseline-colors.md) | Accepted (intensity changed by 0061) |
+| 0045 | [Use Material Design 3's baseline colors only](0045-material-baseline-colors.md) | Accepted (intensity changed by 0061, phase bands by 0063) |
 | 0046 | [Name buttons after Material Design 3 and drop the danger button](0046-material-button-names.md) | Accepted |
 | 0047 | [Use more Material Design 3 components](0047-more-material-components.md) | Accepted |
 | 0048 | [Material back button, progress indicators and status chips](0048-material-navigation-progress-status.md) | Accepted |
@@ -66,3 +66,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0060 | [Material window size classes, the FAB in the rail, and Settings as list-detail](0060-window-size-classes-and-list-detail.md) | Accepted |
 | 0061 | [Harmonized custom colours for training intensity](0061-harmonized-intensity-colours.md) | Accepted |
 | 0062 | [Material review, remaining items: a choice dialog, chips, the phone calendar, the medium app bar](0062-material-review-remaining-items.md) | Accepted |
+| 0063 | [One background for all phase bands](0063-one-colour-for-phase-bands.md) | Accepted |

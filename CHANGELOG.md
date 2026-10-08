@@ -75,6 +75,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - The layout follows Material's window size classes: the navigation rail from 600px with the floating action button at its top, and Settings' list and section side by side from 840px (ADR 0060).
 - Training intensity is green, amber and red again, as Material custom colours harmonized with the purple scheme, instead of using the error colour for hard workouts (ADR 0061).
 - Choosing the activity for a workout on Today is a dialog; the calendar on a phone keeps the week's label in view and makes empty days smaller; plan and athlete pages have the larger app bar that shrinks on scroll (ADR 0062).
+- All phase bands in the plan calendar have the same light background as the base phase (ADR 0063).
 - CI builds the flake's checks (`atlas-app`, `gleam-test`, `backend-test`, `frontend-js-test`) offline instead of running the test scripts in `nix develop`; `nix flake check` runs them locally, and a suite whose source is unchanged is not run again. `test-frontend-js.sh` accepts `ATLAS_NPM_INSTALL=0` (ADR 0042).
 
 ### Fixed
