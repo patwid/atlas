@@ -11,8 +11,8 @@ import atlas/random
 import atlas/records
 import atlas/route
 import atlas/store
-import atlas/ui/badge
 import atlas/ui/button
+import atlas/ui/chip
 import atlas/ui/choice
 import atlas/ui/date_picker
 import atlas/ui/empty
@@ -398,10 +398,10 @@ fn row_view(row: Row, context: Context) -> Element(Msg) {
   html.li([], [
     html.div([], [
       html.strong([], [html.text(title(row))]),
-      html.span([class("badges")], [
-        source_badge(a.source),
+      chip.row([
+        source_chip(a.source),
         case row.updated {
-          "" -> badge.with_icon(icon.CloudUpload, "Not synced yet")
+          "" -> chip.with_icon(icon.CloudUpload, "Not synced yet")
           _ -> element.none()
         },
       ]),
@@ -446,12 +446,12 @@ fn title(row: Row) -> String {
 }
 
 /// Where an activity came from: entered by hand, or from a connected service (ADR 0050).
-fn source_badge(source: Source) -> Element(Msg) {
+fn source_chip(source: Source) -> Element(Msg) {
   case source {
-    activity.Manual -> badge.with_icon(icon.EditNote, source_label(source))
+    activity.Manual -> chip.with_icon(icon.EditNote, source_label(source))
     activity.Strava | activity.Garmin ->
-      badge.with_icon(icon.Link, source_label(source))
-    activity.Fit -> badge.badge(source_label(source))
+      chip.with_icon(icon.Link, source_label(source))
+    activity.Fit -> chip.label(source_label(source))
   }
 }
 

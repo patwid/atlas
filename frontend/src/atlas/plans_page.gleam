@@ -10,8 +10,8 @@ import atlas/random
 import atlas/records
 import atlas/route
 import atlas/store
-import atlas/ui/badge
 import atlas/ui/button
+import atlas/ui/chip
 import atlas/ui/choice
 import atlas/ui/empty
 import atlas/ui/error
@@ -415,7 +415,7 @@ pub fn view_detail_with(
       html.section([class("plans")], [
         form_view(model, model.mode == Editing(id), "Edit plan"),
         html.div([], [
-          badges(found),
+          chips(found),
           case found.description {
             "" -> element.none()
             text -> html.p([class("description")], [html.text(text)])
@@ -522,7 +522,7 @@ fn plan_list(
         html.a([attribute.href(route.to_path(route.Plan(p.id)))], [
           html.text(p.title),
         ]),
-        badges(p),
+        chips(p),
         case shared_by(p) {
           Some(name) ->
             html.p([class("muted")], [html.text("Shared by " <> name)])
@@ -537,14 +537,14 @@ fn plan_list(
   )
 }
 
-fn badges(p: Plan) -> Element(Msg) {
-  html.span([class("badges")], [
+fn chips(p: Plan) -> Element(Msg) {
+  chip.row([
     case p.visibility {
-      plan.Public -> badge.with_icon(icon.Public, "Public")
+      plan.Public -> chip.with_icon(icon.Public, "Public")
       plan.Private -> element.none()
     },
     case p.updated {
-      "" -> badge.with_icon(icon.CloudUpload, "Not synced yet")
+      "" -> chip.with_icon(icon.CloudUpload, "Not synced yet")
       _ -> element.none()
     },
   ])

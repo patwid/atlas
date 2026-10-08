@@ -70,3 +70,9 @@ pub fn sync_problems_are_a_badge_on_the_settings_tab_test() {
   assert string.contains(html, "aria-label=\"3 sync problems\"")
   assert !string.contains(html_of(frame(route.Today)), "nav-badge")
 }
+
+pub fn a_plan_or_athlete_page_has_the_medium_app_bar_test() {
+  assert string.contains(html_of(frame(route.Plan("p1"))), "bar bar-medium")
+  assert string.contains(html_of(frame(route.Athlete("a1"))), "bar bar-medium")
+  assert !string.contains(html_of(frame(route.Plans)), "bar-medium")
+}

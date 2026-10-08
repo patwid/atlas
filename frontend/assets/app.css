@@ -543,15 +543,14 @@ label {
 .list a:hover { text-decoration: underline; }
 .list p { margin: 0.125rem 0 0; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; color: var(--md-sys-color-on-surface-variant); }
 .list .actions { margin-top: 0.5rem; }
-.choices li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-.badges { margin-left: 0.5rem; }
-.badge {
+.chip-row { margin-left: 0.5rem; }
+.label-chip {
   gap: 0.25rem; display: inline-flex; align-items: center; height: 1.5rem; padding: 0 0.5rem; margin-right: 0.25rem;
   border: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-small);
   color: var(--md-sys-color-on-surface-variant); font: 500 0.75rem/1rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
   vertical-align: middle;
 }
-.badge .icon { width: 1rem; height: 1rem; margin-left: -0.125rem; }
+.label-chip .icon { width: 1rem; height: 1rem; margin-left: -0.125rem; }
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 1rem; }
 /* Today's state of a workout (ADR 0048): an assist-chip-shaped label in the color of its kind, then details. */
 .status { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; margin: 0.5rem 0; }
@@ -597,7 +596,7 @@ main:has(.plan-calendar), body:has(.plan-calendar) .bar-content { max-width: 80r
 .calendar-week {
   display: grid; grid-template-columns: 1fr; gap: 1px; background: var(--md-sys-color-outline-variant);
   border: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-medium);
-  overflow: hidden; margin-bottom: 0.375rem;
+  overflow: clip; margin-bottom: 0.375rem; /* clip, not hidden: hidden would stop the sticky week label */
 }
 .calendar-week.selected { border-color: var(--md-sys-color-primary); box-shadow: 0 0 0 1px var(--md-sys-color-primary); }
 .week-label {
@@ -1055,4 +1054,38 @@ html[data-scrolled] .md-tab-bar { background: var(--md-sys-color-surface-contain
   .list-detail > .list-pane { position: sticky; top: 5rem; }
   body:has(.list-detail) .up-link { display: none; }
 }
+
+/* A simple dialog of choices (ADR 0062): each row is a choice, taken at once. */
+.choice-dialog .choices { list-style: none; margin: 0 -1.5rem 1rem; padding: 0; }
+.choice-row {
+  position: relative; display: flex; align-items: center; gap: 1rem; width: 100%; min-height: 3.5rem; padding: 0.5rem 1.5rem;
+  border: 0; background: none; cursor: pointer; text-align: left; isolation: isolate;
+  color: var(--md-sys-color-on-surface); font: 400 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
+}
+.choice-row::before { content: ""; position: absolute; inset: 0; z-index: -1; background: currentColor; opacity: 0; }
+.choice-row:hover::before { opacity: var(--md-sys-state-hover); }
+.choice-row:focus-visible { outline: var(--focus-ring); outline-offset: -3px; }
+.choice-row .icon { color: var(--md-sys-color-on-surface-variant); }
+
+/* The calendar on a phone (ADR 0062): a week's label stays under the app bar and the plan's tabs while its days
+   scroll by, and a day without workouts takes less room. */
+@media (max-width: 52.4375rem) {
+  .calendar-week .week-label { position: sticky; top: 7rem; z-index: 1; }
+  .calendar-day:not(:has(.workout)) { min-height: 0; padding-top: 0.125rem; padding-bottom: 0.125rem; }
+  .calendar-day:not(:has(.workout)) .day-name { opacity: 0.7; }
+}
+
+/* M3's medium app bar (ADR 0062) on a plan's or athlete's page: the name on its own line in headline-medium, under
+   the back button and the actions; once the page scrolls it is the small bar again. */
+.bar-medium .bar-content { flex-wrap: wrap; row-gap: 0; }
+.bar-medium h1 {
+  order: 1; flex-basis: 100%; padding: 0.25rem 0 0.5rem;
+  font-size: 1.75rem; line-height: 2.25rem;
+  transition: font-size var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial);
+}
+.bar-medium .bar-content > :not(h1):not(.up-link) { margin-left: auto; }
+.bar-medium .bar-content > :not(h1):not(.up-link) ~ :not(h1) { margin-left: 0; }
+html[data-scrolled] .bar-medium .bar-content { flex-wrap: nowrap; }
+html[data-scrolled] .bar-medium h1 { order: 0; flex-basis: auto; padding: 0; font-size: 1.375rem; line-height: 1.75rem; }
+@media (prefers-reduced-motion: reduce) { .bar-medium h1 { transition: none; } }
 

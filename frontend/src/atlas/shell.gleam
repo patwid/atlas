@@ -35,41 +35,54 @@ pub type Frame(msg) {
 
 pub fn view(frame: Frame(msg), page: Element(msg)) -> Element(msg) {
   html.div([class("shell")], [
-    html.header([class("bar")], [
-      html.div([class("bar-content")], [
-        up(frame.route),
-        html.h1([], [html.text(frame.title)]),
-        frame.actions,
-        case frame.online {
-          True -> element.none()
-          // An icon rather than a banner (ADR 0055): being offline is ordinary for this app, so it is shown
-          // quietly, and a snackbar says what it means when it happens or when the icon is pressed.
-          False ->
-            html.button(
+    // A plan's or an athlete's page has M3's medium app bar (ADR 0062): its name on a line of its own, in a larger
+    // size, until the page scrolls and the bar becomes the small one.
+    html.header(
+      [
+        class("bar"),
+        attribute.classes([
+          #("bar-medium", case frame.route {
+            route.Plan(_) | route.Athlete(_) -> True
+            _ -> False
+          }),
+        ]),
+      ],
+      [
+        html.div([class("bar-content")], [
+          up(frame.route),
+          html.h1([], [html.text(frame.title)]),
+          frame.actions,
+          case frame.online {
+            True -> element.none()
+            // An icon rather than a banner (ADR 0055): being offline is ordinary for this app, so it is shown
+            // quietly, and a snackbar says what it means when it happens or when the icon is pressed.
+            False ->
+              html.button(
+                [
+                  attribute.type_("button"),
+                  class("md-icon-button offline-indicator"),
+                  attribute.aria_label("Offline. What does this mean?"),
+                  attribute.title("Offline"),
+                  event.on_click(frame.on_offline_info),
+                ],
+                [icon.view(icon.CloudOff)],
+              )
+          },
+        ]),
+        case frame.syncing {
+          True ->
+            html.div(
               [
-                attribute.type_("button"),
-                class("md-icon-button offline-indicator"),
-                attribute.aria_label("Offline. What does this mean?"),
-                attribute.title("Offline"),
-                event.on_click(frame.on_offline_info),
+                class("md-linear-progress"),
+                attribute.role("progressbar"),
+                attribute.aria_label("Syncing"),
               ],
-              [icon.view(icon.CloudOff)],
+              [],
             )
+          False -> element.none()
         },
-      ]),
-      case frame.syncing {
-        True ->
-          html.div(
-            [
-              class("md-linear-progress"),
-              attribute.role("progressbar"),
-              attribute.aria_label("Syncing"),
-            ],
-            [],
-          )
-        False -> element.none()
-      },
-    ]),
+      ],
+    ),
     html.main([attribute.id("main")], [
       // Keyed by the address, so a new page is a new element and fades in (ADR 0051).
       keyed.div([class("page")], [#(route.to_path(frame.route), page)]),

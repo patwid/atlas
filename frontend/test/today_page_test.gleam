@@ -289,7 +289,8 @@ pub fn the_activity_list_offers_that_days_activities_test() {
   let model = Model(..today_page.new(), choosing: Some(wednesday_key))
   let html = html_of(model, inputs([]))
   assert string.contains(html, "Which activity was it?")
-  assert string.contains(html, "This one")
+  assert string.contains(html, "class=\"choice-row\"")
+  assert string.contains(html, "data-open=\"true\"")
   assert string.contains(html, "18:00 · Run")
 }
 

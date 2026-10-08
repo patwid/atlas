@@ -10,8 +10,8 @@ import atlas/plan_schedule
 import atlas/random
 import atlas/records
 import atlas/store
-import atlas/ui/badge
 import atlas/ui/button
+import atlas/ui/chip
 import atlas/ui/choice
 import atlas/ui/error
 import atlas/ui/field
@@ -831,7 +831,7 @@ fn workout_details(row: Row, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
         <> int.to_string(w.day_index % 7 + 1),
       ),
     ]),
-    html.p([], [badge.badge(workout_form.kind_label(w.kind))]),
+    html.p([], [chip.label(workout_form.kind_label(w.kind))]),
     case targets(w) {
       "" -> element.none()
       text -> html.p([], [html.text(text)])

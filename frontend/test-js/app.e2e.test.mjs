@@ -653,7 +653,7 @@ test("Today shows missed, looks-done and rest days; the user confirms, unlinks, 
   await waitFor("the missed workout to offer activities", () => inCard("Easy shake-out", "Link an activity"))
   click(w, inCard("Easy shake-out", "Link an activity"))
   await waitFor("the list with yesterday's run", () => d.body.textContent.includes("Which activity was it?") && d.body.textContent.includes("18:00 · Run"))
-  click(w, [...d.querySelectorAll(".choices button")].find((b) => b.textContent === "This one"))
+  click(w, d.querySelector(".choice-dialog[open] .choice-row"))
   await waitFor("the second match on the server", async () => (await matches()).some((m) => m.activity === "todayact0000002" && m.workout === "todaywork000001"))
   await waitFor("done by hand", () => card("Easy shake-out").querySelector(".status-done")?.textContent === "Done" && card("Easy shake-out").textContent.includes("18:00"))
   assert.equal((await matches()).length, 2)

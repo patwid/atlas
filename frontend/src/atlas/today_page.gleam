@@ -14,8 +14,8 @@ import atlas/route
 import atlas/store
 import atlas/timer
 import atlas/today.{type Inputs, type Item}
-import atlas/ui/badge
 import atlas/ui/button
+import atlas/ui/chip
 import atlas/ui/empty
 import atlas/ui/icon
 import atlas/ui/layout
@@ -25,6 +25,7 @@ import atlas/units
 import atlas/workout_form
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -306,7 +307,7 @@ fn item_view(item: Item, model: Model, inputs: Inputs) -> Element(Msg) {
   html.li([class("item")], [
     html.div([], [
       html.strong([], [html.text(w.title)]),
-      badge.badge(workout_form.kind_label(w.kind)),
+      chip.label(workout_form.kind_label(w.kind)),
       html.span([class("muted")], [
         html.text(
           " · " <> item.plan_title <> " · " <> date.format(item.scheduled.date),
@@ -396,40 +397,56 @@ fn link_button(label: String, msg: Msg) -> Element(Msg) {
   ])
 }
 
+/// Choosing the activity is M3's simple dialog (ADR 0062): the activities are its choices, and a choice is taken
+/// at once. It opens when drawn (`data-open`, see `atlas/ui/interaction`); Escape and Cancel close it.
 fn choosing_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
   let candidates = today.candidates(inputs, item)
-  html.div([class("choosing")], [
-    case candidates {
-      [] ->
-        html.p([class("muted")], [
-          html.text(
-            "You have no activity on "
-            <> date.format(item.scheduled.date)
-            <> ". Add one in Activities first.",
-          ),
-        ])
-      _ ->
-        html.div([], [
-          html.p([], [html.text("Which activity was it?")]),
+  let headline_id = "choose-" <> key.assignment_id <> "-" <> key.workout_id
+  html.dialog(
+    [
+      class("choice-dialog"),
+      attribute.attribute("data-open", "true"),
+      attribute.attribute("aria-labelledby", headline_id),
+      event.on("close", decode.success(CancelClicked)),
+    ],
+    [
+      html.h2([class("dialog-headline"), attribute.id(headline_id)], [
+        html.text("Which activity was it?"),
+      ]),
+      case candidates {
+        [] ->
+          html.p([class("dialog-supporting")], [
+            html.text(
+              "You have no activity on "
+              <> date.format(item.scheduled.date)
+              <> ". Add one in Activities first.",
+            ),
+          ])
+        _ ->
           html.ul(
-            [class("list choices")],
+            [class("choices")],
             list.map(candidates, fn(row) {
               html.li([], [
-                html.span([], [html.text(describe(row, inputs))]),
-                button.tonal(
+                html.button(
                   [
                     attribute.type_("button"),
+                    class("choice-row"),
                     event.on_click(PickClicked(key, row.activity.id)),
                   ],
-                  [html.text("This one")],
+                  [
+                    icon.view(icon.DirectionsRun),
+                    html.text(describe(row, inputs)),
+                  ],
                 ),
               ])
             }),
-          ),
-        ])
-    },
-    link_button("Cancel", CancelClicked),
-  ])
+          )
+      },
+      html.form([attribute.attribute("method", "dialog"), class("actions")], [
+        button.text([attribute.type_("submit")], [html.text("Cancel")]),
+      ]),
+    ],
+  )
 }
 
 fn summary(inputs: Inputs, activity_id: String) -> String {
