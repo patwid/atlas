@@ -34,12 +34,12 @@ pub fn reads_a_plan_test() {
 
 pub fn reads_a_plans_phases_goal_and_week_intensities_test() {
   let json =
-    "{\"id\":\"p4\",\"title\":\"Season\",\"base_weeks\":6,\"pre_competition_weeks\":4,\"competition_weeks\":2,\"weekly_distance_m\":45000,\"week_intensity\":[\"low\",\"extreme\",\"\",null,\"\",\"\",\"high\"]}"
+    "{\"id\":\"p4\",\"title\":\"Season\",\"base_weeks\":6,\"pre_competition_weeks\":4,\"competition_weeks\":2,\"weekly_distance_m\":45000,\"week_intensity\":[0.3,\"hard\",null,1,1.5,-1,0.85]}"
   let assert Ok(read) = records.plan(parse(json))
   assert read.phases == plan.Phases(6, 4, 2)
   assert read.weekly_distance_m == Some(45_000.0)
   assert read.week_intensity
-    == dict.from_list([#(1, plan.Low), #(7, plan.High)])
+    == dict.from_list([#(1, 0.3), #(4, 1.0), #(5, 1.0), #(6, 0.0), #(7, 0.85)])
 }
 
 pub fn an_empty_week_intensity_is_read_as_none_set_test() {

@@ -10,7 +10,7 @@ migrate(
     for (const name of WEEKS) plans.fields.add(new NumberField({ name, min: 0, max: 52, onlyInt: true }))
     // metres, up to 1000 km
     plans.fields.add(new NumberField({ name: "weekly_distance_m", min: 0, max: 1000000 }))
-    // one level per week in week order, "" for none: ["", "high"] makes week 2 hard ("low", "medium" or "high")
+    // one intensity per week in week order, 0.0 to 1.0, null for none: [null, 0.8] puts week 2 at 80%
     plans.fields.add(new JSONField({ name: "week_intensity", maxSize: 10000 }))
     app.save(plans)
   },

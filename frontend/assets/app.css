@@ -200,6 +200,15 @@ main:has(.plan-calendar), body:has(.plan-calendar) .bar-content { max-width: 80r
 .intensity-low { color: var(--intensity-low); }
 .intensity-medium { color: var(--intensity-medium); }
 .intensity-high { color: var(--intensity-high); }
+.intensity-setting { margin-top: 0.5rem; }
+.intensity-heading { display: flex; justify-content: space-between; align-items: baseline; }
+.intensity-heading label { margin: 0; }
+.intensity-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+.intensity-control { display: flex; align-items: center; gap: 0.5rem; }
+.intensity-control input[type="range"] { flex: 1; min-width: 0; accent-color: var(--bs-primary); }
+/* A week without an intensity: the slider sits at 0 but looks inactive until it is moved. */
+.intensity-control input[type="range"].unset { opacity: 0.45; }
+.intensity-meter { margin-top: 0.25rem; }
 .calendar-sidebar { display: grid; gap: 0.75rem; }
 .sidebar-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem 1rem; }
 .sidebar-panel h3 { font-size: 1rem; margin: 0 0 0.25rem; overflow-wrap: anywhere; }

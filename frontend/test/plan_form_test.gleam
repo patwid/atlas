@@ -114,29 +114,26 @@ pub fn changed_settings_send_only_what_changed_test() {
 
 pub fn setting_a_week_intensity_writes_all_of_them_test() {
   let p = existing()
-  assert plan_form.intensity_fields(p, 3, Some(plan.High))
-    == dict.from_list([#("week_intensity", "[\"\",\"\",\"high\"]")])
+  assert plan_form.intensity_fields(p, 3, Some(0.8))
+    == dict.from_list([#("week_intensity", "[null,null,0.8]")])
   let with_two =
-    plan.Plan(
-      ..p,
-      week_intensity: dict.from_list([#(10, plan.Low), #(3, plan.High)]),
-    )
-  assert plan_form.intensity_fields(with_two, 2, Some(plan.Medium))
-    == dict.from_list([
-      #(
-        "week_intensity",
-        "[\"\",\"medium\",\"high\",\"\",\"\",\"\",\"\",\"\",\"\",\"low\"]",
-      ),
-    ])
+    plan.Plan(..p, week_intensity: dict.from_list([#(5, 0.3), #(3, 0.8)]))
+  assert plan_form.intensity_fields(with_two, 2, Some(0.55))
+    == dict.from_list([#("week_intensity", "[null,0.55,0.8,null,0.3]")])
   assert plan_form.intensity_fields(with_two, 3, None)
-    == dict.from_list([
-      #(
-        "week_intensity",
-        "[\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"low\"]",
-      ),
-    ])
-  assert plan_form.intensity_fields(with_two, 3, Some(plan.High)) == dict.new()
+    == dict.from_list([#("week_intensity", "[null,null,null,null,0.3]")])
+  assert plan_form.intensity_fields(with_two, 3, Some(0.8)) == dict.new()
   assert plan_form.intensity_fields(with_two, 4, None) == dict.new()
+}
+
+pub fn an_intensity_stays_within_0_and_1_in_whole_percent_test() {
+  let p = existing()
+  assert plan_form.intensity_fields(p, 1, Some(1.7))
+    == dict.from_list([#("week_intensity", "[1]")])
+  assert plan_form.intensity_fields(p, 1, Some(0.123))
+    == dict.from_list([#("week_intensity", "[0.12]")])
+  assert plan_form.intensity_fields(p, 1, Some(-0.2))
+    == dict.from_list([#("week_intensity", "[0]")])
 }
 
 pub fn an_edit_sends_only_what_changed_test() {

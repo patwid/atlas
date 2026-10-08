@@ -3,6 +3,7 @@
 
 import atlas/date.{type Date}
 import gleam/dict.{type Dict}
+import gleam/float
 import gleam/int
 import gleam/list
 import gleam/option.{type Option}
@@ -36,8 +37,8 @@ pub type Plan {
     updated: String,
     phases: Phases,
     weekly_distance_m: Option(Float),
-    /// By week number, from 1. Weeks without an entry have no intensity set.
-    week_intensity: Dict(Int, Intensity),
+    /// By week number, from 1: 0.0 (easiest) to 1.0 (hardest). Weeks without an entry have no intensity set.
+    week_intensity: Dict(Int, Float),
   )
 }
 
@@ -51,12 +52,6 @@ pub type Phase {
 /// How many weeks each phase lasts. All 0 for a plan made before phases existed: it has no phases.
 pub type Phases {
   Phases(base_weeks: Int, pre_competition_weeks: Int, competition_weeks: Int)
-}
-
-pub type Intensity {
-  Low
-  Medium
-  High
 }
 
 pub type Workout {
@@ -138,29 +133,14 @@ pub fn phase_label(phase: Phase) -> String {
   }
 }
 
-pub fn intensity_to_string(intensity: Intensity) -> String {
-  case intensity {
-    Low -> "low"
-    Medium -> "medium"
-    High -> "high"
-  }
+/// An intensity within 0.0 to 1.0, to whole percent.
+pub fn intensity(value: Float) -> Float {
+  int.to_float(float.round(float.clamp(value, 0.0, 1.0) *. 100.0)) /. 100.0
 }
 
-pub fn intensity_from_string(text: String) -> Result(Intensity, Nil) {
-  case text {
-    "low" -> Ok(Low)
-    "medium" -> Ok(Medium)
-    "high" -> Ok(High)
-    _ -> Error(Nil)
-  }
-}
-
-pub fn intensity_label(intensity: Intensity) -> String {
-  case intensity {
-    Low -> "Low"
-    Medium -> "Medium"
-    High -> "High"
-  }
+/// `70%`
+pub fn intensity_percent(value: Float) -> String {
+  int.to_string(float.round(value *. 100.0)) <> "%"
 }
 
 pub fn visibility_to_string(visibility: Visibility) -> String {

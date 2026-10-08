@@ -55,14 +55,14 @@ pub fn phases_goal_and_intensities_are_copied_test() {
       ..source(),
       phases: plan.Phases(6, 3, 2),
       weekly_distance_m: option.Some(50_000.0),
-      week_intensity: dict.from_list([#(2, plan.High)]),
+      week_intensity: dict.from_list([#(2, 0.75)]),
     )
   let copy = plan_copy.build(source, [], "me", fn() { "x" })
   assert dict.get(copy.plan_fields, "base_weeks") == Ok("6")
   assert dict.get(copy.plan_fields, "competition_weeks") == Ok("2")
   assert dict.get(copy.plan_fields, "weekly_distance_m")
     == Ok(outbox.field_float("weekly_distance_m", 50_000.0).1)
-  assert dict.get(copy.plan_fields, "week_intensity") == Ok("[\"\",\"high\"]")
+  assert dict.get(copy.plan_fields, "week_intensity") == Ok("[null,0.75]")
 }
 
 pub fn a_public_plan_is_copied_as_private_test() {

@@ -32,7 +32,8 @@ We take option 1.
 
 - **Schema** (migration `1760000700_plan_phases.js`): `plans` gets `base_weeks`, `pre_competition_weeks`,
   `competition_weeks` (whole numbers 0-52), `weekly_distance_m` (metres, 0-1 000 000, 0 = no goal) and
-  `week_intensity` (JSON: one level per week in week order, `""` for none, so `["", "high"]` makes week 2 hard; a
+  `week_intensity` (JSON: one intensity per week in week order, 0.0 to 1.0, `null` for none, so `[null, 0.8]` puts
+  week 2 at 80%; a
   list rather than an object keyed by week, because the stdlib's decoder accepts plain objects only from the app's
   own JavaScript realm, and IndexedDB need not hand back objects from it). None is required, so app versions that do not know
   them keep working.
@@ -43,8 +44,10 @@ We take option 1.
   weeks "after the competition phase", so shortening a phase never hides a workout.
 - **Weekly distance goal**: one number for the whole plan, typed in km. Each week shows its planned distance
   against it.
-- **Intensity**: per week, one of low, medium or high, or not set. *(Proposed: the owner may want other levels,
-  such as a recovery week.)* It is a label for now; it does not change the goal or the workouts.
+- **Intensity**: per week, a value from 0.0 to 1.0 (shown as a percentage), or not set. The owner sets it with a
+  range slider in steps of 5%; it is stored to whole percent and written when the slider is let go, not while it
+  is dragged, so one move is one plan edit. In the calendar it shows as a percentage, colored as easy (below 40%),
+  moderate (below 70%) or hard. It is a value for now; it does not change the goal or the workouts.
 - **Calendar**: the plan screen shows the workouts as a calendar: one row per week, seven day columns ("Day 1" to
   "Day 7", because weekdays depend on the start date, 0022), grouped in bands per phase. On a phone the days of a
   week stack. Next to it (below it on a phone) a sidebar shows, from top to bottom: the workout form when adding

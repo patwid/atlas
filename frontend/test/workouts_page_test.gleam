@@ -4,9 +4,9 @@ import atlas/workout_form.{type Row, Form, Row}
 import atlas/workouts_page.{
   AddClicked, Adding, BaseWeeksChanged, Browsing, Create, DayChanged, Delete,
   DeleteClicked, DeleteConfirmed, Edit, EditClicked, EditPlan, Editing,
-  GoalChanged, IntensityChanged, KindChanged, Model, SettingsEditClicked,
-  SettingsSubmitted, Submitted, TitleChanged, Viewing, WeekChanged, WeekSelected,
-  WorkoutSelected, WorkoutsRead,
+  GoalChanged, IntensityChanged, IntensityCleared, IntensityInput, KindChanged,
+  Model, SettingsEditClicked, SettingsSubmitted, Submitted, TitleChanged,
+  Viewing, WeekChanged, WeekSelected, WorkoutSelected, WorkoutsRead,
 }
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -55,7 +55,7 @@ fn the_plan() -> plan.Plan {
     ..plan.new("p1", "u1", "10k", "", plan.Private, "T-p1"),
     phases: plan.Phases(2, 1, 1),
     weekly_distance_m: Some(40_000.0),
-    week_intensity: dict.from_list([#(2, plan.High)]),
+    week_intensity: dict.from_list([#(2, 0.8)]),
   )
 }
 
@@ -196,7 +196,9 @@ pub fn nothing_can_be_changed_without_permission_test() {
   assert attempt(AddClicked(1, 1)) == #(True, [])
   assert attempt(EditClicked("a")) == #(True, [])
   assert attempt(DeleteConfirmed("a")) == #(True, [])
-  assert attempt(IntensityChanged("low")) == #(True, [])
+  assert attempt(IntensityChanged("0.3")) == #(True, [])
+  assert attempt(IntensityInput("0.3")) == #(True, [])
+  assert attempt(IntensityCleared) == #(True, [])
   assert attempt(SettingsEditClicked) == #(True, [])
 }
 
@@ -271,6 +273,7 @@ pub fn the_calendar_shows_every_phase_week_with_its_intensity_test() {
   assert string.contains(html, "Week 4")
   assert !string.contains(html, "Week 5")
   assert string.contains(html, "intensity-high")
+  assert string.contains(html, ">80%<")
 }
 
 pub fn the_sidebar_shows_the_selected_week_against_the_goal_test() {
@@ -282,7 +285,7 @@ pub fn the_sidebar_shows_the_selected_week_against_the_goal_test() {
   let html = html_of(model, False)
   assert string.contains(html, "Base, week 2")
   assert string.contains(html, "16.00 km of 40.00 km (40%)")
-  assert string.contains(html, "High")
+  assert string.contains(html, ">80%<")
   assert string.contains(html, "aria-valuenow=\"40\"")
 }
 
@@ -296,24 +299,44 @@ pub fn selecting_a_week_or_a_workout_shows_it_in_the_sidebar_test() {
   assert actions == []
 }
 
-pub fn the_intensity_of_the_selected_week_is_written_to_the_plan_test() {
+pub fn the_intensity_of_the_selected_week_is_written_when_the_slider_is_let_go_test() {
   let model = Model(..with_rows([]), selected_week: 3)
-  let #(_, actions) = update(model, IntensityChanged("low"))
+  let #(dragging, actions) = update(model, IntensityInput("0.35"))
+  assert actions == []
+  assert dragging.intensity_draft == Some(#(3, 0.35))
+  assert string.contains(html_of(dragging, True), ">35%<")
+  let #(done, actions) = update(dragging, IntensityChanged("0.35"))
+  assert done.intensity_draft == None
   assert actions
     == [
       EditPlan(
         "p1",
-        dict.from_list([#("week_intensity", "[\"\",\"high\",\"low\"]")]),
+        dict.from_list([#("week_intensity", "[null,0.8,0.35]")]),
         "T-p1",
       ),
     ]
-  let #(_, actions) =
-    update(Model(..model, selected_week: 2), IntensityChanged(""))
+  let week_two = Model(..model, selected_week: 2)
+  let #(_, actions) = update(week_two, IntensityCleared)
   assert actions
     == [EditPlan("p1", dict.from_list([#("week_intensity", "[]")]), "T-p1")]
-  let #(_, actions) =
-    update(Model(..model, selected_week: 2), IntensityChanged("high"))
+  let #(_, actions) = update(week_two, IntensityChanged("0.8"))
   assert actions == []
+  let #(_, actions) = update(week_two, IntensityChanged("hard"))
+  assert actions == []
+}
+
+pub fn the_slider_shows_the_week_and_others_see_a_bar_test() {
+  let model = Model(..with_rows([]), selected_week: 2)
+  let html = html_of(model, True)
+  assert string.contains(html, "type=\"range\"")
+  assert string.contains(html, "aria-valuetext=\"80%\"")
+  assert string.contains(html, ">Clear<")
+  let unset = html_of(Model(..model, selected_week: 1), True)
+  assert string.contains(unset, "Not set")
+  assert !string.contains(unset, ">Clear<")
+  let read_only = html_of(model, False)
+  assert !string.contains(read_only, "type=\"range\"")
+  assert string.contains(read_only, "width:80%")
 }
 
 pub fn the_plan_settings_are_edited_in_the_sidebar_test() {

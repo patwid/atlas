@@ -44,7 +44,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Coach's view: an Athletes tab for coaches, with each athlete's last six weeks (planned, done, missed, distances), the plans they follow and their latest activities, read-only (ADR 0031).
 - Strava's official "Connect with Strava" button and "Powered by Strava" logo (unchanged, checked by checksum), and a "View on Strava" link on Strava activities (ADR 0027).
 - GitHub Actions CI (`.github/workflows/ci.yml`): builds the Nix package and runs the Gleam, backend and frontend-JS test suites on every push and pull request (ADR 0041).
-- Plan phases (base, pre-competition, competition; 4 weeks each by default), a weekly distance goal and an intensity per week (low, medium, high). The plan screen is now a calendar, weeks as rows and days as columns in bands per phase, with a sidebar for the open workout, the selected week against the goal, and the plan's settings (ADR 0043).
+- Plan phases (base, pre-competition, competition; 4 weeks each by default), a weekly distance goal and an intensity per week (0–100%, set with a slider). The plan screen is now a calendar, weeks as rows and days as columns in bands per phase, with a sidebar for the open workout, the selected week against the goal, and the plan's settings (ADR 0043).
 
 ### Changed
 - Strava's redirect now returns to `/settings?strava=<result>` (ADR 0027).

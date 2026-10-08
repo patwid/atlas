@@ -272,9 +272,10 @@ test("the owner sets a week's intensity and the plan's phases and goal in the si
   // Select week 2 and make it a hard week.
   click(w, [...d.querySelectorAll(".week-label")].find((b) => b.textContent.startsWith("Week 2")))
   await waitFor("week 2 in the sidebar", () => d.querySelector(".calendar-sidebar")?.textContent.includes("Base, week 2"))
-  choose(w, d.querySelector("#week-intensity"), "high")
-  await waitFor("the intensity on the server", async () => (await onServer()).week_intensity?.[1] === "high")
-  await waitFor("the intensity in the calendar", () => d.querySelector(".calendar-week.selected .intensity-high"))
+  assert.equal(d.querySelector("#week-intensity").type, "range")
+  choose(w, d.querySelector("#week-intensity"), "0.8")
+  await waitFor("the intensity on the server", async () => (await onServer()).week_intensity?.[1] === 0.8)
+  await waitFor("the intensity in the calendar", () => d.querySelector(".calendar-week.selected .intensity-high")?.textContent === "80%")
 
   // Set a 40 km goal and a longer base phase.
   click(w, button(w, "Edit settings"))
@@ -288,7 +289,7 @@ test("the owner sets a week's intensity and the plan's phases and goal in the si
   })
   await waitFor("the week against the goal", () => d.querySelector(".calendar-sidebar")?.textContent.includes("20.00 km of 40.00 km (50%)"))
   await waitFor("five weeks now", () => d.querySelectorAll(".calendar-week").length === 5)
-  assert.equal((await onServer()).week_intensity[1], "high", "the intensity stays")
+  assert.equal((await onServer()).week_intensity[1], 0.8, "the intensity stays")
   w.close()
 })
 

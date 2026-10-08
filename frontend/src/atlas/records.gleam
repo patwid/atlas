@@ -74,16 +74,19 @@ pub fn plan(record: Dynamic) -> Result(Plan, Nil) {
   })
 }
 
-/// One level per week, in week order (`["", "high"]`: week 2 is hard), or `null` when nothing was set. An
-/// empty or unknown level means "not set", so one odd value does not hide the plan. A list, not an object
-/// keyed by week, because objects from IndexedDB need not come from the app's own JavaScript realm.
-fn week_intensity_decoder() -> Decoder(Dict(Int, plan.Intensity)) {
+/// One intensity (0.0 to 1.0) per week, in week order (`[null, 0.8]`: week 2 is at 80%), or `null` when nothing
+/// was set. `null` or anything that is not a number means "not set", so one odd value does not hide the plan;
+/// numbers out of range are clamped. A list, not an object keyed by week, because objects from IndexedDB need
+/// not come from the app's own JavaScript realm.
+fn week_intensity_decoder() -> Decoder(Dict(Int, Float)) {
   decode.one_of(
-    decode.list(decode.one_of(decode.string, [decode.success("")]))
+    decode.list(
+      decode.one_of(decode.map(number(), Ok), [decode.success(Error(Nil))]),
+    )
       |> decode.map(fn(levels) {
         list.index_fold(levels, dict.new(), fn(acc, level, index) {
-          case plan.intensity_from_string(level) {
-            Ok(intensity) -> dict.insert(acc, index + 1, intensity)
+          case level {
+            Ok(value) -> dict.insert(acc, index + 1, plan.intensity(value))
             Error(Nil) -> acc
           }
         })

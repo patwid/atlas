@@ -58,6 +58,8 @@ pub type Model {
     /// The plan's phases and goal as typed in the sidebar; `None` while they are only shown.
     settings: Option(plan_form.Settings),
     settings_error: Option(String),
+    /// Where the intensity slider of a week is while it is being dragged, before it is let go.
+    intensity_draft: Option(#(Int, Float)),
   )
 }
 
@@ -79,7 +81,11 @@ pub type Msg {
   Submitted
   DeleteClicked(String)
   DeleteConfirmed(String)
+  /// The slider moved; nothing is written until it is let go.
+  IntensityInput(String)
+  /// The slider was let go (or moved with the keyboard): the value is written.
   IntensityChanged(String)
+  IntensityCleared
   SettingsEditClicked
   SettingsCancelClicked
   BaseWeeksChanged(String)
@@ -98,7 +104,17 @@ pub type Action {
 }
 
 pub fn new() -> Model {
-  Model([], False, Browsing, workout_form.empty_for(1, 1), None, 1, None, None)
+  Model(
+    [],
+    False,
+    Browsing,
+    workout_form.empty_for(1, 1),
+    None,
+    1,
+    None,
+    None,
+    None,
+  )
 }
 
 pub fn refresh() -> Effect(Msg) {
@@ -148,7 +164,7 @@ pub fn update(
     WorkoutsRead(Error(Nil)) -> #(model, effect.none(), [])
 
     WeekSelected(week) -> #(
-      Model(..model, selected_week: week),
+      Model(..model, selected_week: week, intensity_draft: None),
       effect.none(),
       [],
     )
@@ -296,21 +312,26 @@ pub fn update(
         _, _ -> #(model, effect.none(), [])
       }
 
-    IntensityChanged(value) ->
-      case can_edit, on_screen {
-        True, Some(p) -> {
-          let level = case plan.intensity_from_string(value) {
-            Ok(level) -> Some(level)
-            Error(Nil) -> None
-          }
-          let fields = plan_form.intensity_fields(p, model.selected_week, level)
-          #(model, effect.none(), case dict.is_empty(fields) {
-            True -> []
-            False -> [EditPlan(p.id, fields, p.updated)]
-          })
-        }
+    IntensityInput(value) ->
+      case can_edit, workout_form.parse_decimal(value) {
+        True, Ok(level) -> #(
+          Model(
+            ..model,
+            intensity_draft: Some(#(model.selected_week, plan.intensity(level))),
+          ),
+          effect.none(),
+          [],
+        )
         _, _ -> #(model, effect.none(), [])
       }
+
+    IntensityChanged(value) ->
+      case workout_form.parse_decimal(value) {
+        Ok(level) -> set_intensity(model, on_screen, can_edit, Some(level))
+        Error(Nil) -> #(model, effect.none(), [])
+      }
+
+    IntensityCleared -> set_intensity(model, on_screen, can_edit, None)
 
     SettingsEditClicked ->
       case can_edit, on_screen {
@@ -368,6 +389,28 @@ pub fn update(
           }
         _, _, _ -> #(model, effect.none(), [])
       }
+  }
+}
+
+fn set_intensity(
+  model: Model,
+  on_screen: Option(Plan),
+  can_edit: Bool,
+  level: Option(Float),
+) -> #(Model, Effect(Msg), List(Action)) {
+  case can_edit, on_screen {
+    True, Some(p) -> {
+      let fields = plan_form.intensity_fields(p, model.selected_week, level)
+      #(
+        Model(..model, intensity_draft: None),
+        effect.none(),
+        case dict.is_empty(fields) {
+          True -> []
+          False -> [EditPlan(p.id, fields, p.updated)]
+        },
+      )
+    }
+    _, _ -> #(model, effect.none(), [])
   }
 }
 
@@ -601,9 +644,15 @@ fn week_row(
   )
 }
 
-fn intensity_chip(level: plan.Intensity) -> Element(Msg) {
-  html.span([class("intensity intensity-" <> plan.intensity_to_string(level))], [
-    html.text(plan.intensity_label(level)),
+/// The percentage, colored by band: easy below 40%, moderate below 70%, hard from there.
+fn intensity_chip(level: Float) -> Element(Msg) {
+  let band = case level {
+    _ if level <. 0.4 -> "low"
+    _ if level <. 0.7 -> "medium"
+    _ -> "high"
+  }
+  html.span([class("intensity intensity-" <> band)], [
+    html.text(plan.intensity_percent(level)),
   ])
 }
 
@@ -774,42 +823,8 @@ fn week_panel(
             ])
           Error(Nil) -> element.none()
         },
+        intensity_view(model, week.number, intensity, can_edit),
         html.dl([class("facts")], [
-          html.dt([], [
-            html.label([attribute.for("week-intensity")], [
-              html.text("Intensity"),
-            ]),
-          ]),
-          html.dd([], [
-            case can_edit {
-              True ->
-                field.select(
-                  [
-                    attribute.id("week-intensity"),
-                    attribute.name("intensity"),
-                    event.on_change(IntensityChanged),
-                  ],
-                  case intensity {
-                    Ok(level) -> plan.intensity_to_string(level)
-                    Error(Nil) -> ""
-                  },
-                  [
-                    #("", "Not set"),
-                    ..list.map([plan.Low, plan.Medium, plan.High], fn(level) {
-                      #(
-                        plan.intensity_to_string(level),
-                        plan.intensity_label(level),
-                      )
-                    })
-                  ],
-                )
-              False ->
-                html.text(case intensity {
-                  Ok(level) -> plan.intensity_label(level)
-                  Error(Nil) -> "Not set"
-                })
-            },
-          ]),
           html.dt([], [html.text("Distance")]),
           html.dd([], [
             html.text(distance_text(week, on_screen.weekly_distance_m)),
@@ -828,6 +843,70 @@ fn week_panel(
       ])
     }
   }
+}
+
+fn intensity_view(
+  model: Model,
+  week: Int,
+  stored: Result(Float, Nil),
+  can_edit: Bool,
+) -> Element(Msg) {
+  let shown = case model.intensity_draft {
+    Some(#(draft_week, value)) if draft_week == week -> Ok(value)
+    _ -> stored
+  }
+  let text = case shown {
+    Ok(value) -> plan.intensity_percent(value)
+    Error(Nil) -> "Not set"
+  }
+  html.div([class("intensity-setting")], [
+    html.div([class("intensity-heading")], [
+      html.label([attribute.for("week-intensity")], [html.text("Intensity")]),
+      html.output([attribute.for("week-intensity"), class("intensity-value")], [
+        html.text(text),
+      ]),
+    ]),
+    case can_edit {
+      False ->
+        case shown {
+          Ok(value) -> intensity_bar(value)
+          Error(Nil) -> element.none()
+        }
+      True ->
+        html.div([class("intensity-control")], [
+          html.input([
+            attribute.id("week-intensity"),
+            attribute.type_("range"),
+            attribute.name("intensity"),
+            attribute.attribute("min", "0"),
+            attribute.attribute("max", "1"),
+            attribute.attribute("step", "0.05"),
+            attribute.value(case shown {
+              Ok(value) -> float.to_string(value)
+              Error(Nil) -> "0"
+            }),
+            attribute.attribute("aria-valuetext", text),
+            attribute.classes([#("unset", shown == Error(Nil))]),
+            event.on_input(IntensityInput),
+            event.on_change(IntensityChanged),
+          ]),
+          case stored {
+            Ok(_) ->
+              button.link(
+                [attribute.type_("button"), event.on_click(IntensityCleared)],
+                [html.text("Clear")],
+              )
+            Error(Nil) -> element.none()
+          },
+        ])
+    },
+  ])
+}
+
+fn intensity_bar(value: Float) -> Element(Msg) {
+  html.div([class("goal-meter intensity-meter")], [
+    html.span([attribute.style("width", plan.intensity_percent(value))], []),
+  ])
 }
 
 fn distance_text(week: plan_schedule.Week, goal: Option(Float)) -> String {

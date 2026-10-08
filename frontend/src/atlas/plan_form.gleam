@@ -4,7 +4,7 @@
 //// sidebar edits on its own too.
 
 import atlas/outbox
-import atlas/plan.{type Intensity, type Phases, type Plan, Phases}
+import atlas/plan.{type Phases, type Plan, Phases}
 import atlas/workout_form
 import gleam/dict
 import gleam/int
@@ -211,14 +211,15 @@ fn settings_changes(
   })
 }
 
-/// The plan's week intensities with one week set to `level`, or cleared with `None`. Empty when that
-/// is what the week has already.
+/// The plan's week intensities with one week set to `level` (0.0 to 1.0, kept to whole percent), or cleared
+/// with `None`. Empty when that is what the week has already.
 pub fn intensity_fields(
   original: Plan,
   week: Int,
-  level: Option(Intensity),
+  level: Option(Float),
 ) -> outbox.Fields {
   let current = dict.get(original.week_intensity, week)
+  let level = option.map(level, plan.intensity)
   case current, level {
     Error(Nil), None -> dict.new()
     Ok(now), Some(wanted) if now == wanted -> dict.new()
@@ -232,18 +233,18 @@ pub fn intensity_fields(
   }
 }
 
-/// One level per week up to the last one set, `""` for a week without one: `["","high"]`.
-pub fn encode_intensities(intensities: dict.Dict(Int, Intensity)) -> String {
+/// One intensity per week up to the last one set, `null` for a week without one: `[null,0.8]`.
+pub fn encode_intensities(intensities: dict.Dict(Int, Float)) -> String {
   let last =
     dict.fold(intensities, 0, fn(highest, week, _) { int.max(highest, week) })
   list.repeat(Nil, last)
   |> list.index_map(fn(_, index) {
     case dict.get(intensities, index + 1) {
-      Ok(level) -> plan.intensity_to_string(level)
-      Error(Nil) -> ""
+      Ok(level) -> json.float(level)
+      Error(Nil) -> json.null()
     }
   })
-  |> json.array(json.string)
+  |> json.preprocessed_array
   |> json.to_string
 }
 
