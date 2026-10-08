@@ -27,9 +27,9 @@ lustre_dev_tools = ">= 2.4.0 and < 3.0.0"
 lang = "en"
 title = "Atlas"
 meta = [
-  # The Material 3 surface color of each scheme (ADR 0044), so the browser's bar blends into the app bar.
-  { name = "theme-color", content = "#faf8ff", media = "(prefers-color-scheme: light)" },
-  { name = "theme-color", content = "#121318", media = "(prefers-color-scheme: dark)" },
+  # The Material 3 surface color of each scheme (ADR 0044, 0045), so the browser's bar blends into the app bar.
+  { name = "theme-color", content = "#fef7ff", media = "(prefers-color-scheme: light)" },
+  { name = "theme-color", content = "#141218", media = "(prefers-color-scheme: dark)" },
   { name = "description", content = "Plan, share and review your running training." },
 ]
 links = [
