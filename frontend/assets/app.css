@@ -293,7 +293,15 @@ dialog[open] { animation: dialog-in 0.25s var(--md-sys-motion-easing); }
 
 /* The frame: a small top app bar, the page, and a navigation bar (a navigation rail on wide screens). */
 .shell { min-height: 100dvh; display: flex; flex-direction: column; }
-.bar { background: var(--md-sys-color-surface); position: sticky; top: 0; z-index: 2; }
+.bar {
+  background: var(--md-sys-color-surface); position: sticky; top: 0; z-index: 2;
+  transition: background-color 0.2s var(--md-sys-motion-easing);
+}
+/* Once the page scrolls under it, the app bar takes a container color (ADR 0051; set by atlas/ui/interaction). */
+html[data-scrolled] .bar { background: var(--md-sys-color-surface-container); }
+/* A new page fades in (ADR 0051). Opacity only: a transform would move the FAB and snackbar while it runs. */
+.page { animation: page-in 0.2s var(--md-sys-motion-easing); }
+@keyframes page-in { from { opacity: 0; } }
 .bar-content {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
   min-height: 4rem; padding: 0.5rem 1rem; padding-top: max(0.5rem, env(safe-area-inset-top));
@@ -491,6 +499,7 @@ main:has(.plan-calendar), body:has(.plan-calendar) .bar-content { max-width: 80r
 .phase-pre { background: var(--phase-pre); }
 .phase-competition { background: var(--phase-competition); }
 .phase-none { border: 1px dashed var(--md-sys-color-outline-variant); }
+.band-title { color: var(--md-sys-color-on-surface-variant); }
 .band-title { font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem; margin: 0.375rem 0.25rem 0.5rem; }
 .calendar-week {
   display: grid; grid-template-columns: 1fr; gap: 1px; background: var(--md-sys-color-outline-variant);
@@ -509,26 +518,28 @@ main:has(.plan-calendar), body:has(.plan-calendar) .bar-content { max-width: 80r
 .calendar-day { background: var(--md-sys-color-surface); padding: 0.25rem 0.375rem; display: grid; grid-template-columns: 3.5rem 1fr; gap: 0.5rem; min-height: 2.25rem; }
 .day-name { color: var(--md-sys-color-on-surface-variant); font-size: 0.8125rem; padding-top: 0.125rem; }
 .day-body { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+/* A workout is a small filled card (ADR 0051), its kind a bar along the leading edge. */
 .workout {
+  --kind: var(--md-sys-color-outline);
   font: inherit; font-size: 0.8125rem; line-height: 1.3; letter-spacing: 0.015625rem; text-align: left; cursor: pointer; width: 100%;
-  border: 0; border-left: 3px solid var(--md-sys-color-outline); border-radius: var(--md-sys-shape-corner-extra-small);
-  padding: 0.25rem 0.375rem; background: var(--md-sys-color-surface-container); color: var(--md-sys-color-on-surface);
-  display: flex; flex-direction: column; overflow-wrap: anywhere;
+  border: 0; border-radius: var(--md-sys-shape-corner-small); box-shadow: inset 0.25rem 0 0 var(--kind);
+  padding: 0.375rem 0.5rem 0.375rem 0.75rem; background: var(--md-sys-color-surface-container-high); color: var(--md-sys-color-on-surface);
+  display: flex; flex-direction: column; overflow-wrap: anywhere; transition: background-color 0.15s var(--md-sys-motion-easing);
 }
-.workout:hover { background: var(--md-sys-color-surface-container-highest); }
+.workout:hover { background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, var(--md-sys-color-surface-container-high)); }
 .workout.open { background: var(--selected); color: var(--md-sys-color-on-secondary-container); }
-.workout.kind-easy, .workout.kind-long { border-left-color: var(--intensity-low); }
-.workout.kind-tempo, .workout.kind-interval { border-left-color: var(--intensity-medium); }
-.workout.kind-race { border-left-color: var(--intensity-high); }
-.workout.kind-rest { border-left-color: var(--md-sys-color-outline-variant); color: var(--md-sys-color-on-surface-variant); }
+.workout.kind-easy, .workout.kind-long { --kind: var(--intensity-low); }
+.workout.kind-tempo, .workout.kind-interval { --kind: var(--intensity-medium); }
+.workout.kind-race { --kind: var(--intensity-high); }
+.workout.kind-rest { --kind: var(--md-sys-color-outline-variant); color: var(--md-sys-color-on-surface-variant); }
 .workout-title { font-weight: 500; }
 .workout-targets { color: var(--md-sys-color-on-surface-variant); }
 .add-here {
-  font: inherit; cursor: pointer; align-self: flex-start; border: 1px dashed var(--md-sys-color-outline-variant);
-  border-radius: var(--md-sys-shape-corner-small); background: none; color: var(--md-sys-color-on-surface-variant);
-  padding: 0 0.5rem; line-height: 1.5;
+  font: inherit; cursor: pointer; align-self: flex-start; border: 0; border-radius: var(--md-sys-shape-corner-full);
+  background: none; color: var(--md-sys-color-on-surface-variant); padding: 0 0.625rem; line-height: 1.75rem;
+  transition: background-color 0.15s var(--md-sys-motion-easing);
 }
-.add-here:hover { color: var(--md-sys-color-primary); border-color: var(--md-sys-color-primary); }
+.add-here:hover { color: var(--md-sys-color-on-secondary-container); background: var(--md-sys-color-secondary-container); }
 .intensity { font-size: 0.75rem; font-weight: 500; padding: 0 0.375rem; border-radius: var(--md-sys-shape-corner-small); border: 1px solid currentColor; }
 .intensity-low { color: var(--intensity-low); }
 .intensity-medium { color: var(--intensity-medium); }
@@ -538,7 +549,35 @@ main:has(.plan-calendar), body:has(.plan-calendar) .bar-content { max-width: 80r
 .intensity-heading label { margin: 0; }
 .intensity-value { font-weight: 500; font-variant-numeric: tabular-nums; }
 .intensity-control { display: flex; align-items: center; gap: 0.5rem; }
-.intensity-control input[type="range"] { flex: 1; min-width: 0; }
+/* Material 3's slider (ADR 0051): a thick rounded track, the active part in primary, and a narrow handle with a gap
+   around it. `--fill` comes from the view, for browsers without a progress pseudo-element. */
+.intensity-control input[type="range"] {
+  --gap-color: var(--md-sys-color-surface);
+  flex: 1; min-width: 0; height: 2.75rem; margin: 0; background: transparent; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+}
+.sidebar-panel .intensity-control input[type="range"] { --gap-color: var(--md-sys-color-surface-container-low); }
+.intensity-control input[type="range"]::-webkit-slider-runnable-track {
+  height: 1rem; border-radius: var(--md-sys-shape-corner-full);
+  background: linear-gradient(to right, var(--md-sys-color-primary) var(--fill, 0%), var(--md-sys-color-secondary-container) var(--fill, 0%));
+}
+.intensity-control input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 0.25rem; height: 2.75rem; margin-top: -0.875rem; border-radius: 2px;
+  background: var(--md-sys-color-primary); box-shadow: 0 0 0 0.375rem var(--gap-color);
+}
+.intensity-control input[type="range"]::-moz-range-track {
+  height: 1rem; border-radius: var(--md-sys-shape-corner-full); background: var(--md-sys-color-secondary-container);
+}
+.intensity-control input[type="range"]::-moz-range-progress {
+  height: 1rem; border-radius: var(--md-sys-shape-corner-full); background: var(--md-sys-color-primary);
+}
+.intensity-control input[type="range"]::-moz-range-thumb {
+  width: 0.25rem; height: 2.75rem; border: 0; border-radius: 2px;
+  background: var(--md-sys-color-primary); box-shadow: 0 0 0 0.375rem var(--gap-color);
+}
+.intensity-control input[type="range"]:focus-visible { outline: none; }
+.intensity-control input[type="range"]:focus-visible::-webkit-slider-thumb { outline: var(--focus-ring); outline-offset: 0.375rem; }
+.intensity-control input[type="range"]:focus-visible::-moz-range-thumb { outline: var(--focus-ring); outline-offset: 0.375rem; }
 /* A week without an intensity: the slider sits at 0 but looks inactive until it is moved. */
 .intensity-control input[type="range"].unset { opacity: 0.38; }
 .intensity-meter { margin-top: 0.25rem; }
@@ -552,12 +591,18 @@ main:has(.plan-calendar), body:has(.plan-calendar) .bar-content { max-width: 80r
 .facts dt { color: var(--md-sys-color-on-surface-variant); font-size: 0.875rem; }
 .facts dt label { margin: 0; }
 .facts dd { margin: 0; }
-/* A linear progress indicator. */
-.goal-meter {
-  height: 0.25rem; border-radius: var(--md-sys-shape-corner-full);
-  background: var(--md-sys-color-secondary-container); overflow: hidden; margin-top: 0.75rem;
+/* A determinate linear progress indicator as Material 3 draws it (ADR 0051): the indicator, a gap, the rest of the
+   track, and a stop dot at its end. */
+.goal-meter { position: relative; display: flex; gap: 0.25rem; height: 0.25rem; margin-top: 0.75rem; }
+.goal-meter span {
+  flex: none; display: block; height: 100%; max-width: calc(100% - 0.25rem);
+  border-radius: var(--md-sys-shape-corner-full); background: var(--md-sys-color-primary);
 }
-.goal-meter span { display: block; height: 100%; border-radius: inherit; background: var(--md-sys-color-primary); }
+.goal-meter::after { content: ""; flex: 1; border-radius: var(--md-sys-shape-corner-full); background: var(--md-sys-color-secondary-container); }
+.goal-meter::before {
+  content: ""; position: absolute; right: 0; top: 0; width: 0.25rem; height: 0.25rem;
+  border-radius: 50%; background: var(--md-sys-color-primary);
+}
 .goal-meter.over span { background: var(--intensity-medium); }
 .plan-settings { border: 0; padding: 0; margin: 0.75rem 0 0; min-width: 0; }
 .plan-settings legend { font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem; padding: 0; }
@@ -587,6 +632,18 @@ table.progress th, table.progress td {
 }
 table.progress thead th { color: var(--md-sys-color-on-surface-variant); font-weight: 500; }
 table.progress th[scope="row"], table.progress th:first-child { text-align: left; font-weight: 500; }
+/* On a phone each week is a card of label and value pairs (ADR 0051); the table stays a table for screen readers. */
+@media (max-width: 40rem) {
+  table.progress thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  table.progress, table.progress caption, table.progress tbody, table.progress tr, table.progress th, table.progress td { display: block; }
+  table.progress tr {
+    margin-bottom: 0.5rem; padding: 0.75rem 1rem; border-radius: var(--md-sys-shape-corner-medium);
+    background: var(--md-sys-color-surface-container-low);
+  }
+  table.progress th[scope="row"] { padding: 0 0 0.25rem; border: 0; font: 500 0.875rem/1.25rem var(--md-ref-typeface); }
+  table.progress td { display: flex; justify-content: space-between; padding: 0.125rem 0; border: 0; }
+  table.progress td::before { content: attr(data-label); color: var(--md-sys-color-on-surface-variant); }
+}
 
 /* Strava's brand rules: their button image is shown as it is, with no background, border or padding of ours. */
 button.strava-connect { font: inherit; cursor: pointer; background: none; border: 0; padding: 0; margin-top: 0.75rem; line-height: 0; border-radius: 6px; }
@@ -604,3 +661,20 @@ a.strava-link { color: #FC5200; font-weight: 700; text-decoration: underline; }
 .zone { display: grid; grid-template-columns: 6.5rem minmax(4rem, 6rem) 1fr; align-items: center; gap: 0.5rem; }
 .zone label { margin-top: 0; }
 .zone .md-text-field { min-height: 2.5rem; padding: 0.5rem 0.75rem; }
+
+/* Ripple (ADR 0051): a circle that grows from where the pointer went down and fades. atlas/ui/interaction sets its
+   position and size and flips data-ripple between a and b to restart it. */
+.md-button, .md-fab, .md-icon-button, .choice-label, .link-list a, .nav-indicator { overflow: hidden; }
+:is(.md-button, .md-fab, .md-icon-button, .choice-label, .link-list a, .nav-indicator)[data-ripple]::after {
+  content: ""; position: absolute; z-index: -1; pointer-events: none;
+  left: var(--ripple-x); top: var(--ripple-y); width: var(--ripple-size); height: var(--ripple-size);
+  border-radius: 50%; background: currentColor; opacity: 0; transform: translate(-50%, -50%) scale(1);
+}
+[data-ripple="a"]::after { animation: ripple-a 0.45s cubic-bezier(0.2, 0, 0, 1); }
+[data-ripple="b"]::after { animation: ripple-b 0.45s cubic-bezier(0.2, 0, 0, 1); }
+@keyframes ripple-a { from { opacity: 0.12; transform: translate(-50%, -50%) scale(0); } }
+@keyframes ripple-b { from { opacity: 0.12; transform: translate(-50%, -50%) scale(0); } }
+@media (prefers-reduced-motion: reduce) {
+  [data-ripple]::after { animation: none !important; }
+  .page { animation: none; }
+}

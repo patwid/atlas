@@ -10,6 +10,7 @@ import gleam/option.{None}
 import lustre/attribute.{class}
 import lustre/element.{type Element}
 import lustre/element/html
+import lustre/element/keyed
 
 /// `coaching` adds the Athletes tab, for people whom someone has given access to (ADR 0031). `syncing` shows a
 /// progress bar under the app bar while a sync runs (ADR 0048).
@@ -56,7 +57,8 @@ pub fn view(
             [],
           )
       },
-      page,
+      // Keyed by the address, so a new page is a new element and fades in (ADR 0051).
+      keyed.div([class("page")], [#(route.to_path(route), page)]),
     ]),
     nav(route, coaching),
   ])

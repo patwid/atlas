@@ -130,14 +130,14 @@ fn weeks_table(weeks: List(progress.Week)) -> Element(msg) {
             html.th([attribute.scope("row")], [
               html.text(date.format(week.start)),
             ]),
-            cell(int.to_string(week.planned)),
-            cell(int.to_string(week.done)),
-            cell(case week.missed {
+            cell("Planned", int.to_string(week.planned)),
+            cell("Done", int.to_string(week.done)),
+            cell("Missed", case week.missed {
               0 -> "0"
               n -> int.to_string(n)
             }),
-            cell(km(week.planned_distance_m)),
-            cell(km(week.activity_distance_m)),
+            cell("Planned km", km(week.planned_distance_m)),
+            cell("Trained km", km(week.activity_distance_m)),
           ])
         }),
       ),
@@ -149,8 +149,9 @@ fn header(text: String) -> Element(msg) {
   html.th([attribute.scope("col")], [html.text(text)])
 }
 
-fn cell(text: String) -> Element(msg) {
-  html.td([], [html.text(text)])
+/// `label` is the column's header, shown next to the value when a phone shows each week as a card (ADR 0051).
+fn cell(label: String, text: String) -> Element(msg) {
+  html.td([attribute.attribute("data-label", label)], [html.text(text)])
 }
 
 /// Whole kilometres with one decimal: `21.0`, `8.5`.

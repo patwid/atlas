@@ -889,6 +889,11 @@ fn intensity_view(
             }),
             attribute.attribute("aria-valuetext", text),
             attribute.classes([#("unset", shown == Error(Nil))]),
+            // How far the active track reaches, for browsers that cannot draw it themselves (ADR 0051).
+            attribute.style("--fill", case shown {
+              Ok(value) -> plan.intensity_percent(value)
+              Error(Nil) -> "0%"
+            }),
             event.on_input(IntensityInput),
             event.on_change(IntensityChanged),
           ]),

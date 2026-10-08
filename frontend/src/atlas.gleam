@@ -32,6 +32,7 @@ import atlas/today_page
 import atlas/ui/banner
 import atlas/ui/button
 import atlas/ui/icon
+import atlas/ui/interaction
 import atlas/ui/layout
 import atlas/workouts_page
 import atlas/zones_page
@@ -157,6 +158,7 @@ fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
       modem.init(RouteChanged),
       online.listen(OnlineChanged),
       pwa.register_service_worker(),
+      interaction.install(),
       load,
       strava_start,
       case is_online {
