@@ -6,7 +6,7 @@ import { toList } from "../build/dev/javascript/atlas/gleam.mjs"
 import * as store from "../build/dev/javascript/atlas/atlas/store.ffi.mjs"
 import { startPocketBase } from "../../backend/tests/harness.mjs"
 import {
-  appRunner, built, button, byLabel, call, choose, click, daysFromNow, dialogButton, openDialog, pick, pub, setup, sleep, submit, typeInto,
+  appRunner, built, button, byLabel, call, location, choose, click, daysFromNow, dialogButton, openDialog, pick, pub, setup, sleep, submit, typeInto,
   utcOf, waitFor, ymd,
 } from "./support.mjs"
 
@@ -154,13 +154,12 @@ test("a user creates, edits and deletes a plan on the plans screens and the serv
   await waitFor("the new title on the server", async () => (await onServer()).some((p) => p.title === "Autumn half marathon"))
   assert.equal((await onServer()).find((p) => p.id === created.id).description, "Eight weeks, three runs a week", "unchanged fields stay")
 
-  // Delete, with the question first
+  // Delete: back to the list at once, with Undo; nothing is written until the snackbar goes (ADR 0056).
   click(w, button(w, "Delete"))
-  await waitFor("the question", () => openDialog(w)?.textContent.includes("Delete plan?"))
-  assert.equal((await onServer()).find((p) => p.id === created.id).deleted, false, "asking does not delete")
-  click(w, dialogButton(w, "Delete"))
+  await waitFor("the list with Undo", () => location(w) === "/plans" && d.body.textContent.includes("Plan deleted") && byLabel(w, "Close"))
+  assert.equal((await onServer()).find((p) => p.id === created.id).deleted, false, "not yet deleted while Undo lasts")
+  click(w, byLabel(w, "Close"))
   await waitFor("the plan marked deleted on the server", async () => (await onServer()).find((p) => p.id === created.id)?.deleted === true)
-  click(w, d.querySelector('a[aria-label="All plans"]'))
   await waitFor("an empty list again", () => d.body.textContent.includes("You have no plans yet"))
   w.close()
 })
@@ -245,13 +244,19 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
   assert.equal(moved.position, 0)
   assert.equal(moved.distance_m, 8500, "unchanged targets stay")
 
-  // Delete the second one, after the question.
-  click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Core session")))
-  await waitFor("the second workout in the sidebar", () => d.querySelector(".calendar-sidebar h3")?.textContent === "Core session")
-  click(w, [...d.querySelectorAll(".calendar-sidebar button")].find((b) => b.textContent === "Delete"))
-  await waitFor("the question", () => openDialog(w)?.textContent.includes("Delete workout?"))
-  assert.equal((await workouts()).find((x) => x.id === second.id).deleted, false)
-  click(w, dialogButton(w, "Delete"))
+  // Delete the second one; Undo brings it back, and the next delete is written when its snackbar is closed.
+  const deleteCore = async () => {
+    click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Core session")))
+    await waitFor("the second workout in the sidebar", () => d.querySelector(".calendar-sidebar h3")?.textContent === "Core session")
+    click(w, [...d.querySelectorAll(".calendar-sidebar button")].find((b) => b.textContent === "Delete"))
+    await waitFor("the Undo snackbar", () => d.body.textContent.includes("Workout deleted") && !d.querySelector(".calendar").textContent.includes("Core session"))
+  }
+  await deleteCore()
+  click(w, button(w, "Undo"))
+  await waitFor("back on the calendar", () => d.querySelector(".calendar").textContent.includes("Core session"))
+  assert.equal((await workouts()).find((x) => x.id === second.id).deleted, false, "Undo wrote nothing")
+  await deleteCore()
+  click(w, byLabel(w, "Close"))
   await waitFor("the delete on the server", async () => (await workouts()).find((x) => x.id === second.id)?.deleted === true)
   await waitFor("gone from the screen", () => !d.body.textContent.includes("Core session"))
   w.close()
@@ -345,11 +350,11 @@ test("a user starts a plan on a date, moves the date and removes it, and the ser
   await waitFor("the new date on the server", async () => (await assignments())[0]?.start_date === "2026-11-09")
   await waitFor("the new dates on screen", () => d.body.textContent.includes("Starts Mon 9 Nov 2026") && d.body.textContent.includes("ends Sun 6 Dec 2026"))
 
-  // Remove it, after the question.
+  // Remove it, from its menu; it is written when the Undo snackbar is closed.
   click(w, button(w, "Remove"))
-  await waitFor("the question", () => openDialog(w)?.textContent.includes("Remove from schedule?"))
+  await waitFor("the Undo snackbar", () => d.body.textContent.includes("Removed from the schedule"))
   assert.equal((await assignments())[0].deleted, false)
-  click(w, dialogButton(w, "Remove"))
+  click(w, byLabel(w, "Close"))
   await waitFor("deleted on the server", async () => (await assignments())[0]?.deleted === true)
   await waitFor("an empty schedule again", () => d.body.textContent.includes("Nobody is following this plan yet"))
   w.close()
@@ -581,11 +586,11 @@ test("a user adds, edits and deletes an activity by hand; the start is stored in
   assert.equal(after.started_at, expectedUtc, "the start is untouched")
   assert.equal(after.distance_m, 8500)
 
-  // Delete, after the question.
+  // Delete, from its menu; it is written when the Undo snackbar is closed.
   click(w, [...card().querySelectorAll("button")].find((b) => b.textContent === "Delete"))
-  await waitFor("the question", () => openDialog(w)?.textContent.includes("Delete activity?"))
+  await waitFor("the Undo snackbar", () => d.body.textContent.includes("Activity deleted"))
   assert.equal((await activities()).find((a) => a.id === created.id).deleted, false)
-  click(w, dialogButton(w, "Delete"))
+  click(w, byLabel(w, "Close"))
   await waitFor("deleted on the server", async () => (await activities()).find((a) => a.id === created.id)?.deleted === true)
   await waitFor("gone from the list", () => !d.body.textContent.includes("Easy loop"))
   assert.ok(d.body.textContent.includes("Lunch run"), "the Strava activity is still there")
@@ -633,8 +638,7 @@ test("Today shows missed, looks-done and rest days; the user confirms, unlinks, 
 
   // Unlink it: the row is removed on the server and the suggestion returns.
   click(w, inCard("Tempo intervals", "Unlink"))
-  await waitFor("the question", () => openDialog(w)?.textContent.includes("Unlink activity?"))
-  click(w, dialogButton(w, "Unlink"))
+  await waitFor("the Undo snackbar", () => d.body.textContent.includes("Activity unlinked") && button(w, "Undo"))
   await waitFor("the row removed", async () => (await matches())[0]?.deleted === true)
   await waitFor("the suggestion again", () => card("Tempo intervals").textContent.includes("Looks done"))
 

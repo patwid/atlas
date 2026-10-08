@@ -15,6 +15,8 @@ import lustre/event
 pub type Action(msg) {
   /// A link, such as "Open" for something the app just made.
   Link(label: String, href: String)
+  /// A button, such as "Undo" for something the app just deleted (ADR 0056).
+  Act(label: String, msg: msg)
 }
 
 pub fn view(
@@ -30,6 +32,15 @@ pub fn view(
           [
             class("md-button md-button-text snackbar-action"),
             attribute.href(href),
+          ],
+          [html.text(label)],
+        )
+      Some(Act(label, msg)) ->
+        button.text(
+          [
+            attribute.type_("button"),
+            class("snackbar-action"),
+            event.on_click(msg),
           ],
           [html.text(label)],
         )

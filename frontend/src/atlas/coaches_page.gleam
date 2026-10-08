@@ -15,6 +15,7 @@ import atlas/ui/dialog
 import atlas/ui/empty
 import atlas/ui/icon
 import atlas/ui/layout
+import atlas/ui/menu
 import atlas/ui/progress
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -208,11 +209,11 @@ fn given_view(g: Grant) -> Element(Msg) {
         name -> name
       }),
     ]),
+    // The action is in the row's menu (ADR 0056); it asks first, as access cannot be given back by Undo.
     layout.actions([
-      button.outlined(
-        [attribute.type_("button"), event.on_click(RemoveClicked(g.id))],
-        [html.text("Remove access")],
-      ),
+      menu.view("coach-menu-" <> g.id, "More for this coach", [
+        menu.Item(icon.Delete, "Remove access", RemoveClicked(g.id)),
+      ]),
       dialog.view(
         confirm_dialog_id(g.id),
         "Remove access?",

@@ -10,6 +10,9 @@ const dom = new JSDOM(`<!doctype html><body>
   <nav class="tabs"><a href="/"><span class="nav-indicator"></span>Today</a></nav>
   <p class="plain">text</p>
   <button class="sheet-handle" aria-expanded="false">Week 1</button>
+  <div class="md-menu" id="m">
+    <button role="menuitem">Edit</button><button role="menuitem">Delete</button><button role="menuitem">Share</button>
+  </div>
 </body>`, { pretendToBeVisual: true })
 Object.assign(globalThis, { document: dom.window.document, window: dom.window, Element: dom.window.Element })
 const { install } = await import("../build/dev/javascript/atlas/atlas/ui/interaction.ffi.mjs")
@@ -67,5 +70,21 @@ test("dragging a sheet's handle up opens it and down closes it; a short drag doe
   assert.equal(clicks, 1, "up again does not close an open sheet")
   drag(300, 500)
   assert.equal(handle.getAttribute("aria-expanded"), "false")
+})
+
+test("the arrow keys, Home and End move between a menu's items, wrapping around", () => {
+  const items = [...d.querySelectorAll('[role="menuitem"]')]
+  const key = (el, k) => el.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: k, bubbles: true }))
+  items[0].focus()
+  key(items[0], "ArrowDown")
+  assert.equal(d.activeElement, items[1])
+  key(items[1], "End")
+  assert.equal(d.activeElement, items[2])
+  key(items[2], "ArrowDown")
+  assert.equal(d.activeElement, items[0])
+  key(items[0], "ArrowUp")
+  assert.equal(d.activeElement, items[2])
+  key(items[2], "Home")
+  assert.equal(d.activeElement, items[0])
 })
 

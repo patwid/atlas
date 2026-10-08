@@ -12,7 +12,9 @@ import atlas/shares.{type Share}
 import atlas/store
 import atlas/ui/button
 import atlas/ui/dialog
+import atlas/ui/icon
 import atlas/ui/layout
+import atlas/ui/menu
 import atlas/ui/progress
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -215,11 +217,11 @@ fn share_view(share: Share) -> Element(Msg) {
   }
   html.li([], [
     html.strong([], [html.text(name)]),
+    // The action is in the row's menu (ADR 0056); it asks first.
     layout.actions([
-      button.outlined(
-        [attribute.type_("button"), event.on_click(StopClicked(share.id))],
-        [html.text("Stop sharing")],
-      ),
+      menu.view("share-menu-" <> share.id, "More for " <> name, [
+        menu.Item(icon.Delete, "Stop sharing", StopClicked(share.id)),
+      ]),
       dialog.view(
         confirm_dialog_id(share.id),
         "Stop sharing with " <> name <> "?",

@@ -3,7 +3,7 @@ import atlas/plan.{Workout}
 import atlas/workout_form.{type Row, Form, Row}
 import atlas/workouts_page.{
   AddClicked, Adding, BaseWeeksChanged, Browsing, Create, DayChanged, Delete,
-  DeleteClicked, DeleteConfirmed, Edit, EditClicked, EditPlan, Editing,
+  DeleteClicked, DeleteExpired, Edit, EditClicked, EditPlan, Editing,
   GoalChanged, IntensityChanged, IntensityCleared, IntensityInput, KindChanged,
   Model, SettingsEditClicked, SettingsSubmitted, Submitted, TitleChanged,
   Viewing, WeekChanged, WeekSelected, WorkoutSelected, WorkoutsRead,
@@ -176,14 +176,17 @@ pub fn an_edit_without_changes_writes_nothing_test() {
   assert model.mode == Viewing("a")
 }
 
-pub fn deleting_needs_a_second_click_test() {
+pub fn a_delete_waits_for_undo_test() {
   let model = with_rows([row("a", "p1", 0, 0, "Easy")])
-  let #(asked, actions) = update(model, DeleteClicked("a"))
-  assert asked.confirming == Some("a")
+  let #(waiting, actions) = update(model, DeleteClicked("a"))
   assert actions == []
-  let #(done, actions) = update(asked, DeleteConfirmed("a"))
+  let html = html_of(waiting, True)
+  assert string.contains(html, "Workout deleted")
+  let #(undone, _) = update(waiting, workouts_page.UndoClicked)
+  let #(_, actions) = update(undone, DeleteExpired(1))
+  assert actions == []
+  let #(_, actions) = update(waiting, DeleteExpired(1))
   assert actions == [Delete("a", "T-a")]
-  assert done.confirming == None
 }
 
 pub fn nothing_can_be_changed_without_permission_test() {
@@ -195,7 +198,7 @@ pub fn nothing_can_be_changed_without_permission_test() {
   }
   assert attempt(AddClicked(1, 1)) == #(True, [])
   assert attempt(EditClicked("a")) == #(True, [])
-  assert attempt(DeleteConfirmed("a")) == #(True, [])
+  assert attempt(DeleteClicked("a")) == #(True, [])
   assert attempt(IntensityChanged("0.3")) == #(True, [])
   assert attempt(IntensityInput("0.3")) == #(True, [])
   assert attempt(IntensityCleared) == #(True, [])
@@ -206,8 +209,8 @@ pub fn only_workouts_of_the_plan_on_screen_can_be_changed_test() {
   let model = with_rows([row("x", "p2", 0, 0, "Other plan")])
   let #(edit, _) = update(model, EditClicked("x"))
   assert edit.mode == Browsing
-  let #(_, actions) = update(model, DeleteConfirmed("x"))
-  assert actions == []
+  let #(next, _) = update(model, DeleteClicked("x"))
+  assert next.undo == model.undo
 }
 
 pub fn a_workout_removed_elsewhere_ends_an_edit_of_it_test() {
@@ -402,19 +405,6 @@ pub fn the_form_is_labelled_and_shows_errors_test() {
   assert string.contains(html, "Give the workout a title.")
   assert string.contains(html, "Easy run")
   assert string.contains(html, "Rest day")
-}
-
-pub fn the_delete_question_has_a_way_out_test() {
-  let model =
-    Model(
-      ..with_rows([row("a", "p1", 0, 0, "Easy run")]),
-      mode: Viewing("a"),
-      confirming: Some("a"),
-    )
-  let html = html_of(model, True)
-  assert string.contains(html, "Delete workout?")
-  assert string.contains(html, ">Delete<")
-  assert string.contains(html, ">Cancel<")
 }
 
 pub fn the_edit_form_opens_in_the_sidebar_test() {

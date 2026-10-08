@@ -13,15 +13,17 @@ import atlas/records
 import atlas/store
 import atlas/ui/button
 import atlas/ui/date_picker
-import atlas/ui/dialog
 import atlas/ui/error
 import atlas/ui/field
+import atlas/ui/icon
 import atlas/ui/layout
+import atlas/ui/menu
 import atlas/ui/progress
+import atlas/ui/undo.{type Undo}
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{None, Some}
 import lustre/attribute.{class}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -42,7 +44,8 @@ pub type Model {
     mode: Mode,
     form: assignment_form.Form,
     /// The assignment whose "Remove" was clicked once.
-    confirming: Option(String),
+    /// A removal that can still be undone (ADR 0056).
+    undo: Undo,
     /// The form's date picker (ADR 0054).
     date_picker: date_picker.State,
   )
@@ -74,8 +77,10 @@ pub type Msg {
   DatePickerOpened
   DatePicker(date_picker.Msg)
   Submitted
+  /// Removes at once, with Undo for a few seconds (ADR 0056).
   RemoveClicked(String)
-  RemoveConfirmed(String)
+  UndoClicked
+  RemoveExpired(Int)
 }
 
 pub type Action {
@@ -90,7 +95,7 @@ pub fn new() -> Model {
     False,
     Browsing,
     assignment_form.empty_for("", date.Date(2026, 1, 1)),
-    None,
+    undo.new(),
     date_picker.new(),
   )
 }
@@ -147,7 +152,6 @@ pub fn update(
             ..model,
             mode: Starting,
             form: assignment_form.empty_for(context.user_id, context.today),
-            confirming: None,
           ),
           effect.none(),
           [],
@@ -163,7 +167,6 @@ pub fn update(
                 ..model,
                 mode: ChangingDate(id),
                 form: assignment_form.from_row(row),
-                confirming: None,
               ),
               effect.none(),
               [],
@@ -173,11 +176,7 @@ pub fn update(
         Error(Nil) -> #(model, effect.none(), [])
       }
 
-    CancelClicked -> #(
-      Model(..model, mode: Browsing, confirming: None),
-      effect.none(),
-      [],
-    )
+    CancelClicked -> #(Model(..model, mode: Browsing), effect.none(), [])
 
     AthleteChanged(id) ->
       typed(model, fn(f) { assignment_form.Form(..f, athlete_id: id) })
@@ -260,25 +259,34 @@ pub fn update(
         }
       }
 
-    RemoveClicked(id) -> #(
-      Model(..model, confirming: Some(id)),
-      dialog.show(confirm_dialog_id(id)),
+    RemoveClicked(id) ->
+      case removal_of(model, context, id) {
+        [] -> #(model, effect.none(), [])
+        _ -> {
+          let #(next, earlier, wait) = undo.start(model.undo, id, RemoveExpired)
+          #(
+            Model(..model, undo: next, mode: Browsing),
+            wait,
+            option.map(earlier, removal_of(model, context, _))
+              |> option.unwrap([]),
+          )
+        }
+      }
+
+    UndoClicked -> #(
+      Model(..model, undo: undo.cancel(model.undo)),
+      effect.none(),
       [],
     )
 
-    RemoveConfirmed(id) ->
-      case find(rows_of(model, context.plan_id), id) {
-        Ok(row) ->
-          case may_change(row, context.user_id) {
-            True -> #(
-              Model(..model, mode: Browsing, confirming: None),
-              effect.none(),
-              [Delete(id, row.updated)],
-            )
-            False -> #(model, effect.none(), [])
-          }
-        Error(Nil) -> #(model, effect.none(), [])
-      }
+    RemoveExpired(n) -> {
+      let #(next, due) = undo.expire(model.undo, n)
+      #(
+        Model(..model, undo: next),
+        effect.none(),
+        option.map(due, removal_of(model, context, _)) |> option.unwrap([]),
+      )
+    }
   }
 }
 
@@ -312,8 +320,17 @@ pub fn view(
   workouts: List(Workout),
   all_grants: List(Grant),
 ) -> Element(Msg) {
-  let rows = rows_of(model, context.plan_id)
+  // An entry being removed is left out while its Undo lasts (ADR 0056).
+  let rows =
+    rows_of(model, context.plan_id)
+    |> list.filter(fn(row) { !undo.hides(model.undo, row.assignment.id) })
   html.section([class("schedule")], [
+    undo.snackbar(
+      model.undo,
+      "Removed from the schedule",
+      UndoClicked,
+      RemoveExpired,
+    ),
     html.div([class("toolbar")], [
       html.h2([], [html.text("Schedule")]),
       case model.mode {
@@ -404,36 +421,25 @@ fn row_view(
   ])
 }
 
-fn confirm_dialog_id(id: String) -> String {
-  "confirm-remove-assignment-" <> id
+/// The delete to write for an assignment, looked up among all of them (another plan may be open by the time its
+/// Undo runs out), if the user may change it.
+fn removal_of(model: Model, context: Context, id: String) -> List(Action) {
+  case list.find(model.rows, fn(row) { row.assignment.id == id }) {
+    Ok(row) ->
+      case may_change(row, context.user_id) {
+        True -> [Delete(id, row.updated)]
+        False -> []
+      }
+    Error(Nil) -> []
+  }
 }
 
+/// An assignment's actions are in a menu at the end of its row (ADR 0056).
 fn actions(row: Row) -> Element(Msg) {
   let id = row.assignment.id
-  layout.actions([
-    button.outlined(
-      [attribute.type_("button"), event.on_click(ChangeDateClicked(id))],
-      [html.text("Change date")],
-    ),
-    button.outlined(
-      [attribute.type_("button"), event.on_click(RemoveClicked(id))],
-      [html.text("Remove")],
-    ),
-    dialog.view(
-      confirm_dialog_id(id),
-      "Remove from schedule?",
-      "Its workouts no longer show on Today.",
-      CancelClicked,
-      [
-        button.text([attribute.type_("submit"), event.on_click(CancelClicked)], [
-          html.text("Cancel"),
-        ]),
-        button.text(
-          [attribute.type_("submit"), event.on_click(RemoveConfirmed(id))],
-          [html.text("Remove")],
-        ),
-      ],
-    ),
+  menu.view("assignment-menu-" <> id, "More for this schedule entry", [
+    menu.Item(icon.CalendarToday, "Change date", ChangeDateClicked(id)),
+    menu.Item(icon.Delete, "Remove", RemoveClicked(id)),
   ])
 }
 

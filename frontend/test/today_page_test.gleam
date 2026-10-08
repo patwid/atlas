@@ -8,7 +8,8 @@ import atlas/plan.{Assignment, Workout}
 import atlas/today.{Inputs}
 import atlas/today_page.{
   CancelClicked, ChooseClicked, ConfirmClicked, Create, Delete, Edit, Key,
-  MatchesRead, Model, PickClicked, UnlinkClicked, UnlinkConfirmed,
+  MatchesRead, Model, PickClicked, UnlinkClicked, UnlinkNoticeExpired,
+  UnlinkUndone,
 }
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -193,21 +194,34 @@ pub fn only_known_workouts_and_own_activities_can_be_linked_test() {
   assert none(PickClicked(wednesday_key, "no-such-activity")) == []
 }
 
-pub fn unlinking_needs_a_second_click_test() {
+pub fn unlinking_acts_at_once_and_offers_undo_test() {
   let live = stored("m1", "x1", "w2", False)
   let i = inputs([live])
-  let #(asked, actions) =
+  let #(unlinked, actions) =
     update(today_page.new(), UnlinkClicked(wednesday_key), i)
-  assert asked.confirming == Some(wednesday_key)
-  assert actions == []
-  let #(done, actions) = update(asked, UnlinkConfirmed(wednesday_key), i)
   assert actions == [Delete("m1", "T-m1")]
-  assert done.confirming == None
+  assert string.contains(html_of(unlinked, i), "Activity unlinked")
+  assert string.contains(html_of(unlinked, i), ">Undo<")
+  // The snackbar's own timer closes it; an older one does not.
+  let #(still, _) = update(unlinked, UnlinkNoticeExpired(0), i)
+  assert still.unlinked == unlinked.unlinked
+  let #(closed, _) = update(unlinked, UnlinkNoticeExpired(1), i)
+  assert closed.unlinked == None
+}
+
+pub fn undo_links_the_same_activity_again_test() {
+  let removed = stored("m1", "x1", "w2", True)
+  let i = inputs([removed])
+  let unlinked =
+    Model(..today_page.new(), unlinked: Some(#(1, wednesday_key, "x1")))
+  let #(next, actions) = update(unlinked, UnlinkUndone, i)
+  assert next.unlinked == None
+  let assert [Edit("m1", _, _)] = actions
 }
 
 pub fn unlinking_something_not_stored_does_nothing_test() {
   let #(_, actions) =
-    update(today_page.new(), UnlinkConfirmed(wednesday_key), inputs([]))
+    update(today_page.new(), UnlinkClicked(wednesday_key), inputs([]))
   assert actions == []
 }
 
@@ -261,14 +275,6 @@ pub fn a_confirmed_match_can_be_changed_or_unlinked_test() {
   assert string.contains(html, "06:00 · Run · 8.00 km · 45:00")
   assert string.contains(html, ">Change<")
   assert string.contains(html, ">Unlink<")
-}
-
-pub fn unlinking_asks_before_it_acts_test() {
-  let model = Model(..today_page.new(), confirming: Some(wednesday_key))
-  let html = html_of(model, inputs([stored("m1", "x1", "w2", False)]))
-  assert string.contains(html, "Unlink activity?")
-  assert string.contains(html, ">Unlink<")
-  assert string.contains(html, ">Cancel<")
 }
 
 pub fn missed_workouts_say_so_and_offer_a_link_test() {

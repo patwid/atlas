@@ -15,15 +15,16 @@ import atlas/ui/badge
 import atlas/ui/button
 import atlas/ui/choice
 import atlas/ui/date_picker
-import atlas/ui/dialog
 import atlas/ui/empty
 import atlas/ui/error
 import atlas/ui/field
 import atlas/ui/focus
 import atlas/ui/icon
 import atlas/ui/layout
+import atlas/ui/menu
 import atlas/ui/progress
 import atlas/ui/time_picker
+import atlas/ui/undo.{type Undo}
 import atlas/units
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -52,7 +53,8 @@ pub type Model {
     loaded: Bool,
     mode: Mode,
     form: activity_form.Form,
-    confirming: Option(String),
+    /// A delete that can still be undone (ADR 0056).
+    undo: Undo,
     /// The form's date and time pickers (ADR 0054).
     date_picker: date_picker.State,
     time_picker: time_picker.State,
@@ -92,8 +94,11 @@ pub type Msg {
   ElevationChanged(String)
   HeartRateChanged(String)
   Submitted
+  /// Deletes at once, with Undo for a few seconds (ADR 0056).
   DeleteClicked(String)
-  DeleteConfirmed(String)
+  UndoClicked
+  /// The Undo snackbar went: the delete with this number is written.
+  DeleteExpired(Int)
 }
 
 pub type Action {
@@ -108,7 +113,7 @@ pub fn new() -> Model {
     False,
     Browsing,
     activity_form.empty_for(date.Date(2026, 1, 1)),
-    None,
+    undo.new(),
     date_picker.new(),
     time_picker.new(),
   )
@@ -166,12 +171,7 @@ pub fn update(
     ActivitiesRead(Error(Nil)) -> #(model, effect.none(), [])
 
     AddClicked -> #(
-      Model(
-        ..model,
-        mode: Adding,
-        form: activity_form.empty_for(context.today),
-        confirming: None,
-      ),
+      Model(..model, mode: Adding, form: activity_form.empty_for(context.today)),
       // The form opens at the top of the page, away from the floating button (ADR 0047).
       focus.soon("activity-date"),
       [],
@@ -189,7 +189,6 @@ pub fn update(
                   row,
                   context.offset_at_utc(row.activity.started_at),
                 ),
-                confirming: None,
               ),
               effect.none(),
               [],
@@ -199,11 +198,7 @@ pub fn update(
         Error(Nil) -> #(model, effect.none(), [])
       }
 
-    CancelClicked -> #(
-      Model(..model, mode: Browsing, confirming: None),
-      effect.none(),
-      [],
-    )
+    CancelClicked -> #(Model(..model, mode: Browsing), effect.none(), [])
 
     DateChanged(v) -> typed(model, fn(f) { activity_form.Form(..f, date: v) })
     TimeChanged(v) -> typed(model, fn(f) { activity_form.Form(..f, time: v) })
@@ -295,25 +290,34 @@ pub fn update(
         }
       }
 
-    DeleteClicked(id) -> #(
-      Model(..model, confirming: Some(id)),
-      dialog.show(confirm_dialog_id(id)),
+    DeleteClicked(id) ->
+      case delete_of(model, context, id) {
+        [] -> #(model, effect.none(), [])
+        _ -> {
+          let #(next, earlier, wait) = undo.start(model.undo, id, DeleteExpired)
+          #(
+            Model(..model, undo: next, mode: Browsing),
+            wait,
+            option.map(earlier, delete_of(model, context, _))
+              |> option.unwrap([]),
+          )
+        }
+      }
+
+    UndoClicked -> #(
+      Model(..model, undo: undo.cancel(model.undo)),
+      effect.none(),
       [],
     )
 
-    DeleteConfirmed(id) ->
-      case find(mine(model, context.user_id), id) {
-        Ok(row) ->
-          case editable(row, context.user_id) {
-            True -> #(
-              Model(..model, mode: Browsing, confirming: None),
-              effect.none(),
-              [Delete(id, row.updated)],
-            )
-            False -> #(model, effect.none(), [])
-          }
-        Error(Nil) -> #(model, effect.none(), [])
-      }
+    DeleteExpired(n) -> {
+      let #(next, due) = undo.expire(model.undo, n)
+      #(
+        Model(..model, undo: next),
+        effect.none(),
+        option.map(due, delete_of(model, context, _)) |> option.unwrap([]),
+      )
+    }
   }
 }
 
@@ -349,6 +353,7 @@ const sports = [
 pub fn view(model: Model, context: Context) -> Element(Msg) {
   let rows = mine(model, context.user_id)
   html.section([class("activities")], [
+    undo.snackbar(model.undo, "Activity deleted", UndoClicked, DeleteExpired),
     html.div([class("toolbar")], [
       case model.mode {
         Browsing ->
@@ -381,7 +386,11 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
             )
         }
       True, _ ->
-        layout.list(list.map(rows, fn(row) { row_view(row, model, context) }))
+        layout.list(
+          rows
+          |> list.filter(fn(row) { !undo.hides(model.undo, row.activity.id) })
+          |> list.map(fn(row) { row_view(row, model, context) }),
+        )
     },
   ])
 }
@@ -516,36 +525,24 @@ fn pace(a: activity.Activity) -> Option(String) {
   }
 }
 
-fn confirm_dialog_id(id: String) -> String {
-  "confirm-delete-activity-" <> id
+/// The delete to write for `id`: none unless it is the user's own activity, entered by hand.
+fn delete_of(model: Model, context: Context, id: String) -> List(Action) {
+  case find(mine(model, context.user_id), id) {
+    Ok(row) ->
+      case editable(row, context.user_id) {
+        True -> [Delete(id, row.updated)]
+        False -> []
+      }
+    Error(Nil) -> []
+  }
 }
 
+/// An activity's actions are in a menu at the end of its row (ADR 0056).
 fn actions(row: Row) -> Element(Msg) {
   let id = row.activity.id
-  layout.actions([
-    button.outlined(
-      [attribute.type_("button"), event.on_click(EditClicked(id))],
-      [icon.view(icon.Edit), html.text("Edit")],
-    ),
-    button.outlined(
-      [attribute.type_("button"), event.on_click(DeleteClicked(id))],
-      [icon.view(icon.Delete), html.text("Delete")],
-    ),
-    dialog.view(
-      confirm_dialog_id(id),
-      "Delete activity?",
-      "It is removed from your activities.",
-      CancelClicked,
-      [
-        button.text([attribute.type_("submit"), event.on_click(CancelClicked)], [
-          html.text("Cancel"),
-        ]),
-        button.text(
-          [attribute.type_("submit"), event.on_click(DeleteConfirmed(id))],
-          [html.text("Delete")],
-        ),
-      ],
-    ),
+  menu.view("activity-menu-" <> id, "More for " <> title(row), [
+    menu.Item(icon.Edit, "Edit", EditClicked(id)),
+    menu.Item(icon.Delete, "Delete", DeleteClicked(id)),
   ])
 }
 

@@ -1,6 +1,6 @@
 import atlas/activities_page.{
   ActivitiesRead, AddClicked, Adding, Browsing, Context, Create, DateChanged,
-  Delete, DeleteClicked, DeleteConfirmed, DistanceChanged, DurationChanged, Edit,
+  Delete, DeleteClicked, DeleteExpired, DistanceChanged, DurationChanged, Edit,
   EditClicked, Editing, Model, NameChanged, SportChanged, Submitted, TimeChanged,
 }
 import atlas/activity.{Activity}
@@ -196,21 +196,49 @@ pub fn strava_and_foreign_activities_cannot_be_edited_or_deleted_test() {
   assert edit.mode == Browsing
   let #(edit, _) = update(model, EditClicked("f"))
   assert edit.mode == Browsing
-  let #(_, actions) = update(model, DeleteConfirmed("s"))
+  let #(next, _) = update(model, DeleteClicked("s"))
+  assert next.undo == model.undo
+  let #(next, _) = update(model, DeleteClicked("f"))
+  assert next.undo == model.undo
+}
+
+pub fn a_delete_waits_for_undo_and_is_written_when_the_wait_ends_test() {
+  let model =
+    with_rows([
+      row("a", "me", activity.Manual, "2026-10-01 05:30:00.000Z", ""),
+      row("b", "me", activity.Manual, "2026-10-02 05:30:00.000Z", ""),
+    ])
+  let #(waiting, actions) = update(model, DeleteClicked("a"))
   assert actions == []
-  let #(_, actions) = update(model, DeleteConfirmed("f"))
+  let html = html_of(waiting)
+  assert string.contains(html, "Activity deleted")
+  assert string.contains(html, ">Undo<")
+  let #(done, actions) = update(waiting, DeleteExpired(1))
+  assert actions == [Delete("a", "T-a")]
+  // An old timer does nothing.
+  let #(_, actions) = update(done, DeleteExpired(1))
   assert actions == []
 }
 
-pub fn deleting_needs_a_second_click_test() {
+pub fn undo_cancels_a_waiting_delete_test() {
   let model =
     with_rows([row("a", "me", activity.Manual, "2026-10-01 05:30:00.000Z", "")])
-  let #(asked, actions) = update(model, DeleteClicked("a"))
-  assert asked.confirming == Some("a")
+  let #(waiting, _) = update(model, DeleteClicked("a"))
+  let #(undone, _) = update(waiting, activities_page.UndoClicked)
+  let #(_, actions) = update(undone, DeleteExpired(1))
   assert actions == []
-  let #(done, actions) = update(asked, DeleteConfirmed("a"))
+  assert !string.contains(html_of(undone), "Activity deleted")
+}
+
+pub fn a_second_delete_writes_the_first_at_once_test() {
+  let model =
+    with_rows([
+      row("a", "me", activity.Manual, "2026-10-01 05:30:00.000Z", ""),
+      row("b", "me", activity.Manual, "2026-10-02 05:30:00.000Z", ""),
+    ])
+  let #(first, _) = update(model, DeleteClicked("a"))
+  let #(_, actions) = update(first, DeleteClicked("b"))
   assert actions == [Delete("a", "T-a")]
-  assert done.confirming == None
 }
 
 pub fn an_activity_removed_elsewhere_ends_its_edit_test() {
@@ -333,18 +361,17 @@ pub fn the_form_is_labelled_and_shows_errors_test() {
   assert string.contains(html, "Enter a distance or a time, or both.")
 }
 
-pub fn the_delete_question_has_a_way_out_test() {
-  let model =
-    Model(
-      ..with_rows([
+pub fn an_activitys_actions_are_in_a_menu_test() {
+  let html =
+    html_of(
+      with_rows([
         row("a", "me", activity.Manual, "2026-10-01 05:30:00.000Z", ""),
       ]),
-      confirming: Some("a"),
     )
-  let html = html_of(model)
-  assert string.contains(html, "Delete activity?")
+  assert string.contains(html, "role=\"menu\"")
+  assert string.contains(html, "aria-haspopup=\"menu\"")
+  assert string.contains(html, ">Edit<")
   assert string.contains(html, ">Delete<")
-  assert string.contains(html, ">Cancel<")
 }
 
 fn from_strava(external_id: String) -> activity_form.Row {
@@ -379,4 +406,14 @@ pub fn activities_from_elsewhere_have_no_strava_link_test() {
   assert !string.contains(manual, "View on Strava")
   let without_id = html_of(with_rows([from_strava("")]))
   assert !string.contains(without_id, "View on Strava")
+}
+
+pub fn the_undo_button_reads_as_the_snackbars_action_test() {
+  let model =
+    with_rows([row("a", "me", activity.Manual, "2026-10-01 05:30:00.000Z", "")])
+  let #(waiting, _) = update(model, DeleteClicked("a"))
+  assert string.contains(
+    html_of(waiting),
+    "class=\"md-button md-button-text snackbar-action\"",
+  )
 }

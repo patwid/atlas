@@ -2,7 +2,7 @@ import atlas/assignment_form.{type Row, Row}
 import atlas/assignments_page.{
   AssignmentsRead, AthleteChanged, Browsing, ChangeDateClicked, ChangingDate,
   Context, Create, DateChanged, Delete, Edit, Model, RemoveClicked,
-  RemoveConfirmed, StartClicked, Starting, Submitted,
+  RemoveExpired, StartClicked, Starting, Submitted,
 }
 import atlas/date.{type Date, Date}
 import atlas/grants.{Grant, Person}
@@ -154,7 +154,7 @@ pub fn a_coach_can_change_what_they_assigned_but_not_other_peoples_test() {
   assert assignments_page.may_change(mine, "me")
   assert !assignments_page.may_change(theirs, "me")
   let model = with_rows([theirs])
-  let #(next, actions) = update(model, RemoveConfirmed("b"), [])
+  let #(next, actions) = update(model, RemoveClicked("b"), [])
   assert next == model
   assert actions == []
   let #(next, _) = update(model, ChangeDateClicked("b"), [])
@@ -168,14 +168,15 @@ pub fn the_athlete_can_always_change_their_own_schedule_test() {
   )
 }
 
-pub fn removing_needs_a_second_click_test() {
+pub fn removing_waits_for_undo_test() {
   let model = with_rows([row("a", "me", "me", Date(2026, 11, 2))])
-  let #(asked, actions) = update(model, RemoveClicked("a"), [])
-  assert asked.confirming == Some("a")
+  let #(waiting, actions) = update(model, RemoveClicked("a"), [])
   assert actions == []
-  let #(done, actions) = update(asked, RemoveConfirmed("a"), [])
+  let #(undone, _) = update(waiting, assignments_page.UndoClicked, [])
+  let #(_, actions) = update(undone, RemoveExpired(1), [])
+  assert actions == []
+  let #(_, actions) = update(waiting, RemoveExpired(1), [])
   assert actions == [Delete("a", "T-a")]
-  assert done.confirming == None
 }
 
 pub fn an_assignment_removed_elsewhere_ends_its_edit_test() {

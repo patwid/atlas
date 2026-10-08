@@ -13,7 +13,6 @@ import atlas/store
 import atlas/ui/badge
 import atlas/ui/button
 import atlas/ui/choice
-import atlas/ui/dialog
 import atlas/ui/error
 import atlas/ui/field
 import atlas/ui/focus
@@ -21,6 +20,7 @@ import atlas/ui/icon
 import atlas/ui/layout
 import atlas/ui/plan_settings
 import atlas/ui/progress
+import atlas/ui/undo.{type Undo}
 import atlas/units
 import atlas/workout_form.{type Row}
 import gleam/dict
@@ -55,7 +55,8 @@ pub type Model {
     mode: Mode,
     form: workout_form.Form,
     /// The workout whose "Delete" was clicked once.
-    confirming: Option(String),
+    /// A delete that can still be undone (ADR 0056).
+    undo: Undo,
     /// The week shown in the sidebar, from 1.
     selected_week: Int,
     /// The plan's phases and goal as typed in the sidebar; `None` while they are only shown.
@@ -84,8 +85,10 @@ pub type Msg {
   DurationChanged(String)
   DescriptionChanged(String)
   Submitted
+  /// Deletes at once, with Undo for a few seconds (ADR 0056).
   DeleteClicked(String)
-  DeleteConfirmed(String)
+  UndoClicked
+  DeleteExpired(Int)
   /// The slider moved; nothing is written until it is let go.
   IntensityInput(String)
   /// The slider was let go (or moved with the keyboard): the value is written.
@@ -116,7 +119,7 @@ pub fn new() -> Model {
     False,
     Browsing,
     workout_form.empty_for(1, 1),
-    None,
+    undo.new(),
     1,
     None,
     None,
@@ -196,7 +199,6 @@ pub fn update(
             ..model,
             mode: Viewing(id),
             selected_week: week_of(row.workout),
-            confirming: None,
             sheet_expanded: True,
           ),
           effect.none(),
@@ -213,7 +215,6 @@ pub fn update(
             mode: Adding,
             form: workout_form.empty_for(week, day),
             selected_week: week,
-            confirming: None,
             sheet_expanded: True,
           ),
           focus.soon(form_title_id),
@@ -230,7 +231,6 @@ pub fn update(
             mode: Editing(id),
             form: workout_form.from_row(row),
             selected_week: week_of(row.workout),
-            confirming: None,
             sheet_expanded: True,
           ),
           focus.soon(form_title_id),
@@ -240,7 +240,7 @@ pub fn update(
       }
 
     CancelClicked -> #(
-      Model(..model, mode: back_from(model.mode), confirming: None),
+      Model(..model, mode: back_from(model.mode)),
       effect.none(),
       [],
     )
@@ -319,21 +319,33 @@ pub fn update(
         }
       }
 
-    DeleteClicked(id) -> #(
-      Model(..model, confirming: Some(id)),
-      dialog.show(confirm_dialog_id(id)),
+    DeleteClicked(id) ->
+      case can_edit, find(rows_of(model, plan_id), id) {
+        True, Ok(_) -> {
+          let #(next, earlier, wait) = undo.start(model.undo, id, DeleteExpired)
+          #(
+            Model(..model, undo: next, mode: Browsing),
+            wait,
+            option.map(earlier, delete_of(model, _)) |> option.unwrap([]),
+          )
+        }
+        _, _ -> #(model, effect.none(), [])
+      }
+
+    UndoClicked -> #(
+      Model(..model, undo: undo.cancel(model.undo)),
+      effect.none(),
       [],
     )
 
-    DeleteConfirmed(id) ->
-      case can_edit, find(rows_of(model, plan_id), id) {
-        True, Ok(row) -> #(
-          Model(..model, mode: Browsing, confirming: None),
-          effect.none(),
-          [Delete(id, row.updated)],
-        )
-        _, _ -> #(model, effect.none(), [])
-      }
+    DeleteExpired(n) -> {
+      let #(next, due) = undo.expire(model.undo, n)
+      #(
+        Model(..model, undo: next),
+        effect.none(),
+        option.map(due, delete_of(model, _)) |> option.unwrap([]),
+      )
+    }
 
     IntensityInput(value) ->
       case can_edit, workout_form.parse_decimal(value) {
@@ -501,13 +513,17 @@ fn kind_from_value(value: String, fallback: Kind) -> Kind {
 // VIEWS -------------------------------------------------------------------------------------------
 
 pub fn view(model: Model, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
-  let rows = rows_of(model, on_screen.id)
+  // A workout being deleted is left out while its Undo lasts (ADR 0056).
+  let rows =
+    rows_of(model, on_screen.id)
+    |> list.filter(fn(row) { !undo.hides(model.undo, row.workout.id) })
   let weeks =
     plan_schedule.weeks(
       on_screen.phases,
       list.map(rows, fn(row) { row.workout }),
     )
   html.section([class("workouts plan-calendar")], [
+    undo.snackbar(model.undo, "Workout deleted", UndoClicked, DeleteExpired),
     html.div([class("toolbar")], [
       html.h2([], [html.text("Workouts")]),
       case can_edit, model.mode {
@@ -849,25 +865,6 @@ fn workout_details(row: Row, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
             [attribute.type_("button"), event.on_click(DeleteClicked(w.id))],
             [icon.view(icon.Delete), html.text("Delete")],
           ),
-          dialog.view(
-            confirm_dialog_id(w.id),
-            "Delete workout?",
-            "It is removed from this plan.",
-            CancelClicked,
-            [
-              button.text(
-                [attribute.type_("submit"), event.on_click(CancelClicked)],
-                [html.text("Cancel")],
-              ),
-              button.text(
-                [
-                  attribute.type_("submit"),
-                  event.on_click(DeleteConfirmed(w.id)),
-                ],
-                [html.text("Delete")],
-              ),
-            ],
-          ),
         ])
     },
   ])
@@ -1134,8 +1131,13 @@ fn panel(title: String, children: List(Element(Msg))) -> Element(Msg) {
   ])
 }
 
-fn confirm_dialog_id(id: String) -> String {
-  "confirm-delete-workout-" <> id
+/// The delete to write for a workout whose Undo ran out. It is looked up among all the plans' workouts: the user
+/// may have opened another plan meanwhile. Whether it could be deleted was checked when Delete was pressed.
+fn delete_of(model: Model, id: String) -> List(Action) {
+  case find(model.rows, id) {
+    Ok(row) -> [Delete(id, row.updated)]
+    Error(Nil) -> []
+  }
 }
 
 fn targets(w: Workout) -> String {

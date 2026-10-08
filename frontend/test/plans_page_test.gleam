@@ -3,7 +3,7 @@ import atlas/plan.{type Plan}
 import atlas/plan_form.{Form}
 import atlas/plans_page.{
   BaseWeeksChanged, Browsing, CompetitionWeeksChanged, Create, Creating, Delete,
-  DeleteClicked, DeleteConfirmed, Edit, EditClicked, Editing, GoalChanged, Model,
+  DeleteClicked, DeleteExpired, Edit, EditClicked, Editing, GoalChanged, Model,
   NewClicked, PlansRead, PreCompetitionWeeksChanged, Submitted, TitleChanged,
 }
 import gleam/dict
@@ -170,30 +170,28 @@ pub fn plans_of_other_people_cannot_be_edited_or_deleted_test() {
   let #(edit, actions) = update(model, EditClicked("o"))
   assert edit.mode == Browsing
   assert actions == []
-  let #(_, actions) = update(model, DeleteConfirmed("o"))
-  assert actions == []
+  let #(next, _) = update(model, DeleteClicked("o"))
+  assert next.undo == model.undo
 }
 
-pub fn deleting_needs_a_second_click_test() {
-  let model = with_plans([mine("a", "A")])
-  let #(asked, actions) = update(model, DeleteClicked)
-  assert asked.confirming_delete
+pub fn deleting_a_plan_waits_for_undo_on_the_list_test() {
+  let model = with_plans([mine("a", "A"), mine("b", "B")])
+  let #(waiting, actions) = update(model, DeleteClicked("a"))
   assert actions == []
-  let #(done, actions) = update(asked, DeleteConfirmed("a"))
+  let list = html_of(plans_page.view_list(waiting, "u1"))
+  assert string.contains(list, "Plan deleted")
+  assert !string.contains(list, ">A<")
+  assert string.contains(list, ">B<")
+  let #(undone, _) = update(waiting, plans_page.UndoClicked)
+  assert string.contains(html_of(plans_page.view_list(undone, "u1")), ">A<")
+  let #(_, actions) = update(waiting, DeleteExpired(1))
   assert actions == [Delete("a", "T-a")]
-  assert !done.confirming_delete
 }
 
-pub fn cancelling_leaves_the_form_and_the_question_test() {
-  let model =
-    Model(
-      ..with_plans([mine("a", "A")]),
-      mode: Editing("a"),
-      confirming_delete: True,
-    )
+pub fn cancelling_leaves_the_form_test() {
+  let model = Model(..with_plans([mine("a", "A")]), mode: Editing("a"))
   let #(next, _) = update(model, plans_page.CancelClicked)
   assert next.mode == Browsing
-  assert !next.confirming_delete
 }
 
 pub fn a_plan_deleted_elsewhere_ends_an_edit_of_it_test() {
@@ -296,14 +294,6 @@ pub fn the_detail_of_a_shared_plan_is_read_only_test() {
 pub fn a_missing_plan_is_explained_test() {
   let html = html_of(plans_page.view_detail(with_plans([]), "nope", "u1"))
   assert string.contains(html, "not on this device")
-}
-
-pub fn the_delete_question_has_a_clear_way_out_test() {
-  let model = Model(..with_plans([mine("a", "A")]), confirming_delete: True)
-  let html = html_of(plans_page.view_detail(model, "a", "u1"))
-  assert string.contains(html, "Delete plan?")
-  assert string.contains(html, ">Delete<")
-  assert string.contains(html, ">Cancel<")
 }
 
 // Copying -----------------------------------------------------------------------------------------

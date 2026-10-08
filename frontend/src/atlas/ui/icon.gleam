@@ -40,6 +40,9 @@ pub type Icon {
   CalendarToday
   Schedule
   ChevronLeft
+  MoreVert
+  PersonAdd
+  PlayArrow
 }
 
 pub type Style {
@@ -247,5 +250,19 @@ fn paths(icon: Icon, style: Style) -> List(String) {
       "M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12l4.58-4.59z",
     ]
     ChevronLeft, Filled -> ["M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"]
+    // more_vert: opens a menu
+    MoreVert, _ -> [
+      "M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z",
+    ]
+    // person_add
+    PersonAdd, Outlined -> [
+      "M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0-6c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm0 8c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm-6 4c.22-.72 3.31-2 6-2 2.7 0 5.8 1.29 6 2H9zm-3-3v-3h3v-2H6V7H4v3H1v2h3v3z",
+    ]
+    PersonAdd, Filled -> [
+      "M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z",
+    ]
+    // play_arrow: starts a plan
+    PlayArrow, Outlined -> ["M10 8.64 15.27 12 10 15.36V8.64M8 5v14l11-7L8 5z"]
+    PlayArrow, Filled -> ["M8 5v14l11-7z"]
   }
 }

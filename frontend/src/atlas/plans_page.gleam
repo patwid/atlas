@@ -13,7 +13,6 @@ import atlas/store
 import atlas/ui/badge
 import atlas/ui/button
 import atlas/ui/choice
-import atlas/ui/dialog
 import atlas/ui/empty
 import atlas/ui/error
 import atlas/ui/field
@@ -23,6 +22,7 @@ import atlas/ui/layout
 import atlas/ui/plan_settings
 import atlas/ui/progress
 import atlas/ui/snackbar
+import atlas/ui/undo.{type Undo}
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -34,8 +34,7 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
-
-const confirm_delete_dialog_id = "confirm-delete-plan"
+import modem
 
 pub type Mode {
   Browsing
@@ -60,7 +59,8 @@ pub type Model {
     mode: Mode,
     form: plan_form.Form,
     /// The first click on "Delete" asks; the second one deletes.
-    confirming_delete: Bool,
+    /// A delete that can still be undone (ADR 0056).
+    undo: Undo,
     copy: CopyState,
   )
 }
@@ -80,8 +80,10 @@ pub type Msg {
   CompetitionWeeksChanged(String)
   GoalChanged(String)
   Submitted
-  DeleteClicked
-  DeleteConfirmed(String)
+  /// Deletes at once and goes back to the list, with Undo for a few seconds (ADR 0056).
+  DeleteClicked(String)
+  UndoClicked
+  DeleteExpired(Int)
   CopyClicked(String)
   /// The app made the copy: its plan has this ID.
   CopyMade(String, String)
@@ -100,7 +102,7 @@ pub type Action {
 }
 
 pub fn new() -> Model {
-  Model([], False, Browsing, plan_form.empty(), False, NoCopy)
+  Model([], False, Browsing, plan_form.empty(), undo.new(), NoCopy)
 }
 
 pub fn refresh() -> Effect(Msg) {
@@ -137,12 +139,7 @@ pub fn update(
     PlansRead(Error(Nil)) -> #(model, effect.none(), [])
 
     NewClicked -> #(
-      Model(
-        ..model,
-        mode: Creating,
-        form: plan_form.empty(),
-        confirming_delete: False,
-      ),
+      Model(..model, mode: Creating, form: plan_form.empty()),
       // The form opens at the top of the page, away from the floating button (ADR 0047).
       focus.soon("plan-title"),
       [],
@@ -151,12 +148,7 @@ pub fn update(
     EditClicked(id) ->
       case find(model.plans, id) {
         Ok(found) if found.owner_id == user_id -> #(
-          Model(
-            ..model,
-            mode: Editing(id),
-            form: plan_form.from_plan(found),
-            confirming_delete: False,
-          ),
+          Model(..model, mode: Editing(id), form: plan_form.from_plan(found)),
           effect.none(),
           [],
         )
@@ -164,12 +156,7 @@ pub fn update(
       }
 
     CancelClicked -> #(
-      Model(
-        ..model,
-        mode: Browsing,
-        form: plan_form.empty(),
-        confirming_delete: False,
-      ),
+      Model(..model, mode: Browsing, form: plan_form.empty()),
       effect.none(),
       [],
     )
@@ -242,11 +229,37 @@ pub fn update(
         Ok(_), Browsing -> #(model, effect.none(), [])
       }
 
-    DeleteClicked -> #(
-      Model(..model, confirming_delete: True),
-      dialog.show(confirm_delete_dialog_id),
+    DeleteClicked(id) ->
+      case delete_of(model, user_id, id) {
+        [] -> #(model, effect.none(), [])
+        _ -> {
+          let #(next, earlier, wait) = undo.start(model.undo, id, DeleteExpired)
+          #(
+            Model(..model, undo: next, mode: Browsing),
+            effect.batch([
+              wait,
+              modem.push(route.to_path(route.Plans), None, None),
+            ]),
+            option.map(earlier, delete_of(model, user_id, _))
+              |> option.unwrap([]),
+          )
+        }
+      }
+
+    UndoClicked -> #(
+      Model(..model, undo: undo.cancel(model.undo)),
+      effect.none(),
       [],
     )
+
+    DeleteExpired(n) -> {
+      let #(next, due) = undo.expire(model.undo, n)
+      #(
+        Model(..model, undo: next),
+        effect.none(),
+        option.map(due, delete_of(model, user_id, _)) |> option.unwrap([]),
+      )
+    }
 
     CopyClicked(id) ->
       case model.copy, find(model.plans, id) {
@@ -272,16 +285,6 @@ pub fn update(
     )
 
     CopyAgainClicked -> #(Model(..model, copy: NoCopy), effect.none(), [])
-
-    DeleteConfirmed(id) ->
-      case find(model.plans, id) {
-        Ok(found) if found.owner_id == user_id -> #(
-          Model(..model, mode: Browsing, confirming_delete: False),
-          effect.none(),
-          [Delete(id, found.updated)],
-        )
-        _ -> #(model, effect.none(), [])
-      }
   }
 }
 
@@ -333,8 +336,11 @@ pub fn view_list_with(
   shared_by: fn(Plan) -> Option(String),
 ) -> Element(Msg) {
   let #(mine, others) =
-    list.partition(model.plans, fn(p) { p.owner_id == user_id })
+    model.plans
+    |> list.filter(fn(p) { !undo.hides(model.undo, p.id) })
+    |> list.partition(fn(p) { p.owner_id == user_id })
   html.section([class("plans")], [
+    undo.snackbar(model.undo, "Plan deleted", UndoClicked, DeleteExpired),
     html.div([class("toolbar")], [
       html.h2([], [html.text("Your plans")]),
       case model.mode {
@@ -469,26 +475,19 @@ fn owner_actions(found: Plan) -> Element(Msg) {
       [attribute.type_("button"), event.on_click(EditClicked(found.id))],
       [icon.view(icon.Edit), html.text("Edit")],
     ),
-    button.outlined([attribute.type_("button"), event.on_click(DeleteClicked)], [
-      icon.view(icon.Delete),
-      html.text("Delete"),
-    ]),
-    dialog.view(
-      confirm_delete_dialog_id,
-      "Delete plan?",
-      "It is deleted for you and for everyone you shared it with.",
-      CancelClicked,
-      [
-        button.text([attribute.type_("submit"), event.on_click(CancelClicked)], [
-          html.text("Cancel"),
-        ]),
-        button.text(
-          [attribute.type_("submit"), event.on_click(DeleteConfirmed(found.id))],
-          [html.text("Delete")],
-        ),
-      ],
+    button.outlined(
+      [attribute.type_("button"), event.on_click(DeleteClicked(found.id))],
+      [icon.view(icon.Delete), html.text("Delete")],
     ),
   ])
+}
+
+/// The delete to write for a plan of the user's own.
+fn delete_of(model: Model, user_id: String, id: String) -> List(Action) {
+  case find(model.plans, id) {
+    Ok(found) if found.owner_id == user_id -> [Delete(id, found.updated)]
+    _ -> []
+  }
 }
 
 fn plan_list(

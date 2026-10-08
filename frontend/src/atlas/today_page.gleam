@@ -12,13 +12,15 @@ import atlas/random
 import atlas/records
 import atlas/route
 import atlas/store
+import atlas/timer
 import atlas/today.{type Inputs, type Item}
 import atlas/ui/badge
 import atlas/ui/button
-import atlas/ui/dialog
 import atlas/ui/empty
 import atlas/ui/icon
 import atlas/ui/layout
+import atlas/ui/snackbar
+import atlas/ui/undo
 import atlas/units
 import atlas/workout_form
 import gleam/dict
@@ -45,8 +47,10 @@ pub type Model {
     loaded: Bool,
     /// The item whose activity list is open.
     choosing: Option(Key),
-    /// The item whose "Unlink" was clicked once.
-    confirming: Option(Key),
+    /// The link just removed, for Undo (ADR 0056): the snackbar's number, the item and its activity.
+    unlinked: Option(#(Int, Key, String)),
+    /// How many such snackbars have been shown, so a timer only closes its own.
+    unlinks: Int,
   )
 }
 
@@ -57,8 +61,10 @@ pub type Msg {
   ConfirmClicked(Key, String)
   ChooseClicked(Key)
   PickClicked(Key, String)
+  /// Unlinks at once; Undo links the same activity again (ADR 0056).
   UnlinkClicked(Key)
-  UnlinkConfirmed(Key)
+  UnlinkUndone
+  UnlinkNoticeExpired(Int)
   CancelClicked
 }
 
@@ -69,7 +75,7 @@ pub type Action {
 }
 
 pub fn new() -> Model {
-  Model([], False, None, None)
+  Model([], False, None, None, 0)
 }
 
 pub fn refresh() -> Effect(Msg) {
@@ -103,30 +109,47 @@ pub fn update(
     PickClicked(key, activity_id) -> link(model, inputs, key, activity_id)
 
     ChooseClicked(key) -> #(
-      Model(..model, choosing: Some(key), confirming: None),
+      Model(..model, choosing: Some(key)),
       effect.none(),
       [],
     )
 
-    UnlinkClicked(key) -> #(
-      Model(..model, confirming: Some(key), choosing: None),
-      dialog.show(confirm_dialog_id(key)),
-      [],
-    )
-
-    UnlinkConfirmed(key) ->
+    UnlinkClicked(key) ->
       case stored_for(inputs, key) {
-        Some(row) -> #(Model(..model, confirming: None), effect.none(), [
-          Delete(row.id, row.updated),
-        ])
-        None -> #(Model(..model, confirming: None), effect.none(), [])
+        Some(row) -> {
+          let n = model.unlinks + 1
+          #(
+            Model(
+              ..model,
+              unlinked: Some(#(n, key, row.match.activity_id)),
+              unlinks: n,
+              choosing: None,
+            ),
+            timer.after(undo.seconds, UnlinkNoticeExpired(n)),
+            [Delete(row.id, row.updated)],
+          )
+        }
+        None -> #(model, effect.none(), [])
       }
 
-    CancelClicked -> #(
-      Model(..model, choosing: None, confirming: None),
-      effect.none(),
-      [],
-    )
+    UnlinkUndone ->
+      case model.unlinked {
+        Some(#(_, key, activity_id)) ->
+          link(Model(..model, unlinked: None), inputs, key, activity_id)
+        None -> #(model, effect.none(), [])
+      }
+
+    UnlinkNoticeExpired(n) ->
+      case model.unlinked {
+        Some(#(shown, _, _)) if shown == n -> #(
+          Model(..model, unlinked: None),
+          effect.none(),
+          [],
+        )
+        _ -> #(model, effect.none(), [])
+      }
+
+    CancelClicked -> #(Model(..model, choosing: None), effect.none(), [])
   }
 }
 
@@ -138,7 +161,7 @@ fn link(
   key: Key,
   activity_id: String,
 ) -> #(Model, Effect(Msg), List(Action)) {
-  let finished = Model(..model, choosing: None, confirming: None)
+  let finished = Model(..model, choosing: None)
   let known =
     list.any(today.items(inputs), fn(item) { key_of(item) == key })
     && list.any(inputs.activities, fn(row) {
@@ -206,6 +229,15 @@ pub fn view(model: Model, inputs: Inputs) -> Element(Msg) {
   let items = today.items(inputs)
   let sections = today.sections(items, inputs.today)
   html.section([class("today")], [
+    case model.unlinked {
+      Some(#(n, _, _)) ->
+        snackbar.view(
+          "Activity unlinked",
+          Some(snackbar.Act("Undo", UnlinkUndone)),
+          UnlinkNoticeExpired(n),
+        )
+      None -> element.none()
+    },
     html.h2([], [html.text(date.format(inputs.today))]),
     case inputs.assignments {
       [] ->
@@ -293,10 +325,6 @@ fn item_view(item: Item, model: Model, inputs: Inputs) -> Element(Msg) {
   ])
 }
 
-fn confirm_dialog_id(key: Key) -> String {
-  "confirm-unlink-" <> key.assignment_id <> "-" <> key.workout_id
-}
-
 /// The day's state as a chip in the color of its kind, then what was run, if anything (ADR 0048).
 fn status(
   kind: String,
@@ -357,25 +385,6 @@ fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
         layout.actions([
           link_button("Change", ChooseClicked(key)),
           link_button("Unlink", UnlinkClicked(key)),
-          dialog.view(
-            confirm_dialog_id(key),
-            "Unlink activity?",
-            "The workout no longer counts as done.",
-            CancelClicked,
-            [
-              button.text(
-                [attribute.type_("submit"), event.on_click(CancelClicked)],
-                [html.text("Cancel")],
-              ),
-              button.text(
-                [
-                  attribute.type_("submit"),
-                  event.on_click(UnlinkConfirmed(key)),
-                ],
-                [html.text("Unlink")],
-              ),
-            ],
-          ),
         ]),
       ])
   }

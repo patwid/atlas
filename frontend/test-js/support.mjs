@@ -89,6 +89,7 @@ export const pick = (w, name, value) => click(w, w.document.querySelector(`input
 // up in the open one: elsewhere they would match another item's closed dialog.
 export const openDialog = (w) => w.document.querySelector("dialog[open]")
 export const dialogButton = (w, text) => [...(openDialog(w)?.querySelectorAll("button") ?? [])].find((b) => b.textContent.trim() === text)
+export const location = (w) => w.location.pathname
 export const byLabel = (w, label) => [...w.document.querySelectorAll("button")].find((b) => b.getAttribute("aria-label") === label)
 
 // Setup calls must work: a silent 400 (for example an ID of the wrong length) would only show up later as a timeout.
