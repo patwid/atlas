@@ -2,9 +2,11 @@ import atlas/outbox
 import atlas/plan.{Workout}
 import atlas/workout_form.{type Row, Form, Row}
 import atlas/workouts_page.{
-  AddClicked, Adding, Browsing, Create, DayChanged, Delete, DeleteClicked,
-  DeleteConfirmed, Edit, EditClicked, Editing, KindChanged, Model, Submitted,
-  TitleChanged, WeekChanged, WorkoutsRead,
+  AddClicked, Adding, BaseWeeksChanged, Browsing, Create, DayChanged, Delete,
+  DeleteClicked, DeleteConfirmed, Edit, EditClicked, EditPlan, Editing,
+  GoalChanged, IntensityChanged, KindChanged, Model, SettingsEditClicked,
+  SettingsSubmitted, Submitted, TitleChanged, Viewing, WeekChanged, WeekSelected,
+  WorkoutSelected, WorkoutsRead,
 }
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -47,8 +49,19 @@ fn with_rows(rows: List(Row)) -> workouts_page.Model {
   Model(..workouts_page.new(), rows: rows, loaded: True)
 }
 
+/// Base 2 weeks, pre-competition 1, competition 1, a 40 km goal and week 2 hard.
+fn the_plan() -> plan.Plan {
+  plan.Plan(
+    ..plan.new("p1", "u1", "10k", "", plan.Private, "T-p1"),
+    phases: plan.Phases(2, 1, 1),
+    weekly_distance_m: Some(40_000.0),
+    week_intensity: dict.from_list([#(2, plan.High)]),
+  )
+}
+
 fn update(model: workouts_page.Model, msg: workouts_page.Msg) {
-  let #(next, _, actions) = workouts_page.update(model, msg, "p1", True)
+  let #(next, _, actions) =
+    workouts_page.update(model, msg, Some(the_plan()), True)
   #(next, actions)
 }
 
@@ -134,7 +147,7 @@ pub fn editing_sends_only_what_changed_with_the_local_base_test() {
         "T-a",
       ),
     ]
-  assert model.mode == Browsing
+  assert model.mode == Viewing("a")
 }
 
 pub fn moving_a_workout_to_another_day_is_an_edit_with_a_new_position_test() {
@@ -160,7 +173,7 @@ pub fn an_edit_without_changes_writes_nothing_test() {
   let #(model, _) = update(model, EditClicked("a"))
   let #(model, actions) = update(model, Submitted)
   assert actions == []
-  assert model.mode == Browsing
+  assert model.mode == Viewing("a")
 }
 
 pub fn deleting_needs_a_second_click_test() {
@@ -176,12 +189,15 @@ pub fn deleting_needs_a_second_click_test() {
 pub fn nothing_can_be_changed_without_permission_test() {
   let model = with_rows([row("a", "p1", 0, 0, "Easy")])
   let attempt = fn(msg) {
-    let #(next, _, actions) = workouts_page.update(model, msg, "p1", False)
+    let #(next, _, actions) =
+      workouts_page.update(model, msg, Some(the_plan()), False)
     #(next == model, actions)
   }
   assert attempt(AddClicked(1, 1)) == #(True, [])
   assert attempt(EditClicked("a")) == #(True, [])
   assert attempt(DeleteConfirmed("a")) == #(True, [])
+  assert attempt(IntensityChanged("low")) == #(True, [])
+  assert attempt(SettingsEditClicked) == #(True, [])
 }
 
 pub fn only_workouts_of_the_plan_on_screen_can_be_changed_test() {
@@ -202,7 +218,7 @@ pub fn a_workout_removed_elsewhere_ends_an_edit_of_it_test() {
 // What is on the screen ---------------------------------------------------------------------------
 
 fn html_of(model: workouts_page.Model, can_edit: Bool) -> String {
-  element.to_string(workouts_page.view(model, "p1", can_edit))
+  element.to_string(workouts_page.view(model, the_plan(), can_edit))
 }
 
 pub fn weeks_days_and_totals_are_shown_test() {
@@ -223,21 +239,113 @@ pub fn weeks_days_and_totals_are_shown_test() {
 }
 
 pub fn the_owner_can_add_edit_and_delete_test() {
-  let html = html_of(with_rows([row("a", "p1", 0, 0, "Easy run")]), True)
+  let model =
+    Model(..with_rows([row("a", "p1", 0, 0, "Easy run")]), mode: Viewing("a"))
+  let html = html_of(model, True)
   assert string.contains(html, "Add workout")
-  assert string.contains(html, "+ Add")
   assert string.contains(html, ">Edit<")
   assert string.contains(html, ">Delete<")
   assert string.contains(html, "Add a workout to week 1, day 1")
+  assert string.contains(html, ">Edit settings<")
+  assert string.contains(html, "id=\"week-intensity\"")
 }
 
 pub fn others_only_read_test() {
-  let html = html_of(with_rows([row("a", "p1", 0, 0, "Easy run")]), False)
+  let model =
+    Model(..with_rows([row("a", "p1", 0, 0, "Easy run")]), mode: Viewing("a"))
+  let html = html_of(model, False)
   assert string.contains(html, "Easy run")
   assert !string.contains(html, "Add workout")
-  assert !string.contains(html, "+ Add")
+  assert !string.contains(html, "Add a workout to week")
   assert !string.contains(html, ">Edit<")
   assert !string.contains(html, ">Delete<")
+  assert !string.contains(html, "Edit settings")
+  assert !string.contains(html, "id=\"week-intensity\"")
+}
+
+pub fn the_calendar_shows_every_phase_week_with_its_intensity_test() {
+  let html = html_of(with_rows([row("a", "p1", 0, 0, "Easy run")]), True)
+  assert string.contains(html, "Base phase")
+  assert string.contains(html, "Pre-competition phase")
+  assert string.contains(html, "Competition phase")
+  assert string.contains(html, "Week 4")
+  assert !string.contains(html, "Week 5")
+  assert string.contains(html, "intensity-high")
+}
+
+pub fn the_sidebar_shows_the_selected_week_against_the_goal_test() {
+  let model =
+    Model(
+      ..with_rows([row("a", "p1", 7, 0, "Easy"), row("b", "p1", 9, 0, "Steady")]),
+      selected_week: 2,
+    )
+  let html = html_of(model, False)
+  assert string.contains(html, "Base, week 2")
+  assert string.contains(html, "16.00 km of 40.00 km (40%)")
+  assert string.contains(html, "High")
+  assert string.contains(html, "aria-valuenow=\"40\"")
+}
+
+pub fn selecting_a_week_or_a_workout_shows_it_in_the_sidebar_test() {
+  let model = with_rows([row("a", "p1", 15, 0, "Tempo")])
+  let #(model, _) = update(model, WeekSelected(2))
+  assert model.selected_week == 2
+  let #(model, actions) = update(model, WorkoutSelected("a"))
+  assert model.mode == Viewing("a")
+  assert model.selected_week == 3
+  assert actions == []
+}
+
+pub fn the_intensity_of_the_selected_week_is_written_to_the_plan_test() {
+  let model = Model(..with_rows([]), selected_week: 3)
+  let #(_, actions) = update(model, IntensityChanged("low"))
+  assert actions
+    == [
+      EditPlan(
+        "p1",
+        dict.from_list([#("week_intensity", "[\"\",\"high\",\"low\"]")]),
+        "T-p1",
+      ),
+    ]
+  let #(_, actions) =
+    update(Model(..model, selected_week: 2), IntensityChanged(""))
+  assert actions
+    == [EditPlan("p1", dict.from_list([#("week_intensity", "[]")]), "T-p1")]
+  let #(_, actions) =
+    update(Model(..model, selected_week: 2), IntensityChanged("high"))
+  assert actions == []
+}
+
+pub fn the_plan_settings_are_edited_in_the_sidebar_test() {
+  let #(model, _) = update(with_rows([]), SettingsEditClicked)
+  let assert Some(settings) = model.settings
+  assert settings.base_weeks == "2"
+  assert settings.goal_km == "40"
+  let #(model, _) = update(model, BaseWeeksChanged("6"))
+  let #(model, _) = update(model, GoalChanged("45"))
+  let #(model, actions) = update(model, SettingsSubmitted)
+  assert model.settings == None
+  assert actions
+    == [
+      EditPlan(
+        "p1",
+        dict.from_list([
+          outbox.field_int("base_weeks", 6),
+          outbox.field_float("weekly_distance_m", 45_000.0),
+        ]),
+        "T-p1",
+      ),
+    ]
+}
+
+pub fn invalid_plan_settings_stay_open_with_a_message_test() {
+  let #(model, _) = update(with_rows([]), SettingsEditClicked)
+  let #(model, _) = update(model, BaseWeeksChanged("99"))
+  let #(model, actions) = update(model, SettingsSubmitted)
+  assert actions == []
+  assert model.settings_error
+    == Some("The base phase must be a number of weeks from 0 to 52.")
+  assert string.contains(html_of(model, True), "Save settings")
 }
 
 pub fn an_empty_plan_invites_the_first_workout_test() {
@@ -277,6 +385,7 @@ pub fn the_delete_question_has_a_way_out_test() {
   let model =
     Model(
       ..with_rows([row("a", "p1", 0, 0, "Easy run")]),
+      mode: Viewing("a"),
       confirming: Some("a"),
     )
   let html = html_of(model, True)
@@ -285,7 +394,7 @@ pub fn the_delete_question_has_a_way_out_test() {
   assert string.contains(html, "Keep it")
 }
 
-pub fn the_edit_form_replaces_the_workout_in_place_test() {
+pub fn the_edit_form_opens_in_the_sidebar_test() {
   let model =
     Model(
       ..with_rows([

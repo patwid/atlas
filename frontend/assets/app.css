@@ -6,6 +6,14 @@
   --border: #d9e2df;
   --warn-bg: #fef3c7;
   --warn-text: #78350f;
+  /* Plan calendar (ADR 0043): a tint per phase, a color per intensity. */
+  --phase-base: #e7f1ff;
+  --phase-pre: #fff4e0;
+  --phase-competition: #fde8ea;
+  --selected: #cfe2ff;
+  --intensity-low: #198754;
+  --intensity-medium: #b76e00;
+  --intensity-high: #dc3545;
   /* Bootstrap's palette, for buttons and form controls (no Bootstrap file involved); same
      shades in light and dark mode, since this mid-tone blue/gray/red reads fine on both of
      Atlas's surface colors. */
@@ -29,6 +37,13 @@
     --border: #263431;
     --warn-bg: #3b2f0b;
     --warn-text: #fde68a;
+    --phase-base: #14243a;
+    --phase-pre: #2e2410;
+    --phase-competition: #321a1d;
+    --selected: #1d3a63;
+    --intensity-low: #4cc38a;
+    --intensity-medium: #f0b44c;
+    --intensity-high: #f07580;
   }
 }
 * { box-sizing: border-box; }
@@ -137,12 +152,80 @@ label { font-size: 0.875rem; color: var(--muted); margin-top: 0.5rem; }
 .coach-form { margin-top: 1rem; }
 .found { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.5rem 1rem; margin-top: 0.5rem; }
 .found p { margin: 0.25rem 0; }
-.week h3 { font-size: 1rem; margin: 1rem 0 0.25rem; }
 .totals { color: var(--muted); font-weight: 400; margin-left: 0.5rem; font-size: 0.875rem; }
-.days { list-style: none; margin: 0; padding: 0; }
-.day { display: grid; grid-template-columns: 4rem 1fr; gap: 0.5rem; border-top: 1px solid var(--border); padding: 0.5rem 0; }
-.day-name { color: var(--muted); font-size: 0.875rem; }
-.workout p { margin: 0.125rem 0; }
+
+/* Plan calendar with a sidebar (ADR 0043): weeks as rows, days as columns, bands per phase. On a phone the days
+   of a week stack and the sidebar follows the calendar. */
+/* The header lines up with the wider page. */
+main:has(.plan-calendar), body:has(.plan-calendar) .bar-content { max-width: 80rem; }
+.calendar-layout { display: grid; gap: 1rem; align-items: start; }
+.calendar { min-width: 0; }
+.calendar-head { display: none; }
+.phase-band { border-radius: 0.5rem; padding: 0.25rem 0.5rem 0.5rem; margin-bottom: 0.5rem; }
+.phase-base { background: var(--phase-base); }
+.phase-pre { background: var(--phase-pre); }
+.phase-competition { background: var(--phase-competition); }
+.phase-none { border: 1px dashed var(--border); }
+.band-title { font-size: 0.9375rem; margin: 0.25rem 0 0.375rem; }
+.calendar-week { display: grid; grid-template-columns: 1fr; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 0.375rem; overflow: hidden; margin-bottom: 0.375rem; }
+.calendar-week.selected { border-color: var(--bs-primary); box-shadow: 0 0 0 1px var(--bs-primary); }
+.week-label {
+  font: inherit; text-align: left; cursor: pointer; border: 0; background: var(--surface); color: var(--text);
+  padding: 0.375rem 0.5rem; display: flex; flex-wrap: wrap; gap: 0.25rem 0.5rem; align-items: baseline;
+}
+.calendar-week.selected .week-label { background: var(--selected); }
+.week-label:focus-visible, .workout:focus-visible, .add-here:focus-visible { outline: 2px solid var(--bs-primary); outline-offset: -2px; }
+.week-distance { color: var(--muted); font-size: 0.8125rem; }
+.calendar-day { background: var(--surface); padding: 0.25rem 0.375rem; display: grid; grid-template-columns: 3.5rem 1fr; gap: 0.5rem; min-height: 2.25rem; }
+.day-name { color: var(--muted); font-size: 0.8125rem; padding-top: 0.125rem; }
+.day-body { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+.workout {
+  font: inherit; font-size: 0.8125rem; line-height: 1.3; text-align: left; cursor: pointer; width: 100%;
+  border: 0; border-left: 3px solid var(--bs-secondary); border-radius: 0.25rem; padding: 0.25rem 0.375rem;
+  background: var(--bg); color: var(--text); display: flex; flex-direction: column; overflow-wrap: anywhere;
+}
+.workout.open { background: var(--selected); }
+.workout.kind-easy, .workout.kind-long { border-left-color: var(--intensity-low); }
+.workout.kind-tempo, .workout.kind-interval { border-left-color: var(--intensity-medium); }
+.workout.kind-race { border-left-color: var(--intensity-high); }
+.workout.kind-rest { border-left-color: var(--border); color: var(--muted); }
+.workout-title { font-weight: 600; }
+.workout-targets { color: var(--muted); }
+.add-here {
+  font: inherit; cursor: pointer; align-self: flex-start; border: 1px dashed var(--border); border-radius: 0.25rem;
+  background: none; color: var(--muted); padding: 0 0.5rem; line-height: 1.5;
+}
+.add-here:hover { color: var(--bs-primary); border-color: var(--bs-primary); }
+.intensity { font-size: 0.75rem; font-weight: 600; padding: 0 0.375rem; border-radius: 999px; border: 1px solid currentColor; }
+.intensity-low { color: var(--intensity-low); }
+.intensity-medium { color: var(--intensity-medium); }
+.intensity-high { color: var(--intensity-high); }
+.calendar-sidebar { display: grid; gap: 0.75rem; }
+.sidebar-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem 1rem; }
+.sidebar-panel h3 { font-size: 1rem; margin: 0 0 0.25rem; overflow-wrap: anywhere; }
+.sidebar-panel p { margin: 0.25rem 0; }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 0.75rem; margin: 0.5rem 0 0; align-items: center; }
+.facts dt { color: var(--muted); font-size: 0.875rem; }
+.facts dt label { margin: 0; }
+.facts dd { margin: 0; }
+.goal-meter { height: 0.5rem; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; margin-top: 0.75rem; }
+.goal-meter span { display: block; height: 100%; background: var(--bs-primary); }
+.goal-meter.over span { background: var(--intensity-medium); }
+.plan-settings { border: 0; padding: 0; margin: 0.75rem 0 0; min-width: 0; }
+.plan-settings legend { font-weight: 500; padding: 0; }
+@media (min-width: 48rem) {
+  .calendar-head, .calendar-week { grid-template-columns: 6rem repeat(7, minmax(0, 1fr)); }
+  .calendar-head { display: grid; gap: 1px; padding: 0 0.5rem 0.25rem; color: var(--muted); font-size: 0.8125rem; text-align: center; }
+  .calendar-week .week-label { flex-direction: column; gap: 0.125rem; }
+  .calendar-day { display: block; min-height: 4.5rem; }
+  .calendar-day .day-name { display: none; }
+  .add-here { opacity: 0.4; }
+  .calendar-day:hover .add-here, .add-here:focus-visible { opacity: 1; }
+}
+@media (min-width: 72rem) {
+  .calendar-layout { grid-template-columns: minmax(0, 1fr) 20rem; }
+  .calendar-sidebar { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; }
+}
 
 .summary { font-weight: 600; }
 .table-wrap { overflow-x: auto; }

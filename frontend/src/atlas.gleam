@@ -364,9 +364,9 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     WorkoutsPage(inner) ->
       case model.auth {
         SignedIn(session) -> {
-          let #(plan_id, can_edit) = plan_on_screen(model, session)
+          let #(on_screen, can_edit) = plan_on_screen(model, session)
           let #(page_model, page_effect, actions) =
-            workouts_page.update(model.workouts, inner, plan_id, can_edit)
+            workouts_page.update(model.workouts, inner, on_screen, can_edit)
           let #(state, action_effects) =
             perform_workouts(model.syncing, actions)
           #(
@@ -570,14 +570,17 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
 /// The plan whose screen is open, and whether the user may change it (only the owner may).
 /// Without an open plan nothing can be changed.
-fn plan_on_screen(model: Model, session: Session) -> #(String, Bool) {
+fn plan_on_screen(
+  model: Model,
+  session: Session,
+) -> #(option.Option(plan.Plan), Bool) {
   case model.route {
     route.Plan(id) ->
       case list.find(model.plans.plans, fn(p) { p.id == id }) {
-        Ok(found) -> #(id, found.owner_id == session.user_id)
-        Error(Nil) -> #(id, False)
+        Ok(found) -> #(Some(found), found.owner_id == session.user_id)
+        Error(Nil) -> #(None, False)
       }
-    _ -> #("", False)
+    _ -> #(None, False)
   }
 }
 
@@ -817,6 +820,8 @@ fn perform_workouts(
         syncing.edit(current, collection.Workouts, id, fields, base)
       workouts_page.Delete(id, base) ->
         syncing.delete(current, collection.Workouts, id, base)
+      workouts_page.EditPlan(id, fields, base) ->
+        syncing.edit(current, collection.Plans, id, fields, base)
     }
     #(next, list.append(effects, [effect]))
   })
@@ -1061,7 +1066,7 @@ fn page(model: Model, session: Session) -> Element(Msg) {
             element.map(
               workouts_page.view(
                 model.workouts,
-                id,
+                found,
                 found.owner_id == session.user_id,
               ),
               WorkoutsPage,
