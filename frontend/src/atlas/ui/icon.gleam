@@ -36,6 +36,9 @@ pub type Icon {
   Inbox
   SearchOff
   EditNote
+  CalendarToday
+  Schedule
+  ChevronLeft
 }
 
 pub fn view(icon: Icon) -> Element(msg) {
@@ -155,5 +158,16 @@ fn paths(icon: Icon) -> List(String) {
     EditNote -> [
       "M3 10h11v2H3v-2zm0-2h11V6H3v2zm0 8h7v-2H3v2zm15.01-3.13.71-.71a.996.996 0 0 1 1.41 0l.71.71c.39.39.39 1.02 0 1.41l-.71.71-2.12-2.12zm-.71.71-5.3 5.3V21h2.12l5.3-5.3-2.12-2.12z",
     ]
+    // calendar_today: opens a date picker
+    CalendarToday -> [
+      "M20 3h-1V1h-2v2H7V1H5v2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H4V8h16v13z",
+    ]
+    // schedule: opens a time picker
+    Schedule -> [
+      "M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z",
+      "M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z",
+    ]
+    // chevron_left
+    ChevronLeft -> ["M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"]
   }
 }

@@ -57,3 +57,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0051 | [Material slider and progress, a phone layout for the athlete table, calendar cards, ripple and motion](0051-material-slider-progress-motion.md) | Accepted |
 | 0052 | [The plan calendar's sidebar as a bottom sheet on smaller screens](0052-calendar-bottom-sheet.md) | Accepted |
 | 0053 | [Adopt Material 3 Expressive's shapes, motion and components where they fit](0053-material-3-expressive.md) | Accepted |
+| 0054 | [Material 3 date and time pickers beside the native fields](0054-material-date-and-time-pickers.md) | Accepted |

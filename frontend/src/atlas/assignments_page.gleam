@@ -12,6 +12,7 @@ import atlas/random
 import atlas/records
 import atlas/store
 import atlas/ui/button
+import atlas/ui/date_picker
 import atlas/ui/dialog
 import atlas/ui/error
 import atlas/ui/field
@@ -41,6 +42,8 @@ pub type Model {
     form: assignment_form.Form,
     /// The assignment whose "Remove" was clicked once.
     confirming: Option(String),
+    /// The form's date picker (ADR 0054).
+    date_picker: date_picker.State,
   )
 }
 
@@ -66,6 +69,9 @@ pub type Msg {
   CancelClicked
   AthleteChanged(String)
   DateChanged(String)
+  /// The picker's button was pressed; it opens on what the field holds now (ADR 0054).
+  DatePickerOpened
+  DatePicker(date_picker.Msg)
   Submitted
   RemoveClicked(String)
   RemoveConfirmed(String)
@@ -84,6 +90,7 @@ pub fn new() -> Model {
     Browsing,
     assignment_form.empty_for("", date.Date(2026, 1, 1)),
     None,
+    date_picker.new(),
   )
 }
 
@@ -175,6 +182,23 @@ pub fn update(
       typed(model, fn(f) { assignment_form.Form(..f, athlete_id: id) })
     DateChanged(text) ->
       typed(model, fn(f) { assignment_form.Form(..f, start_date: text) })
+    DatePickerOpened ->
+      update(
+        model,
+        DatePicker(date_picker.Opened(model.form.start_date, context.today)),
+        context,
+      )
+    DatePicker(inner) -> {
+      let #(state, picker_effect, picked) =
+        date_picker.update(date_picker_id, model.date_picker, inner)
+      let model = Model(..model, date_picker: state)
+      let #(model, _, _) = case picked {
+        Some(text) ->
+          typed(model, fn(f) { assignment_form.Form(..f, start_date: text) })
+        None -> #(model, effect.none(), [])
+      }
+      #(model, effect.map(picker_effect, DatePicker), [])
+    }
 
     Submitted ->
       case assignment_form.validate(model.form) {
@@ -306,7 +330,7 @@ pub fn view(
       },
     ]),
     case model.mode {
-      Starting -> form_view(model.form, context, "Start plan", True)
+      Starting -> form_view(model, context, "Start plan", True)
       _ -> element.none()
     },
     case model.loaded, rows {
@@ -344,7 +368,7 @@ fn row_view(
   html.li([], [
     case model.mode {
       ChangingDate(editing) if editing == a.id ->
-        form_view(model.form, context, "Save date", False)
+        form_view(model, context, "Save date", False)
       _ ->
         html.div([], [
           html.strong([], [
@@ -423,7 +447,27 @@ fn who(user_id: String, me: String, all_grants: List(Grant)) -> String {
 }
 
 /// `new_assignment`: starting a plan (the athlete can be chosen) rather than changing a date (it cannot).
+const date_picker_id = "assign-start-picker"
+
 fn form_view(
+  model: Model,
+  context: Context,
+  submit_label: String,
+  new_assignment: Bool,
+) -> Element(Msg) {
+  // The picker's dialog holds a form of its own, so it sits beside this form, not in it.
+  element.fragment([
+    form_fields(model.form, context, submit_label, new_assignment),
+    date_picker.view(
+      date_picker_id,
+      model.date_picker,
+      context.today,
+      DatePicker,
+    ),
+  ])
+}
+
+fn form_fields(
   form: assignment_form.Form,
   context: Context,
   submit_label: String,
@@ -455,14 +499,17 @@ fn form_view(
     html.label([attribute.for("assign-start")], [
       html.text("First day of the plan"),
     ]),
-    field.input([
-      attribute.id("assign-start"),
-      attribute.type_("date"),
-      attribute.name("start_date"),
-      attribute.value(form.start_date),
-      attribute.required(True),
-      event.on_input(DateChanged),
-    ]),
+    field.with_trigger(
+      field.input([
+        attribute.id("assign-start"),
+        attribute.type_("date"),
+        attribute.name("start_date"),
+        attribute.value(form.start_date),
+        attribute.required(True),
+        event.on_input(DateChanged),
+      ]),
+      date_picker.trigger(date_picker_id, DatePickerOpened),
+    ),
     case form.error {
       Some(message) -> error.message(message)
       None -> element.none()

@@ -838,6 +838,46 @@ test("a plan whose share was removed disappears from the recipient's device at t
   w.close()
 })
 
+test("the date and time pickers fill the activity form's fields", { skip: !built && "frontend not built" }, async () => {
+  await h.world()
+  const alice = h.people.alice
+  const w = startApp("/activities", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
+  const d = w.document
+  click(w, await waitFor("the add button", () => button(w, "Add activity")))
+  await waitFor("the form", () => d.querySelector("#activity-date"))
+  typeInto(w, d.querySelector("#activity-date"), "2026-10-05")
+
+  // The date picker opens on the field's month, moves a month on, and OK writes the day chosen.
+  click(w, byLabel(w, "Choose a date"))
+  await waitFor("the date picker", () => openDialog(w)?.textContent.includes("October 2026"))
+  assert.equal(openDialog(w).querySelector('[aria-selected="true"]').textContent, "5")
+  click(w, byLabel(w, "Next month"))
+  await waitFor("November", () => openDialog(w)?.textContent.includes("November 2026"))
+  click(w, [...openDialog(w).querySelectorAll(".date-picker-day")].find((b) => b.textContent === "17"))
+  await waitFor("the headline", () => openDialog(w).textContent.includes("Tue, 17 Nov"))
+  click(w, dialogButton(w, "OK"))
+  await waitFor("the date in the field", () => d.querySelector("#activity-date").value === "2026-11-17")
+  assert.equal(openDialog(w), null, "the picker closed")
+
+  // Cancel leaves the field as it was.
+  click(w, byLabel(w, "Choose a date"))
+  await waitFor("the date picker again", () => openDialog(w)?.textContent.includes("November 2026"))
+  click(w, [...openDialog(w).querySelectorAll(".date-picker-day")].find((b) => b.textContent === "3"))
+  click(w, dialogButton(w, "Cancel"))
+  await waitFor("closed", () => openDialog(w) === null)
+  assert.equal(d.querySelector("#activity-date").value, "2026-11-17")
+
+  // The time picker: an hour, then the minutes, then OK.
+  click(w, byLabel(w, "Choose a time"))
+  await waitFor("the time picker", () => openDialog(w)?.querySelector(".time-picker-dial"))
+  click(w, byLabel(w, "18 hours"))
+  await waitFor("the minutes", () => byLabel(w, "45 minutes"))
+  click(w, byLabel(w, "45 minutes"))
+  click(w, dialogButton(w, "OK"))
+  await waitFor("the time in the field", () => d.querySelector("#activity-time").value === "18:45")
+  w.close()
+})
+
 test("an athlete who removes a coach's access also removes her activities from his device", { skip: !built && "frontend not built" }, async () => {
   await h.world()
   const alice = h.people.alice

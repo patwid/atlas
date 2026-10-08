@@ -38,3 +38,11 @@ pub fn select(
     }),
   )
 }
+
+/// A field with a button at its end that opens a picker, such as a date field with a calendar button (ADR 0054).
+pub fn with_trigger(
+  field: Element(msg),
+  trigger: Element(msg),
+) -> Element(msg) {
+  html.div([class("field-with-trigger")], [field, trigger])
+}

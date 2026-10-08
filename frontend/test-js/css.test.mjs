@@ -16,8 +16,8 @@ test("app.css parses without errors", () => {
 
 test("every custom property app.css uses is defined in it", () => {
   const defined = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]))
-  // Set from code at run time: the ripple's position and size, and the slider's fill.
-  for (const name of ["--ripple-x", "--ripple-y", "--ripple-size", "--fill"]) defined.add(name)
+  // Set from code at run time: the ripple's position and size, the slider's fill, and a time picker angle.
+  for (const name of ["--ripple-x", "--ripple-y", "--ripple-size", "--fill", "--angle"]) defined.add(name)
   const used = new Set([...css.matchAll(/var\((--[\w-]+)/g)].map((m) => m[1]))
   assert.deepEqual([...used].filter((name) => !defined.has(name)), [])
 })

@@ -14,6 +14,7 @@ import atlas/store
 import atlas/ui/badge
 import atlas/ui/button
 import atlas/ui/choice
+import atlas/ui/date_picker
 import atlas/ui/dialog
 import atlas/ui/empty
 import atlas/ui/error
@@ -21,6 +22,7 @@ import atlas/ui/field
 import atlas/ui/focus
 import atlas/ui/icon
 import atlas/ui/layout
+import atlas/ui/time_picker
 import atlas/units
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -50,6 +52,9 @@ pub type Model {
     mode: Mode,
     form: activity_form.Form,
     confirming: Option(String),
+    /// The form's date and time pickers (ADR 0054).
+    date_picker: date_picker.State,
+    time_picker: time_picker.State,
   )
 }
 
@@ -74,6 +79,11 @@ pub type Msg {
   CancelClicked
   DateChanged(String)
   TimeChanged(String)
+  /// A picker's button was pressed; it opens on what the field holds now (ADR 0054).
+  DatePickerOpened
+  TimePickerOpened
+  DatePicker(date_picker.Msg)
+  TimePicker(time_picker.Msg)
   SportChanged(String)
   NameChanged(String)
   DistanceChanged(String)
@@ -98,6 +108,8 @@ pub fn new() -> Model {
     Browsing,
     activity_form.empty_for(date.Date(2026, 1, 1)),
     None,
+    date_picker.new(),
+    time_picker.new(),
   )
 }
 
@@ -194,6 +206,34 @@ pub fn update(
 
     DateChanged(v) -> typed(model, fn(f) { activity_form.Form(..f, date: v) })
     TimeChanged(v) -> typed(model, fn(f) { activity_form.Form(..f, time: v) })
+    DatePickerOpened ->
+      update(
+        model,
+        DatePicker(date_picker.Opened(model.form.date, context.today)),
+        context,
+      )
+    TimePickerOpened ->
+      update(model, TimePicker(time_picker.Opened(model.form.time)), context)
+    DatePicker(inner) -> {
+      let #(state, picker_effect, picked) =
+        date_picker.update(date_picker_id, model.date_picker, inner)
+      let model = Model(..model, date_picker: state)
+      let #(model, _, _) = case picked {
+        Some(v) -> typed(model, fn(f) { activity_form.Form(..f, date: v) })
+        None -> #(model, effect.none(), [])
+      }
+      #(model, effect.map(picker_effect, DatePicker), [])
+    }
+    TimePicker(inner) -> {
+      let #(state, picker_effect, picked) =
+        time_picker.update(time_picker_id, model.time_picker, inner)
+      let model = Model(..model, time_picker: state)
+      let #(model, _, _) = case picked {
+        Some(v) -> typed(model, fn(f) { activity_form.Form(..f, time: v) })
+        None -> #(model, effect.none(), [])
+      }
+      #(model, effect.map(picker_effect, TimePicker), [])
+    }
     SportChanged(v) ->
       typed(model, fn(f) {
         case activity.sport_from_string(v) {
@@ -321,7 +361,7 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
       },
     ]),
     case model.mode {
-      Adding -> form_view(model.form, "Save activity")
+      Adding -> form_view(model, context.today, "Save activity")
       _ -> element.none()
     },
     case model.loaded, rows {
@@ -351,7 +391,7 @@ fn row_view(row: Row, model: Model, context: Context) -> Element(Msg) {
   html.li([], [
     case model.mode {
       Editing(editing) if editing == a.id ->
-        form_view(model.form, "Save changes")
+        form_view(model, context.today, "Save changes")
       _ ->
         html.div([], [
           html.div([], [
@@ -503,30 +543,50 @@ fn actions(row: Row) -> Element(Msg) {
   ])
 }
 
-fn form_view(form: activity_form.Form, submit_label: String) -> Element(Msg) {
+const date_picker_id = "activity-date-picker"
+
+const time_picker_id = "activity-time-picker"
+
+fn form_view(model: Model, today: Date, submit_label: String) -> Element(Msg) {
+  let form = model.form
+  // The pickers' dialogs hold forms of their own, so they sit beside this form, not in it.
+  element.fragment([
+    form_fields(form, submit_label),
+    date_picker.view(date_picker_id, model.date_picker, today, DatePicker),
+    time_picker.view(time_picker_id, model.time_picker, TimePicker),
+  ])
+}
+
+fn form_fields(form: activity_form.Form, submit_label: String) -> Element(Msg) {
   html.form([class("activity-form"), event.on_submit(fn(_) { Submitted })], [
     html.div([class("row")], [
       html.div([], [
         html.label([attribute.for("activity-date")], [html.text("Day")]),
-        field.input([
-          attribute.id("activity-date"),
-          attribute.type_("date"),
-          attribute.name("date"),
-          attribute.value(form.date),
-          attribute.required(True),
-          event.on_input(DateChanged),
-        ]),
+        field.with_trigger(
+          field.input([
+            attribute.id("activity-date"),
+            attribute.type_("date"),
+            attribute.name("date"),
+            attribute.value(form.date),
+            attribute.required(True),
+            event.on_input(DateChanged),
+          ]),
+          date_picker.trigger(date_picker_id, DatePickerOpened),
+        ),
       ]),
       html.div([], [
         html.label([attribute.for("activity-time")], [html.text("Start time")]),
-        field.input([
-          attribute.id("activity-time"),
-          attribute.type_("time"),
-          attribute.name("time"),
-          attribute.value(form.time),
-          attribute.required(True),
-          event.on_input(TimeChanged),
-        ]),
+        field.with_trigger(
+          field.input([
+            attribute.id("activity-time"),
+            attribute.type_("time"),
+            attribute.name("time"),
+            attribute.value(form.time),
+            attribute.required(True),
+            event.on_input(TimeChanged),
+          ]),
+          time_picker.trigger(time_picker_id, TimePickerOpened),
+        ),
       ]),
     ]),
     choice.chips(

@@ -29,6 +29,12 @@ export const appRunner = (getHarness, fetched = () => {}) => (path, session) => 
     this.removeAttribute("open")
     this.dispatchEvent(new w.Event("close"))
   }
+  // As in browsers, submitting a form with method="dialog" closes the dialog it is in (ADR 0054's pickers check it).
+  w.document.addEventListener("submit", (event) => {
+    if (event.target.getAttribute("method") !== "dialog") return
+    event.preventDefault()
+    event.target.closest("dialog")?.close()
+  }, true)
   // jsdom's AbortSignal is not Node's, so the signal is left out of the shim.
   // A closed tab does nothing more. jsdom's own close() stops timers but not requests already under way, whose
   // answers would still run the app's code, for example a sync run that finishes and removes records from the

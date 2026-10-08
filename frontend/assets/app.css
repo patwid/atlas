@@ -774,3 +774,94 @@ a.strava-link { color: #FC5200; font-weight: 700; text-decoration: underline; }
   [data-ripple]::after { animation: none !important; }
   .page { animation: none; }
 }
+
+/* A field with a picker button at its end (ADR 0054). The browser's own picker button is hidden where it can be
+   (Chrome, Edge, Safari); the field still takes typing. */
+.field-with-trigger { position: relative; }
+.field-with-trigger .md-text-field { padding-right: 3.5rem; }
+.field-with-trigger input::-webkit-calendar-picker-indicator { display: none; }
+.field-trigger { position: absolute; right: 0.5rem; top: 0.5rem; }
+
+/* M3's modal pickers (ADR 0054): a label, a headline or the time fields, the picking area, and Cancel and OK. */
+dialog.picker { padding: 0; min-width: 0; width: auto; max-width: calc(100% - 2rem); }
+.picker-label {
+  margin: 0; padding: 1rem 1.5rem 0; color: var(--md-sys-color-on-surface-variant);
+  font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem;
+}
+.picker-headline {
+  margin: 0; padding: 2.25rem 1.5rem 0.75rem; color: var(--md-sys-color-on-surface);
+  font: 400 2rem/2.5rem var(--md-ref-typeface); border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+.picker-actions { justify-content: flex-end; margin: 0; padding: 0.5rem 0.75rem 0.75rem; }
+
+/* Date picker: 360px wide, a month row, then 40px days in 48px cells. */
+dialog.date-picker { width: 22.5rem; }
+.date-picker-month { display: flex; align-items: center; gap: 0.25rem; padding: 0.5rem 0.75rem 0 1.5rem; }
+.date-picker-title {
+  flex: 1; color: var(--md-sys-color-on-surface-variant);
+  font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem;
+}
+.date-picker-grid { border-collapse: collapse; margin: 0 auto; table-layout: fixed; }
+.date-picker-grid th {
+  width: 3rem; height: 3rem; color: var(--md-sys-color-on-surface);
+  font: 400 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
+}
+.date-picker-grid td { width: 3rem; height: 3rem; padding: 0; text-align: center; }
+.date-picker-day {
+  position: relative; width: 2.5rem; height: 2.5rem; padding: 0; border: 0; isolation: isolate; overflow: hidden;
+  border-radius: var(--md-sys-shape-corner-full); background: none; cursor: pointer;
+  color: var(--md-sys-color-on-surface); font: 400 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
+  font-variant-numeric: tabular-nums; -webkit-tap-highlight-color: transparent;
+}
+.date-picker-day::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  background: currentColor; opacity: 0; transition: opacity 0.15s var(--md-sys-motion-easing);
+}
+.date-picker-day:hover::before { opacity: var(--md-sys-state-hover); }
+.date-picker-day:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+.date-picker-day.today { color: var(--md-sys-color-primary); box-shadow: inset 0 0 0 1px var(--md-sys-color-primary); }
+.date-picker-day.selected { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); box-shadow: none; }
+
+/* Time picker: the hour and minute as large fields, then a 256px dial with the hand. 24-hour: the inner ring holds
+   00 and 13 to 23. */
+dialog.time-picker { width: 20.5rem; }
+.time-picker-fields { display: flex; align-items: center; justify-content: center; gap: 0.25rem; padding: 1.25rem 1.5rem 0; }
+.time-picker-part {
+  width: 6rem; height: 5rem; padding: 0; border: 0; cursor: pointer; border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface);
+  font: 400 3.5625rem/4rem var(--md-ref-typeface); letter-spacing: -0.015625rem; font-variant-numeric: tabular-nums;
+  transition: background-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+}
+.time-picker-part.active { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+.time-picker-part:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+.time-picker-colon { width: 1.5rem; text-align: center; color: var(--md-sys-color-on-surface); font: 400 3.5625rem/4rem var(--md-ref-typeface); }
+.time-picker-dial {
+  --outer: 6.25rem; --inner: 4.25rem;
+  position: relative; width: 16rem; height: 16rem; margin: 2.25rem auto 1.5rem; border-radius: 50%;
+  background: var(--md-sys-color-surface-container-highest);
+}
+.time-picker-dial::before {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 0.5rem; height: 0.5rem; margin: -0.25rem;
+  border-radius: 50%; background: var(--md-sys-color-primary);
+}
+.time-picker-hand {
+  --r: var(--outer);
+  position: absolute; left: calc(50% - 1px); bottom: 50%; width: 2px; height: var(--r);
+  background: var(--md-sys-color-primary); transform-origin: 50% 100%; transform: rotate(var(--angle));
+  transition: transform var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial),
+    height var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial);
+}
+.time-picker-hand.inner { --r: var(--inner); }
+.time-picker-number {
+  --r: var(--outer);
+  position: absolute; left: 50%; top: 50%; width: 3rem; height: 3rem; margin: -1.5rem; padding: 0; border: 0;
+  border-radius: 50%; background: none; cursor: pointer; color: var(--md-sys-color-on-surface);
+  font: 400 1rem/1.5rem var(--md-ref-typeface); font-variant-numeric: tabular-nums;
+  transform: rotate(var(--angle)) translateY(calc(-1 * var(--r))) rotate(calc(-1 * var(--angle)));
+}
+.time-picker-number.inner { --r: var(--inner); font-size: 0.875rem; }
+.time-picker-number:hover:not(.selected) { background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent); }
+.time-picker-number.selected { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
+.time-picker-number:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .time-picker-hand { transition: none; } }
+
