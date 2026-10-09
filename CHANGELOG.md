@@ -90,6 +90,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Activities entered by hand have no source chip and don't repeat their sport, figures stand out, and "Time" is "Duration"; the Strava page shows problems as banners with Try again, and Disconnect is the quieter button (ADR 0074).
 
 ### Fixed
+- A wrong or missing e-mail or password marks the sign-in fields as invalid for screen readers.
 - Today shows a loading indicator until the plans you follow are read, instead of briefly saying you follow none.
 - Training zones show a loading indicator until the saved zones are read, instead of the defaults, which an early edit could have saved over them.
 - Today no longer offers "Link an activity" on workouts still to come, whose day has no activities to link yet.

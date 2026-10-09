@@ -245,10 +245,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               Model(
                 ..model,
                 auth: SignedOut(
-                  signin.Form(
-                    ..form,
-                    error: Some("Enter your e-mail and password."),
-                  ),
+                  signin.Form(..form, error: Some(auth.missing_credentials)),
                 ),
               ),
               effect.none(),

@@ -1,4 +1,8 @@
 import atlas/auth.{Session}
+import atlas/signin
+import gleam/option.{Some}
+import gleam/string
+import lustre/element
 
 // Payload: {"collectionId":"_pb_users_auth_","exp":1791707435,"id":"user123","type":"auth"}
 const token =
@@ -109,4 +113,19 @@ pub fn sign_in_errors_are_readable_test() {
   assert auth.sign_in_error(502, "")
     == "The server has a problem. Try again later."
   assert auth.sign_in_error(418, "") == "Sign-in failed (HTTP 418)."
+}
+
+pub fn wrong_credentials_mark_the_fields_but_a_lost_connection_does_not_test() {
+  let html = fn(error) {
+    element.to_string(signin.view(
+      signin.Form(..signin.empty(), error: Some(error)),
+      fn(_) { Nil },
+      fn(_) { Nil },
+      Nil,
+    ))
+  }
+  let wrong = html(auth.sign_in_error(400, "{}"))
+  assert string.contains(wrong, "aria-invalid=\"true\"")
+  assert string.contains(wrong, "aria-describedby=\"signin-error\"")
+  assert !string.contains(html(auth.sign_in_error(0, "")), "aria-invalid")
 }

@@ -107,14 +107,19 @@ pub fn with_token(session: Session, token: String) -> Session {
   Session(..session, token: token)
 }
 
+/// The sign-in errors that are about what was typed, so the fields are marked (ADR 0059).
+pub const missing_credentials = "Enter your e-mail and password."
+
+pub const wrong_credentials = "Wrong e-mail or password."
+
 /// What to show when a sign-in request failed. `status` 0 means no answer at all.
 pub fn sign_in_error(status: Int, body: String) -> String {
   case status {
     0 -> "Can't reach the server. Check your connection and try again."
     400 ->
       case blank_fields(body) {
-        True -> "Enter your e-mail and password."
-        False -> "Wrong e-mail or password."
+        True -> missing_credentials
+        False -> wrong_credentials
       }
     429 -> "Too many attempts. Wait a minute and try again."
     _ if status >= 500 -> "The server has a problem. Try again later."
