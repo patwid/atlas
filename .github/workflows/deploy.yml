@@ -16,11 +16,11 @@ concurrency:
 
 jobs:
   deploy:
-    # Skipped until the environment is set up (docs/deploy.md), instead of failing on every push.
+    # No check on vars.DEPLOY_HOST here: a job's `if` is evaluated before it enters its environment, so it never sees
+    # the environment's variables and would skip every deploy.
     if: >-
-      vars.DEPLOY_HOST != '' && (
-        github.event_name == 'workflow_dispatch' ||
-        (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'))
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     # Secrets: DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS. Variable: DEPLOY_HOST (the server's address).
     environment: production

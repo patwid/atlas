@@ -45,7 +45,7 @@ In the GitHub repository, under Settings → Environments, create `production` w
 
 - secret `DEPLOY_SSH_KEY`: the contents of `atlas-deploy` (the private key), then delete the local file;
 - secret `DEPLOY_KNOWN_HOSTS`: the contents of `known_hosts`;
-- variable `DEPLOY_HOST`: `204.168.179.170`. Until it is set, the Deploy workflow is skipped.
+- variable `DEPLOY_HOST`: `204.168.179.170`.
 
 Optionally add yourself as a required reviewer, so every deploy waits for your approval.
 

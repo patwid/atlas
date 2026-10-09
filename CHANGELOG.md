@@ -116,6 +116,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - A new plan opens as soon as it is saved, instead of staying on the list.
 
 ### Fixed
+- The Deploy workflow runs after CI on `master` again: its check for `DEPLOY_HOST` could not see the `production` environment's variables and skipped every deploy.
 - A plan's title is centred in its row on the plans list; one-line rows on every list now have their text in the middle.
 - The calendar and clock buttons sit in the middle of the date and time fields in every browser (ADR 0086).
 - On Today, a workout's kind chip is spaced from its title, as on the other lists.
