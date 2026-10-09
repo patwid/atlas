@@ -106,6 +106,7 @@ pub fn creating_a_plan_asks_the_app_to_save_it_test() {
   assert id != ""
   assert dict.get(fields, "title") == Ok("\"10k plan\"")
   assert dict.get(fields, "owner") == Ok("\"u1\"")
+  assert model.created == Some(id)
   assert model.mode == Browsing
   assert model.form == plan_form.empty()
 }

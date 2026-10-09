@@ -69,6 +69,9 @@ pub type Model {
     tab: String,
     /// Whether a long description is shown in full, not cut to three lines (ADR 0076).
     description_open: Bool,
+    /// The plan just created here, which opens at once: until the device database has it, its page shows
+    /// it loading rather than missing.
+    created: Option(String),
   )
 }
 
@@ -122,6 +125,7 @@ pub fn new() -> Model {
     NoCopy,
     "calendar",
     False,
+    None,
   )
 }
 
@@ -150,8 +154,17 @@ pub fn update(
           }
         other -> other
       }
+      // Once the new plan is read back, its page no longer needs to wait for it.
+      let created = case model.created {
+        Some(id) ->
+          case find(plans, id) {
+            Ok(_) -> None
+            Error(Nil) -> model.created
+          }
+        None -> None
+      }
       #(
-        Model(..model, plans: plans, loaded: True, mode: mode),
+        Model(..model, plans: plans, loaded: True, mode: mode, created: created),
         effect.none(),
         [],
       )
@@ -226,11 +239,19 @@ pub fn update(
           effect.none(),
           [],
         )
-        Ok(valid), Creating -> #(
-          Model(..model, mode: Browsing, form: plan_form.empty()),
-          effect.none(),
-          [Create(random.new_id(), plan_form.create_fields(user_id, valid))],
-        )
+        Ok(valid), Creating -> {
+          let id = random.new_id()
+          #(
+            Model(
+              ..model,
+              mode: Browsing,
+              form: plan_form.empty(),
+              created: Some(id),
+            ),
+            modem.push(route.to_path(route.Plan(id)), None, None),
+            [Create(id, plan_form.create_fields(user_id, valid))],
+          )
+        }
         Ok(valid), Editing(id) ->
           case find(model.plans, id) {
             Ok(found) if found.owner_id == user_id -> {
@@ -413,7 +434,7 @@ pub fn view_detail_with(
   case find(model.plans, id) {
     Error(Nil) ->
       html.section([class("plans")], [
-        case model.loaded {
+        case model.loaded && model.created != Some(id) {
           False -> progress.loading("Loading…")
           True ->
             empty.view(

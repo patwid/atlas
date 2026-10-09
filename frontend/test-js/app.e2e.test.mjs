@@ -133,19 +133,24 @@ test("a user creates, edits and deletes a plan on the plans screens and the serv
   typeInto(w, d.querySelector("#plan-competition-weeks"), "2")
   typeInto(w, d.querySelector("#plan-goal"), "35")
   submit(w, d.querySelector(".plan-form"))
-  const link = await waitFor("the plan in the list", () => [...d.querySelectorAll(".list a")].find((a) => a.textContent === "Autumn 10k"))
+  // The new plan opens at once.
+  await waitFor("the new plan's screen", () => d.querySelector(".bar h1")?.textContent === "Autumn 10k" && byLabel(w, "Edit plan"))
   const created = await waitFor("the plan on the server", async () => (await onServer()).find((p) => p.title === "Autumn 10k"))
   assert.equal(created.owner, alice.id)
   assert.equal(created.description, "Eight weeks, three runs a week")
   assert.equal(created.visibility, "private")
   assert.deepEqual([created.base_weeks, created.pre_competition_weeks, created.competition_weeks, created.weekly_distance_m], [4, 4, 2, 35000])
+  assert.equal(w.location.pathname, `/plans/${created.id}`)
+
+  // Back in the list, and in again
+  click(w, d.querySelector(".tabs a[href=\"/plans\"]"))
+  const link = await waitFor("the plan in the list", () => [...d.querySelectorAll(".list a")].find((a) => a.textContent === "Autumn 10k"))
   assert.equal(link.getAttribute("href"), `/plans/${created.id}`)
   await waitFor("the synced marker", () => !d.body.textContent.includes("Not synced yet"))
 
   // Edit, on the plan's own screen
   click(w, link)
   await waitFor("the plan screen", () => d.querySelector(".bar h1")?.textContent === "Autumn 10k" && byLabel(w, "Edit plan"))
-  assert.equal(w.location.pathname, `/plans/${created.id}`)
   click(w, byLabel(w, "Edit plan"))
   await waitFor("the edit form", () => d.querySelector("#plan-title")?.value === "Autumn 10k")
   typeInto(w, d.querySelector("#plan-title"), "Autumn half marathon")
