@@ -525,9 +525,11 @@ label {
 
 /* A list of rows that open other pages, such as Settings (ADR 0049). */
 .link-list { padding: 0; }
-.link-list li { padding: 0; }
-/* A row that only shows something (the account, Sync) has the padding a link row's link has, so all rows line up. */
-.link-list li.info-item { padding: 0.75rem 1rem; }
+/* A link row's padding is its link's, so the state layer and ripple cover the whole row. `.list.link-list`, not
+   `.link-list`: the list's own item padding comes later in this file and would win otherwise. A row that only shows
+   something (the account, Sync) has the same padding itself, so all rows line up. */
+.list.link-list li { padding: 0; }
+.list.link-list li.info-item { padding: 0.75rem 1rem; }
 .link-list a {
   position: relative; display: flex; align-items: center; gap: 1rem; min-height: 4.5rem; padding: 0.75rem 1rem 0.75rem 1rem;
   color: var(--md-sys-color-on-surface); text-decoration: none; isolation: isolate;
