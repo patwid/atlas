@@ -1,6 +1,6 @@
 # 0060. Material window size classes, the FAB in the rail, and Settings as list-detail
 
-- Status: Accepted. Settings' list-detail layout is dropped by [0065](0065-settings-single-pane.md).
+- Status: Accepted. Settings' list-detail layout is dropped by [0065](0065-settings-single-pane.md), the FAB in the rail by [0067](0067-fab-at-the-bottom-at-every-size.md).
 - Date: 2026-10-08
 - Deciders: owner (asked to go ahead with the Material review's next steps); agent (the details below)
 

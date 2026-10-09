@@ -63,10 +63,11 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0057 | [Create and edit forms in full-screen dialogs](0057-forms-in-full-screen-dialogs.md) | Accepted |
 | 0058 | [The plan page: tabs, actions in the app bar, and floating action buttons](0058-plan-page-tabs-and-app-bar-actions.md) | Accepted |
 | 0059 | [Floating labels, units and errors on the field they are about](0059-floating-labels-and-field-errors.md) | Accepted |
-| 0060 | [Material window size classes, the FAB in the rail, and Settings as list-detail](0060-window-size-classes-and-list-detail.md) | Accepted (list-detail dropped by 0065) |
+| 0060 | [Material window size classes, the FAB in the rail, and Settings as list-detail](0060-window-size-classes-and-list-detail.md) | Accepted (list-detail dropped by 0065, FAB in the rail by 0067) |
 | 0061 | [Harmonized custom colours for training intensity](0061-harmonized-intensity-colours.md) | Accepted |
 | 0062 | [Material review, remaining items: a choice dialog, chips, the phone calendar, the medium app bar](0062-material-review-remaining-items.md) | Accepted |
 | 0063 | [One background for all phase bands](0063-one-colour-for-phase-bands.md) | Accepted |
 | 0064 | [A week's intensity scales its distance goal; the goal stays one per plan](0064-intensity-scales-the-weekly-goal.md) | Accepted |
 | 0065 | [Settings as one pane at every width](0065-settings-single-pane.md) | Accepted |
 | 0066 | [The plan calendar without a sidebar: week and workout dialogs, settings in the plan's Edit](0066-plan-calendar-without-a-sidebar.md) | Accepted |
+| 0067 | [The FAB at the bottom right of the content at every size](0067-fab-at-the-bottom-at-every-size.md) | Accepted |

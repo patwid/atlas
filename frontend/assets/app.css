@@ -158,8 +158,12 @@
   --focus-ring: 3px solid var(--md-sys-color-secondary);
   /* The navigation bar's height, which floating things (FAB, snackbar) keep clear of; 0 next to the rail. */
   --nav-bar-height: calc(5rem + env(safe-area-inset-bottom));
+  /* The navigation rail's width (0 without one) and the content column's widest, which the FAB lines up with. */
+  --rail-width: 0px;
+  --content-max: 48rem;
 }
-@media (min-width: 37.5rem) { :root { --nav-bar-height: 0px; } }
+@media (min-width: 37.5rem) { :root { --nav-bar-height: 0px; --rail-width: 5rem; } }
+:root:has(.plan-calendar) { --content-max: 80rem; }
 
 * { box-sizing: border-box; }
 html, body {
@@ -224,9 +228,11 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 .md-icon-button:focus-visible::before, .md-icon-button:active::before { opacity: var(--md-sys-state-focus); }
 .md-icon-button:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
 
-/* Extended FAB (ADR 0047): the screen's main action, floating above the navigation bar. */
+/* Extended FAB (ADR 0047, 0067): the screen's main action, floating at the bottom right, above the navigation bar on
+   a phone. On a wide screen it lines up with the right edge of the content column, not of the window. */
 .md-fab {
-  position: fixed; z-index: 3; right: max(1rem, env(safe-area-inset-right)); bottom: calc(var(--nav-bar-height) + 1rem);
+  position: fixed; z-index: 3; bottom: calc(var(--nav-bar-height) + 1rem);
+  right: max(1rem, env(safe-area-inset-right), calc((100vw - var(--rail-width) - var(--content-max)) / 2 + 1rem));
   display: inline-flex; align-items: center; gap: 0.75rem; height: 3.5rem; padding: 0 1.25rem 0 1rem; isolation: isolate;
   border: 0; border-radius: var(--md-sys-shape-corner-large); cursor: pointer;
   background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container);
@@ -241,15 +247,8 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 .md-fab:hover::before { opacity: var(--md-sys-state-hover); }
 .md-fab:focus-visible::before, .md-fab:active::before { opacity: var(--md-sys-state-focus); }
 .md-fab:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
-/* With a navigation rail (medium and wider, ADR 0060) the FAB sits at the top of the rail, its label read but not
-   shown, and the rail's destinations move down under it. */
-@media (min-width: 37.5rem) {
-  .md-fab { top: max(1rem, env(safe-area-inset-top)); left: 0.75rem; right: auto; bottom: auto; width: 3.5rem; padding: 0; justify-content: center; }
-  .md-fab .fab-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  body:has(.md-fab) .tabs-content { padding-top: max(6rem, calc(env(safe-area-inset-top) + 5rem)); }
-}
-/* Room under the last item, so the FAB does not cover it (compact only: elsewhere it is in the rail). */
-@media (max-width: 37.4375rem) { main:has(.md-fab) { padding-bottom: 6rem; } }
+/* Room under the last item, so the FAB does not cover it. */
+main:has(.md-fab) { padding-bottom: 6rem; }
 
 /* Snackbar (ADR 0047): a short message at the bottom, above the FAB when there is one. */
 .snackbar {
@@ -261,7 +260,7 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
   font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem;
   animation: snackbar-in var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial);
 }
-@media (max-width: 37.4375rem) { body:has(.md-fab) .snackbar { bottom: calc(var(--nav-bar-height) + 5.5rem); } }
+body:has(.md-fab) .snackbar { bottom: calc(var(--nav-bar-height) + 5.5rem); }
 @media (min-width: 37.5rem) { .snackbar { left: calc(50% + 2.5rem); } }
 .snackbar-text { flex: 1; padding: 0.5rem 0; }
 .snackbar .snackbar-action { color: var(--md-sys-color-inverse-primary); text-decoration: none; }
@@ -378,7 +377,7 @@ html[data-scrolled] .bar { background: var(--md-sys-color-surface-container); }
 .bar-content {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
   min-height: 4rem; padding: 0.5rem 1rem; padding-top: max(0.5rem, env(safe-area-inset-top));
-  max-width: 48rem; width: 100%; margin: 0 auto;
+  max-width: var(--content-max); width: 100%; margin: 0 auto;
 }
 .bar h1 { flex: 1; min-width: 0; font: 500 1.375rem/1.75rem var(--md-ref-typeface); margin: 0; } /* title-large emphasized */
 /* The back button (ADR 0048) sits at the bar's leading edge, its icon lined up with the page's margin. */
@@ -418,7 +417,7 @@ html[data-scrolled] .bar { background: var(--md-sys-color-surface-container); }
   .md-linear-progress::before { animation-duration: 4s; }
   .md-loading-indicator::before { animation: loading-turn 4s linear infinite; }
 }
-main { flex: 1; padding: 0 1rem 1.5rem; max-width: 48rem; width: 100%; margin: 0 auto; }
+main { flex: 1; padding: 0 1rem 1.5rem; max-width: var(--content-max); width: 100%; margin: 0 auto; }
 
 .tabs { position: sticky; bottom: 0; z-index: 2; background: var(--md-sys-color-surface-container); }
 .tabs-content {
@@ -582,7 +581,6 @@ label {
 /* Plan calendar (ADR 0043, 0066): weeks as rows, days as columns, bands per phase, the full width at every size. On
    a phone the days of a week stack. A week and a workout open in dialogs. */
 /* The header lines up with the wider page. */
-main:has(.plan-calendar), body:has(.plan-calendar) .bar-content { max-width: 80rem; }
 .calendar { min-width: 0; }
 .calendar-head { display: none; }
 .phase-band { border-radius: var(--md-sys-shape-corner-large); padding: 0.25rem 0.5rem 0.5rem; margin-bottom: 0.75rem; }

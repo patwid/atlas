@@ -54,8 +54,8 @@ pub fn text(
   variant("md-button md-button-text", attributes, children)
 }
 
-/// An extended floating action button: the one main action of a screen, such as New plan, floating at the
-/// bottom right above the navigation.
+/// An extended floating action button: the one main action of a screen, such as New plan, floating at the bottom
+/// right of the content at every size (ADR 0067).
 pub fn fab(
   attributes: List(Attribute(msg)),
   symbol: Icon,
@@ -63,7 +63,6 @@ pub fn fab(
 ) -> Element(msg) {
   button([attribute.class("md-fab"), ..attributes], [
     icon.view(symbol),
-    // In a navigation rail the FAB shows its icon only; the label is still read (ADR 0060).
     html.span([attribute.class("fab-label")], [html.text(label)]),
   ])
 }
