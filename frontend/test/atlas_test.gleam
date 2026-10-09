@@ -673,13 +673,17 @@ fn today_screen() -> atlas.Model {
     ..signed_in(),
     route: route.Today,
     syncing: ready_syncing(),
-    assignments: assignments_page.Model(..assignments_page.new(), rows: [
-      assignment_form.Row(
-        plan.Assignment("a1", "p1", "u1", date.Date(2020, 1, 6)),
-        "u1",
-        "T",
-      ),
-    ]),
+    assignments: assignments_page.Model(
+      ..assignments_page.new(),
+      loaded: True,
+      rows: [
+        assignment_form.Row(
+          plan.Assignment("a1", "p1", "u1", date.Date(2020, 1, 6)),
+          "u1",
+          "T",
+        ),
+      ],
+    ),
     workouts: workouts_page.Model(..workouts_page.new(), rows: [
       workout_form.Row(
         plan.Workout("w1", "p1", 0, 0, "Easy", plan.Easy, None, None),
@@ -712,6 +716,15 @@ pub fn the_today_screen_shows_old_schedules_as_outside_its_window_test() {
   // The plan started years ago, so nothing falls in the window around today.
   let html = element.to_string(atlas.view(today_screen()))
   assert string.contains(html, "Nothing planned for today.")
+}
+
+pub fn the_today_screen_waits_for_the_plans_followed_test() {
+  let html =
+    element.to_string(atlas.view(
+      Model(..today_screen(), assignments: assignments_page.new()),
+    ))
+  assert string.contains(html, "Loading…")
+  assert !string.contains(html, "You are not following a plan yet")
 }
 
 pub fn signing_out_clears_the_matches_on_screen_test() {

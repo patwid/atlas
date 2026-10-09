@@ -85,6 +85,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Section headings look the same on every screen (list subheaders), Today's first one carries the date, whole rows of the plan and athlete lists open them, and every empty list or missing page has an empty state with what to do next (ADR 0069).
 
 ### Fixed
+- Today shows a loading indicator until the plans you follow are read, instead of briefly saying you follow none.
 - Training zones show a loading indicator until the saved zones are read, instead of the defaults, which an early edit could have saved over them.
 - Today no longer offers "Link an activity" on workouts still to come, whose day has no activities to link yet.
 - Drop-downs (day, kind, sport, visibility, athlete) open on the form's current value again instead of the first option: `field.select` marks the selected option instead of setting the `<select>`'s value before its options exist.

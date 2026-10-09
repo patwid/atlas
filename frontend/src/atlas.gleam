@@ -35,6 +35,7 @@ import atlas/ui/button
 import atlas/ui/icon
 import atlas/ui/interaction
 import atlas/ui/layout
+import atlas/ui/progress
 import atlas/ui/snackbar
 import atlas/ui/tabs
 import atlas/workouts_page
@@ -1180,10 +1181,15 @@ fn title(model: Model, session: Session) -> String {
 fn page(model: Model, session: Session) -> Element(Msg) {
   case model.route {
     route.Today ->
-      element.map(
-        today_page.view(model.daily, today_inputs(model, session)),
-        TodayPage,
-      )
+      case model.assignments.loaded {
+        // Until the plans the user follows are read, Today would say they follow none.
+        False -> progress.loading("Loading…")
+        True ->
+          element.map(
+            today_page.view(model.daily, today_inputs(model, session)),
+            TodayPage,
+          )
+      }
     route.Plans ->
       element.map(
         plans_page.view_list_with(model.plans, session.user_id, fn(p) {
