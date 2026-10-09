@@ -82,7 +82,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0076 | [A long plan description is cut to three lines, with More](0076-long-plan-description-cut-to-three-lines.md) | Accepted |
 | 0077 | [The training zones form: outlined fields, errors at their input, Save in view](0077-training-zones-form-fields-and-errors.md) | Accepted |
 | 0078 | [The person finder's errors at its field, and Settings rows that say what is set](0078-finder-errors-and-settings-summaries.md) | Accepted |
-| 0079 | [Roboto Flex served with the app, the badge read out, and sticky offsets from the app bar's height](0079-bundled-roboto-flex-badge-text-and-app-bar-height.md) | Accepted |
+| 0079 | [Roboto Flex served with the app, the badge read out, and sticky offsets from the app bar's height](0079-bundled-roboto-flex-badge-text-and-app-bar-height.md) | Accepted (typeface superseded by 0096) |
 | 0080 | [A workout or activity you can change opens in its form, with Delete there](0080-open-items-in-their-form.md) | Accepted |
 | 0081 | [Today: "Link activity" as a text button beside the status](0081-today-link-activity-beside-the-status.md) | Accepted |
 | 0082 | [Today, newest first](0082-today-newest-first.md) | Accepted |
@@ -99,3 +99,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0093 | [Nix files under `nix/`, the flake at the top](0093-nix-files-under-nix.md) | Accepted |
 | 0094 | [Atlas takes over the VPS from nixos-config](0094-atlas-owns-the-vps.md) | Accepted |
 | 0095 | [M3 Expressive's navigation bar and rail, progress gap, menus and springs throughout](0095-expressive-navigation-progress-menus-motion.md) | Accepted |
+| 0096 | [Google Sans Flex instead of Roboto Flex](0096-google-sans-flex.md) | Accepted |
