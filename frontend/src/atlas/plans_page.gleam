@@ -655,7 +655,7 @@ pub fn summary(p: Plan) -> String {
       <> " competition"
   }
   let goal = case p.weekly_distance_m {
-    Some(m) if m >. 0.0 -> units.format_distance_km(m) <> " a week"
+    Some(m) if m >. 0.0 -> units.format_planned_km(m) <> " a week"
     _ -> ""
   }
   case weeks, goal {

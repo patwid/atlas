@@ -237,7 +237,7 @@ pub fn weeks_days_and_totals_are_shown_test() {
   assert string.contains(html, "Week 2")
   assert string.contains(html, "Easy run")
   assert string.contains(html, "Long one")
-  assert string.contains(html, "8.00 km · 45:00")
+  assert string.contains(html, "8 km · 45:00")
   assert string.contains(html, "Day 7")
 }
 
@@ -293,7 +293,7 @@ pub fn the_week_dialog_shows_the_week_against_its_goal_test() {
   let html = html_of(model, False)
   assert string.contains(html, "Base, week 2")
   // Week 2 is at 80%, so its goal is 80% of 40 km (ADR 0064).
-  assert string.contains(html, "16.00 km of 32.00 km (50%)")
+  assert string.contains(html, "16 km of 32 km (50%)")
   assert string.contains(html, ">80%<")
   assert string.contains(html, "aria-valuenow=\"50\"")
 }
@@ -356,7 +356,7 @@ pub fn a_workout_says_its_kind_week_and_day_test() {
   assert string.contains(html, "<span class=\"workout-kind\">Easy run</span>")
   assert string.contains(
     html,
-    "aria-label=\"Shake-out, Easy run, week 2, day 2, 8.00 km · 45:00\"",
+    "aria-label=\"Shake-out, Easy run, week 2, day 2, 8 km · 45:00\"",
   )
 }
 
@@ -424,7 +424,7 @@ pub fn a_weeks_row_shows_its_distance_against_its_goal_test() {
       False,
     )
   // Week 2 is at 80% of a 40 km goal (ADR 0064, 0066).
-  assert string.contains(html, "16.00 km / 32.00 km")
+  assert string.contains(html, "16 / 32 km")
   assert string.contains(html, "aria-haspopup=\"dialog\"")
   // Closed, the dialogs are there for opening, but empty.
   assert string.contains(html, "id=\"week-dialog\"")

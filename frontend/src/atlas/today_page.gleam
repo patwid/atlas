@@ -489,8 +489,8 @@ fn describe(row: Row, inputs: Inputs) -> String {
 fn targets(w: Workout) -> String {
   case w.distance_m, w.duration_s {
     Some(d), Some(t) ->
-      units.format_distance_km(d) <> " · " <> units.format_duration(t)
-    Some(d), None -> units.format_distance_km(d)
+      units.format_planned_km(d) <> " · " <> units.format_duration(t)
+    Some(d), None -> units.format_planned_km(d)
     None, Some(t) -> units.format_duration(t)
     None, None -> ""
   }

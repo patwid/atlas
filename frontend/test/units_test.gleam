@@ -32,3 +32,11 @@ pub fn format_distance_test() {
   assert units.format_distance_km(900.0) == "0.90 km"
   assert units.format_distance_km(-10.0) == "0.00 km"
 }
+
+pub fn planned_distances_have_at_most_one_decimal_test() {
+  assert units.format_planned_km(16_000.0) == "16 km"
+  assert units.format_planned_km(8500.0) == "8.5 km"
+  assert units.format_planned_km(9960.0) == "10 km"
+  assert units.format_planned_km(-5.0) == "0 km"
+  assert units.planned_km(32_040.0) == "32"
+}

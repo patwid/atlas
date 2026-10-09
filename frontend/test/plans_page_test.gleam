@@ -398,9 +398,9 @@ pub fn the_plans_phases_and_goal_are_summed_up_in_a_line_test() {
       weekly_distance_m: Some(40_000.0),
     )
   assert plans_page.summary(p)
-    == "10 weeks: 4 base, 4 pre-competition, 2 competition · 40.00 km a week"
+    == "10 weeks: 4 base, 4 pre-competition, 2 competition · 40 km a week"
   assert plans_page.summary(plan.Plan(..p, weekly_distance_m: None))
     == "10 weeks: 4 base, 4 pre-competition, 2 competition"
   assert plans_page.summary(plan.Plan(..p, phases: plan.Phases(0, 0, 0)))
-    == "40.00 km a week"
+    == "40 km a week"
 }

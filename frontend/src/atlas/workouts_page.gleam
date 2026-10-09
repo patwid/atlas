@@ -580,9 +580,9 @@ fn week_distance(
     Some(g), Ok(share) ->
       html.span([class("week-distance")], [
         html.text(
-          units.format_distance_km(week.distance_m)
+          units.planned_km(week.distance_m)
           <> " / "
-          <> units.format_distance_km(g),
+          <> units.format_planned_km(g),
         ),
         // Decorative: the text says the same.
         html.span(
@@ -609,7 +609,7 @@ fn week_distance(
       case week.distance_m >. 0.0 {
         True ->
           html.span([class("week-distance")], [
-            html.text(units.format_distance_km(week.distance_m)),
+            html.text(units.format_planned_km(week.distance_m)),
           ])
         False -> element.none()
       }
@@ -908,12 +908,12 @@ fn intensity_bar(value: Float) -> Element(Msg) {
 }
 
 fn distance_text(week: plan_schedule.Week, goal: Option(Float)) -> String {
-  let planned = units.format_distance_km(week.distance_m)
+  let planned = units.format_planned_km(week.distance_m)
   case goal, plan_schedule.goal_share(week, goal) {
     Some(g), Ok(share) ->
       planned
       <> " of "
-      <> units.format_distance_km(g)
+      <> units.format_planned_km(g)
       <> " ("
       <> int.to_string(float.round(share *. 100.0))
       <> "%)"
@@ -972,8 +972,8 @@ fn delete_of(model: Model, id: String) -> List(Action) {
 fn targets(w: Workout) -> String {
   case w.distance_m, w.duration_s {
     Some(d), Some(t) ->
-      units.format_distance_km(d) <> " · " <> units.format_duration(t)
-    Some(d), None -> units.format_distance_km(d)
+      units.format_planned_km(d) <> " · " <> units.format_duration(t)
+    Some(d), None -> units.format_planned_km(d)
     None, Some(t) -> units.format_duration(t)
     None, None -> ""
   }

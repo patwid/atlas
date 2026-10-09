@@ -74,3 +74,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0068 | [The main action in the app bar on larger screens, a FAB only on phones](0068-main-action-in-the-app-bar.md) | Accepted |
 | 0069 | [One section heading, whole-row links and an empty state on every list](0069-subheaders-row-links-and-empty-states.md) | Accepted |
 | 0070 | [A workout's kind in words on the calendar, and its week and day in its name](0070-workout-kind-in-words-on-the-calendar.md) | Accepted |
+| 0071 | [Planned distances in round numbers](0071-planned-distances-in-round-numbers.md) | Accepted |

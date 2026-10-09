@@ -215,8 +215,8 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
   assert.equal(first.position, 0)
   assert.equal(first.distance_m, 8500)
   assert.equal(first.duration_s, 4500)
-  await waitFor("the workout on screen with its targets", () => d.body.textContent.includes("Easy run") && d.body.textContent.includes("8.50 km · 1:15:00"))
-  await waitFor("the week total", () => d.querySelector(".week-distance")?.textContent.includes("8.50 km"))
+  await waitFor("the workout on screen with its targets", () => d.body.textContent.includes("Easy run") && d.body.textContent.includes("8.5 km · 1:15:00"))
+  await waitFor("the week total", () => d.querySelector(".week-distance")?.textContent.includes("8.5 km"))
 
   // A second workout on the same day, from that day's own "+ Add".
   click(w, byLabel(w, "Add a workout to week 1, day 2"))
@@ -294,9 +294,9 @@ test("the owner sets a week's intensity in its dialog and the plan's phases and 
     return p.weekly_distance_m === 40000 && p.base_weeks === 3
   })
   // Week 2 is at 80%, so it aims for 80% of 40 km (ADR 0064).
-  await waitFor("the week against its goal, in its row", () => d.querySelector(".calendar")?.textContent.includes("20.00 km / 32.00 km"))
+  await waitFor("the week against its goal, in its row", () => d.querySelector(".calendar")?.textContent.includes("20 / 32 km"))
   click(w, [...d.querySelectorAll(".week-label")].find((b) => b.textContent.startsWith("Week 2")))
-  await waitFor("and in its dialog", () => d.querySelector("#week-dialog[open]")?.textContent.includes("20.00 km of 32.00 km (63%)"))
+  await waitFor("and in its dialog", () => d.querySelector("#week-dialog[open]")?.textContent.includes("20 km of 32 km (63%)"))
   await waitFor("five weeks now", () => d.querySelectorAll(".calendar-week").length === 5)
   assert.equal((await onServer()).week_intensity[1], 0.8, "the intensity stays")
   w.close()
@@ -310,7 +310,7 @@ test("someone else's plan shows its workouts but offers no way to change them", 
   await h.create("alice", "workouts", { id: "sharedwork00001", plan: "sharedplan00001", day_index: 0, position: 0, title: "Hill repeats", kind: "interval", distance_m: 6000, duration_s: 2400 })
   const w = startApp("/plans/sharedplan00001", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
   const d = w.document
-  await waitFor("the shared workout", () => d.body.textContent.includes("Hill repeats") && d.body.textContent.includes("6.00 km · 40:00"))
+  await waitFor("the shared workout", () => d.body.textContent.includes("Hill repeats") && d.body.textContent.includes("6 km · 40:00"))
   assert.equal(button(w, "Add workout"), undefined)
   assert.equal(byLabel(w, "Add a workout to week 1, day 1"), undefined)
   assert.equal(byLabel(w, "Edit plan"), undefined)

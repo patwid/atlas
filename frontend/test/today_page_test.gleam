@@ -252,7 +252,7 @@ pub fn the_day_and_its_sections_are_shown_test() {
   assert string.contains(html, "Wednesday tempo")
   assert string.contains(html, "Tempo run")
   assert string.contains(html, "10k plan")
-  assert string.contains(html, "Planned: 8.00 km · 45:00")
+  assert string.contains(html, "Planned: 8 km · 45:00")
   assert string.contains(html, "Coming up")
   assert string.contains(html, "Thursday rest")
   assert string.contains(html, "Rest day")

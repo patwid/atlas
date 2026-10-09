@@ -38,6 +38,21 @@ pub fn format_distance_km(distance_m: Float) -> String {
   int.to_string(hundredths / 100) <> "." <> pad2(hundredths % 100) <> " km"
 }
 
+/// A planned distance, such as a workout's or a week's: `16 km`, `8.5 km`. Plans are written in round numbers, so
+/// at most one decimal and none for a whole kilometre (ADR 0071); what was run keeps `format_distance_km`.
+pub fn format_planned_km(distance_m: Float) -> String {
+  planned_km(distance_m) <> " km"
+}
+
+/// `format_planned_km` without the unit, for a pair such as `16 / 32 km`.
+pub fn planned_km(distance_m: Float) -> String {
+  let tenths = float.round(float.max(distance_m, 0.0) /. 100.0)
+  case tenths % 10 {
+    0 -> int.to_string(tenths / 10)
+    rest -> int.to_string(tenths / 10) <> "." <> int.to_string(rest)
+  }
+}
+
 fn pad2(n: Int) -> String {
   string.pad_start(int.to_string(n), 2, "0")
 }
