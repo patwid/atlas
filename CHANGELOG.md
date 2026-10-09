@@ -83,6 +83,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - From 600px a screen's main action (New plan, Add activity, Add workout, Start this plan) is a button in the app bar; the floating action button is for phones only (ADR 0068).
 - CI builds the flake's checks (`atlas-app`, `gleam-test`, `backend-test`, `frontend-js-test`) offline instead of running the test scripts in `nix develop`; `nix flake check` runs them locally, and a suite whose source is unchanged is not run again. `test-frontend-js.sh` accepts `ATLAS_NPM_INSTALL=0` (ADR 0042).
 - Section headings look the same on every screen (list subheaders), Today's first one carries the date, whole rows of the plan and athlete lists open them, and every empty list or missing page has an empty state with what to do next (ADR 0069).
+- A workout on the plan calendar shows its kind in words, and screen readers hear its week and day (ADR 0070).
 
 ### Fixed
 - Today shows a loading indicator until the plans you follow are read, instead of briefly saying you follow none.

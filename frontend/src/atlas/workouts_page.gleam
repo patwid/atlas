@@ -30,6 +30,7 @@ import gleam/float
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/string
 import lustre/attribute.{class}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -643,7 +644,7 @@ fn day_cell(
       list.append(
         list.filter_map(day.workouts, fn(w) {
           case list.find(rows, fn(row) { row.workout.id == w.id }) {
-            Ok(_) -> Ok(workout_chip(w, model.mode))
+            Ok(_) -> Ok(workout_chip(w, week, day, model.mode))
             Error(Nil) -> Error(Nil)
           }
         }),
@@ -673,19 +674,42 @@ fn day_cell(
   ])
 }
 
-fn workout_chip(w: Workout, mode: Mode) -> Element(Msg) {
+/// A workout in the calendar. Its kind is written out as well as shown by the colour of its bar, which some kinds
+/// share; its name says the week and day, since the calendar's column heads are not read out (ADR 0070).
+fn workout_chip(
+  w: Workout,
+  week: plan_schedule.Week,
+  day: plan_schedule.Day,
+  mode: Mode,
+) -> Element(Msg) {
   let open = case mode {
     Viewing(id) | Editing(id) -> id == w.id
     _ -> False
   }
+  let kind = workout_form.kind_label(w.kind)
   html.button(
     [
       attribute.type_("button"),
       class("workout kind-" <> plan.kind_to_string(w.kind)),
       attribute.classes([#("open", open)]),
+      attribute.attribute("aria-haspopup", "dialog"),
+      attribute.aria_label(
+        [
+          w.title,
+          kind,
+          "week "
+            <> int.to_string(week.number)
+            <> ", day "
+            <> int.to_string(day.number),
+          targets(w),
+        ]
+        |> list.filter(fn(part) { part != "" })
+        |> string.join(", "),
+      ),
       event.on_click(WorkoutSelected(w.id)),
     ],
     [
+      html.span([class("workout-kind")], [html.text(kind)]),
       html.span([class("workout-title")], [html.text(w.title)]),
       case targets(w) {
         "" -> element.none()

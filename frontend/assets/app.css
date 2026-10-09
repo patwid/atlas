@@ -639,6 +639,12 @@ label {
 .workout.kind-race { --kind: var(--intensity-high); }
 .workout.kind-rest { --kind: var(--md-sys-color-outline-variant); color: var(--md-sys-color-on-surface-variant); }
 .workout-title { font-weight: 500; }
+/* The kind in words (ADR 0070): the bar's colour alone would not tell easy from long, or tempo from intervals. */
+.workout-kind {
+  color: var(--md-sys-color-on-surface-variant); font: 500 0.6875rem/1rem var(--md-ref-typeface);
+  letter-spacing: 0.03125rem;
+}
+.workout.open .workout-kind { color: inherit; }
 .workout-targets { color: var(--md-sys-color-on-surface-variant); }
 .add-here {
   font: inherit; cursor: pointer; align-self: flex-start; border: 0; border-radius: var(--md-sys-shape-corner-full);

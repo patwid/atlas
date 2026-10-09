@@ -351,6 +351,15 @@ pub fn the_slider_shows_the_week_and_others_see_a_bar_test() {
   assert string.contains(read_only, "width:80%")
 }
 
+pub fn a_workout_says_its_kind_week_and_day_test() {
+  let html = html_of(with_rows([row("a", "p1", 8, 0, "Shake-out")]), False)
+  assert string.contains(html, "<span class=\"workout-kind\">Easy run</span>")
+  assert string.contains(
+    html,
+    "aria-label=\"Shake-out, Easy run, week 2, day 2, 8.00 km · 45:00\"",
+  )
+}
+
 pub fn an_empty_plan_invites_the_first_workout_test() {
   assert string.contains(html_of(with_rows([]), True), "Add the first one")
   assert string.contains(html_of(with_rows([]), False), "No workouts yet")
