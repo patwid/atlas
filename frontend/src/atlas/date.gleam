@@ -240,6 +240,19 @@ pub fn utc_timestamp(
   <> ":00.000Z"
 }
 
+/// The UTC timestamp, as PocketBase stores it (`2026-10-01 07:00:12.000Z`), of a moment in seconds since 1970.
+pub fn timestamp_from_unix(seconds: Int) -> String {
+  let second_of_day = modulo(seconds, 86_400)
+  to_string(from_unix_seconds(seconds, 0))
+  <> " "
+  <> pad(second_of_day / 3600, 2)
+  <> ":"
+  <> pad(second_of_day % 3600 / 60, 2)
+  <> ":"
+  <> pad(second_of_day % 60, 2)
+  <> ".000Z"
+}
+
 /// The local calendar date at a moment given in seconds since 1970, for a local offset from UTC in minutes.
 pub fn from_unix_seconds(seconds: Int, utc_offset_minutes: Int) -> Date {
   from_epoch_days(floor_div(seconds + utc_offset_minutes * 60, 86_400))

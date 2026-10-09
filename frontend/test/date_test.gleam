@@ -110,6 +110,12 @@ pub fn local_date_rejects_bad_timestamps_test() {
   assert date.local_date("2026-10-01 07:61:00Z", 0) == Error(Nil)
 }
 
+pub fn timestamp_from_unix_test() {
+  assert date.timestamp_from_unix(0) == "1970-01-01 00:00:00.000Z"
+  assert date.timestamp_from_unix(1_759_065_612) == "2025-09-28 13:20:12.000Z"
+  assert date.timestamp_from_unix(-1) == "1969-12-31 23:59:59.000Z"
+}
+
 pub fn from_unix_seconds_test() {
   assert date.from_unix_seconds(0, 0) == Date(1970, 1, 1)
   assert date.from_unix_seconds(86_399, 0) == Date(1970, 1, 1)
