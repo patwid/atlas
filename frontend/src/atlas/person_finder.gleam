@@ -22,7 +22,10 @@ pub type Lookup {
   Looking
   /// Found: the user has to confirm before anything is given.
   Found(Person)
+  /// Something about the address typed: shown under the field, which is marked (ADR 0078).
   Failed(String)
+  /// The lookup could not be made (offline, signed out, too many, the server): shown under the form.
+  Unreachable(String)
 }
 
 pub type Model {
@@ -102,13 +105,14 @@ pub fn update(
                 )
                 False, None -> #(Model(..model, lookup: Found(person)), [])
               }
-            status, _ -> #(
-              Model(
-                ..model,
-                lookup: Failed(api.lookup_error(status, response.body)),
-              ),
-              [],
-            )
+            status, _ -> {
+              let message = api.lookup_error(status, response.body)
+              let lookup = case status {
+                400 | 404 -> Failed(message)
+                _ -> Unreachable(message)
+              }
+              #(Model(..model, lookup: lookup), [])
+            }
           }
         // An answer for a search the user has since changed or cancelled.
         _ -> #(model, [])
@@ -151,14 +155,26 @@ pub fn view(
     [class(labels.form_class), event.on_submit(fn(_) { wrap(FindClicked) })],
     [
       html.div([class("row")], [
-        field.text(labels.field_id, labels.field_label, field.plain, [
-          attribute.type_("email"),
-          attribute.name("email"),
-          attribute.autocomplete("off"),
-          attribute.value(model.email),
-          event.on_input(fn(text) { wrap(EmailChanged(text)) }),
-        ]),
-        button.filled(
+        field.text(
+          labels.field_id,
+          labels.field_label,
+          case model.lookup {
+            Failed(message) -> field.Help(..field.plain, error: Some(message))
+            _ -> field.plain
+          },
+          [
+            attribute.type_("email"),
+            attribute.name("email"),
+            attribute.autocomplete("off"),
+            attribute.value(model.email),
+            event.on_input(fn(text) { wrap(EmailChanged(text)) }),
+          ],
+        ),
+        // Once someone is found, confirming is the one filled button.
+        case model.lookup {
+          Found(_) -> button.tonal
+          _ -> button.filled
+        }(
           [
             attribute.type_("submit"),
             attribute.disabled(model.lookup == Looking),
@@ -172,7 +188,7 @@ pub fn view(
         ),
       ]),
       case model.lookup {
-        Failed(message) -> error.message(message)
+        Unreachable(message) -> error.message(message)
         Found(person) ->
           html.div([class("found"), attribute.role("status")], [
             html.p([], [html.text(labels.question(display(person)))]),

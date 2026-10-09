@@ -4,6 +4,7 @@
 import atlas/activities_page
 import atlas/api
 import atlas/assignments_page
+import atlas/athlete_settings
 import atlas/athletes_page
 import atlas/auth.{type Session}
 import atlas/clock
@@ -12,6 +13,7 @@ import atlas/collection
 import atlas/grants
 import atlas/http
 import atlas/online
+import atlas/pace_zones
 import atlas/person_finder
 import atlas/plan
 import atlas/plan_copy
@@ -1266,7 +1268,7 @@ fn page(model: Model, session: Session) -> Element(Msg) {
     route.Settings ->
       html.div([], [
         sync_banners(model.syncing),
-        settings_list(session, model.syncing),
+        settings_list(session, model),
       ])
     route.SettingsPage(page) ->
       html.div([], [
@@ -1310,7 +1312,8 @@ fn page(model: Model, session: Session) -> Element(Msg) {
 
 /// Settings is a list (ADR 0049, 0055): the account and the sync state as rows of their own, then a row per section
 /// that opens the section's page. Sync problems show at the top of every Settings page, so they are not missed.
-fn settings_list(session: Session, sync_state: syncing.State) -> Element(Msg) {
+fn settings_list(session: Session, model: Model) -> Element(Msg) {
+  let sync_state = model.syncing
   html.section([attribute.class("settings")], [
     html.ul([attribute.class("list link-list")], [
       layout.info_item(
@@ -1325,9 +1328,9 @@ fn settings_list(session: Session, sync_state: syncing.State) -> Element(Msg) {
       layout.info_item(icon.Sync, "Sync", sync_text(sync_state), element.none()),
       ..list.map(route.settings_pages, fn(page) {
         let #(symbol, supporting) = case page {
-          route.Zones -> #(icon.Favorite, "Heart rate, lactate and pace")
-          route.Coaches -> #(icon.Group, "Who can see your training")
-          route.Strava -> #(icon.Link, "Import your activities")
+          route.Zones -> #(icon.Favorite, zones_summary(model, session))
+          route.Coaches -> #(icon.Group, coaches_summary(model, session))
+          route.Strava -> #(icon.Link, strava_summary(model))
         }
         layout.link_item(
           route.to_path(route.SettingsPage(page)),
@@ -1338,6 +1341,48 @@ fn settings_list(session: Session, sync_state: syncing.State) -> Element(Msg) {
       })
     ]),
   ])
+}
+
+// A Settings row says what is set, so it can be checked without opening the page (ADR 0078).
+
+fn zones_summary(model: Model, session: Session) -> String {
+  case
+    model.zones.loaded,
+    athlete_settings.row_of(model.zones.rows, session.user_id)
+  {
+    True, Some(_) -> {
+      let zones = zones_page.current(model.zones, session.user_id)
+      "Max "
+      <> int.to_string(zones.hr.max_hr)
+      <> " bpm · threshold "
+      <> pace_zones.format(zones.pace.threshold_s)
+      <> " /km"
+    }
+    True, None -> "Default zones: set yours"
+    False, _ -> "Heart rate, lactate and pace"
+  }
+}
+
+fn coaches_summary(model: Model, session: Session) -> String {
+  case
+    model.coaches.loaded,
+    grants.given_by(model.coaches.grants, session.user_id)
+  {
+    False, _ -> "Who can see your training"
+    True, [] -> "Nobody can see your training"
+    True, [one] ->
+      person_finder.display(grants.Person(one.coach_id, one.coach_name))
+      <> " can see your training"
+    True, many -> int.to_string(list.length(many)) <> " coaches"
+  }
+}
+
+fn strava_summary(model: Model) -> String {
+  case model.strava.status {
+    strava_page.Known(api.StravaStatus(configured: True, connected: True)) ->
+      "Connected"
+    _ -> "Import your activities"
+  }
 }
 
 fn account_name(session: Session) -> String {

@@ -2,7 +2,7 @@ import atlas/grants.{Person}
 import atlas/http.{Response}
 import atlas/person_finder.{
   CancelClicked, EmailChanged, Failed, FindClicked, Found, Idle, LookUp, Looking,
-  LookupAnswered, Model,
+  LookupAnswered, Model, Unreachable,
 }
 import gleam/option.{None, Some}
 import gleam/string
@@ -66,9 +66,9 @@ pub fn lookup_failures_are_explained_test() {
   assert failure(404, "{\"message\":\"No user with this e-mail address.\"}")
     == Failed("Nobody with this e-mail address uses Atlas.")
   assert failure(0, "")
-    == Failed("You are offline. Looking someone up needs a connection.")
+    == Unreachable("You are offline. Looking someone up needs a connection.")
   assert failure(429, "")
-    == Failed("Too many lookups. Wait a few minutes and try again.")
+    == Unreachable("Too many lookups. Wait a few minutes and try again.")
 }
 
 pub fn an_unreadable_success_is_a_failure_not_a_person_test() {
@@ -78,7 +78,7 @@ pub fn an_unreadable_success_is_a_failure_not_a_person_test() {
       LookupAnswered(Response(200, "<html>captive portal</html>")),
     )
   assert actions == []
-  let assert Failed(_) = model.lookup
+  let assert Unreachable(_) = model.lookup
 }
 
 pub fn yourself_is_refused_test() {
@@ -182,6 +182,11 @@ pub fn failures_are_announced_and_looking_disables_the_button_test() {
     html_of(Model("", Failed("Nobody with this e-mail address uses Atlas.")))
   assert string.contains(failed, "role=\"alert\"")
   assert string.contains(failed, "Nobody with this e-mail address uses Atlas.")
+  // About the address: under the field, which is marked. A lost connection is not about it.
+  assert string.contains(failed, "aria-invalid=\"true\"")
+  let offline = html_of(Model("a@b.c", Unreachable("You are offline.")))
+  assert string.contains(offline, "role=\"alert\"")
+  assert !string.contains(offline, "aria-invalid")
   let looking = html_of(Model("a@b.c", Looking))
   assert string.contains(looking, "Looking…")
   assert string.contains(looking, "disabled")

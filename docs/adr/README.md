@@ -81,3 +81,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0075 | [The calendar's add button, workout titles, intensity and week names](0075-calendar-add-button-titles-and-week-names.md) | Accepted |
 | 0076 | [A long plan description is cut to three lines, with More](0076-long-plan-description-cut-to-three-lines.md) | Accepted |
 | 0077 | [The training zones form: outlined fields, errors at their input, Save in view](0077-training-zones-form-fields-and-errors.md) | Accepted |
+| 0078 | [The person finder's errors at its field, and Settings rows that say what is set](0078-finder-errors-and-settings-summaries.md) | Accepted |

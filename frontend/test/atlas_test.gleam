@@ -10,14 +10,17 @@ import atlas/activity_form
 import atlas/api
 import atlas/assignment_form
 import atlas/assignments_page
+import atlas/athlete_settings
 import atlas/auth.{Session}
 import atlas/coaches_page
 import atlas/collection
 import atlas/date
 import atlas/grants
+import atlas/hr_zones
 import atlas/http.{Response}
 import atlas/matching
 import atlas/outbox
+import atlas/pace_zones
 import atlas/person_finder
 import atlas/plan
 import atlas/plan_form
@@ -780,6 +783,31 @@ pub fn settings_is_a_list_of_its_sections_test() {
   assert string.contains(html, "href=\"/settings/coaches\"")
   assert string.contains(html, "href=\"/settings/strava\"")
   assert !string.contains(html, "Checking")
+}
+
+pub fn settings_rows_say_what_is_set_test() {
+  let defaults = athlete_settings.defaults()
+  let model =
+    Model(
+      ..signed_in(),
+      route: route.Settings,
+      zones: zones_page.Model(..zones_page.new(), loaded: True, rows: [
+        athlete_settings.Row(
+          "u1",
+          hr_zones.HrZones(..defaults.hr, max_hr: 185),
+          defaults.lactate,
+          pace_zones.PaceZones(..defaults.pace, threshold_s: 270),
+          "T",
+        ),
+      ]),
+      coaches: coaches_page.Model(..coaches_page.new(), loaded: True, grants: [
+        grants.Grant("g1", "u1", "c1", "Alice", "Bob Coach", "T"),
+      ]),
+    )
+  let html = element.to_string(atlas.view(model))
+  assert string.contains(html, "Max 185 bpm · threshold 4:30 /km")
+  assert string.contains(html, "Bob Coach can see your training")
+  assert string.contains(html, "Import your activities")
 }
 
 pub fn strava_messages_are_ignored_when_signed_out_test() {

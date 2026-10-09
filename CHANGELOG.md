@@ -91,6 +91,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - The calendar's add button is a larger icon button and always visible on touch screens, long workout titles wrap between words, the intensity is read out as such, and weeks are named "Week 6 · Pre-competition 2" everywhere (ADR 0075).
 - A long plan description shows three lines, with More for the rest (ADR 0076).
 - The training zones form has outlined fields with units, shows a problem under the input it is about and moves to it, and keeps Save in view (ADR 0077).
+- The person finder shows a problem with the address under its field, and Settings rows say what is set: your zones, who can see your training, whether Strava is connected (ADR 0078).
 
 ### Fixed
 - A wrong or missing e-mail or password marks the sign-in fields as invalid for screen readers.
