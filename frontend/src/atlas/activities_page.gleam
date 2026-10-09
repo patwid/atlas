@@ -356,15 +356,7 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
   html.section([class("activities")], [
     undo.snackbar(model.undo, "Activity deleted", UndoClicked, DeleteExpired),
     html.div([class("toolbar")], [
-      case model.mode {
-        Browsing ->
-          button.fab(
-            [attribute.type_("button"), event.on_click(AddClicked)],
-            icon.Add,
-            "Add activity",
-          )
-        _ -> element.none()
-      },
+      button.fab_for(main_action(model)),
     ]),
     form_view(model, context.today),
     case model.loaded, rows {
@@ -682,4 +674,12 @@ fn form_fields(form: activity_form.Form) -> Element(Msg) {
 
 fn pad2(n: Int) -> String {
   string.pad_start(int.to_string(n), 2, "0")
+}
+
+/// The activities' main action (ADR 0068): a FAB on a phone, a button in the app bar on wider screens.
+pub fn main_action(model: Model) -> Option(button.Main(Msg)) {
+  case model.mode {
+    Browsing -> Some(button.Main(icon.Add, "Add activity", AddClicked))
+    _ -> None
+  }
 }

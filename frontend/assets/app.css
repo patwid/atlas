@@ -158,11 +158,10 @@
   --focus-ring: 3px solid var(--md-sys-color-secondary);
   /* The navigation bar's height, which floating things (FAB, snackbar) keep clear of; 0 next to the rail. */
   --nav-bar-height: calc(5rem + env(safe-area-inset-bottom));
-  /* The navigation rail's width (0 without one) and the content column's widest, which the FAB lines up with. */
-  --rail-width: 0px;
+  /* The content column's widest; the app bar lines up with it. */
   --content-max: 48rem;
 }
-@media (min-width: 37.5rem) { :root { --nav-bar-height: 0px; --rail-width: 5rem; } }
+@media (min-width: 37.5rem) { :root { --nav-bar-height: 0px; } }
 :root:has(.plan-calendar) { --content-max: 80rem; }
 
 * { box-sizing: border-box; }
@@ -228,11 +227,10 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 .md-icon-button:focus-visible::before, .md-icon-button:active::before { opacity: var(--md-sys-state-focus); }
 .md-icon-button:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
 
-/* Extended FAB (ADR 0047, 0067): the screen's main action, floating at the bottom right, above the navigation bar on
-   a phone. On a wide screen it lines up with the right edge of the content column, not of the window. */
+/* Extended FAB (ADR 0047, 0068): a phone's main action, floating at the bottom right above the navigation bar. From
+   the medium window class the same action is a button in the app bar instead (.bar-main-action). */
 .md-fab {
-  position: fixed; z-index: 3; bottom: calc(var(--nav-bar-height) + 1rem);
-  right: max(1rem, env(safe-area-inset-right), calc((100vw - var(--rail-width) - var(--content-max)) / 2 + 1rem));
+  position: fixed; z-index: 3; bottom: calc(var(--nav-bar-height) + 1rem); right: max(1rem, env(safe-area-inset-right));
   display: inline-flex; align-items: center; gap: 0.75rem; height: 3.5rem; padding: 0 1.25rem 0 1rem; isolation: isolate;
   border: 0; border-radius: var(--md-sys-shape-corner-large); cursor: pointer;
   background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container);
@@ -248,7 +246,12 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 .md-fab:focus-visible::before, .md-fab:active::before { opacity: var(--md-sys-state-focus); }
 .md-fab:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
 /* Room under the last item, so the FAB does not cover it. */
-main:has(.md-fab) { padding-bottom: 6rem; }
+@media (max-width: 37.4375rem) {
+  main:has(.md-fab) { padding-bottom: 6rem; }
+  .bar-main-action { display: none; }
+}
+@media (min-width: 37.5rem) { .md-fab { display: none; } }
+.bar-main-action { flex: none; }
 
 /* Snackbar (ADR 0047): a short message at the bottom, above the FAB when there is one. */
 .snackbar {
@@ -260,7 +263,7 @@ main:has(.md-fab) { padding-bottom: 6rem; }
   font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem;
   animation: snackbar-in var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial);
 }
-body:has(.md-fab) .snackbar { bottom: calc(var(--nav-bar-height) + 5.5rem); }
+@media (max-width: 37.4375rem) { body:has(.md-fab) .snackbar { bottom: calc(var(--nav-bar-height) + 5.5rem); } }
 @media (min-width: 37.5rem) { .snackbar { left: calc(50% + 2.5rem); } }
 .snackbar-text { flex: 1; padding: 0.5rem 0; }
 .snackbar .snackbar-action { color: var(--md-sys-color-inverse-primary); text-decoration: none; }
@@ -1015,8 +1018,8 @@ html[data-scrolled] .md-tab-bar { background: var(--md-sys-color-surface-contain
   font-size: 1.75rem; line-height: 2.25rem;
   transition: font-size var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial);
 }
-.bar-medium .bar-content > :not(h1):not(.up-link) { margin-left: auto; }
-.bar-medium .bar-content > :not(h1):not(.up-link) ~ :not(h1) { margin-left: 0; }
+/* The back button keeps the left; whatever follows it on the first row goes to the right. */
+.bar-medium .bar-content > .up-link { margin-right: auto; }
 html[data-scrolled] .bar-medium .bar-content { flex-wrap: nowrap; }
 html[data-scrolled] .bar-medium h1 { order: 0; flex-basis: auto; padding: 0; font-size: 1.375rem; line-height: 1.75rem; }
 @media (prefers-reduced-motion: reduce) { .bar-medium h1 { transition: none; } }

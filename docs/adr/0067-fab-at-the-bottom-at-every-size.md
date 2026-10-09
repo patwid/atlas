@@ -1,6 +1,6 @@
 # 0067. The FAB at the bottom right of the content at every size
 
-- Status: Accepted
+- Status: Superseded by [0068](0068-main-action-in-the-app-bar.md)
 - Date: 2026-10-09
 - Deciders: owner (did not want the FAB in the navigation rail; chose this of the proposed options)
 

@@ -14,6 +14,7 @@ fn frame(r: route.Route) -> shell.Frame(Nil) {
     problems: 0,
     on_offline_info: Nil,
     actions: element.none(),
+    main_action: element.none(),
   )
 }
 

@@ -80,6 +80,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Settings is one pane at every width again: the list, and each section on its own page (ADR 0065).
 - The plan calendar has no sidebar or bottom sheet any more: each week's row shows its distance against its goal and opens a week dialog with the intensity; a workout opens in a dialog with Edit and Delete; the phases and goal are changed with the plan's Edit and summed up under its description (ADR 0066).
 - The floating action button stays at the bottom right with its label on every screen size, lined up with the content on wide screens, instead of moving into the navigation rail (ADR 0067).
+- From 600px a screen's main action (New plan, Add activity, Add workout, Start this plan) is a button in the app bar; the floating action button is for phones only (ADR 0068).
 - CI builds the flake's checks (`atlas-app`, `gleam-test`, `backend-test`, `frontend-js-test`) offline instead of running the test scripts in `nix develop`; `nix flake check` runs them locally, and a suite whose source is unchanged is not run again. `test-frontend-js.sh` accepts `ATLAS_NPM_INSTALL=0` (ADR 0042).
 
 ### Fixed

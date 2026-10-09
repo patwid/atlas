@@ -70,4 +70,5 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0064 | [A week's intensity scales its distance goal; the goal stays one per plan](0064-intensity-scales-the-weekly-goal.md) | Accepted |
 | 0065 | [Settings as one pane at every width](0065-settings-single-pane.md) | Accepted |
 | 0066 | [The plan calendar without a sidebar: week and workout dialogs, settings in the plan's Edit](0066-plan-calendar-without-a-sidebar.md) | Accepted |
-| 0067 | [The FAB at the bottom right of the content at every size](0067-fab-at-the-bottom-at-every-size.md) | Accepted |
+| 0067 | [The FAB at the bottom right of the content at every size](0067-fab-at-the-bottom-at-every-size.md) | Superseded by 0068 |
+| 0068 | [The main action in the app bar on larger screens, a FAB only on phones](0068-main-action-in-the-app-bar.md) | Accepted |

@@ -1103,6 +1103,7 @@ pub fn view(model: Model) -> Element(Msg) {
               )
             _ -> element.none()
           },
+          main_action: main_action(model, session),
         ),
         element.fragment([
           page(model, session),
@@ -1112,6 +1113,45 @@ pub fn view(model: Model) -> Element(Msg) {
           },
         ]),
       )
+  }
+}
+
+/// The screen's main action in the app bar from the medium window class (ADR 0068); the page draws the same action as
+/// a FAB on a phone. On a plan's page it is the open tab's.
+fn main_action(model: Model, session: Session) -> Element(Msg) {
+  case model.route {
+    route.Plans ->
+      element.map(
+        button.app_bar_for(plans_page.main_action(model.plans)),
+        PlansPage,
+      )
+    route.Activities ->
+      element.map(
+        button.app_bar_for(activities_page.main_action(model.activities)),
+        ActivitiesPage,
+      )
+    route.Plan(id) ->
+      case list.find(model.plans.plans, fn(p) { p.id == id }), model.plans.tab {
+        Ok(found), "calendar" ->
+          element.map(
+            button.app_bar_for(workouts_page.main_action(
+              model.workouts,
+              found,
+              found.owner_id == session.user_id,
+            )),
+            WorkoutsPage,
+          )
+        Ok(_), "schedule" ->
+          element.map(
+            button.app_bar_for(assignments_page.main_action(
+              model.assignments,
+              assignments_context(model, session),
+            )),
+            AssignmentsPage,
+          )
+        _, _ -> element.none()
+      }
+    _ -> element.none()
   }
 }
 

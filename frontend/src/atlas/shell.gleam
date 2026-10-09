@@ -30,6 +30,9 @@ pub type Frame(msg) {
     on_offline_info: msg,
     /// The page's own actions at the end of the app bar, such as a plan's Edit and menu (ADR 0058).
     actions: Element(msg),
+    /// The screen's main action as an app bar button, shown from the medium window class (a FAB on a phone,
+    /// ADR 0068).
+    main_action: Element(msg),
   )
 }
 
@@ -51,6 +54,7 @@ pub fn view(frame: Frame(msg), page: Element(msg)) -> Element(msg) {
         html.div([class("bar-content")], [
           up(frame.route),
           html.h1([], [html.text(frame.title)]),
+          frame.main_action,
           frame.actions,
           case frame.online {
             True -> element.none()

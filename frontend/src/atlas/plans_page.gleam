@@ -352,15 +352,7 @@ pub fn view_list_with(
     undo.snackbar(model.undo, "Plan deleted", UndoClicked, DeleteExpired),
     html.div([class("toolbar")], [
       html.h2([], [html.text("Your plans")]),
-      case model.mode {
-        Creating -> element.none()
-        _ ->
-          button.fab(
-            [attribute.type_("button"), event.on_click(NewClicked)],
-            icon.Add,
-            "New plan",
-          )
-      },
+      button.fab_for(main_action(model)),
     ]),
     form_view(model, model.mode == Creating, "New plan"),
     case model.loaded, mine {
@@ -678,5 +670,13 @@ fn plural(n: Int, word: String) -> String {
   case n {
     1 -> "1 " <> word
     _ -> int.to_string(n) <> " " <> word <> "s"
+  }
+}
+
+/// The plan list's main action (ADR 0068): a FAB on a phone, a button in the app bar on wider screens.
+pub fn main_action(model: Model) -> Option(button.Main(Msg)) {
+  case model.mode {
+    Creating -> None
+    _ -> Some(button.Main(icon.Add, "New plan", NewClicked))
   }
 }

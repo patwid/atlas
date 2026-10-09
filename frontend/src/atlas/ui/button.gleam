@@ -10,9 +10,11 @@
 //// (ADR 0027), so every button in the app still goes through this module.
 
 import atlas/ui/icon.{type Icon}
+import gleam/option.{type Option, None, Some}
 import lustre/attribute.{type Attribute}
 import lustre/element.{type Element}
 import lustre/element/html
+import lustre/event
 
 pub fn button(
   attributes: List(Attribute(msg)),
@@ -54,8 +56,8 @@ pub fn text(
   variant("md-button md-button-text", attributes, children)
 }
 
-/// An extended floating action button: the one main action of a screen, such as New plan, floating at the bottom
-/// right of the content at every size (ADR 0067).
+/// An extended floating action button: the one main action of a screen on a phone, such as New plan, floating at the
+/// bottom right above the navigation bar (ADR 0067, 0068). Wider screens show it in the app bar instead.
 pub fn fab(
   attributes: List(Attribute(msg)),
   symbol: Icon,
@@ -89,4 +91,33 @@ fn variant(
   children: List(Element(msg)),
 ) -> Element(msg) {
   button([attribute.class(class_names), ..attributes], children)
+}
+
+/// A screen's main action (ADR 0068), such as New plan: on a phone a floating action button (`fab_for`), on wider
+/// screens a filled button in the app bar (`app_bar_for`). The page describes it once; CSS shows the one that fits.
+pub type Main(msg) {
+  Main(symbol: Icon, label: String, msg: msg)
+}
+
+pub fn fab_for(main: Option(Main(msg))) -> Element(msg) {
+  case main {
+    Some(Main(symbol, label, msg)) ->
+      fab([attribute.type_("button"), event.on_click(msg)], symbol, label)
+    None -> element.none()
+  }
+}
+
+pub fn app_bar_for(main: Option(Main(msg))) -> Element(msg) {
+  case main {
+    Some(Main(symbol, label, msg)) ->
+      button(
+        [
+          attribute.class("md-button md-button-filled bar-main-action"),
+          attribute.type_("button"),
+          event.on_click(msg),
+        ],
+        [icon.view(symbol), html.text(label)],
+      )
+    None -> element.none()
+  }
 }

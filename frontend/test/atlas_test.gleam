@@ -365,6 +365,50 @@ pub fn a_chosen_tab_shows_and_another_plan_opens_on_its_calendar_test() {
   assert moved.plans.tab == "calendar"
 }
 
+fn main_action_of(model: atlas.Model) -> String {
+  let html = element.to_string(atlas.view(model))
+  case string.split(html, "bar-main-action") {
+    [_, after, ..] ->
+      case string.split(after, "</button>") {
+        [button, ..] -> button
+        [] -> ""
+      }
+    _ -> ""
+  }
+}
+
+pub fn the_screens_main_action_is_also_in_the_app_bar_test() {
+  assert string.contains(
+    main_action_of(Model(..signed_in(), route: route.Plans)),
+    "New plan",
+  )
+  assert string.contains(
+    main_action_of(Model(..signed_in(), route: route.Activities)),
+    "Add activity",
+  )
+  assert main_action_of(Model(..signed_in(), route: route.Today)) == ""
+  // On a plan's page it is the open tab's: Add workout for the owner on the calendar, Start on the schedule.
+  let owner = plan_screen("u1")
+  let calendar =
+    Model(
+      ..owner,
+      workouts: workouts_page.Model(
+        ..owner.workouts,
+        mode: workouts_page.Browsing,
+      ),
+    )
+  assert string.contains(main_action_of(calendar), "Add workout")
+  let schedule =
+    Model(
+      ..calendar,
+      plans: plans_page.Model(..calendar.plans, tab: "schedule"),
+    )
+  assert string.contains(main_action_of(schedule), "Start")
+  let sharing =
+    Model(..calendar, plans: plans_page.Model(..calendar.plans, tab: "sharing"))
+  assert main_action_of(sharing) == ""
+}
+
 fn plan_screen(owner: String) -> atlas.Model {
   Model(
     ..signed_in(),

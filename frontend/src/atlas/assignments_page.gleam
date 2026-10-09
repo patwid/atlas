@@ -24,7 +24,7 @@ import atlas/ui/undo.{type Undo}
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
-import gleam/option.{None, Some}
+import gleam/option.{type Option, None, Some}
 import lustre/attribute.{class}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -332,19 +332,8 @@ pub fn view(
       UndoClicked,
       RemoveExpired,
     ),
-    // The plan's tabs name this section (ADR 0058); starting the plan is its floating action button.
-    case model.mode {
-      Browsing if context.can_start ->
-        button.fab(
-          [attribute.type_("button"), event.on_click(StartClicked)],
-          icon.PlayArrow,
-          case context.athletes {
-            [] -> "Start this plan"
-            _ -> "Start or assign"
-          },
-        )
-      _ -> element.none()
-    },
+    // The plan's tabs name this section (ADR 0058); starting the plan is its main action (ADR 0068).
+    button.fab_for(main_action(model, context)),
     form_view(model, context),
     case model.loaded, rows {
       False, _ -> progress.loading("Loading…")
@@ -531,4 +520,20 @@ fn form_fields(
       },
     ],
   )
+}
+
+/// The schedule's main action (ADR 0068): a FAB on a phone, a button in the app bar on wider screens.
+pub fn main_action(model: Model, context: Context) -> Option(button.Main(Msg)) {
+  case model.mode {
+    Browsing if context.can_start ->
+      Some(button.Main(
+        icon.PlayArrow,
+        case context.athletes {
+          [] -> "Start this plan"
+          _ -> "Start or assign"
+        },
+        StartClicked,
+      ))
+    _ -> None
+  }
 }
