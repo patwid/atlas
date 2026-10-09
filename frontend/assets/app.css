@@ -853,6 +853,11 @@ a.strava-link { color: #FC5200; font-weight: 700; text-decoration: underline; }
 .field-with-trigger > .md-field { margin-top: 0; }
 .field-with-trigger .md-text-field { padding-right: 3.5rem; }
 .field-with-trigger input::-webkit-calendar-picker-indicator { display: none; }
+/* Browsers draw date and time inputs their own way: Safari centres the value and sizes the box to it, Chrome adds
+   padding inside. Drawn plainly at a text field's 56px, the button at the end is centred on them (ADR 0086). */
+.field-with-trigger input:is([type="date"], [type="time"]) { -webkit-appearance: none; appearance: none; height: 3.5rem; }
+.field-with-trigger input::-webkit-datetime-edit { padding: 0; }
+.field-with-trigger input::-webkit-date-and-time-value { margin: 0; text-align: start; }
 .field-trigger { position: absolute; right: 0.5rem; top: 0.5rem; }
 /* The person finder's search turns into a small loading indicator while it looks (ADR 0083). */
 .field-trigger:disabled { cursor: progress; }
@@ -1019,7 +1024,8 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
 .form-dialog-actions { display: none; }
 @media (min-width: 37.5rem) {
   dialog.form-dialog {
-    width: calc(100% - 3rem); max-width: 35rem; height: auto; max-height: calc(100dvh - 3rem); margin: auto;
+    /* It never fills the screen's height: a long form scrolls between its headline and its buttons (ADR 0086). */
+    width: calc(100% - 3rem); max-width: 35rem; height: auto; max-height: min(calc(100dvh - 8rem), 40rem); margin: auto;
     border-radius: var(--md-sys-shape-corner-extra-large); background: var(--md-sys-color-surface-container-high);
     box-shadow: var(--md-sys-elevation-3);
   }
