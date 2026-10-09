@@ -57,14 +57,9 @@ Optionally add yourself as a required reviewer, so every deploy waits for your a
 
 ### 4. Secrets on the server
 
-The Strava secrets never go into the repository. Create the file before the first deploy; it may stay empty until
-the Strava app exists:
-
-```sh
-ssh root@<server> 'install -d -m 700 /var/lib/secrets && install -m 600 /dev/null /var/lib/secrets/atlas.env'
-```
-
-Its lines, once you have them:
+The Strava secrets never go into the repository. NixOS creates `/var/lib/secrets/atlas.env` empty (mode 0600, root
+only) on the first deploy, and Atlas runs without Strava until you fill it in. Nothing to do now; once the Strava app
+exists, write these lines into it on the server:
 
 ```sh
 STRAVA_CLIENT_ID=...

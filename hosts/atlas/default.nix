@@ -42,11 +42,18 @@ in
   services.atlas = {
     enable = true;
     inherit publicUrl;
-    # Created by hand on the server (docs/deploy.md); it may be empty until Strava is set up.
+    # Created empty below; the Strava secrets are written into it by hand on the server (docs/deploy.md).
     environmentFile = "/var/lib/secrets/atlas.env";
     caddy.enable = true;
   };
   services.caddy.email = lib.mkIf https acmeEmail;
+
+  # The secrets file exists from the first boot or deploy on, empty and readable by root only, so the service starts
+  # before Strava is set up. `f` never touches the contents of an existing file, only its owner and mode.
+  systemd.tmpfiles.rules = [
+    "d /var/lib/secrets 0700 root root -"
+    "f /var/lib/secrets/atlas.env 0600 root root -"
+  ];
 
   # Deploys log in as root with a key; no passwords.
   services.openssh = {

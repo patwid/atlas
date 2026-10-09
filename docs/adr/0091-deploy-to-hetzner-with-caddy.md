@@ -52,6 +52,12 @@ The proxy: Caddy (automatic Let's Encrypt, a few lines of configuration) or ngin
 - `nixos-rebuild` does not roll back by itself if a deploy breaks SSH or networking; the way back is the Hetzner console and the
   previous boot generation (`docs/deploy.md`). deploy-rs's "magic rollback" would be the answer if that becomes a worry.
 - The CI deploy key is as powerful as root on the server. The environment `production` can require the owner's approval per deploy.
-- Open for the owner: the steps in `docs/deploy.md` (machine files, domain and e-mail, keys, DNS, GitHub environment, the secrets file,
+- Open for the owner: the steps in `docs/deploy.md` (machine files, domain and e-mail, keys, DNS, GitHub environment,
   the first deploy by hand). Not tested: a real deploy, Let's Encrypt and Strava against the real domain. The server configuration was
   evaluated with a stand-in hardware configuration; the module and Caddy run in the VM test.
+
+## Addendum: NixOS creates the secrets file (2026-10-09)
+
+`/var/lib/secrets/atlas.env` is no longer created by hand. `hosts/atlas` has two `systemd.tmpfiles` rules that create the directory (0700)
+and an empty file (0600, root) when they are missing, at boot and on every deploy, so the service starts before Strava is set up. An
+existing file keeps its contents; only its owner and mode are reset. The secrets themselves are still written by hand on the server.
