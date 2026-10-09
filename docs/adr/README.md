@@ -18,7 +18,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0012 | [Strava integration as PocketBase hooks](0012-strava-integration-hooks.md) | Accepted |
 | 0013 | [App shell, routing and PWA build](0013-app-shell-and-pwa-build.md) | Accepted |
 | 0014 | [Purge soft-deleted rows after a retention period](0014-purge-soft-deleted-rows.md) | Accepted |
-| 0015 | [Pure domain core: dates, plans, matching and units](0015-domain-core.md) | Accepted / Proposed |
+| 0015 | [Pure domain core: dates, plans, matching and units](0015-domain-core.md) | Accepted (zones superseded by 0034, tolerance by 0089) |
 | 0016 | [Sync core: a pure outbox state machine and pull cursors](0016-sync-core-outbox-and-cursor.md) | Accepted |
 | 0017 | [Sessions and the HTTP layer: plain `fetch`, tokens in `localStorage`, session checks](0017-session-and-http-layer.md) | Accepted |
 | 0018 | [The sync engine: a pure command/event state machine](0018-sync-engine.md) | Accepted |
@@ -92,3 +92,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0086 | [Form dialogs below the screen's height, and date and time inputs drawn plainly](0086-form-dialog-height-and-date-time-inputs.md) | Accepted |
 | 0087 | [Form dialogs as high as their form](0087-form-dialog-as-high-as-its-form.md) | Accepted |
 | 0088 | [The Today screen is called Home](0088-today-renamed-home.md) | Accepted |
+| 0089 | [Matching accepts half to one and a half times the plan](0089-matching-tolerance-half.md) | Accepted |

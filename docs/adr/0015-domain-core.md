@@ -1,6 +1,6 @@
 # 0015. Pure domain core: dates, plans, matching and units
 
-- Status: Accepted (structure); Proposed (heart-rate zone method, matching tolerance)
+- Status: Accepted (structure); heart-rate zone method superseded by [0034](0034-heart-rate-zone-settings.md); matching tolerance decided in [0089](0089-matching-tolerance-half.md)
 - Date: 2026-10-06
 - Deciders: agent (structure); project owner to review the Proposed points
 

@@ -47,6 +47,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Plan phases (base, pre-competition, competition; 4 weeks each by default), a weekly distance goal and an intensity per week (0–100%, set with a slider). The plan screen is now a calendar, weeks as rows and days as columns in bands per phase, with a sidebar for the open workout, the selected week against the goal, and the plan's settings (ADR 0043).
 
 ### Changed
+- An activity is suggested for a workout only when it is between half and one and a half times the planned distance (or duration); it was anything up to double (ADR 0089).
 - Strava's redirect now returns to `/settings?strava=<result>` (ADR 0027).
 - All buttons, inputs, selects and textareas now use Shoelace web components instead of plain HTML
   elements (self-hosted, vendored under `frontend/assets/shoelace/`), except the Strava "Connect"

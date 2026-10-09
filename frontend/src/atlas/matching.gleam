@@ -42,8 +42,8 @@ pub type Status {
 }
 
 /// How far an activity may differ from the planned distance (or duration), as a share of the plan.
-/// 1.0 accepts anything from nothing to double the planned size.
-const max_relative_difference = 1.0
+/// 0.5 accepts anything from half to one and a half times the planned size.
+const max_relative_difference = 0.5
 
 /// Proposes new matches for the scheduled workouts. `existing` matches (made earlier or confirmed
 /// by the user) are kept out of the proposal: their activities and workouts are not used again.

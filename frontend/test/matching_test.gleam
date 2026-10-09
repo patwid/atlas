@@ -107,11 +107,25 @@ pub fn activities_far_off_the_target_are_rejected_test() {
   let scheduled = schedule([workout("w1", 1, plan.Long, Some(20_000.0), None)])
   assert matching.propose(
       scheduled,
+      [run("half", "2026-10-06 06:00:00.000Z", 10_000.0, 3000)],
+      [],
+      fixed(0),
+    )
+    == [Match("half", "w1", "a1")]
+  assert matching.propose(
+      scheduled,
+      [run("more", "2026-10-06 06:00:00.000Z", 30_000.0, 9000)],
+      [],
+      fixed(0),
+    )
+    == [Match("more", "w1", "a1")]
+  assert matching.propose(
+      scheduled,
       [run("short", "2026-10-06 06:00:00.000Z", 5000.0, 1500)],
       [],
       fixed(0),
     )
-    == [Match("short", "w1", "a1")]
+    == []
   assert matching.propose(
       scheduled,
       [run("huge", "2026-10-06 06:00:00.000Z", 42_195.0, 14_000)],
@@ -125,7 +139,7 @@ pub fn activities_far_off_the_target_are_rejected_test() {
       [],
       fixed(0),
     )
-    == [Match("tiny", "w1", "a1")]
+    == []
 }
 
 pub fn the_duration_target_is_used_without_a_distance_test() {
