@@ -30,7 +30,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0024 | [Coach access: grants with names, and the Coaches screen](0024-coach-grants-screen.md) | Accepted |
 | 0025 | [Entering activities by hand](0025-manual-activities.md) | Accepted |
 | 0026 | [The Today screen and stored matches](0026-today-screen.md) | Accepted |
-| 0027 | [The Strava section in Settings](0027-strava-screen.md) | Accepted / Proposed |
+| 0027 | [The Strava section in Settings](0027-strava-screen.md) | Accepted |
 | 0028 | [Copying a plan](0028-copy-a-plan.md) | Accepted |
 | 0029 | [Sharing a plan with named people](0029-sharing-plans.md) | Accepted |
 | 0030 | [The membership sweep: access that is taken away reaches the device](0030-membership-sweep.md) | Accepted |
