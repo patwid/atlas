@@ -12,6 +12,7 @@ import atlas/shares.{type Share}
 import atlas/store
 import atlas/ui/button
 import atlas/ui/dialog
+import atlas/ui/empty
 import atlas/ui/icon
 import atlas/ui/layout
 import atlas/ui/menu
@@ -185,7 +186,11 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
     case model.loaded, current {
       False, _ -> progress.loading("Loading…")
       True, [] ->
-        html.p([class("muted")], [html.text("Not shared with anyone.")])
+        empty.compact(
+          icon.Share,
+          "Not shared with anyone",
+          "Share it with an e-mail address below.",
+        )
       True, _ -> layout.list(list.map(current, share_view))
     },
     person_finder.view(

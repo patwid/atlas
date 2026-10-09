@@ -470,8 +470,12 @@ main { flex: 1; padding: 0 1rem 1.5rem; max-width: var(--content-max); width: 10
   width: 5rem; height: 5rem; padding: 1.375rem; margin-bottom: 0.5rem; clip-path: var(--md-shape-cookie-9);
   background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container);
 }
-.empty h3 { color: var(--md-sys-color-on-surface); font: 500 1.375rem/1.75rem var(--md-ref-typeface); margin: 0; }
+.empty h2 { color: var(--md-sys-color-on-surface); font: 500 1.375rem/1.75rem var(--md-ref-typeface); margin: 0; }
 .empty p { margin: 0 0 0.5rem; max-width: 28rem; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; }
+/* A compact one (ADR 0069), for a list with a form under it: the form stays in view on a phone. */
+.empty-compact { padding: 1.5rem 1rem; }
+.empty-compact > .icon { width: 3.5rem; height: 3.5rem; padding: 0.875rem; margin-bottom: 0.25rem; }
+.empty-compact h2 { font: 500 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.009375rem; }
 a.md-button { text-decoration: none; }
 .signin { max-width: 24rem; margin: 0 auto; padding: 4rem 1.5rem; }
 .signin h1 { font: 400 2.25rem/2.75rem var(--md-ref-typeface); margin: 0 0 0.5rem; }
@@ -482,11 +486,9 @@ label {
   color: var(--md-sys-color-on-surface-variant); margin-top: 0.75rem;
 }
 .error { color: var(--md-sys-color-error); margin: 0.25rem 0 0; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; }
-.settings h2, .toolbar h2 { font: 400 1.375rem/1.75rem var(--md-ref-typeface); }
-.toolbar h2 { margin: 1.5rem 0 0.75rem; }
-/* The plan list's sections ("Your plans", "Shared with you") are list subheaders (ADR 0055): the app bar holds the
-   page's title. */
-.plans h2 {
+/* Sections are list subheaders (ADR 0055, 0069): the app bar holds the page's title. Their text lines up with the
+   list items' text. */
+.subheader {
   margin: 1.25rem 1rem 0.5rem; color: var(--md-sys-color-on-surface-variant);
   font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem;
 }
@@ -543,6 +545,18 @@ label {
 .link-list li:active, .link-list li:focus-within { border-radius: var(--md-sys-shape-corner-large); }
 .list a { color: var(--md-sys-color-on-surface); font: 400 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem; text-decoration: none; }
 .list a:hover { text-decoration: underline; }
+/* A row that opens a page (ADR 0069): its headline link covers the whole item, with M3's state layer and the
+   segmented list's shape change on hover, like the Settings list. */
+.list .row-link::after {
+  content: ""; position: absolute; inset: 0; background: var(--md-sys-color-on-surface);
+  opacity: 0; transition: opacity 0.15s var(--md-sys-motion-easing);
+}
+.list .row-link:hover { text-decoration: none; }
+.list li:has(> .row-link):hover .row-link::after { opacity: var(--md-sys-state-hover); }
+.list li:has(> .row-link):active .row-link::after { opacity: var(--md-sys-state-pressed); }
+.list li:has(> .row-link):hover { border-radius: var(--md-sys-shape-corner-medium); }
+.list .row-link:focus-visible { outline: 0; }
+.list .row-link:focus-visible::after { outline: var(--focus-ring); outline-offset: -3px; }
 .list p { margin: 0.125rem 0 0; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; color: var(--md-sys-color-on-surface-variant); }
 .list .actions { margin-top: 0.5rem; }
 .chip-row { margin-left: 0.5rem; }
@@ -741,7 +755,7 @@ button.strava-connect:disabled { opacity: 0.6; cursor: progress; }
 /* "View on Strava" must be identifiable as a link: bold, underlined and in Strava's orange. */
 a.strava-link { color: #FC5200; font-weight: 700; text-decoration: underline; }
 /* Training zones in Settings (ADR 0034, 0035) */
-.zones-form h3 { font: 500 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.009375rem; margin: 1rem 0 0; }
+.zones-form .subheader { margin: 1.25rem 0 0; }
 .zones-form > .muted { font-size: 0.875rem; margin: 0.25rem 0 0; }
 .zones { display: grid; gap: 0.5rem; margin-top: 0.5rem; }
 .zone { display: grid; grid-template-columns: 6.5rem minmax(4rem, 6rem) 1fr; align-items: center; gap: 0.5rem; }

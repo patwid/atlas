@@ -298,6 +298,6 @@ pub fn a_plan_that_cannot_be_started_offers_no_way_to_start_it_test() {
       grants_list(),
     ))
   assert !string.contains(html, "Start this plan")
-  assert string.contains(html, "Nobody is following this plan yet.")
+  assert string.contains(html, "Nobody is following this plan yet")
   assert !string.contains(html, "Pick a start date")
 }

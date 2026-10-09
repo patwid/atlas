@@ -14,6 +14,7 @@ import atlas/ui/button
 import atlas/ui/chip
 import atlas/ui/choice
 import atlas/ui/dialog
+import atlas/ui/empty
 import atlas/ui/error
 import atlas/ui/field
 import atlas/ui/focus
@@ -447,12 +448,15 @@ pub fn view(model: Model, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
       True -> [
         case rows {
           [] ->
-            html.p([class("muted")], [
-              html.text(case can_edit {
-                True -> "This plan has no workouts yet. Add the first one."
-                False -> "This plan has no workouts yet."
-              }),
-            ])
+            empty.view(
+              icon.CalendarToday,
+              "No workouts yet",
+              case can_edit {
+                True -> "Add the first one with Add workout."
+                False -> "The plan's owner has not added any workouts yet."
+              },
+              None,
+            )
           _ -> element.none()
         },
         case weeks {

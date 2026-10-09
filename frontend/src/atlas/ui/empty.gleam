@@ -15,12 +15,22 @@ pub fn view(
 ) -> Element(msg) {
   html.div([class("empty")], [
     icon.view(symbol),
-    html.h3([], [html.text(headline)]),
+    html.h2([], [html.text(headline)]),
     html.p([], [html.text(text)]),
     case action {
       Some(action) -> action
       None -> element.none()
     },
+  ])
+}
+
+/// A smaller empty state for a list with a form or more content under it, such as the coaches with the field to
+/// add one (ADR 0069), so what to do next stays in view on a phone.
+pub fn compact(symbol: Icon, headline: String, text: String) -> Element(msg) {
+  html.div([class("empty empty-compact")], [
+    icon.view(symbol),
+    html.h2([], [html.text(headline)]),
+    html.p([], [html.text(text)]),
   ])
 }
 

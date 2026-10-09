@@ -353,7 +353,7 @@ pub fn the_slider_shows_the_week_and_others_see_a_bar_test() {
 
 pub fn an_empty_plan_invites_the_first_workout_test() {
   assert string.contains(html_of(with_rows([]), True), "Add the first one")
-  assert string.contains(html_of(with_rows([]), False), "no workouts yet")
+  assert string.contains(html_of(with_rows([]), False), "No workouts yet")
   assert string.contains(html_of(workouts_page.new(), True), "Loading")
 }
 

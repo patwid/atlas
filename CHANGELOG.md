@@ -82,6 +82,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - The floating action button stays at the bottom right with its label on every screen size, lined up with the content on wide screens, instead of moving into the navigation rail (ADR 0067).
 - From 600px a screen's main action (New plan, Add activity, Add workout, Start this plan) is a button in the app bar; the floating action button is for phones only (ADR 0068).
 - CI builds the flake's checks (`atlas-app`, `gleam-test`, `backend-test`, `frontend-js-test`) offline instead of running the test scripts in `nix develop`; `nix flake check` runs them locally, and a suite whose source is unchanged is not run again. `test-frontend-js.sh` accepts `ATLAS_NPM_INSTALL=0` (ADR 0042).
+- Section headings look the same on every screen (list subheaders), Today's first one carries the date, whole rows of the plan and athlete lists open them, and every empty list or missing page has an empty state with what to do next (ADR 0069).
 
 ### Fixed
 - Training zones show a loading indicator until the saved zones are read, instead of the defaults, which an early edit could have saved over them.

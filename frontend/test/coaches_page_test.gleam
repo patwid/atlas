@@ -144,7 +144,7 @@ pub fn the_list_shows_coaches_by_name_and_athletes_apart_test() {
 
 pub fn an_empty_list_says_nobody_can_see_the_training_test() {
   let html = html_of(with_grants([]))
-  assert string.contains(html, "Nobody can see your training.")
+  assert string.contains(html, "Nobody can see your training")
   assert !string.contains(html, "Athletes you coach")
   assert string.contains(html_of(coaches_page.new()), "Loading")
 }

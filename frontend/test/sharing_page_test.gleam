@@ -234,7 +234,7 @@ pub fn the_list_shows_who_has_the_plan_by_name_test() {
 }
 
 pub fn an_unshared_plan_says_so_and_loading_is_shown_first_test() {
-  assert string.contains(html_of(with_shares([])), "Not shared with anyone.")
+  assert string.contains(html_of(with_shares([])), "Not shared with anyone")
   assert string.contains(html_of(sharing_page.new()), "Loading")
 }
 

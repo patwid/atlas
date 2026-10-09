@@ -17,6 +17,18 @@ pub fn list(children: List(Element(msg))) -> Element(msg) {
   html.ul([class("list")], children)
 }
 
+/// A section heading under the app bar's title: M3's list subheader (ADR 0069). The app bar holds the page's title,
+/// so sections are `h2`.
+pub fn subheader(text: String) -> Element(msg) {
+  html.h2([class("subheader")], [html.text(text)])
+}
+
+/// The headline of a `list` item that opens a page. The whole item is the link (ADR 0069), so the rest of the row,
+/// such as chips and supporting text, opens it too.
+pub fn row_link(href: String, headline: String) -> Element(msg) {
+  html.a([class("row-link"), attribute.href(href)], [html.text(headline)])
+}
+
 /// A list item that opens another page (ADR 0049): a leading icon, a headline, supporting text and a chevron.
 /// The whole row is the link.
 pub fn link_item(

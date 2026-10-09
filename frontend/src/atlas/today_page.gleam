@@ -239,7 +239,6 @@ pub fn view(model: Model, inputs: Inputs) -> Element(Msg) {
         )
       None -> element.none()
     },
-    html.h2([], [html.text(date.format(inputs.today))]),
     case inputs.assignments {
       [] ->
         empty.view(
@@ -251,7 +250,7 @@ pub fn view(model: Model, inputs: Inputs) -> Element(Msg) {
       _ ->
         html.div([], [
           group(
-            "Today",
+            "Today · " <> date.format(inputs.today),
             sections.today,
             model,
             inputs,
@@ -290,7 +289,7 @@ fn group(
   empty: String,
 ) -> Element(Msg) {
   html.div([class("group")], [
-    html.h3([], [html.text(heading)]),
+    layout.subheader(heading),
     case items {
       [] -> html.p([class("muted")], [html.text(empty)])
       _ ->

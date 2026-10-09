@@ -194,7 +194,7 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
   const d = w.document
   const workouts = async () => (await h.api("GET", "collections/workouts/records?perPage=50&sort=day_index,position", { token: alice.token })).body.items
 
-  await waitFor("the empty workouts", () => d.body.textContent.includes("This plan has no workouts yet. Add the first one."))
+  await waitFor("the empty workouts", () => d.body.textContent.includes("Add the first one with Add workout."))
 
   // First workout: week 1, day 2, typed the way people type.
   click(w, button(w, "Add workout"))
@@ -329,7 +329,7 @@ test("a user starts a plan on a date, moves the date and removes it, and the ser
   const d = w.document
   const assignments = async () => (await h.api("GET", "collections/assignments/records?perPage=50", { token: alice.token })).body.items
 
-  await waitFor("the empty schedule", () => d.body.textContent.includes("Nobody is following this plan yet. Pick a start date to begin."))
+  await waitFor("the empty schedule", () => d.body.textContent.includes("Use Start this plan to begin."))
   click(w, button(w, "Start this plan"))
   await waitFor("the form", () => d.querySelector("#assign-start"))
   assert.equal(d.querySelector("#assign-athlete"), null, "with no coaching relationships there is nobody else to choose")
@@ -469,7 +469,7 @@ test("an athlete adds a coach by e-mail, the coach assigns a plan, and the athle
   // 1. Alice gives Bob access. Looking him up and confirming are separate steps.
   let w = startApp("/settings/coaches", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
   let d = w.document
-  await waitFor("the coaches section", () => d.body.textContent.includes("Nobody can see your training."))
+  await waitFor("the coaches section", () => d.body.textContent.includes("Nobody can see your training"))
   typeInto(w, d.querySelector("#coach-email"), "nobody@example.com")
   submit(w, d.querySelector(".coach-form"))
   await waitFor("a not-found message", () => d.body.textContent.includes("Nobody with this e-mail address uses Atlas."))
@@ -526,7 +526,7 @@ test("an athlete adds a coach by e-mail, the coach assigns a plan, and the athle
   await waitFor("the question", () => openDialog(w)?.textContent.includes("bob can no longer see your training."))
   click(w, dialogButton(w, "Remove"))
   await waitFor("the grant deleted on the server", async () => (await grants())[0]?.deleted === true)
-  await waitFor("nobody listed", () => d.body.textContent.includes("Nobody can see your training."))
+  await waitFor("nobody listed", () => d.body.textContent.includes("Nobody can see your training"))
   const bobsView = await h.api("GET", `collections/coach_grants/records/${grant.id}`, { token: bob.token })
   assert.equal(bobsView.status, 404, "the coach can no longer see the grant")
   w.close()
@@ -739,7 +739,7 @@ test("an owner shares a private plan by e-mail, the recipient reads and starts i
   // Alice shares with Bob. Finding him gives him nothing until she confirms.
   let w = startApp("/plans/winterplan00001", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
   let d = w.document
-  await waitFor("the sharing section", () => d.body.textContent.includes("Not shared with anyone."))
+  await waitFor("the sharing section", () => d.body.textContent.includes("Not shared with anyone"))
   assert.equal(await seesPlan(bob), false, "private to start with")
   typeInto(w, d.querySelector("#share-email"), bob.email)
   submit(w, d.querySelector(".share-form"))
@@ -956,7 +956,7 @@ test("a coach sees an athlete's weeks, plans and activities read-only, and loses
   const grant = (await h.api("GET", "collections/coach_grants/records/cvgrant00000001", { token: alice.token })).body
   await setup(h.update("alice", "coach_grants", grant.id, { deleted: true, base_updated: grant.updated }))
   flipOnline(w)
-  await waitFor("the page to lose the athlete", () => d.body.textContent.includes("You do not coach this person."))
+  await waitFor("the page to lose the athlete", () => d.body.textContent.includes("You do not coach this person"))
   assert.ok(![...d.querySelectorAll("nav a")].some((a) => a.textContent === "Athletes"), "the tab goes away")
   assert.ok(!(await onDevice("activities")).includes("cvactivity00001"), "and her activity is gone from his device")
   w.close()

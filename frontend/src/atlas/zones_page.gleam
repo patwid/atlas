@@ -275,7 +275,7 @@ fn form_view(model: Model, me: String) -> Element(Msg) {
       }),
     ]),
     html.form([class("zones-form"), event.on_submit(fn(_) { Submitted })], [
-      html.h3([], [html.text("Heart rate")]),
+      layout.subheader("Heart rate"),
       html.div([class("row")], [
         field.text("hr-max", "Maximum heart rate", field.suffix("bpm"), [
           attribute.type_("text"),
@@ -299,7 +299,7 @@ fn form_view(model: Model, me: String) -> Element(Msg) {
       zones_view("hr-zone-", "numeric", model.hr.starts, hr_ends, fn(n, v) {
         HrStartChanged(n, v)
       }),
-      html.h3([], [html.text("Blood lactate")]),
+      layout.subheader("Blood lactate"),
       html.p([class("muted")], [
         html.text("In mmol/L. Defaults: 1.0, 1.5, 2.5, 4.0 and 6.0."),
       ]),
@@ -310,7 +310,7 @@ fn form_view(model: Model, me: String) -> Element(Msg) {
         lactate_ends,
         fn(n, v) { LactateStartChanged(n, v) },
       ),
-      html.h3([], [html.text("Pace")]),
+      layout.subheader("Pace"),
       html.div([class("row")], [
         field.text("pace-threshold", "Threshold pace", field.suffix("min/km"), [
           attribute.type_("text"),

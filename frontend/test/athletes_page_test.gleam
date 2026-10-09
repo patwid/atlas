@@ -81,7 +81,7 @@ pub fn an_empty_list_explains_how_an_athlete_gives_access_test() {
 
 pub fn someone_who_is_not_an_athlete_is_refused_test() {
   let html = html_of(athletes_page.view_athlete(None, inputs()))
-  assert string.contains(html, "You do not coach this person.")
+  assert string.contains(html, "You do not coach this person")
   assert !string.contains(html, "Recent activities")
 }
 

@@ -351,7 +351,7 @@ pub fn view_list_with(
   html.section([class("plans")], [
     undo.snackbar(model.undo, "Plan deleted", UndoClicked, DeleteExpired),
     html.div([class("toolbar")], [
-      html.h2([], [html.text("Your plans")]),
+      layout.subheader("Your plans"),
       button.fab_for(main_action(model)),
     ]),
     form_view(model, model.mode == Creating, "New plan"),
@@ -374,7 +374,7 @@ pub fn view_list_with(
       [] -> element.none()
       plans ->
         html.div([], [
-          html.h2([], [html.text("Shared with you")]),
+          layout.subheader("Shared with you"),
           plan_list(plans, shared_by),
         ])
     },
@@ -397,11 +397,12 @@ pub fn view_detail_with(
         case model.loaded {
           False -> progress.loading("Loading…")
           True ->
-            html.p([class("muted")], [
-              html.text(
-                "This plan is not on this device. It may not have synced yet, or it may have been deleted.",
-              ),
-            ])
+            empty.view(
+              icon.SearchOff,
+              "This plan is not on this device",
+              "It may not have synced yet, or it may have been deleted.",
+              Some(empty.link(route.to_path(route.Plans), "All plans")),
+            )
         },
       ])
     Ok(found) -> {
@@ -517,9 +518,7 @@ fn plan_list(
   layout.list(
     list.map(plans, fn(p) {
       html.li([], [
-        html.a([attribute.href(route.to_path(route.Plan(p.id)))], [
-          html.text(p.title),
-        ]),
+        layout.row_link(route.to_path(route.Plan(p.id)), p.title),
         chips(p),
         case shared_by(p) {
           Some(name) ->

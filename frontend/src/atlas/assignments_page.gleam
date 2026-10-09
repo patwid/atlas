@@ -13,6 +13,7 @@ import atlas/records
 import atlas/store
 import atlas/ui/button
 import atlas/ui/date_picker
+import atlas/ui/empty
 import atlas/ui/error
 import atlas/ui/field
 import atlas/ui/form_dialog
@@ -341,13 +342,16 @@ pub fn view(
         case model.mode {
           Starting -> element.none()
           _ ->
-            html.p([class("muted")], [
-              html.text(case context.can_start {
-                True ->
-                  "Nobody is following this plan yet. Pick a start date to begin."
-                False -> "Nobody is following this plan yet."
-              }),
-            ])
+            empty.view(
+              icon.Schedule,
+              "Nobody is following this plan yet",
+              case main_action(model, context) {
+                Some(button.Main(_, label, _)) ->
+                  "Use " <> label <> " to begin."
+                None -> "Whoever starts it shows here, with their dates."
+              },
+              None,
+            )
         }
       True, _ ->
         layout.list(

@@ -153,14 +153,14 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
         "A coach can see your plans, activities and progress, and can give you plans to follow.",
       ),
     ]),
+    layout.subheader("Your coaches"),
     case model.loaded, given {
       False, _ -> progress.loading("Loading…")
       True, [] ->
-        empty.view(
+        empty.compact(
           icon.Lock,
-          "Nobody can see your training.",
+          "Nobody can see your training",
           "Give a coach access with their e-mail address below.",
-          None,
         )
       True, _ -> layout.list(list.map(given, given_view))
     },
@@ -182,13 +182,11 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
       [] -> element.none()
       people ->
         html.div([], [
-          html.h2([], [html.text("Athletes you coach")]),
+          layout.subheader("Athletes you coach"),
           layout.list(
             list.map(people, fn(p) {
               html.li([], [
-                html.a([attribute.href(route.to_path(route.Athlete(p.id)))], [
-                  html.text(p.name),
-                ]),
+                layout.row_link(route.to_path(route.Athlete(p.id)), p.name),
               ])
             }),
           ),

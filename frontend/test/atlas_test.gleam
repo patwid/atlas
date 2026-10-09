@@ -1017,7 +1017,7 @@ pub fn a_coach_sees_the_athletes_and_each_ones_page_test() {
 pub fn nobody_else_can_be_looked_at_test() {
   let page =
     element.to_string(atlas.view(coaching_model(route.Athlete("stranger"))))
-  assert string.contains(page, "You do not coach this person.")
+  assert string.contains(page, "You do not coach this person")
   assert !string.contains(page, "<table")
 }
 

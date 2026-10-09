@@ -42,9 +42,10 @@ pub fn view_list(athletes: List(Person)) -> Element(msg) {
         layout.list(
           list.map(people, fn(person) {
             html.li([], [
-              html.a([attribute.href(route.to_path(route.Athlete(person.id)))], [
-                html.text(person.name),
-              ]),
+              layout.row_link(
+                route.to_path(route.Athlete(person.id)),
+                person.name,
+              ),
             ])
           }),
         )
@@ -57,7 +58,12 @@ pub fn view_athlete(athlete: Option(Person), inputs: Inputs) -> Element(msg) {
   case athlete {
     None ->
       html.section([class("athlete")], [
-        html.p([class("muted")], [html.text("You do not coach this person.")]),
+        empty.view(
+          icon.Lock,
+          "You do not coach this person",
+          "An athlete gives you access under Settings, Coaches.",
+          Some(empty.link(route.to_path(route.Athletes), "All athletes")),
+        ),
       ])
     Some(person) -> {
       let weeks = progress.weeks(inputs, weeks_shown)
@@ -167,7 +173,7 @@ fn following(inputs: Inputs) -> Element(msg) {
       date.compare(b.assignment.start_date, a.assignment.start_date)
     })
   html.div([class("group")], [
-    html.h3([], [html.text("Plans they follow")]),
+    layout.subheader("Plans they follow"),
     case mine {
       [] -> html.p([class("muted")], [html.text("Not following a plan.")])
       rows ->
@@ -196,7 +202,7 @@ fn plan_title(inputs: Inputs, assignment: Assignment) -> String {
 fn recent(inputs: Inputs) -> Element(msg) {
   let rows = progress.recent_activities(inputs, activities_shown)
   html.div([class("group")], [
-    html.h3([], [html.text("Recent activities")]),
+    layout.subheader("Recent activities"),
     case rows {
       [] -> html.p([class("muted")], [html.text("No activities yet.")])
       _ -> layout.list(list.map(rows, fn(row) { activity_view(row, inputs) }))
