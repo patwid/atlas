@@ -95,6 +95,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - The app is set in Roboto Flex, served with it and cached for offline use (ADR 0079).
 - Pressing a workout in your own plan, or an activity you entered, opens its form straight away, with Delete in the form's top bar; others still see a workout in a read-only dialog (ADR 0080).
 - On Today, "Link activity" is a text button beside a workout's status instead of an outlined button under it, and Choose another is a text button (ADR 0081).
+- Today lists newest first: the week ahead from its furthest day, then today, then the last seven days (ADR 0082).
 
 ### Fixed
 - The Settings list's rows all have the same padding: the rows that open a page no longer have it twice, so their hover and ripple cover the whole row, and the account and Sync rows no longer change shape on hover.

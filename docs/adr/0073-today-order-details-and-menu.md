@@ -1,6 +1,6 @@
 # 0073. Today: the past week before the week ahead, shorter details, a menu for a confirmed link
 
-- Status: Accepted
+- Status: Accepted. The order of the groups is changed by [0082](0082-today-newest-first.md).
 - Date: 2026-10-09
 - Deciders: owner (asked to go ahead with the layout review's other items); agent (the details below)
 

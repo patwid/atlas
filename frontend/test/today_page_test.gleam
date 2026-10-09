@@ -257,9 +257,22 @@ pub fn the_day_and_its_sections_are_shown_test() {
   assert string.contains(html, "Coming up")
   assert string.contains(html, "Thursday rest")
   assert string.contains(html, "Rest day")
-  // What is past comes before what is to come.
-  let assert [_, after_recent] = string.split(html, "Last 7 days")
-  assert string.contains(after_recent, "Coming up")
+  // Newest first: what is to come, today, then what is past.
+  let assert [before_today, after_today] = string.split(html, "Today · ")
+  assert string.contains(before_today, "Coming up")
+  assert string.contains(after_today, "Last 7 days")
+}
+
+pub fn the_week_ahead_lists_the_furthest_day_first_test() {
+  let html =
+    html_of(
+      today_page.new(),
+      Inputs(..inputs([]), today: monday, activities: []),
+    )
+  let assert [_, thursday_on] = string.split(html, "Thursday rest")
+  assert string.contains(thursday_on, "Wednesday tempo")
+  let assert [_, wednesday_on] = string.split(thursday_on, "Wednesday tempo")
+  assert string.contains(wednesday_on, "Tuesday easy")
 }
 
 pub fn the_plan_is_named_when_more_than_one_is_followed_test() {
