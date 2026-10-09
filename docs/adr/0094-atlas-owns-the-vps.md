@@ -41,3 +41,8 @@ Option 2.
 - Tools and settings from the shared modules (shell, editors, packages, Nix registry) are not on the server; what it needs goes into `nix/hosts/atlas`.
 - The system was evaluated, not built or booted: x86_64 cannot be built in the sandbox. The first switch is the test, with the Hetzner console
   and the previous GRUB entry as the way back.
+
+## Addendum: the first switch goes through root (2026-10-09)
+
+Root on the server already accepts the owner's key, so the first switch does not need `patwid` and doas: it is the same
+`nixos-rebuild switch --target-host root@… --build-host root@…` as every later deploy (`docs/deploy.md`, step 5).

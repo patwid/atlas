@@ -68,24 +68,27 @@ After changing it: `ssh root@204.168.179.170 systemctl restart atlas`.
 
 ### 5. First deploy, from your laptop
 
-Do the first switch by hand, so you see it happen and can react. The server still runs the nixos-config system, where
-root only accepts the builds.sr.ht key and you are `patwid` with doas (no sudo), so this one goes through `patwid`:
-the server builds the system (patwid is a trusted Nix user), and doas activates it.
+Do the first switch by hand, so you see it happen and can react. Root on the server already accepts your key, so the
+deploy goes straight to root; the server builds the system itself.
+
+First check that you can log in, and that the key you use is one of the three in `sshKeys`: after the switch, root
+accepts only those.
 
 ```sh
-sys=$(nix build --no-link --print-out-paths --store ssh-ng://patwid@204.168.179.170 \
-  .#nixosConfigurations.atlas.config.system.build.toplevel)
-ssh -t patwid@204.168.179.170 \
-  "doas sh -c 'nix-env -p /nix/var/nix/profiles/system --set $sys && $sys/bin/switch-to-configuration switch'"
+ssh root@204.168.179.170 'nixos-version; uname -m'
 ```
 
-The switch removes `patwid` and doas and lets root in with your keys; the open session keeps running. Check from a
-second terminal that `ssh root@204.168.179.170` works before you close it. From then on (and for any later deploy by hand):
+Then build and switch. `boot` instead of `switch` activates the new system only on the next reboot, if you prefer
+to restart into it from the Hetzner console.
 
 ```sh
 nix run nixpkgs#nixos-rebuild -- switch --flake .#atlas \
   --target-host root@204.168.179.170 --build-host root@204.168.179.170 --use-substitutes
 ```
+
+The switch removes `patwid` and doas; the open session keeps running. Before you close it, check from a second
+terminal that `ssh root@204.168.179.170` still works and that `curl -fsS http://204.168.179.170/api/health` answers.
+Later deploys by hand use the same command.
 
 ### 6. Inside the app
 
