@@ -117,6 +117,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - The sign-in form is centred vertically on the screen.
 
 ### Fixed
+- On a phone, Training zones' Save and Discard bar sits right above the navigation bar, without the extra space under the buttons.
 - The New plan and Edit plan dialogs show their Title field's floating label and top outline whole: the plan form's own styles took away the dialog form's top padding.
 - The Home screen without a plan shows the Home icon, not the calendar icon left from when it was called Today.
 - A week's Clear intensity button sits beside Close in its dialog: the slider no longer narrows under the pointer once an intensity is set, and the focus moves to the slider after clearing instead of being lost.

@@ -858,6 +858,8 @@ a.strava-link { color: #FC5200; font-weight: 700; text-decoration: underline; }
   position: sticky; bottom: var(--nav-bar-height); z-index: 1; margin: 1rem -1rem 0; padding: 0.75rem 1rem;
   background: var(--md-sys-color-surface); border-top: 1px solid var(--md-sys-color-outline-variant);
 }
+/* On a phone the bar ends the page right above the navigation bar, with no gap of the page's own bottom padding. */
+@media (max-width: 37.4375rem) { main:has(.zones-form > .actions) { padding-bottom: 0; } }
 
 /* Ripple (ADR 0051): a circle that grows from where the pointer went down and fades. atlas/ui/interaction sets its
    position and size and flips data-ripple between a and b to restart it. */
