@@ -657,7 +657,7 @@ fn form_fields(form: plan_form.Form) -> Element(Msg) {
         on(field.help("Optional"), "description"),
         [
           attribute.name("description"),
-          attribute.rows(4),
+          attribute.rows(2),
           event.on_input(DescriptionChanged),
         ],
         form.description,
@@ -675,6 +675,8 @@ fn form_fields(form: plan_form.Form) -> Element(Msg) {
           plan.Public -> "Everyone who is signed in."
         }),
       ]),
+      // The phases and the goal are a group of their own (ADR 0085).
+      layout.subheader("Schedule"),
       plan_settings.inputs(
         "plan",
         form.settings,

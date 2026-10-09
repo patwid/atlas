@@ -88,3 +88,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0082 | [Today, newest first](0082-today-newest-first.md) | Accepted |
 | 0083 | [The person finder's search as an icon button in its field](0083-person-finder-search-in-the-field.md) | Accepted |
 | 0084 | [Training zones: the Calculate buttons under their field](0084-zone-calculate-buttons-under-their-field.md) | Accepted |
+| 0085 | [Form dialogs: one spacing, pairs only where they fit, buttons at the bottom on wider screens](0085-form-dialog-spacing-pairs-and-buttons.md) | Accepted |

@@ -1,5 +1,7 @@
 //// A form in a Material 3 full-screen dialog (ADR 0057): on a phone it fills the screen with a top bar holding
-//// Close, the title and the form's submit button; on wider screens it is a dialog in the middle. Create and edit
+//// Close, the title and the form's submit button; on wider screens it is a basic dialog in the middle, with its
+//// headline at the top and Cancel and a filled submit button at the bottom (ADR 0085). Both sets of buttons are
+//// drawn and CSS shows the ones that fit, as for a screen's main action (ADR 0068). Create and edit
 //// forms open here instead of inside the list, so the form is where the eye is, wherever the button was.
 ////
 //// It is declarative: `open` says whether it shows, and `atlas/ui/interaction` opens or closes the native modal
@@ -64,17 +66,38 @@ pub fn view_with_action(
       False -> []
       True -> [
         html.div([class("form-dialog-bar")], [
-          html.form([attribute.attribute("method", "dialog")], [
-            button.icon([attribute.type_("submit")], icon.Close, "Cancel"),
-          ]),
+          html.form(
+            [
+              class("form-dialog-close"),
+              attribute.attribute("method", "dialog"),
+            ],
+            [button.icon([attribute.type_("submit")], icon.Close, "Cancel")],
+          ),
           html.h2([attribute.id(title_id)], [html.text(title)]),
           action,
           button.text(
-            [attribute.type_("submit"), attribute.attribute("form", form_id)],
+            [
+              class("form-dialog-submit"),
+              attribute.type_("submit"),
+              attribute.attribute("form", form_id),
+            ],
             [html.text(submit_label)],
           ),
         ]),
         html.div([class("form-dialog-body")], body),
+        html.form(
+          [
+            class("actions form-dialog-actions"),
+            attribute.attribute("method", "dialog"),
+          ],
+          [
+            button.text([attribute.type_("submit")], [html.text("Cancel")]),
+            button.filled(
+              [attribute.type_("submit"), attribute.attribute("form", form_id)],
+              [html.text(submit_label)],
+            ),
+          ],
+        ),
       ]
     },
   )

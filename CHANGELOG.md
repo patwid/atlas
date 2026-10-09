@@ -98,6 +98,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Today lists newest first: the week ahead from its furthest day, then today, then the last seven days (ADR 0082).
 - The person finder on Sharing and Coaches has its search as an icon button in the field instead of a Find button beside it, and a short label with a help line under it (ADR 0083).
 - On the training zones form, Calculate heart rate zones and Calculate pace zones sit under their field instead of beside it (ADR 0084).
+- Form dialogs space their fields evenly, stack pairs of fields on a phone, and on wider screens end with Cancel and a filled Save; the plan form groups its schedule and the activity form its optional fields (ADR 0085).
 
 ### Fixed
 - The Settings list's rows all have the same padding: the rows that open a page no longer have it twice, so their hover and ripple cover the whole row, and the account and Sync rows no longer change shape on hover.

@@ -615,13 +615,6 @@ fn form_fields(form: activity_form.Form) -> Element(Msg) {
         }),
         SportChanged,
       ),
-      field.text("activity-name", "Name", on(field.help("Optional"), "name"), [
-        attribute.type_("text"),
-        attribute.name("name"),
-        attribute.value(form.name),
-        attribute.attribute("maxlength", "200"),
-        event.on_input(NameChanged),
-      ]),
       html.div([class("row")], [
         field.text(
           "activity-distance",
@@ -654,11 +647,20 @@ fn form_fields(form: activity_form.Form) -> Element(Msg) {
           ],
         ),
       ]),
+      // What is not needed is a group of its own, after what is (ADR 0085).
+      layout.subheader("Optional"),
+      field.text("activity-name", "Name", on(field.plain, "name"), [
+        attribute.type_("text"),
+        attribute.name("name"),
+        attribute.value(form.name),
+        attribute.attribute("maxlength", "200"),
+        event.on_input(NameChanged),
+      ]),
       html.div([class("row")], [
         field.text(
           "activity-elevation",
           "Climb",
-          on(field.Help("Optional", "m", None), "elevation"),
+          on(field.suffix("m"), "elevation"),
           [
             attribute.type_("text"),
             attribute.attribute("inputmode", "numeric"),
@@ -670,7 +672,7 @@ fn form_fields(form: activity_form.Form) -> Element(Msg) {
         field.text(
           "activity-hr",
           "Average heart rate",
-          on(field.Help("Optional", "bpm", None), "avg_hr"),
+          on(field.suffix("bpm"), "avg_hr"),
           [
             attribute.type_("text"),
             attribute.attribute("inputmode", "numeric"),

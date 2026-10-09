@@ -1004,14 +1004,32 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
 .form-dialog-bar h2 { flex: 1; min-width: 0; margin: 0 0 0 0.25rem; font: 400 1.375rem/1.75rem var(--md-ref-typeface); }
 .form-dialog-body { flex: 1; overflow-y: auto; padding: 0 1.5rem 1.5rem; padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
 .form-dialog .plan-form { background: none; padding: 0; margin: 0; border-radius: 0; }
+/* The form (ADR 0085): one 16px rhythm between fields, chips and groups, so a floating label never meets the help
+   line above it. Pairs of fields stack on a phone and sit side by side, in equal columns, from 600px. */
+.form-dialog-body > form { display: grid; gap: 1rem; padding-top: 0.5rem; }
+.form-dialog-body > form :is(.md-field, .field-with-trigger, .choice, .plan-settings) { margin-top: 0; }
+.form-dialog-body > form .row { display: grid; gap: 1rem; }
+.form-dialog-body > form > .supporting { margin-top: -0.75rem; }
+.form-dialog-body > form > .subheader { margin: 0.5rem 0 -0.5rem; }
+.form-dialog .plan-settings { display: grid; gap: 1rem; }
+.form-dialog .plan-settings legend { margin-bottom: 0.5rem; }
+.form-dialog .plan-settings .phases-error { margin-top: -0.75rem; }
+.form-dialog textarea.md-text-field { min-height: 0; }
+/* Cancel and Save at the bottom are for wider screens; a phone has them in the top bar. */
+.form-dialog-actions { display: none; }
 @media (min-width: 37.5rem) {
   dialog.form-dialog {
     width: calc(100% - 3rem); max-width: 35rem; height: auto; max-height: calc(100dvh - 3rem); margin: auto;
     border-radius: var(--md-sys-shape-corner-extra-large); background: var(--md-sys-color-surface-container-high);
     box-shadow: var(--md-sys-elevation-3);
   }
-  .form-dialog-bar { padding: 0.75rem 0.75rem 0.25rem 0.5rem; background: inherit; }
-  .form-dialog-bar h2 { font-size: 1.5rem; line-height: 2rem; }
+  /* A basic dialog: the headline at the top, lined up with the fields, and the buttons at the bottom. */
+  .form-dialog-bar { min-height: 0; padding: 1.5rem 1rem 0.5rem 1.5rem; background: inherit; }
+  .form-dialog-bar h2 { margin: 0; font-size: 1.5rem; line-height: 2rem; }
+  .form-dialog-bar :is(.form-dialog-close, .form-dialog-submit) { display: none; }
+  .form-dialog-body { padding-bottom: 0.5rem; }
+  .form-dialog-actions { display: flex; justify-content: flex-end; margin: 0; padding: 1rem 1.5rem 1.5rem; }
+  .form-dialog-body > form .row { grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
 }
 
 /* Primary tabs (ADR 0058): under the app bar, the selected tab's label in primary with a 3px indicator under it
