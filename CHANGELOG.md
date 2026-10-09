@@ -95,6 +95,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - The app is set in Roboto Flex, served with it and cached for offline use (ADR 0079).
 
 ### Fixed
+- Fields side by side line up again when one has help text under it (Distance and Duration), and the zones page's Calculate buttons sit level with the field beside them.
 - Screen readers hear the Settings tab's badge as "3 sync problems", and a plan's tabs and the calendar's week labels stay below the app bar on phones with a notch (ADR 0079).
 - A wrong or missing e-mail or password marks the sign-in fields as invalid for screen readers.
 - Today shows a loading indicator until the plans you follow are read, instead of briefly saying you follow none.

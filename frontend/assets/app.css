@@ -612,8 +612,11 @@ label {
   background: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-large);
 }
 .plan-form { padding: 1rem 1rem 1.25rem; margin-bottom: 1rem; }
-.row { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: end; }
+/* Fields side by side line up at the top, where their inputs are: help text under one of them must not move it.
+   A button beside a field is centred on the field's 56px input (0.5rem margin + 3.5rem input, the button 2.5rem). */
+.row { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: start; }
 .row > div { flex: 1 1 8rem; }
+.row > .md-button { margin-top: 1rem; }
 .coach-form { margin-top: 1rem; }
 .found { padding: 0.75rem 1rem; margin-top: 0.75rem; }
 .found p { margin: 0.25rem 0; }
