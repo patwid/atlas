@@ -10,6 +10,7 @@ import lustre/element.{type Element}
 import lustre/element/svg
 
 pub type Icon {
+  Home
   Today
   EventNote
   DirectionsRun
@@ -73,7 +74,12 @@ fn draw(ds: List(String)) -> Element(msg) {
 
 fn paths(icon: Icon, style: Style) -> List(String) {
   case icon, style {
-    // today: the Today tab
+    // home: the Home tab
+    Home, Outlined -> [
+      "m12 5.69 5 4.5V18h-2v-6H9v6H7v-7.81l5-4.5M12 3 2 12h3v8h6v-6h2v6h6v-8h3L12 3z",
+    ]
+    Home, Filled -> ["M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"]
+    // today: the Home screen without a plan
     Today, Outlined -> [
       "M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V9h14v10zm0-12H5V5h14v2zM7 11h5v5H7z",
     ]

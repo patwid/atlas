@@ -16,6 +16,7 @@ import atlas/coaches_page
 import atlas/collection
 import atlas/date
 import atlas/grants
+import atlas/home_page
 import atlas/hr_zones
 import atlas/http.{Response}
 import atlas/matching
@@ -32,7 +33,6 @@ import atlas/signin.{Form}
 import atlas/strava_page
 import atlas/sync
 import atlas/syncing
-import atlas/today_page
 import atlas/workout_form
 import atlas/workouts_page
 import atlas/zones_page
@@ -52,7 +52,7 @@ const alice = Session("old.token.x", "u1", "Alice", "alice@example.com")
 
 fn signed_out(form: signin.Form) -> atlas.Model {
   Model(
-    route.Today,
+    route.Home,
     True,
     SignedOut(form),
     syncing.new(),
@@ -61,7 +61,7 @@ fn signed_out(form: signin.Form) -> atlas.Model {
     assignments_page.new(),
     coaches_page.new(),
     activities_page.new(),
-    today_page.new(),
+    home_page.new(),
     strava_page.new(),
     sharing_page.new(),
     zones_page.new(),
@@ -72,7 +72,7 @@ fn signed_out(form: signin.Form) -> atlas.Model {
 
 fn signed_in() -> atlas.Model {
   Model(
-    route.Today,
+    route.Home,
     True,
     SignedIn(alice),
     syncing.new(),
@@ -81,7 +81,7 @@ fn signed_in() -> atlas.Model {
     assignments_page.new(),
     coaches_page.new(),
     activities_page.new(),
-    today_page.new(),
+    home_page.new(),
     strava_page.new(),
     sharing_page.new(),
     zones_page.new(),
@@ -389,7 +389,7 @@ pub fn the_screens_main_action_is_also_in_the_app_bar_test() {
     main_action_of(Model(..signed_in(), route: route.Activities)),
     "Add activity",
   )
-  assert main_action_of(Model(..signed_in(), route: route.Today)) == ""
+  assert main_action_of(Model(..signed_in(), route: route.Home)) == ""
   // On a plan's page it is the open tab's: Add workout for the owner on the calendar, Start on the schedule.
   let owner = plan_screen("u1")
   let calendar =
@@ -674,7 +674,7 @@ pub fn signing_out_clears_the_activities_on_screen_test() {
 fn today_screen() -> atlas.Model {
   Model(
     ..signed_in(),
-    route: route.Today,
+    route: route.Home,
     syncing: ready_syncing(),
     assignments: assignments_page.Model(
       ..assignments_page.new(),
@@ -734,12 +734,12 @@ pub fn signing_out_clears_the_matches_on_screen_test() {
   let showing =
     Model(
       ..signed_in(),
-      daily: today_page.Model(..today_page.new(), matches: [
+      daily: home_page.Model(..home_page.new(), matches: [
         matching.Stored("m1", "u1", matching.Match("x", "w", "a"), False, "T"),
       ]),
     )
   let #(model, _) = atlas.update(showing, SignOutClicked)
-  assert model.daily == today_page.new()
+  assert model.daily == home_page.new()
 }
 
 pub fn coming_back_from_strava_shows_the_result_test() {
@@ -1037,7 +1037,7 @@ fn coaching_model(route_to: route.Route) -> atlas.Model {
 }
 
 pub fn the_athletes_tab_appears_only_for_a_coach_test() {
-  let coach = element.to_string(atlas.view(coaching_model(route.Today)))
+  let coach = element.to_string(atlas.view(coaching_model(route.Home)))
   assert string.contains(coach, "href=\"/athletes\"")
   let alone = element.to_string(atlas.view(signed_in()))
   assert !string.contains(alone, "href=\"/athletes\"")

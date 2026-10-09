@@ -50,29 +50,29 @@ pub fn the_app_bar_shows_the_title_it_is_given_test() {
 
 pub fn a_running_sync_shows_a_progress_bar_test() {
   assert string.contains(
-    html_of(shell.Frame(..frame(route.Today), syncing: True)),
+    html_of(shell.Frame(..frame(route.Home), syncing: True)),
     "role=\"progressbar\"",
   )
-  assert !string.contains(html_of(frame(route.Today)), "progressbar")
+  assert !string.contains(html_of(frame(route.Home)), "progressbar")
 }
 
 pub fn being_offline_shows_an_icon_in_the_app_bar_test() {
-  let offline = html_of(shell.Frame(..frame(route.Today), online: False))
+  let offline = html_of(shell.Frame(..frame(route.Home), online: False))
   assert string.contains(offline, "offline-indicator")
   assert string.contains(
     offline,
     "aria-label=\"Offline. What does this mean?\"",
   )
-  assert !string.contains(html_of(frame(route.Today)), "offline-indicator")
+  assert !string.contains(html_of(frame(route.Home)), "offline-indicator")
 }
 
 pub fn sync_problems_are_a_badge_on_the_settings_tab_test() {
-  let html = html_of(shell.Frame(..frame(route.Today), problems: 3))
+  let html = html_of(shell.Frame(..frame(route.Home), problems: 3))
   assert string.contains(
     html,
     "Settings<span class=\"visually-hidden\">, 3 sync problems",
   )
-  assert !string.contains(html_of(frame(route.Today)), "nav-badge")
+  assert !string.contains(html_of(frame(route.Home)), "nav-badge")
 }
 
 pub fn a_plan_or_athlete_page_has_the_medium_app_bar_test() {

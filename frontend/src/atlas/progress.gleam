@@ -1,5 +1,5 @@
 //// An athlete's progress week by week: what the plan asked for, what was done, what was missed, and how much
-//// they trained in total (ADR 0031). Pure. It uses the same schedule and matching as the athlete's own Today screen,
+//// they trained in total (ADR 0031). Pure. It uses the same schedule and matching as the athlete's own Home screen,
 //// with `inputs.user_id` set to the athlete, so the coach sees what the athlete sees.
 
 import atlas/activity_form

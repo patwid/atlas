@@ -120,14 +120,14 @@ fn up_link(target: Route, label: String) -> Element(msg) {
 fn nav(current: Route, coaching: Bool, problems: Int) -> Element(msg) {
   let items = case coaching {
     True -> [
-      #(route.Today, "Today"),
+      #(route.Home, "Home"),
       #(route.Plans, "Plans"),
       #(route.Activities, "Activities"),
       #(route.Athletes, "Athletes"),
       #(route.Settings, "Settings"),
     ]
     False -> [
-      #(route.Today, "Today"),
+      #(route.Home, "Home"),
       #(route.Plans, "Plans"),
       #(route.Activities, "Activities"),
       #(route.Settings, "Settings"),
@@ -190,7 +190,7 @@ fn badge_text(target: Route, problems: Int) -> Element(msg) {
 
 fn tab_icon(target: Route) -> icon.Icon {
   case target {
-    route.Today -> icon.Today
+    route.Home -> icon.Home
     route.Plans -> icon.EventNote
     route.Activities -> icon.DirectionsRun
     route.Athletes -> icon.Group

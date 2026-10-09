@@ -11,6 +11,7 @@ import atlas/clock
 import atlas/coaches_page
 import atlas/collection
 import atlas/grants
+import atlas/home_page
 import atlas/http
 import atlas/online
 import atlas/pace_zones
@@ -31,7 +32,6 @@ import atlas/sync
 import atlas/syncing
 import atlas/timer
 import atlas/today
-import atlas/today_page
 import atlas/ui/banner
 import atlas/ui/button
 import atlas/ui/icon
@@ -73,7 +73,7 @@ pub type Model {
     assignments: assignments_page.Model,
     coaches: coaches_page.Model,
     activities: activities_page.Model,
-    daily: today_page.Model,
+    daily: home_page.Model,
     strava: strava_page.Model,
     sharing: sharing_page.Model,
     zones: zones_page.Model,
@@ -102,7 +102,7 @@ pub type Msg {
   AssignmentsPage(assignments_page.Msg)
   CoachesPage(coaches_page.Msg)
   ActivitiesPage(activities_page.Msg)
-  TodayPage(today_page.Msg)
+  HomePage(home_page.Msg)
   StravaPage(strava_page.Msg)
   SharingPage(sharing_page.Msg)
   ZonesPage(zones_page.Msg)
@@ -119,7 +119,7 @@ fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
   let route =
     modem.initial_uri()
     |> result.map(route.parse)
-    |> result.unwrap(route.Today)
+    |> result.unwrap(route.Home)
   let auth = case
     storage.get(session_key) |> result.try(auth.session_from_json)
   {
@@ -162,7 +162,7 @@ fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
       assignments: assignments_page.new(),
       coaches: coaches_page.new(),
       activities: activities_page.new(),
-      daily: today_page.new(),
+      daily: home_page.new(),
       strava: strava_page.new(),
       sharing: sharing_page.new(),
       zones: zones_page.new(),
@@ -286,7 +286,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               assignments: assignments_page.new(),
               coaches: coaches_page.new(),
               activities: activities_page.new(),
-              daily: today_page.new(),
+              daily: home_page.new(),
               strava: strava_page.new(),
               sharing: sharing_page.new(),
               zones: zones_page.new(),
@@ -331,7 +331,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         assignments: assignments_page.new(),
         coaches: coaches_page.new(),
         activities: activities_page.new(),
-        daily: today_page.new(),
+        daily: home_page.new(),
         strava: strava_page.new(),
         sharing: sharing_page.new(),
         zones: zones_page.new(),
@@ -369,7 +369,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
                 effect.map(assignments_page.refresh(), AssignmentsPage),
                 effect.map(coaches_page.refresh(), CoachesPage),
                 effect.map(activities_page.refresh(), ActivitiesPage),
-                effect.map(today_page.refresh(), TodayPage),
+                effect.map(home_page.refresh(), HomePage),
                 effect.map(sharing_page.refresh(), SharingPage),
                 effect.map(zones_page.refresh(), ZonesPage),
               ])
@@ -513,16 +513,16 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         SignedOut(_) -> #(model, effect.none())
       }
 
-    TodayPage(inner) ->
+    HomePage(inner) ->
       case model.auth {
         SignedIn(session) -> {
           let #(page_model, page_effect, actions) =
-            today_page.update(model.daily, inner, today_inputs(model, session))
+            home_page.update(model.daily, inner, home_inputs(model, session))
           let #(state, action_effects) = perform_matches(model.syncing, actions)
           #(
             Model(..model, daily: page_model, syncing: state),
             effect.batch([
-              effect.map(page_effect, TodayPage),
+              effect.map(page_effect, HomePage),
               effect.map(effect.batch(action_effects), Syncing),
             ]),
           )
@@ -661,8 +661,8 @@ fn assignments_context(
   }
 }
 
-/// Everything the Today screen works from, read from what the other screens already hold.
-fn today_inputs(model: Model, session: Session) -> today.Inputs {
+/// Everything the Home screen works from, read from what the other screens already hold.
+fn home_inputs(model: Model, session: Session) -> today.Inputs {
   today.Inputs(
     user_id: session.user_id,
     today: clock.today(),
@@ -745,16 +745,16 @@ fn send(msg: Msg) -> Effect(Msg) {
 /// Carries out what the user did with links between activities and workouts.
 fn perform_matches(
   state: syncing.State,
-  actions: List(today_page.Action),
+  actions: List(home_page.Action),
 ) -> #(syncing.State, List(Effect(syncing.Msg))) {
   list.fold(actions, #(state, []), fn(acc, action) {
     let #(current, effects) = acc
     let #(next, effect) = case action {
-      today_page.Create(id, fields) ->
+      home_page.Create(id, fields) ->
         syncing.create(current, collection.Matches, id, fields)
-      today_page.Edit(id, fields, base) ->
+      home_page.Edit(id, fields, base) ->
         syncing.edit(current, collection.Matches, id, fields, base)
-      today_page.Delete(id, base) ->
+      home_page.Delete(id, base) ->
         syncing.delete(current, collection.Matches, id, base)
     }
     #(next, list.append(effects, [effect]))
@@ -1003,7 +1003,7 @@ fn session_ended(model: Model) -> #(Model, Effect(Msg)) {
         assignments: assignments_page.new(),
         coaches: coaches_page.new(),
         activities: activities_page.new(),
-        daily: today_page.new(),
+        daily: home_page.new(),
         strava: strava_page.new(),
         sharing: sharing_page.new(),
         zones: zones_page.new(),
@@ -1179,14 +1179,14 @@ fn title(model: Model, session: Session) -> String {
 
 fn page(model: Model, session: Session) -> Element(Msg) {
   case model.route {
-    route.Today ->
+    route.Home ->
       case model.assignments.loaded {
-        // Until the plans the user follows are read, Today would say they follow none.
+        // Until the plans the user follows are read, Home would say they follow none.
         False -> progress.loading("Loading…")
         True ->
           element.map(
-            today_page.view(model.daily, today_inputs(model, session)),
-            TodayPage,
+            home_page.view(model.daily, home_inputs(model, session)),
+            HomePage,
           )
       }
     route.Plans ->
@@ -1301,8 +1301,8 @@ fn page(model: Model, session: Session) -> Element(Msg) {
         )
       athletes_page.view_athlete(
         option.from_result(athlete),
-        // The same computation as the athlete's own Today screen, for the athlete.
-        today.Inputs(..today_inputs(model, session), user_id: id),
+        // The same computation as the athlete's own Home screen, for the athlete.
+        today.Inputs(..home_inputs(model, session), user_id: id),
       )
     }
     route.NotFound ->

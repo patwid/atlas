@@ -5,7 +5,7 @@ import gleam/option.{type Option, None, Some}
 import gleam/uri.{type Uri}
 
 pub type Route {
-  Today
+  Home
   Plans
   Plan(id: String)
   Activities
@@ -43,7 +43,7 @@ pub fn settings_title(page: SettingsPage) -> String {
 
 pub fn parse(uri: Uri) -> Route {
   case uri.path_segments(uri.path) {
-    [] -> Today
+    [] -> Home
     ["plans"] -> Plans
     ["plans", id] -> Plan(id)
     ["activities"] -> Activities
@@ -61,7 +61,7 @@ pub fn parse(uri: Uri) -> Route {
 
 pub fn to_path(route: Route) -> String {
   case route {
-    Today -> "/"
+    Home -> "/"
     Plans -> "/plans"
     Plan(id) -> "/plans/" <> uri.percent_encode(id)
     Activities -> "/activities"
@@ -75,7 +75,7 @@ pub fn to_path(route: Route) -> String {
 
 pub fn title(route: Route) -> String {
   case route {
-    Today -> "Today"
+    Home -> "Home"
     Plans -> "Plans"
     Plan(_) -> "Plan"
     Activities -> "Activities"

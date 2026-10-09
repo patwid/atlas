@@ -91,3 +91,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0085 | [Form dialogs: one spacing, pairs only where they fit, buttons at the bottom on wider screens](0085-form-dialog-spacing-pairs-and-buttons.md) | Accepted |
 | 0086 | [Form dialogs below the screen's height, and date and time inputs drawn plainly](0086-form-dialog-height-and-date-time-inputs.md) | Accepted |
 | 0087 | [Form dialogs as high as their form](0087-form-dialog-as-high-as-its-form.md) | Accepted |
+| 0088 | [The Today screen is called Home](0088-today-renamed-home.md) | Accepted |

@@ -7,7 +7,7 @@ import { JSDOM } from "jsdom"
 const dom = new JSDOM(`<!doctype html><body>
   <button class="md-button">Save</button>
   <button class="md-button" disabled>Off</button>
-  <nav class="tabs"><a href="/"><span class="nav-indicator"></span>Today</a></nav>
+  <nav class="tabs"><a href="/"><span class="nav-indicator"></span>Home</a></nav>
   <p class="plain">text</p>
   <div role="tablist"><button role="tab">A</button><button role="tab">B</button><button role="tab">C</button></div>
   <div class="md-menu" id="m">

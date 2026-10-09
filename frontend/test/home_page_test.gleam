@@ -2,15 +2,15 @@ import atlas/activity.{Activity}
 import atlas/activity_form
 import atlas/assignment_form
 import atlas/date.{Date}
-import atlas/matching.{Match, Stored}
-import atlas/outbox
-import atlas/plan.{Assignment, Workout}
-import atlas/today.{Inputs}
-import atlas/today_page.{
+import atlas/home_page.{
   CancelClicked, ChooseClicked, ConfirmClicked, Create, Delete, Edit, Key,
   MatchesRead, Model, PickClicked, UnlinkClicked, UnlinkNoticeExpired,
   UnlinkUndone,
 }
+import atlas/matching.{Match, Stored}
+import atlas/outbox
+import atlas/plan.{Assignment, Workout}
+import atlas/today.{Inputs}
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
@@ -82,8 +82,8 @@ fn inputs(matches: List(matching.Stored)) -> today.Inputs {
   )
 }
 
-fn update(model: today_page.Model, msg: today_page.Msg, i: today.Inputs) {
-  let #(next, _, actions) = today_page.update(model, msg, i)
+fn update(model: home_page.Model, msg: home_page.Msg, i: today.Inputs) {
+  let #(next, _, actions) = home_page.update(model, msg, i)
   #(next, actions)
 }
 
@@ -105,7 +105,7 @@ pub fn stored_matches_are_read_with_removed_ones_test() {
     dynamic_of("{\"id\":\"broken\"}"),
   ]
   let #(model, _) =
-    update(today_page.new(), MatchesRead(Ok(stored_records)), inputs([]))
+    update(home_page.new(), MatchesRead(Ok(stored_records)), inputs([]))
   assert model.loaded
   assert model.matches |> list_length == 2
 }
@@ -119,7 +119,7 @@ fn list_length(items: List(a)) -> Int {
 
 pub fn confirming_a_suggestion_creates_a_stored_match_test() {
   let #(_, actions) =
-    update(today_page.new(), ConfirmClicked(wednesday_key, "x1"), inputs([]))
+    update(home_page.new(), ConfirmClicked(wednesday_key, "x1"), inputs([]))
   let assert [Create(id, fields)] = actions
   assert id != ""
   assert fields
@@ -132,7 +132,7 @@ pub fn confirming_a_suggestion_creates_a_stored_match_test() {
 }
 
 pub fn picking_an_activity_closes_the_list_test() {
-  let choosing = Model(..today_page.new(), choosing: Some(wednesday_key))
+  let choosing = Model(..home_page.new(), choosing: Some(wednesday_key))
   let #(model, actions) =
     update(choosing, PickClicked(wednesday_key, "x2"), inputs([]))
   assert model.choosing == None
@@ -144,11 +144,7 @@ pub fn linking_an_activity_whose_match_was_removed_reuses_its_row_test() {
   // One row per activity: a new row would be refused by the server, so the old one is changed.
   let removed = stored("m1", "x3", "w1", True)
   let #(_, actions) =
-    update(
-      today_page.new(),
-      PickClicked(wednesday_key, "x3"),
-      inputs([removed]),
-    )
+    update(home_page.new(), PickClicked(wednesday_key, "x3"), inputs([removed]))
   assert actions
     == [
       Edit(
@@ -166,14 +162,14 @@ pub fn linking_an_activity_whose_match_was_removed_reuses_its_row_test() {
 pub fn linking_an_activity_that_is_already_linked_here_does_nothing_test() {
   let live = stored("m1", "x1", "w2", False)
   let #(_, actions) =
-    update(today_page.new(), PickClicked(wednesday_key, "x1"), inputs([live]))
+    update(home_page.new(), PickClicked(wednesday_key, "x1"), inputs([live]))
   assert actions == []
 }
 
 pub fn moving_an_activity_to_another_workout_edits_its_row_test() {
   let live = stored("m1", "x1", "w1", False)
   let #(_, actions) =
-    update(today_page.new(), PickClicked(wednesday_key, "x1"), inputs([live]))
+    update(home_page.new(), PickClicked(wednesday_key, "x1"), inputs([live]))
   let assert [Edit("m1", fields, "T-m1")] = actions
   assert dict.get(fields, "workout") == Ok("\"w2\"")
 }
@@ -181,13 +177,13 @@ pub fn moving_an_activity_to_another_workout_edits_its_row_test() {
 pub fn choosing_another_activity_removes_the_old_link_first_test() {
   let live = stored("m1", "x1", "w2", False)
   let #(_, actions) =
-    update(today_page.new(), PickClicked(wednesday_key, "x2"), inputs([live]))
+    update(home_page.new(), PickClicked(wednesday_key, "x2"), inputs([live]))
   let assert [Delete("m1", "T-m1"), Create(_, fields)] = actions
   assert dict.get(fields, "activity") == Ok("\"x2\"")
 }
 
 pub fn only_known_workouts_and_own_activities_can_be_linked_test() {
-  let none = fn(msg) { update(today_page.new(), msg, inputs([])).1 }
+  let none = fn(msg) { update(home_page.new(), msg, inputs([])).1 }
   assert none(PickClicked(Key("a1", "no-such-workout"), "x1")) == []
   assert none(PickClicked(Key("other-assignment", "w2"), "x1")) == []
   assert none(PickClicked(wednesday_key, "foreign")) == []
@@ -198,7 +194,7 @@ pub fn unlinking_acts_at_once_and_offers_undo_test() {
   let live = stored("m1", "x1", "w2", False)
   let i = inputs([live])
   let #(unlinked, actions) =
-    update(today_page.new(), UnlinkClicked(wednesday_key), i)
+    update(home_page.new(), UnlinkClicked(wednesday_key), i)
   assert actions == [Delete("m1", "T-m1")]
   assert string.contains(html_of(unlinked, i), "Activity unlinked")
   assert string.contains(html_of(unlinked, i), ">Undo<")
@@ -213,7 +209,7 @@ pub fn undo_links_the_same_activity_again_test() {
   let removed = stored("m1", "x1", "w2", True)
   let i = inputs([removed])
   let unlinked =
-    Model(..today_page.new(), unlinked: Some(#(1, wednesday_key, "x1")))
+    Model(..home_page.new(), unlinked: Some(#(1, wednesday_key, "x1")))
   let #(next, actions) = update(unlinked, UnlinkUndone, i)
   assert next.unlinked == None
   let assert [Edit("m1", _, _)] = actions
@@ -221,13 +217,13 @@ pub fn undo_links_the_same_activity_again_test() {
 
 pub fn unlinking_something_not_stored_does_nothing_test() {
   let #(_, actions) =
-    update(today_page.new(), UnlinkClicked(wednesday_key), inputs([]))
+    update(home_page.new(), UnlinkClicked(wednesday_key), inputs([]))
   assert actions == []
 }
 
 pub fn the_list_of_activities_opens_and_cancels_test() {
   let #(open, _) =
-    update(today_page.new(), ChooseClicked(wednesday_key), inputs([]))
+    update(home_page.new(), ChooseClicked(wednesday_key), inputs([]))
   assert open.choosing == Some(wednesday_key)
   let #(closed, _) = update(open, CancelClicked, inputs([]))
   assert closed.choosing == None
@@ -235,18 +231,18 @@ pub fn the_list_of_activities_opens_and_cancels_test() {
 
 // What is on the screen ---------------------------------------------------------------------------
 
-fn html_of(model: today_page.Model, i: today.Inputs) -> String {
-  element.to_string(today_page.view(model, i))
+fn html_of(model: home_page.Model, i: today.Inputs) -> String {
+  element.to_string(home_page.view(model, i))
 }
 
 pub fn without_a_plan_the_screen_points_to_the_plans_test() {
-  let html = html_of(today_page.new(), Inputs(..inputs([]), assignments: []))
+  let html = html_of(home_page.new(), Inputs(..inputs([]), assignments: []))
   assert string.contains(html, "You are not following a plan yet")
   assert string.contains(html, "href=\"/plans\"")
 }
 
 pub fn the_day_and_its_sections_are_shown_test() {
-  let html = html_of(today_page.new(), inputs([]))
+  let html = html_of(home_page.new(), inputs([]))
   assert string.contains(html, "Wed 7 Oct 2026")
   assert string.contains(html, "Today")
   assert string.contains(html, "Wednesday tempo")
@@ -266,7 +262,7 @@ pub fn the_day_and_its_sections_are_shown_test() {
 pub fn the_week_ahead_lists_the_furthest_day_first_test() {
   let html =
     html_of(
-      today_page.new(),
+      home_page.new(),
       Inputs(..inputs([]), today: monday, activities: []),
     )
   let assert [_, thursday_on] = string.split(html, "Thursday rest")
@@ -281,11 +277,11 @@ pub fn the_plan_is_named_when_more_than_one_is_followed_test() {
       assignment_form.Row(Assignment("a1", "p1", "me", monday), "me", "T"),
       assignment_form.Row(Assignment("a2", "p2", "me", monday), "me", "T"),
     ])
-  assert string.contains(html_of(today_page.new(), two), "10k plan")
+  assert string.contains(html_of(home_page.new(), two), "10k plan")
 }
 
 pub fn a_suggested_match_asks_for_confirmation_test() {
-  let html = html_of(today_page.new(), inputs([]))
+  let html = html_of(home_page.new(), inputs([]))
   // The 6th's run is not on a planned day of this plan except Tuesday: it is suggested there.
   assert string.contains(html, "Looks done</span>")
   assert string.contains(html, "06:00 · Run · 8.00 km · 45:00")
@@ -294,8 +290,7 @@ pub fn a_suggested_match_asks_for_confirmation_test() {
 }
 
 pub fn a_confirmed_match_can_be_changed_or_unlinked_test() {
-  let html =
-    html_of(today_page.new(), inputs([stored("m1", "x1", "w2", False)]))
+  let html = html_of(home_page.new(), inputs([stored("m1", "x1", "w2", False)]))
   assert string.contains(html, ">Done</span>")
   assert string.contains(html, "06:00 · Run · 8.00 km · 45:00")
   assert string.contains(html, ">Change activity<")
@@ -304,7 +299,7 @@ pub fn a_confirmed_match_can_be_changed_or_unlinked_test() {
 
 pub fn missed_workouts_say_so_and_offer_a_link_test() {
   let no_runs = Inputs(..inputs([]), activities: [])
-  let html = html_of(today_page.new(), no_runs)
+  let html = html_of(home_page.new(), no_runs)
   assert string.contains(html, "Missed")
   assert string.contains(html, "To do")
   assert string.contains(html, "Link activity")
@@ -312,14 +307,14 @@ pub fn missed_workouts_say_so_and_offer_a_link_test() {
 
 pub fn workouts_still_to_come_offer_no_link_test() {
   let tomorrow_only = Inputs(..inputs([]), today: monday, activities: [])
-  let html = html_of(today_page.new(), tomorrow_only)
+  let html = html_of(home_page.new(), tomorrow_only)
   let assert [_, coming_up] = string.split(html, "Coming up")
   assert string.contains(coming_up, "To do")
   assert !string.contains(coming_up, "Link activity")
 }
 
 pub fn the_activity_list_offers_that_days_activities_test() {
-  let model = Model(..today_page.new(), choosing: Some(wednesday_key))
+  let model = Model(..home_page.new(), choosing: Some(wednesday_key))
   let html = html_of(model, inputs([]))
   assert string.contains(html, "Which activity was it?")
   assert string.contains(html, "class=\"choice-row\"")
@@ -328,7 +323,7 @@ pub fn the_activity_list_offers_that_days_activities_test() {
 }
 
 pub fn an_empty_activity_list_says_what_to_do_test() {
-  let model = Model(..today_page.new(), choosing: Some(wednesday_key))
+  let model = Model(..home_page.new(), choosing: Some(wednesday_key))
   let html = html_of(model, Inputs(..inputs([]), activities: []))
   assert string.contains(
     html,

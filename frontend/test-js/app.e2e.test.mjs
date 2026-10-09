@@ -607,10 +607,10 @@ test("a user adds, edits and deletes an activity by hand; the start is stored in
   w.close()
 })
 
-// The Today screen ------------------------------------------------------------------------------------
+// The Home screen -------------------------------------------------------------------------------------
 
 
-test("Today shows missed, looks-done and rest days; the user confirms, unlinks, re-links and links by hand", { skip: !built && "frontend not built" }, async () => {
+test("Home shows missed, looks-done and rest days; the user confirms, unlinks, re-links and links by hand", { skip: !built && "frontend not built" }, async () => {
   await h.world()
   const alice = h.people.alice
   const yesterday = daysFromNow(-1)
@@ -670,7 +670,7 @@ test("Today shows missed, looks-done and rest days; the user confirms, unlinks, 
   w.close()
 })
 
-test("Today without a plan points to the plans", { skip: !built && "frontend not built" }, async () => {
+test("Home without a plan points to the plans", { skip: !built && "frontend not built" }, async () => {
   await h.world()
   const bob = h.people.bob
   const w = startApp("/", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })

@@ -1,4 +1,4 @@
-//// The Today screen: the workouts of the plans the user follows, around today, with what has been done.
+//// The Home screen: the workouts of the plans the user follows, around today, with what has been done.
 //// Matching suggestions are shown as "looks done" and become stored matches only when the user confirms
 //// or picks an activity (ADR 0026). Own state and messages; writes come back as `Action`s.
 
@@ -230,7 +230,7 @@ fn key_of(item: Item) -> Key {
 pub fn view(model: Model, inputs: Inputs) -> Element(Msg) {
   let items = today.items(inputs)
   let sections = today.sections(items, inputs.today)
-  html.section([class("today")], [
+  html.section([class("home")], [
     case model.unlinked {
       Some(#(n, _, _)) ->
         snackbar.view(
@@ -432,7 +432,7 @@ fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
         ),
         // Changing or removing a confirmed link is rare: a menu, as an activity's actions are (ADR 0056).
         menu.view(
-          "today-menu-" <> key.assignment_id <> "-" <> key.workout_id,
+          "home-menu-" <> key.assignment_id <> "-" <> key.workout_id,
           "More for " <> item.scheduled.workout.title,
           [
             menu.Item(icon.Edit, "Change activity", ChooseClicked(key)),
