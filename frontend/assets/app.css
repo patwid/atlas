@@ -1059,6 +1059,9 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
 .form-dialog-body > form .row { display: grid; gap: 1rem; }
 .form-dialog-body > form > .supporting { margin-top: -0.75rem; }
 .form-dialog-body > form > .subheader { margin: 0.5rem 0 -0.5rem; }
+/* Import a .fit file (ADR 0100): above the New activity form, with what came of it under the button. */
+.form-dialog-body > .activity-import { display: grid; justify-items: start; gap: 0.5rem; padding-top: 0.5rem; }
+.activity-import > :is(.muted, .error) { margin: 0; }
 .form-dialog .plan-settings { display: grid; gap: 1rem; }
 .form-dialog .plan-settings legend { margin-bottom: 0.5rem; }
 .form-dialog .plan-settings .phases-error { margin-top: -0.75rem; }

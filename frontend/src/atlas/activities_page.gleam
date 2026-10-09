@@ -1,11 +1,14 @@
-//// The activities screen: the user's recorded sessions, with a form to add one by hand and to change or
-//// remove those that are theirs to change. Strava activities are shown but cannot be edited here (ADR 0005,
+//// The activities screen: the user's recorded sessions, with a form to add one by hand or from a FIT file
+//// (ADR 0100) and to change or remove those that are theirs to change. Strava activities are shown but cannot be edited here (ADR 0005,
 //// 0009). Own state and messages; writes come back as `Action`s (ADR 0020, 0025).
 
 import atlas/activity.{type Source}
 import atlas/activity_form.{type Row}
 import atlas/collection
 import atlas/date.{type Date}
+import atlas/file
+import atlas/fit
+import atlas/fit_import.{type Import}
 import atlas/outbox
 import atlas/random
 import atlas/records
@@ -28,6 +31,7 @@ import atlas/ui/undo.{type Undo}
 import atlas/units
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode
 import gleam/float
 import gleam/int
 import gleam/list
@@ -50,6 +54,8 @@ pub type Model {
   Model(
     /// Every activity on the device, including those of athletes the user coaches.
     rows: List(Row),
+    /// The user's deleted FIT imports still on the device: importing the same file again brings its row back.
+    tombstones: List(Row),
     loaded: Bool,
     mode: Mode,
     form: activity_form.Form,
@@ -58,6 +64,10 @@ pub type Model {
     /// The form's date and time pickers (ADR 0054).
     date_picker: date_picker.State,
     time_picker: time_picker.State,
+    /// The FIT file the New activity form was filled in from, if any.
+    imported: Option(Import),
+    /// Why the last file could not be imported.
+    import_error: Option(String),
   )
 }
 
@@ -99,6 +109,10 @@ pub type Msg {
   UndoClicked
   /// The Undo snackbar went: the delete with this number is written.
   DeleteExpired(Int)
+  ImportClicked
+  /// A file was chosen in the file input.
+  FileChosen
+  FileRead(name: String, bytes: Result(BitArray, Nil))
 }
 
 pub type Action {
@@ -110,12 +124,15 @@ pub type Action {
 pub fn new() -> Model {
   Model(
     [],
+    [],
     False,
     Browsing,
     activity_form.empty_for(date.Date(2026, 1, 1)),
     undo.new(),
     date_picker.new(),
     time_picker.new(),
+    None,
+    None,
   )
 }
 
@@ -158,6 +175,13 @@ pub fn update(
 
     ActivitiesRead(Ok(stored)) -> {
       let rows = records.live(stored, records.activity_row)
+      let tombstones =
+        stored
+        |> list.filter(records.is_deleted)
+        |> list.filter_map(records.activity_row)
+        |> list.filter(fn(row) {
+          row.owner_id == context.user_id && row.activity.source == activity.Fit
+        })
       let mode = case model.mode {
         Editing(id) ->
           case list.any(rows, fn(row) { row.activity.id == id }) {
@@ -166,12 +190,28 @@ pub fn update(
           }
         other -> other
       }
-      #(Model(..model, rows: rows, loaded: True, mode: mode), effect.none(), [])
+      #(
+        Model(
+          ..model,
+          rows: rows,
+          tombstones: tombstones,
+          loaded: True,
+          mode: mode,
+        ),
+        effect.none(),
+        [],
+      )
     }
     ActivitiesRead(Error(Nil)) -> #(model, effect.none(), [])
 
     AddClicked -> #(
-      Model(..model, mode: Adding, form: activity_form.empty_for(context.today)),
+      Model(
+        ..model,
+        mode: Adding,
+        form: activity_form.empty_for(context.today),
+        imported: None,
+        import_error: None,
+      ),
       // The form opens in a dialog (ADR 0057); its first field takes the focus.
       focus.soon("activity-date"),
       [],
@@ -198,7 +238,64 @@ pub fn update(
         Error(Nil) -> #(model, effect.none(), [])
       }
 
-    CancelClicked -> #(Model(..model, mode: Browsing), effect.none(), [])
+    CancelClicked -> #(
+      Model(..model, mode: Browsing, imported: None, import_error: None),
+      effect.none(),
+      [],
+    )
+
+    ImportClicked -> #(model, file.pick(file_input_id), [])
+    FileChosen -> #(model, file.read(file_input_id, FileRead), [])
+    FileRead(_, Error(Nil)) -> #(
+      Model(..model, import_error: Some("The file could not be read.")),
+      effect.none(),
+      [],
+    )
+    FileRead(name, Ok(bytes)) ->
+      case fit.decode(bytes) {
+        Error(problem) -> #(
+          Model(..model, import_error: Some(fit.problem_message(problem))),
+          effect.none(),
+          [],
+        )
+        Ok(summary) ->
+          case
+            fit_import.already_imported(model.rows, context.user_id, summary)
+          {
+            Some(row) -> #(
+              Model(
+                ..model,
+                import_error: Some(
+                  "This file is imported already: "
+                  <> title(row)
+                  <> ", "
+                  <> moment(row, context)
+                  <> ".",
+                ),
+              ),
+              effect.none(),
+              [],
+            )
+            None -> {
+              let imported =
+                fit_import.new(
+                  summary,
+                  name,
+                  context.offset_at_utc(fit_import.started_at(summary)),
+                )
+              #(
+                Model(
+                  ..model,
+                  form: imported.filled,
+                  imported: Some(imported),
+                  import_error: None,
+                ),
+                effect.none(),
+                [],
+              )
+            }
+          }
+      }
 
     DateChanged(v) -> typed(model, fn(f) { activity_form.Form(..f, date: v) })
     TimeChanged(v) -> typed(model, fn(f) { activity_form.Form(..f, time: v) })
@@ -260,13 +357,11 @@ pub fn update(
         Ok(valid) -> {
           let offset =
             context.offset_at_local(valid.day, valid.hour, valid.minute)
-          let finished = Model(..model, mode: Browsing)
+          let finished =
+            Model(..model, mode: Browsing, imported: None, import_error: None)
           case model.mode {
             Adding -> #(finished, effect.none(), [
-              Create(
-                random.new_id(),
-                activity_form.create_fields(context.user_id, valid, offset),
-              ),
+              add(model, context, valid, offset),
             ])
             Editing(id) ->
               case find(mine(model, context.user_id), id) {
@@ -321,6 +416,43 @@ pub fn update(
   }
 }
 
+/// A new activity, by hand or from the imported file. A file imported before and deleted since is brought
+/// back: the server keeps one row per file (ADR 0100).
+fn add(
+  model: Model,
+  context: Context,
+  valid: activity_form.Valid,
+  offset: Int,
+) -> Action {
+  case model.imported {
+    None ->
+      Create(
+        random.new_id(),
+        activity_form.create_fields(context.user_id, valid, offset),
+      )
+    Some(imported) ->
+      case
+        fit_import.already_imported(
+          model.tombstones,
+          context.user_id,
+          imported.summary,
+        )
+      {
+        Some(row) ->
+          Edit(
+            row.activity.id,
+            fit_import.revive_fields(imported, valid, offset),
+            row.updated,
+          )
+        None ->
+          Create(
+            random.new_id(),
+            fit_import.create_fields(context.user_id, imported, valid, offset),
+          )
+      }
+  }
+}
+
 fn typed(
   model: Model,
   change: fn(activity_form.Form) -> activity_form.Form,
@@ -367,7 +499,7 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
             empty.view(
               icon.DirectionsRun,
               "No activities yet",
-              "Add one, or connect Strava to bring them in.",
+              "Add one by hand or from a .fit file, or connect Strava to bring them in.",
               Some(empty.link(
                 route.to_path(route.SettingsPage(route.Strava)),
                 "Connect Strava",
@@ -467,15 +599,22 @@ fn source_label(source: Source) -> String {
 
 /// `Thu 1 Oct 2026, 07:30 · Run`, in the user's local time. The sport is left out when it is already the title.
 fn when(row: Row, context: Context) -> String {
+  case row.name {
+    "" -> moment(row, context)
+    _ ->
+      moment(row, context)
+      <> " · "
+      <> activity_form.sport_label(row.activity.sport)
+  }
+}
+
+/// `Thu 1 Oct 2026, 07:30`, in the user's local time.
+fn moment(row: Row, context: Context) -> String {
   let offset = context.offset_at_utc(row.activity.started_at)
-  let moment = case date.local_datetime(row.activity.started_at, offset) {
+  case date.local_datetime(row.activity.started_at, offset) {
     Ok(#(day, hour, minute)) ->
       date.format(day) <> ", " <> pad2(hour) <> ":" <> pad2(minute)
     Error(Nil) -> "Unknown time"
-  }
-  case row.name {
-    "" -> moment
-    _ -> moment <> " · " <> activity_form.sport_label(row.activity.sport)
   }
 }
 
@@ -538,6 +677,8 @@ const time_picker_id = "activity-time-picker"
 
 const form_id = "activity-form"
 
+const file_input_id = "activity-fit-file"
+
 /// Adding and editing happen in a full-screen dialog (ADR 0057).
 fn form_view(model: Model, today: Date) -> Element(Msg) {
   let #(open, title, submit_label) = case model.mode {
@@ -564,11 +705,42 @@ fn form_view(model: Model, today: Date) -> Element(Msg) {
     },
     // The pickers' dialogs hold forms of their own, so they sit beside this form, not in it.
     [
+      case model.mode {
+        Adding -> import_view(model)
+        _ -> element.none()
+      },
       form_fields(model.form),
       date_picker.view(date_picker_id, model.date_picker, today, DatePicker),
       time_picker.view(time_picker_id, model.time_picker, TimePicker),
     ],
   )
+}
+
+/// Filling the form in from a FIT file (ADR 0100). The file input is hidden; the button opens its picker. It
+/// takes any file: a `.fit` filter greys out every file on some phones, and the decoder says what is wrong.
+fn import_view(model: Model) -> Element(Msg) {
+  html.div([class("activity-import")], [
+    button.tonal([attribute.type_("button"), event.on_click(ImportClicked)], [
+      html.text("Import a .fit file"),
+    ]),
+    html.input([
+      attribute.type_("file"),
+      attribute.id(file_input_id),
+      attribute.hidden(True),
+      attribute.attribute("tabindex", "-1"),
+      event.on("change", decode.success(FileChosen)),
+    ]),
+    case model.import_error, model.imported {
+      Some(message), _ -> error.message(message)
+      None, Some(imported) ->
+        html.p([class("muted")], [
+          html.text(
+            "Filled in from " <> imported.file_name <> ". Check it and save.",
+          ),
+        ])
+      None, None -> element.none()
+    },
+  ])
 }
 
 fn form_fields(form: activity_form.Form) -> Element(Msg) {

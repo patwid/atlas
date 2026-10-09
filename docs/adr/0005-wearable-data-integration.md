@@ -54,7 +54,7 @@ Users want activities from their watches matched against planned workouts. Findi
   Submitting for Strava's review is a milestone before launch.
 - The UI must not imitate Strava's look and must follow Strava's brand rules ("Connect with Strava"
   button, "Powered by Strava" attribution).
-- A FIT parser is needed. Options are a JS library through FFI (simplest) or a Gleam port. This will
+- A FIT parser is needed (decided in [0100](0100-fit-file-import.md)). Options are a JS library through FFI (simplest) or a Gleam port. This will
   be decided when that work starts.
 - Coaches get the most value from athletes who upload FIT files directly. Garmin users can do that already.
 - Revisit this ADR if the Strava terms or Garmin access change, or when Strava replies about coach access.

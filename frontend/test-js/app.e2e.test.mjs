@@ -612,6 +612,103 @@ test("a user adds, edits and deletes an activity by hand; the start is stored in
   w.close()
 })
 
+// Importing a FIT file (ADR 0100) ---------------------------------------------------------------------------
+
+// A FIT activity file with a file ID, one lap and the session, little-endian throughout.
+const fitFile = (startUnix) => {
+  const bytes = []
+  const u8 = (...values) => bytes.push(...values)
+  const u16 = (v) => u8(v & 0xff, (v >> 8) & 0xff)
+  const u32 = (v) => { u16(v % 65536); u16(Math.floor(v / 65536)) }
+  const define = (local, global, fields) => { u8(0x40 | local, 0, 0); u16(global); u8(fields.length); for (const f of fields) u8(...f) }
+  const start = startUnix - 631065600 // FIT counts from 1989-12-31
+  define(0, 0, [[0, 1, 0x00], [3, 4, 0x8c], [4, 4, 0x86]])
+  u8(0, 4); u32(3456789012); u32(start)
+  define(1, 19, [[7, 4, 0x86], [8, 4, 0x86], [9, 4, 0x86], [15, 1, 0x02]])
+  u8(1); u32(3000400); u32(2900600); u32(1023456); u8(150)
+  define(2, 18, [[2, 4, 0x86], [5, 1, 0x00], [6, 1, 0x00], [7, 4, 0x86], [8, 4, 0x86], [9, 4, 0x86], [16, 1, 0x02], [17, 1, 0x02], [22, 2, 0x84]])
+  u8(2); u32(start); u8(1, 0); u32(3000400); u32(2900600); u32(1023456); u8(155, 171); u16(87)
+  const size = bytes.length
+  const header = [14, 0x20, 0x54, 0x08, size & 0xff, (size >> 8) & 0xff, 0, 0, ...".FIT"].map((c) => typeof c === "string" ? c.charCodeAt(0) : c)
+  return Uint8Array.from([...header, 0, 0, ...bytes, 0, 0])
+}
+
+const chooseFile = (w, input, bytes, name) => {
+  Object.defineProperty(input, "files", { value: [new w.File([bytes], name)], configurable: true })
+  input.dispatchEvent(new w.Event("change", { bubbles: true }))
+}
+
+test("a user imports a FIT file: the form is filled in, the file's exact values are saved, a second import is refused, a deleted one comes back", { skip: !built && "frontend not built" }, async () => {
+  await h.world()
+  const alice = h.people.alice
+  const startMs = Date.UTC(2026, 9, 5, 5, 20, 12)
+  const file = fitFile(startMs / 1000)
+  const w = startApp("/activities", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
+  const d = w.document
+  const activities = async () => (await h.api("GET", "collections/activities/records?perPage=50", { token: alice.token })).body.items
+  const input = () => d.querySelector("#activity-fit-file")
+
+  await waitFor("the empty list", () => d.body.textContent.includes("No activities yet"))
+  click(w, button(w, "Add activity"))
+  await waitFor("the import button", () => button(w, "Import a .fit file") && input())
+  click(w, button(w, "Import a .fit file"))
+  chooseFile(w, input(), Uint8Array.from([1, 2, 3]), "notes.txt")
+  await waitFor("not a FIT file", () => d.querySelector(".activity-import [role=alert]")?.textContent.startsWith("This is not a FIT file."))
+
+  chooseFile(w, input(), file, "morning.fit")
+  await waitFor("the form filled in", () => d.querySelector("#activity-distance")?.value === "10.235")
+  assert.ok(d.body.textContent.includes("Filled in from morning.fit."))
+  const start = new Date(startMs)
+  assert.equal(d.querySelector("#activity-date").value, ymd(start))
+  assert.equal(d.querySelector("#activity-time").value, `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`)
+  assert.equal(d.querySelector("#activity-duration").value, "0:48:21")
+  assert.equal(d.querySelector("#activity-elevation").value, "87")
+  assert.equal(d.querySelector("#activity-hr").value, "155")
+  typeInto(w, d.querySelector("#activity-name"), "Watch run")
+  submit(w, d.querySelector(".activity-form"))
+
+  const created = await waitFor("the activity on the server", async () => (await activities()).find((a) => a.name === "Watch run"))
+  assert.equal(created.source, "fit")
+  assert.equal(created.external_id, `3456789012-${startMs / 1000 - 631065600}`, "serial number and time created")
+  assert.equal(created.started_at, "2026-10-05 05:20:12.000Z", "the start to the second")
+  assert.equal(created.sport, "run")
+  assert.equal(created.distance_m, 10234.56)
+  assert.equal(created.moving_time_s, 2901)
+  assert.equal(created.elapsed_time_s, 3000)
+  assert.equal(created.elevation_gain_m, 87)
+  assert.equal(created.avg_hr, 155)
+  assert.equal(created.max_hr, 171)
+  assert.deepEqual(created.laps, [{ index: 1, name: null, distance_m: 10234.56, moving_time_s: 2901, elapsed_time_s: 3000, elevation_gain_m: null, avg_hr: 150, max_hr: null }])
+  await waitFor("it in the list, from a file", () => [...d.querySelectorAll(".list li")].some((li) => li.textContent.includes("Watch run") && li.textContent.includes("From a file")))
+
+  // The same file again is refused before anything is sent.
+  click(w, button(w, "Add activity"))
+  await waitFor("the import button", () => input())
+  chooseFile(w, input(), file, "morning-copy.fit")
+  await waitFor("already imported", () => d.querySelector(".activity-import [role=alert]")?.textContent.startsWith("This file is imported already: Watch run,"))
+  d.querySelector(".form-dialog").dispatchEvent(new w.Event("close"))
+  await waitFor("the form closed", () => !d.querySelector("#activity-fit-file"))
+
+  // Deleted, then imported again: the same row comes back, as the server keeps one row per file.
+  click(w, [...d.querySelectorAll(".list li")].find((li) => li.textContent.includes("Watch run")).querySelector(".row-link"))
+  await waitFor("its form", () => d.querySelector("#activity-name")?.value === "Watch run")
+  click(w, byLabel(w, "Delete activity"))
+  await waitFor("the Undo snackbar", () => d.body.textContent.includes("Activity deleted"))
+  click(w, byLabel(w, "Close"))
+  await waitFor("deleted on the server", async () => (await activities()).find((a) => a.id === created.id)?.deleted === true)
+  click(w, button(w, "Add activity"))
+  await waitFor("the import button", () => input())
+  chooseFile(w, input(), file, "morning.fit")
+  await waitFor("the form filled in again", () => d.querySelector("#activity-distance")?.value === "10.235")
+  submit(w, d.querySelector(".activity-form"))
+  const revived = await waitFor("the row back on the server", async () => (await activities()).find((a) => a.id === created.id && a.deleted === false))
+  assert.equal((await activities()).length, 1, "no second row")
+  assert.equal(revived.name, "")
+  assert.equal(revived.distance_m, 10234.56)
+  await waitFor("back in the list", () => [...d.querySelectorAll(".list li")].some((li) => li.textContent.includes("Run") && li.textContent.includes("From a file")))
+  w.close()
+})
+
 // The Home screen -------------------------------------------------------------------------------------
 
 
