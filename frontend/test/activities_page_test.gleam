@@ -365,17 +365,17 @@ pub fn the_form_is_labelled_and_shows_errors_test() {
   assert string.contains(html, "Enter a distance or a duration, or both.")
 }
 
-pub fn an_activitys_actions_are_in_a_menu_test() {
-  let html =
-    html_of(
-      with_rows([
-        row("a", "me", activity.Manual, "2026-10-01 05:30:00.000Z", ""),
-      ]),
-    )
-  assert string.contains(html, "role=\"menu\"")
-  assert string.contains(html, "aria-haspopup=\"menu\"")
-  assert string.contains(html, ">Edit<")
-  assert string.contains(html, ">Delete<")
+pub fn an_activity_opens_in_its_form_with_delete_test() {
+  let model =
+    with_rows([
+      row("a", "me", activity.Manual, "2026-10-01 05:30:00.000Z", ""),
+    ])
+  let html = html_of(model)
+  assert string.contains(html, "class=\"row-link\"")
+  assert !string.contains(html, "role=\"menu\"")
+  let #(editing, _, _) =
+    activities_page.update(model, activities_page.EditClicked("a"), context())
+  assert string.contains(html_of(editing), "aria-label=\"Delete activity\"")
 }
 
 fn from_strava(external_id: String) -> activity_form.Row {

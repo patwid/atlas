@@ -146,7 +146,7 @@ pub fn editing_sends_only_what_changed_with_the_local_base_test() {
         "T-a",
       ),
     ]
-  assert model.mode == Viewing("a")
+  assert model.mode == Browsing
 }
 
 pub fn moving_a_workout_to_another_day_is_an_edit_with_a_new_position_test() {
@@ -172,7 +172,7 @@ pub fn an_edit_without_changes_writes_nothing_test() {
   let #(model, _) = update(model, EditClicked("a"))
   let #(model, actions) = update(model, Submitted)
   assert actions == []
-  assert model.mode == Viewing("a")
+  assert model.mode == Browsing
 }
 
 pub fn a_delete_waits_for_undo_test() {
@@ -245,13 +245,16 @@ pub fn the_owner_can_add_edit_and_delete_test() {
   let model =
     Model(
       ..with_rows([row("a", "p1", 0, 0, "Easy run")]),
-      mode: Viewing("a"),
+      mode: Editing("a"),
       week_open: True,
     )
   let html = html_of(model, True)
-  assert string.contains(html, "Add workout")
-  assert string.contains(html, ">Edit<")
-  assert string.contains(html, ">Delete<")
+  assert string.contains(
+    html_of(Model(..model, mode: Browsing), True),
+    "Add workout",
+  )
+  assert string.contains(html, "Edit workout")
+  assert string.contains(html, "aria-label=\"Delete workout\"")
   assert string.contains(html, "Add a workout to week 1, day 1")
   assert string.contains(html, "id=\"week-intensity\"")
 }
@@ -305,7 +308,8 @@ pub fn selecting_a_week_or_a_workout_opens_its_dialog_test() {
   assert model.week_open
   let #(model, _) = update(model, workouts_page.WeekClosed)
   assert !model.week_open
-  let #(model, actions) = update(model, WorkoutSelected("a"))
+  let #(model, _, actions) =
+    workouts_page.update(model, WorkoutSelected("a"), Some(the_plan()), False)
   assert model.mode == Viewing("a")
   assert model.selected_week == 3
   assert actions == []
@@ -433,15 +437,31 @@ pub fn a_weeks_row_shows_its_distance_against_its_goal_test() {
 
 pub fn a_workouts_dialog_closes_only_its_own_viewing_test() {
   let model = with_rows([row("a", "p1", 0, 0, "Easy run")])
-  let #(viewing, _) = update(model, WorkoutSelected("a"))
+  let #(viewing, _, _) =
+    workouts_page.update(model, WorkoutSelected("a"), Some(the_plan()), False)
   assert string.contains(
-    html_of(viewing, True),
+    html_of(viewing, False),
     "id=\"workout-dialog-headline\"",
   )
+  // Only for reading: no Edit or Delete in it.
+  assert !string.contains(html_of(viewing, False), ">Delete<")
   let #(closed, _) = update(viewing, workouts_page.WorkoutClosed)
   assert closed.mode == Browsing
-  // Edit opens the form over it, which closes the workout's dialog: that must not end the edit.
-  let #(editing, _) = update(viewing, EditClicked("a"))
+  // The workout's dialog closing, when it is not open, must not end an edit.
+  let #(editing, _) = update(model, EditClicked("a"))
   let #(still, _) = update(editing, workouts_page.WorkoutClosed)
   assert still.mode == Editing("a")
+}
+
+pub fn the_owner_opens_a_workout_in_its_form_with_delete_test() {
+  let model = with_rows([row("a", "p1", 0, 0, "Easy run")])
+  let #(editing, _) = update(model, WorkoutSelected("a"))
+  assert editing.mode == Editing("a")
+  assert editing.form.title == "Easy run"
+  let html = html_of(editing, True)
+  assert string.contains(html, "aria-label=\"Delete workout\"")
+  assert !string.contains(html, "id=\"workout-dialog-headline\"")
+  // Cancelling goes back to the calendar.
+  let #(back, _) = update(editing, workouts_page.CancelClicked)
+  assert back.mode == Browsing
 }

@@ -25,6 +25,29 @@ pub fn view(
   on_close: msg,
   body: List(Element(msg)),
 ) -> Element(msg) {
+  view_with_action(
+    id,
+    open,
+    title,
+    form_id,
+    submit_label,
+    on_close,
+    element.none(),
+    body,
+  )
+}
+
+/// `view` with an icon button in the top bar before the submit button, such as Delete when editing (ADR 0080).
+pub fn view_with_action(
+  id: String,
+  open: Bool,
+  title: String,
+  form_id: String,
+  submit_label: String,
+  on_close: msg,
+  action: Element(msg),
+  body: List(Element(msg)),
+) -> Element(msg) {
   let title_id = id <> "-title"
   html.dialog(
     [
@@ -45,6 +68,7 @@ pub fn view(
             button.icon([attribute.type_("submit")], icon.Close, "Cancel"),
           ]),
           html.h2([attribute.id(title_id)], [html.text(title)]),
+          action,
           button.text(
             [attribute.type_("submit"), attribute.attribute("form", form_id)],
             [html.text(submit_label)],

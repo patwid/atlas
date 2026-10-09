@@ -83,3 +83,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0077 | [The training zones form: outlined fields, errors at their input, Save in view](0077-training-zones-form-fields-and-errors.md) | Accepted |
 | 0078 | [The person finder's errors at its field, and Settings rows that say what is set](0078-finder-errors-and-settings-summaries.md) | Accepted |
 | 0079 | [Roboto Flex served with the app, the badge read out, and sticky offsets from the app bar's height](0079-bundled-roboto-flex-badge-text-and-app-bar-height.md) | Accepted |
+| 0080 | [A workout or activity you can change opens in its form, with Delete there](0080-open-items-in-their-form.md) | Accepted |

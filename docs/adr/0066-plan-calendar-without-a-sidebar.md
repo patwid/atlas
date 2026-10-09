@@ -1,6 +1,6 @@
 # 0066. The plan calendar without a sidebar: week and workout dialogs, settings in the plan's Edit
 
-- Status: Accepted
+- Status: Accepted. A workout opens in its form for the owner since [0080](0080-open-items-in-their-form.md).
 - Date: 2026-10-09
 - Deciders: owner (asked to drop the plan's sidebar and chose the proposed alternatives)
 

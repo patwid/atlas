@@ -188,14 +188,17 @@ pub fn update(
         _ -> #(model, effect.none(), [])
       }
 
+    // The owner opens a workout to change it, so it opens in its form; anyone else sees it in a dialog
+    // (ADR 0080).
     WorkoutSelected(id) ->
-      case find(rows_of(model, plan_id), id) {
-        Ok(row) -> #(
+      case can_edit, find(rows_of(model, plan_id), id) {
+        True, Ok(_) -> update(model, EditClicked(id), on_screen, can_edit)
+        False, Ok(row) -> #(
           Model(..model, mode: Viewing(id), selected_week: week_of(row.workout)),
           effect.none(),
           [],
         )
-        Error(Nil) -> #(model, effect.none(), [])
+        _, Error(Nil) -> #(model, effect.none(), [])
       }
 
     AddClicked(week, day) ->
@@ -228,11 +231,7 @@ pub fn update(
         _, _ -> #(model, effect.none(), [])
       }
 
-    CancelClicked -> #(
-      Model(..model, mode: back_from(model.mode)),
-      effect.none(),
-      [],
-    )
+    CancelClicked -> #(Model(..model, mode: Browsing), effect.none(), [])
 
     WeekChanged(value) ->
       typed(model, fn(f) { workout_form.Form(..f, week: value) })
@@ -281,8 +280,7 @@ pub fn update(
               ],
             )
             Editing(id) -> {
-              let finished =
-                Model(..model, mode: Viewing(id), selected_week: week)
+              let finished = Model(..model, mode: Browsing, selected_week: week)
               case find(rows_of(model, plan_id), id) {
                 Ok(row) -> {
                   let fields =
@@ -382,13 +380,6 @@ fn set_intensity(
 }
 
 /// Closing a form over a workout goes back to showing it.
-fn back_from(mode: Mode) -> Mode {
-  case mode {
-    Editing(id) -> Viewing(id)
-    _ -> Browsing
-  }
-}
-
 fn week_of(workout: Workout) -> Int {
   workout.day_index / 7 + 1
 }
@@ -472,7 +463,7 @@ pub fn view(model: Model, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
         },
       ]
     }),
-    workout_dialog(model, on_screen, rows, can_edit),
+    workout_dialog(model, on_screen, rows),
     week_dialog(model, on_screen, weeks, can_edit),
   ])
 }
@@ -729,12 +720,11 @@ fn workout_chip(
 
 // DIALOGS -----------------------------------------------------------------------------------------
 
-/// The open workout, with Edit and Delete for the owner (ADR 0066).
+/// The open workout, for those who cannot edit the plan (ADR 0066, 0080).
 fn workout_dialog(
   model: Model,
   on_screen: Plan,
   rows: List(Row),
-  can_edit: Bool,
 ) -> Element(Msg) {
   let shown = case model.mode {
     Viewing(id) -> option.from_result(find(rows, id))
@@ -767,19 +757,8 @@ fn workout_dialog(
             text -> html.p([class("description")], [html.text(text)])
           },
         ],
-        case can_edit {
-          False -> []
-          True -> [
-            button.text(
-              [attribute.type_("button"), event.on_click(DeleteClicked(w.id))],
-              [icon.view(icon.Delete), html.text("Delete")],
-            ),
-            button.text(
-              [attribute.type_("button"), event.on_click(EditClicked(w.id))],
-              [icon.view(icon.Edit), html.text("Edit")],
-            ),
-          ]
-        },
+        // Only those who cannot edit the plan see a workout here; the owner gets its form (ADR 0080).
+        [],
       )
     }
   }
@@ -1021,13 +1000,23 @@ fn form_view(
     True, Editing(_) -> #(True, "Edit workout")
     _, _ -> #(False, "")
   }
-  form_dialog.view(
+  form_dialog.view_with_action(
     "workout-form-dialog",
     open,
     title,
     form_id,
     "Save",
     CancelClicked,
+    // A workout is deleted from its form, with Undo (ADR 0056, 0080).
+    case can_edit, model.mode {
+      True, Editing(id) ->
+        button.icon(
+          [attribute.type_("button"), event.on_click(DeleteClicked(id))],
+          icon.Delete,
+          "Delete workout",
+        )
+      _, _ -> element.none()
+    },
     [form_fields(model.form, on_screen, weeks)],
   )
 }

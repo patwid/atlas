@@ -22,7 +22,6 @@ import atlas/ui/focus
 import atlas/ui/form_dialog
 import atlas/ui/icon
 import atlas/ui/layout
-import atlas/ui/menu
 import atlas/ui/progress
 import atlas/ui/time_picker
 import atlas/ui/undo.{type Undo}
@@ -389,7 +388,20 @@ fn row_view(row: Row, context: Context) -> Element(Msg) {
   let a = row.activity
   html.li([], [
     html.div([], [
-      html.strong([], [html.text(title(row))]),
+      // An activity the user can change opens in its form from anywhere on its row (ADR 0080).
+      case editable(row, context.user_id) {
+        True ->
+          html.button(
+            [
+              attribute.type_("button"),
+              class("row-link"),
+              attribute.attribute("aria-haspopup", "dialog"),
+              event.on_click(EditClicked(a.id)),
+            ],
+            [html.text(title(row))],
+          )
+        False -> html.strong([], [html.text(title(row))])
+      },
       chip.row([
         source_chip(a.source),
         case row.updated {
@@ -404,10 +416,6 @@ fn row_view(row: Row, context: Context) -> Element(Msg) {
       text -> html.p([class("figures")], [html.text(text)])
     },
     view_on_strava(row),
-    case editable(row, context.user_id) {
-      False -> element.none()
-      True -> actions(row)
-    },
   ])
 }
 
@@ -524,15 +532,6 @@ fn delete_of(model: Model, context: Context, id: String) -> List(Action) {
   }
 }
 
-/// An activity's actions are in a menu at the end of its row (ADR 0056).
-fn actions(row: Row) -> Element(Msg) {
-  let id = row.activity.id
-  menu.view("activity-menu-" <> id, "More for " <> title(row), [
-    menu.Item(icon.Edit, "Edit", EditClicked(id)),
-    menu.Item(icon.Delete, "Delete", DeleteClicked(id)),
-  ])
-}
-
 const date_picker_id = "activity-date-picker"
 
 const time_picker_id = "activity-time-picker"
@@ -546,13 +545,23 @@ fn form_view(model: Model, today: Date) -> Element(Msg) {
     Editing(_) -> #(True, "Edit activity", "Save")
     Browsing -> #(False, "", "")
   }
-  form_dialog.view(
+  form_dialog.view_with_action(
     "activity-form-dialog",
     open,
     title,
     form_id,
     submit_label,
     CancelClicked,
+    // An activity is deleted from its form, with Undo (ADR 0056, 0080).
+    case model.mode {
+      Editing(id) ->
+        button.icon(
+          [attribute.type_("button"), event.on_click(DeleteClicked(id))],
+          icon.Delete,
+          "Delete activity",
+        )
+      _ -> element.none()
+    },
     // The pickers' dialogs hold forms of their own, so they sit beside this form, not in it.
     [
       form_fields(model.form),

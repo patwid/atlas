@@ -229,11 +229,10 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
   assert.equal(second.day_index, 1)
   assert.equal(second.position, 1, "it goes after the first one on that day")
 
-  // Move the first workout to day 4 and rename it: open it in the sidebar, then edit it there.
+  // Move the first workout to day 4 and rename it: the owner opens it straight in its form (ADR 0080).
   click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Easy run")))
-  await waitFor("the workout in its dialog", () => d.querySelector("#workout-dialog[open]")?.textContent.includes("Week 1 · day 2"))
-  click(w, [...d.querySelectorAll("#workout-dialog button")].find((b) => b.textContent === "Edit"))
   await waitFor("the edit form", () => d.querySelector("#workout-title")?.value === "Easy run")
+  assert.equal(d.querySelector("#workout-dialog[open]"), null, "no details dialog under it")
   assert.equal(d.querySelector("#workout-distance").value, "8.5")
   assert.equal(d.querySelector("#workout-duration").value, "1:15")
   choose(w, d.querySelector("#workout-day"), "4")
@@ -247,8 +246,8 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
   // Delete the second one; Undo brings it back, and the next delete is written when its snackbar is closed.
   const deleteCore = async () => {
     click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Core session")))
-    await waitFor("the second workout in its dialog", () => d.querySelector("#workout-dialog[open] h2")?.textContent === "Core session")
-    click(w, [...d.querySelectorAll("#workout-dialog button")].find((b) => b.textContent === "Delete"))
+    await waitFor("the second workout in its form", () => d.querySelector("#workout-title")?.value === "Core session")
+    click(w, byLabel(w, "Delete workout"))
     await waitFor("the Undo snackbar", () => d.body.textContent.includes("Workout deleted") && !d.querySelector(".calendar").textContent.includes("Core session"))
   }
   await deleteCore()
@@ -315,6 +314,11 @@ test("someone else's plan shows its workouts but offers no way to change them", 
   assert.equal(byLabel(w, "Add a workout to week 1, day 1"), undefined)
   assert.equal(byLabel(w, "Edit plan"), undefined)
   assert.equal(button(w, "Delete"), undefined)
+  // A workout opens read-only in its dialog.
+  click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Hill repeats")))
+  await waitFor("the workout in its dialog", () => d.querySelector("#workout-dialog[open]")?.textContent.includes("Week 1 · day 1"))
+  assert.equal(d.querySelector("#workout-title"), null)
+  assert.equal(byLabel(w, "Delete workout"), undefined)
   w.close()
 })
 
@@ -577,9 +581,9 @@ test("a user adds, edits and deletes an activity by hand; the start is stored in
   assert.equal(created.started_at, expectedUtc)
   await waitFor("it on screen in local time", () => d.body.textContent.includes("Mon 5 Oct 2026, 07:30") && d.body.textContent.includes("8.50 km"))
 
-  // Edit: only the name changes.
+  // Edit: only the name changes. The row opens the form (ADR 0080).
   const card = () => [...d.querySelectorAll(".list li")].find((li) => li.textContent.includes("Morning loop") || li.textContent.includes("Easy loop"))
-  click(w, [...card().querySelectorAll("button")].find((b) => b.textContent === "Edit"))
+  click(w, card().querySelector(".row-link"))
   await waitFor("the edit form with local values", () => d.querySelector("#activity-time")?.value === "07:30" && d.querySelector("#activity-date")?.value === "2026-10-05")
   assert.equal(d.querySelector("#activity-distance").value, "8.5")
   assert.equal(d.querySelector("#activity-duration").value, "1:05")
@@ -590,8 +594,10 @@ test("a user adds, edits and deletes an activity by hand; the start is stored in
   assert.equal(after.started_at, expectedUtc, "the start is untouched")
   assert.equal(after.distance_m, 8500)
 
-  // Delete, from its menu; it is written when the Undo snackbar is closed.
-  click(w, [...card().querySelectorAll("button")].find((b) => b.textContent === "Delete"))
+  // Delete, from its form; it is written when the Undo snackbar is closed.
+  click(w, card().querySelector(".row-link"))
+  await waitFor("the form again", () => d.querySelector("#activity-name")?.value === "Easy loop")
+  click(w, byLabel(w, "Delete activity"))
   await waitFor("the Undo snackbar", () => d.body.textContent.includes("Activity deleted"))
   assert.equal((await activities()).find((a) => a.id === created.id).deleted, false)
   click(w, byLabel(w, "Close"))

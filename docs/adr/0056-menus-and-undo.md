@@ -1,6 +1,6 @@
 # 0056. Menus for item actions, and Undo instead of confirming deletes
 
-- Status: Accepted
+- Status: Accepted. Activities are edited and deleted from their form since [0080](0080-open-items-in-their-form.md).
 - Date: 2026-10-08
 - Deciders: owner (chose Undo over confirmation dialogs); agent (the details below)
 

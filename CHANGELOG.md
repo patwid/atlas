@@ -93,6 +93,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - The training zones form has outlined fields with units, shows a problem under the input it is about and moves to it, and keeps Save in view (ADR 0077).
 - The person finder shows a problem with the address under its field, and Settings rows say what is set: your zones, who can see your training, whether Strava is connected (ADR 0078).
 - The app is set in Roboto Flex, served with it and cached for offline use (ADR 0079).
+- Pressing a workout in your own plan, or an activity you entered, opens its form straight away, with Delete in the form's top bar; others still see a workout in a read-only dialog (ADR 0080).
 
 ### Fixed
 - Fields side by side line up again when one has help text under it (Distance and Duration), and the zones page's Calculate buttons sit level with the field beside them.

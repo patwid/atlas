@@ -568,9 +568,14 @@ label {
   opacity: 0; transition: opacity 0.15s var(--md-sys-motion-easing);
 }
 .list .row-link:hover { text-decoration: none; }
-.list li:has(> .row-link):hover .row-link::after { opacity: var(--md-sys-state-hover); }
-.list li:has(> .row-link):active .row-link::after { opacity: var(--md-sys-state-pressed); }
-.list li:has(> .row-link):hover { border-radius: var(--md-sys-shape-corner-medium); }
+/* A row that opens a dialog has a button for its headline (ADR 0080), drawn like the link. */
+.list button.row-link {
+  padding: 0; border: 0; background: none; cursor: pointer; text-align: left;
+  color: var(--md-sys-color-on-surface); font: 500 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
+}
+.list li:has(.row-link):hover .row-link::after { opacity: var(--md-sys-state-hover); }
+.list li:has(.row-link):active .row-link::after { opacity: var(--md-sys-state-pressed); }
+.list li:has(.row-link):hover { border-radius: var(--md-sys-shape-corner-medium); }
 .list .row-link:focus-visible { outline: 0; }
 .list .row-link:focus-visible::after { outline: var(--focus-ring); outline-offset: -3px; }
 .list p { margin: 0.125rem 0 0; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; color: var(--md-sys-color-on-surface-variant); }
