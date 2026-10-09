@@ -346,13 +346,14 @@ pub fn the_slider_shows_the_week_and_others_see_a_bar_test() {
   let html = html_of(model, True)
   assert string.contains(html, "type=\"range\"")
   assert string.contains(html, "aria-valuetext=\"80%\"")
-  assert string.contains(html, ">Clear<")
+  assert string.contains(html, ">Clear intensity<")
   let unset = html_of(Model(..model, selected_week: 1), True)
   assert string.contains(unset, "Not set")
-  assert !string.contains(unset, ">Clear<")
+  assert !string.contains(unset, ">Clear intensity<")
   let read_only = html_of(model, False)
   assert !string.contains(read_only, "type=\"range\"")
   assert string.contains(read_only, "width:80%")
+  assert !string.contains(read_only, ">Clear intensity<")
 }
 
 pub fn a_workout_says_its_kind_week_and_day_test() {

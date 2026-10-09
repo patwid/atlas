@@ -353,7 +353,16 @@ pub fn update(
         Error(Nil) -> #(model, effect.none(), [])
       }
 
-    IntensityCleared -> set_intensity(model, on_screen, can_edit, None)
+    // Clear sits in the dialog's actions; the slider takes the focus once the week is cleared, as Clear goes away.
+    IntensityCleared ->
+      case set_intensity(model, on_screen, can_edit, None) {
+        #(next, _, [_, ..] as actions) -> #(
+          next,
+          focus.soon("week-intensity"),
+          actions,
+        )
+        unchanged -> unchanged
+      }
   }
 }
 
@@ -808,7 +817,16 @@ fn week_dialog(
           ]),
           goal_meter(week, goal),
         ],
-        [],
+        // Clearing goes with Close rather than beside the slider, so the slider keeps its width when a week gets one.
+        case can_edit, intensity {
+          True, Ok(_) -> [
+            button.text(
+              [attribute.type_("button"), event.on_click(IntensityCleared)],
+              [html.text("Clear intensity")],
+            ),
+          ]
+          _, _ -> []
+        },
       )
     }
     _, _ -> dialog.details("week-dialog", False, "", WeekClosed, [], [])
@@ -873,14 +891,6 @@ fn intensity_view(
             event.on_input(IntensityInput),
             event.on_change(IntensityChanged),
           ]),
-          case stored {
-            Ok(_) ->
-              button.text(
-                [attribute.type_("button"), event.on_click(IntensityCleared)],
-                [html.text("Clear")],
-              )
-            Error(Nil) -> element.none()
-          },
         ])
     },
   ])
