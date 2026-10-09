@@ -99,7 +99,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - The person finder on Sharing and Coaches has its search as an icon button in the field instead of a Find button beside it, and a short label with a help line under it (ADR 0083).
 - On the training zones form, Calculate heart rate zones and Calculate pace zones sit under their field instead of beside it (ADR 0084).
 - Form dialogs space their fields evenly, stack pairs of fields on a phone, and on wider screens end with Cancel and a filled Save; the plan form groups its schedule and the activity form its optional fields (ADR 0085).
-- On larger screens a form dialog is at most 40rem high and never fills the screen; a long form scrolls inside it (ADR 0086).
+- On larger screens a form dialog is as high as its form and scrolls only on a screen too short for it (ADR 0086, 0087).
 
 ### Fixed
 - The calendar and clock buttons sit in the middle of the date and time fields in every browser (ADR 0086).

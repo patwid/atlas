@@ -16,6 +16,9 @@
 
 ## Decision
 
+The dialog's height below was replaced by [ADR 0087](0087-form-dialog-as-high-as-its-form.md).
+
+
 - From 600px a form dialog is at most 40rem high and leaves 4rem above and below; a longer form scrolls between its
   headline and its buttons.
 - Date and time inputs with a picker button have no native appearance and a fixed 56px height, with the browser's

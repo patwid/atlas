@@ -1024,8 +1024,9 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
 .form-dialog-actions { display: none; }
 @media (min-width: 37.5rem) {
   dialog.form-dialog {
-    /* It never fills the screen's height: a long form scrolls between its headline and its buttons (ADR 0086). */
-    width: calc(100% - 3rem); max-width: 35rem; height: auto; max-height: min(calc(100dvh - 8rem), 40rem); margin: auto;
+    /* As high as its form, so it scrolls only on a screen too short for it, between its headline and its buttons
+       (ADR 0087). */
+    width: calc(100% - 3rem); max-width: 35rem; height: fit-content; max-height: calc(100dvh - 4rem); margin: auto;
     border-radius: var(--md-sys-shape-corner-extra-large); background: var(--md-sys-color-surface-container-high);
     box-shadow: var(--md-sys-elevation-3);
   }
