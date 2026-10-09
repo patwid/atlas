@@ -1,6 +1,6 @@
 # 0091. Deploy to a Hetzner VPS from GitHub Actions, behind Caddy
 
-- Status: Accepted; plain HTTP on the IP is allowed until there is a domain, see [0092](0092-plain-http-on-the-ip-until-there-is-a-domain.md)
+- Status: Accepted; served on atlas.patwid.ch since [0099](0099-https-on-atlas-patwid-ch.md) (plain HTTP on the IP before that: [0092](0092-plain-http-on-the-ip-until-there-is-a-domain.md))
 - Date: 2026-10-09
 - Deciders: owner (Hetzner VPS with NixOS, a deploy workflow, Caddy as the reverse proxy for now); agent (the details below)
 

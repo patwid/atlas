@@ -7,9 +7,9 @@ let
   # The assertions below stop a deploy that still has the examples.
   # The address the app is reached at. With a domain, "https://atlas.example.org": Caddy gets a certificate.
   # Until there is a domain, "http://<the server's IPv4 address>": plain HTTP, see ADR 0092 for what that gives up.
-  publicUrl = "http://204.168.179.170";
+  publicUrl = "https://atlas.patwid.ch";
   # For Let's Encrypt; only needed with https.
-  acmeEmail = "admin@example.org";
+  acmeEmail = "patrick.widmer@tbwnet.ch";
   sshKeys = [
     # The owner's own keys, so the server stays reachable without CI (the same keys nixos-config gives the patwid user).
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIxXYugJIENGOXJIY11n2H+yHbfBLoh1pByszOe1s2BQ patwid@desktop"

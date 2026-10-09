@@ -94,11 +94,12 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0088 | [The Today screen is called Home](0088-today-renamed-home.md) | Accepted |
 | 0089 | [Matching accepts half to one and a half times the plan](0089-matching-tolerance-half.md) | Accepted |
 | 0090 | [Run Atlas on NixOS with a module and a systemd unit](0090-nixos-module.md) | Accepted (TLS and deployment: 0091) |
-| 0091 | [Deploy to a Hetzner VPS from GitHub Actions, behind Caddy](0091-deploy-to-hetzner-with-caddy.md) | Accepted (plain HTTP for now: 0092) |
-| 0092 | [Plain HTTP on the server's IP address until there is a domain](0092-plain-http-on-the-ip-until-there-is-a-domain.md) | Accepted (temporary) |
+| 0091 | [Deploy to a Hetzner VPS from GitHub Actions, behind Caddy](0091-deploy-to-hetzner-with-caddy.md) | Accepted (HTTPS on atlas.patwid.ch: 0099) |
+| 0092 | [Plain HTTP on the server's IP address until there is a domain](0092-plain-http-on-the-ip-until-there-is-a-domain.md) | Superseded by 0099 |
 | 0093 | [Nix files under `nix/`, the flake at the top](0093-nix-files-under-nix.md) | Accepted |
 | 0094 | [Atlas takes over the VPS from nixos-config](0094-atlas-owns-the-vps.md) | Accepted |
 | 0095 | [M3 Expressive's navigation bar and rail, progress gap, menus and springs throughout](0095-expressive-navigation-progress-menus-motion.md) | Accepted |
 | 0096 | [Google Sans Flex instead of Roboto Flex](0096-google-sans-flex.md) | Accepted |
 | 0097 | [A subtitle in a plan's medium app bar](0097-app-bar-subtitle.md) | Accepted |
 | 0098 | [Medium buttons for a screen's only action, and a button group in a plan's app bar](0098-medium-buttons-and-button-group.md) | Accepted |
+| 0099 | [Serve Atlas over HTTPS on atlas.patwid.ch](0099-https-on-atlas-patwid-ch.md) | Accepted |

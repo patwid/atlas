@@ -1,6 +1,6 @@
 # 0092. Plain HTTP on the server's IP address until there is a domain
 
-- Status: Accepted (temporary)
+- Status: Superseded by [0099](0099-https-on-atlas-patwid-ch.md)
 - Date: 2026-10-09
 - Deciders: owner (asked to use HTTP with the IP address for now); agent (the details below)
 

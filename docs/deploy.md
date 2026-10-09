@@ -4,18 +4,16 @@ Atlas runs on a Hetzner Cloud VPS with NixOS, behind Caddy ([ADR 0090](adr/0090-
 [ADR 0091](adr/0091-deploy-to-hetzner-with-caddy.md)). The server's whole configuration is in this repository
 (`nix/hosts/atlas/`), and `.github/workflows/deploy.yml` switches the server to every `master` commit that passed CI.
 
-**Without a domain, for now** ([ADR 0092](adr/0092-plain-http-on-the-ip-until-there-is-a-domain.md)): set `publicUrl` to
-`http://<the server's IPv4 address>` and skip the DNS records, `acmeEmail` and the Strava steps. Caddy then serves plain HTTP
-on port 80. Passwords travel unencrypted, so use test accounts only; the app also does not open offline and Strava cannot be
-connected. `https://<ip-with-dashes>.sslip.io` (for example `https://203-0-113-10.sslip.io`) gives real HTTPS without a domain
-of your own; everything below then works as with a domain.
+**Address:** `https://atlas.patwid.ch` ([ADR 0099](adr/0099-https-on-atlas-patwid-ch.md)). DNS is at Infomaniak: an `A` record
+for `atlas` to 204.168.179.170 and no `AAAA` record, because the server does not use its IPv6 address yet. Before the domain, it
+ran on plain HTTP at its IP ([ADR 0092](adr/0092-plain-http-on-the-ip-until-there-is-a-domain.md)).
 
 ## One-time setup
 
 ### 1. DNS and the Hetzner firewall
 
-- Point the domain at the server: an `A` record to its IPv4 address and an `AAAA` record to its IPv6 address
-  (not needed for `http://<IP>` or sslip.io).
+- Point the domain at the server: an `A` record to its IPv4 address and, once the server has a public IPv6 address,
+  an `AAAA` record to it. Never add an `AAAA` record the server does not answer on: Let's Encrypt tries IPv6 first.
 - If the server is in a Hetzner Cloud firewall, allow TCP 22, 80 and 443, and UDP 443 (HTTP/3). Caddy needs port 80
   reachable to get its Let's Encrypt certificate.
 
@@ -24,7 +22,7 @@ of your own; everything below then works as with a domain.
 The VPS (204.168.179.170, x86_64, legacy BIOS) used to be the `vps` host of ~patwid/nixos-config. Its machine settings
 are now in `nix/hosts/atlas/` ([ADR 0094](adr/0094-atlas-owns-the-vps.md)): `hardware-configuration.nix` unchanged, and the
 disk, GRUB, NetworkManager and `stateVersion` in `machine.nix`, checked to evaluate to the same values as before.
-`default.nix` has `publicUrl = "http://204.168.179.170"` and your three SSH keys for root.
+`default.nix` has `publicUrl = "https://atlas.patwid.ch"` and your three SSH keys for root.
 
 Apply the handover patch to nixos-config (it removes the `vps` host there, so a rebuild from nixos-config can no
 longer overwrite the server, and makes `ssh vps` log in as root):
@@ -87,7 +85,7 @@ nix run nixpkgs#nixos-rebuild -- switch --flake .#atlas \
 ```
 
 The switch removes `patwid` and doas; the open session keeps running. Before you close it, check from a second
-terminal that `ssh root@204.168.179.170` still works and that `curl -fsS http://204.168.179.170/api/health` answers.
+terminal that `ssh root@204.168.179.170` still works and that `curl -fsS https://atlas.patwid.ch/api/health` answers.
 Later deploys by hand use the same command.
 
 ### 6. Inside the app
@@ -97,11 +95,11 @@ Later deploys by hand use the same command.
 2. **Behind the proxy:** in the admin UI, Settings → Application, set the trusted proxy header to `X-Forwarded-For`,
    so logs and rate limits see the visitor's address instead of Caddy's.
 3. **Accounts:** the app has no sign-up page; create users in the admin UI (`users` collection).
-4. **Strava:** in the Strava API settings, set the authorization callback domain to your domain. Subscribe to webhooks
+4. **Strava:** in the Strava API settings, set the authorization callback domain to `atlas.patwid.ch`. Subscribe to webhooks
    once, with a superuser token (from the admin UI or `POST /api/collections/_superusers/auth-with-password`):
 
    ```sh
-   curl -X POST https://<domain>/api/atlas/strava/subscribe -H "Authorization: <superuser token>"
+   curl -X POST https://atlas.patwid.ch/api/atlas/strava/subscribe -H "Authorization: <superuser token>"
    ```
 
    Put the returned id into `STRAVA_SUBSCRIPTION_ID` and restart the service.

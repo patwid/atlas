@@ -112,6 +112,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - The app is set in Google Sans Flex, Material 3 Expressive's typeface, instead of Roboto Flex (ADR 0096).
 - A plan's app bar has its length and weekly goal under its name, and the page sums up its phases (ADR 0097).
 - Sign in and empty states' actions are medium-sized buttons, and a plan's Edit and More form an Expressive button group that gives way to the one pressed (ADR 0098).
+- Atlas is served over HTTPS at https://atlas.patwid.ch, with a Let's Encrypt certificate from Caddy, instead of plain HTTP at the server's IP; sign in again there (ADR 0099).
 - A new plan opens as soon as it is saved, instead of staying on the list.
 
 ### Fixed
