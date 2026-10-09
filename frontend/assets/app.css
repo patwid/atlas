@@ -518,7 +518,10 @@ main { flex: 1; padding: 0 1rem 1.5rem; max-width: var(--content-max); width: 10
 .empty-compact > .icon { width: 3.5rem; height: 3.5rem; padding: 0.875rem; margin-bottom: 0.25rem; }
 .empty-compact h2 { font: 500 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.009375rem; }
 a.md-button { text-decoration: none; }
-.signin { max-width: 24rem; margin: 0 auto; padding: 4rem 1.5rem; }
+.signin {
+  max-width: 24rem; min-height: 100dvh; margin: 0 auto; padding: 4rem 1.5rem;
+  display: flex; flex-direction: column; justify-content: center;
+}
 .signin h1 { font: 400 2.25rem/2.75rem var(--md-ref-typeface); margin: 0 0 0.5rem; }
 .signin .md-button { margin-top: 1rem; }
 .muted { color: var(--md-sys-color-on-surface-variant); margin-top: 0; }
