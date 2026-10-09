@@ -19,6 +19,7 @@ import atlas/ui/chip
 import atlas/ui/empty
 import atlas/ui/icon
 import atlas/ui/layout
+import atlas/ui/menu
 import atlas/ui/snackbar
 import atlas/ui/undo
 import atlas/units
@@ -256,6 +257,19 @@ pub fn view(model: Model, inputs: Inputs) -> Element(Msg) {
             inputs,
             "Nothing planned for today.",
           ),
+          // What was missed or waits to be confirmed comes before what is still to come, newest first, so it is
+          // in view without scrolling past the week ahead.
+          case sections.recent {
+            [] -> element.none()
+            recent ->
+              group(
+                "Last " <> int.to_string(today.window_days) <> " days",
+                list.reverse(recent),
+                model,
+                inputs,
+                "",
+              )
+          },
           group(
             "Coming up",
             sections.upcoming,
@@ -265,17 +279,6 @@ pub fn view(model: Model, inputs: Inputs) -> Element(Msg) {
               <> int.to_string(today.window_days)
               <> " days.",
           ),
-          case sections.recent {
-            [] -> element.none()
-            recent ->
-              group(
-                "Last " <> int.to_string(today.window_days) <> " days",
-                recent,
-                model,
-                inputs,
-                "",
-              )
-          },
         ])
     },
   ])
@@ -307,11 +310,10 @@ fn item_view(item: Item, model: Model, inputs: Inputs) -> Element(Msg) {
     html.div([], [
       html.strong([], [html.text(w.title)]),
       chip.label(workout_form.kind_label(w.kind)),
-      html.span([class("muted")], [
-        html.text(
-          " · " <> item.plan_title <> " · " <> date.format(item.scheduled.date),
-        ),
-      ]),
+      case details(item, inputs) {
+        "" -> element.none()
+        text -> html.span([class("muted")], [html.text(" · " <> text)])
+      },
     ]),
     case targets(w) {
       "" -> element.none()
@@ -323,6 +325,27 @@ fn item_view(item: Item, model: Model, inputs: Inputs) -> Element(Msg) {
       False -> element.none()
     },
   ])
+}
+
+/// The plan, when the user follows more than one, and the day, unless it is today: the group heading says that.
+fn details(item: Item, inputs: Inputs) -> String {
+  let plans =
+    inputs.assignments
+    |> list.filter(fn(row) { row.assignment.athlete_id == inputs.user_id })
+    |> list.map(fn(row) { row.assignment.plan_id })
+    |> list.unique
+  [
+    case plans {
+      [_, _, ..] -> item.plan_title
+      _ -> ""
+    },
+    case item.scheduled.date == inputs.today {
+      True -> ""
+      False -> date.format(item.scheduled.date)
+    },
+  ]
+  |> list.filter(fn(part) { part != "" })
+  |> string.join(" · ")
 }
 
 /// The day's state as a chip in the color of its kind, then what was run, if anything (ADR 0048).
@@ -386,10 +409,15 @@ fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
     today.Done(activity_id, True) ->
       html.div([], [
         status("done", Some(icon.Check), "Done", summary(inputs, activity_id)),
-        layout.actions([
-          link_button("Change", ChooseClicked(key)),
-          link_button("Unlink", UnlinkClicked(key)),
-        ]),
+        // Changing or removing a confirmed link is rare: a menu, as an activity's actions are (ADR 0056).
+        menu.view(
+          "today-menu-" <> key.assignment_id <> "-" <> key.workout_id,
+          "More for " <> item.scheduled.workout.title,
+          [
+            menu.Item(icon.Edit, "Change activity", ChooseClicked(key)),
+            menu.Item(icon.Close, "Unlink", UnlinkClicked(key)),
+          ],
+        ),
       ])
   }
 }
@@ -422,7 +450,7 @@ fn choosing_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
             html.text(
               "You have no activity on "
               <> date.format(item.scheduled.date)
-              <> ". Add one in Activities first.",
+              <> ". Add it in Activities, then link it here.",
             ),
           ])
         _ ->
@@ -446,6 +474,17 @@ fn choosing_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
           )
       },
       html.form([attribute.attribute("method", "dialog"), class("actions")], [
+        case candidates {
+          [] ->
+            html.a(
+              [
+                class("md-button md-button-text"),
+                attribute.href(route.to_path(route.Activities)),
+              ],
+              [html.text("Go to activities")],
+            )
+          _ -> element.none()
+        },
         button.text([attribute.type_("submit")], [html.text("Cancel")]),
       ]),
     ],

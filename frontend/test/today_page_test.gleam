@@ -251,12 +251,24 @@ pub fn the_day_and_its_sections_are_shown_test() {
   assert string.contains(html, "Today")
   assert string.contains(html, "Wednesday tempo")
   assert string.contains(html, "Tempo run")
-  assert string.contains(html, "10k plan")
+  // One plan followed: its name is left out.
+  assert !string.contains(html, "10k plan")
   assert string.contains(html, "Planned: 8 km · 45:00")
   assert string.contains(html, "Coming up")
   assert string.contains(html, "Thursday rest")
   assert string.contains(html, "Rest day")
-  assert string.contains(html, "Last 7 days")
+  // What is past comes before what is to come.
+  let assert [_, after_recent] = string.split(html, "Last 7 days")
+  assert string.contains(after_recent, "Coming up")
+}
+
+pub fn the_plan_is_named_when_more_than_one_is_followed_test() {
+  let two =
+    Inputs(..inputs([]), assignments: [
+      assignment_form.Row(Assignment("a1", "p1", "me", monday), "me", "T"),
+      assignment_form.Row(Assignment("a2", "p2", "me", monday), "me", "T"),
+    ])
+  assert string.contains(html_of(today_page.new(), two), "10k plan")
 }
 
 pub fn a_suggested_match_asks_for_confirmation_test() {
@@ -273,7 +285,7 @@ pub fn a_confirmed_match_can_be_changed_or_unlinked_test() {
     html_of(today_page.new(), inputs([stored("m1", "x1", "w2", False)]))
   assert string.contains(html, ">Done</span>")
   assert string.contains(html, "06:00 · Run · 8.00 km · 45:00")
-  assert string.contains(html, ">Change<")
+  assert string.contains(html, ">Change activity<")
   assert string.contains(html, ">Unlink<")
 }
 
@@ -307,6 +319,7 @@ pub fn an_empty_activity_list_says_what_to_do_test() {
   let html = html_of(model, Inputs(..inputs([]), activities: []))
   assert string.contains(
     html,
-    "You have no activity on Wed 7 Oct 2026. Add one in Activities first.",
+    "You have no activity on Wed 7 Oct 2026. Add it in Activities, then link it here.",
   )
+  assert string.contains(html, ">Go to activities<")
 }
