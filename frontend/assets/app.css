@@ -526,6 +526,8 @@ label {
 /* A list of rows that open other pages, such as Settings (ADR 0049). */
 .link-list { padding: 0; }
 .link-list li { padding: 0; }
+/* A row that only shows something (the account, Sync) has the padding a link row's link has, so all rows line up. */
+.link-list li.info-item { padding: 0.75rem 1rem; }
 .link-list a {
   position: relative; display: flex; align-items: center; gap: 1rem; min-height: 4.5rem; padding: 0.75rem 1rem 0.75rem 1rem;
   color: var(--md-sys-color-on-surface); text-decoration: none; isolation: isolate;
@@ -557,8 +559,9 @@ label {
 }
 .list li:first-child { border-top-left-radius: var(--md-sys-shape-corner-large); border-top-right-radius: var(--md-sys-shape-corner-large); }
 .list li:last-child { border-bottom-left-radius: var(--md-sys-shape-corner-large); border-bottom-right-radius: var(--md-sys-shape-corner-large); }
-.link-list li:hover { border-radius: var(--md-sys-shape-corner-medium); }
-.link-list li:active, .link-list li:focus-within { border-radius: var(--md-sys-shape-corner-large); }
+/* Only rows that open something change shape when pointed at. */
+.link-list li:has(> a):hover { border-radius: var(--md-sys-shape-corner-medium); }
+.link-list li:has(> a):active, .link-list li:has(> a):focus-within { border-radius: var(--md-sys-shape-corner-large); }
 .list a { color: var(--md-sys-color-on-surface); font: 400 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem; text-decoration: none; }
 .list a:hover { text-decoration: underline; }
 /* A row that opens a page (ADR 0069): its headline link covers the whole item, with M3's state layer and the

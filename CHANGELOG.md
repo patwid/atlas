@@ -96,6 +96,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Pressing a workout in your own plan, or an activity you entered, opens its form straight away, with Delete in the form's top bar; others still see a workout in a read-only dialog (ADR 0080).
 
 ### Fixed
+- The Settings list's account and Sync rows have the same padding as the rows that open a page, and no longer change shape on hover.
 - Fields side by side line up again when one has help text under it (Distance and Duration), and the zones page's Calculate buttons sit level with the field beside them.
 - Screen readers hear the Settings tab's badge as "3 sync problems", and a plan's tabs and the calendar's week labels stay below the app bar on phones with a notch (ADR 0079).
 - A wrong or missing e-mail or password marks the sign-in fields as invalid for screen readers.
