@@ -99,8 +99,9 @@ in
 
     caddy = {
       enable = mkEnableOption ''
-        Caddy as the HTTPS reverse proxy for `publicUrl` (ADR 0091). Caddy gets the certificate from Let's Encrypt;
-        set `services.caddy.email` for its account. Opens ports 80 and 443 (TCP, and UDP for HTTP/3)'';
+        Caddy as the reverse proxy for `publicUrl` (ADR 0091). For an `https://` address Caddy gets the certificate from
+        Let's Encrypt (set `services.caddy.email` for its account); an `http://` address is served without TLS (ADR 0092).
+        Opens ports 80 and 443 (TCP, and UDP for HTTP/3)'';
 
       extraConfig = mkOption {
         type = types.lines;
@@ -122,7 +123,7 @@ in
       virtualHosts.${cfg.publicUrl}.extraConfig = ''
         encode zstd gzip
         header {
-          Strict-Transport-Security "max-age=31536000"
+          ${lib.optionalString (lib.hasPrefix "https://" cfg.publicUrl) ''Strict-Transport-Security "max-age=31536000"''}
           X-Content-Type-Options "nosniff"
           Referrer-Policy "strict-origin-when-cross-origin"
           -Server

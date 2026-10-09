@@ -4,11 +4,18 @@ Atlas runs on a Hetzner Cloud VPS with NixOS, behind Caddy ([ADR 0090](adr/0090-
 [ADR 0091](adr/0091-deploy-to-hetzner-with-caddy.md)). The server's whole configuration is in this repository
 (`hosts/atlas/`), and `.github/workflows/deploy.yml` switches the server to every `master` commit that passed CI.
 
+**Without a domain, for now** ([ADR 0092](adr/0092-plain-http-on-the-ip-until-there-is-a-domain.md)): set `publicUrl` to
+`http://<the server's IPv4 address>` and skip the DNS records, `acmeEmail` and the Strava steps. Caddy then serves plain HTTP
+on port 80. Passwords travel unencrypted, so use test accounts only; the app also does not open offline and Strava cannot be
+connected. `https://<ip-with-dashes>.sslip.io` (for example `https://203-0-113-10.sslip.io`) gives real HTTPS without a domain
+of your own; everything below then works as with a domain.
+
 ## One-time setup
 
 ### 1. DNS and the Hetzner firewall
 
-- Point the domain at the server: an `A` record to its IPv4 address and an `AAAA` record to its IPv6 address.
+- Point the domain at the server: an `A` record to its IPv4 address and an `AAAA` record to its IPv6 address
+  (not needed for `http://<IP>` or sslip.io).
 - If the server is in a Hetzner Cloud firewall, allow TCP 22, 80 and 443, and UDP 443 (HTTP/3). Caddy needs port 80
   reachable to get its Let's Encrypt certificate.
 
@@ -27,8 +34,9 @@ ssh root@<server> cat /etc/nixos/configuration.nix         # read it for the nex
   `configuration.nix`. Anything else in it you want to keep (swap, extra users, packages) goes there too.
 - Check that `hardware-configuration.nix` sets `nixpkgs.hostPlatform` (`x86_64-linux`, or `aarch64-linux` on CAX);
   add it if your file is older and lacks it.
-- In `hosts/atlas/default.nix`, set `domain`, `acmeEmail` and `sshKeys`: your own public key, and the deploy key
-  from step 3. Without your key in `sshKeys`, the first deploy locks you out of SSH.
+- In `hosts/atlas/default.nix`, set `publicUrl` (`https://<domain>`, or `http://<IP>` for now), `acmeEmail` (only
+  for https) and `sshKeys`: your own public key, and the deploy key from step 3. Without your key in `sshKeys`, the
+  first deploy locks you out of SSH.
 
 `nix eval .#nixosConfigurations.atlas.config.system.build.toplevel.drvPath` lists anything still missing.
 
@@ -81,7 +89,7 @@ Then commit `hosts/atlas/` and push; from then on the workflow deploys.
 ### 6. Inside the app
 
 1. **Superuser:** `ssh root@<server> atlas-pocketbase superuser upsert you@example.org '<password>'`. The admin
-   UI is at `https://<domain>/_/`.
+   UI is at `<publicUrl>/_/`.
 2. **Behind the proxy:** in the admin UI, Settings → Application, set the trusted proxy header to `X-Forwarded-For`,
    so logs and rate limits see the visitor's address instead of Caddy's.
 3. **Accounts:** the app has no sign-up page; create users in the admin UI (`users` collection).
@@ -97,7 +105,7 @@ Then commit `hosts/atlas/` and push; from then on the workflow deploys.
 ## Every deploy
 
 A push to `master` runs CI; when it passes, the Deploy workflow evaluates the server's configuration, has the server
-build and switch to it over SSH, and checks `https://<domain>/api/health`. It can also be started by hand (Actions →
+build and switch to it over SSH, and checks `<publicUrl>/api/health`. It can also be started by hand (Actions →
 Deploy → Run workflow). PocketBase applies new migrations when it starts, so take a backup before a deploy that adds one.
 
 **Rolling back:** `ssh root@<server> nixos-rebuild switch --rollback`, or pick the previous generation in the boot

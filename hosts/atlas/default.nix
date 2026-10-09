@@ -5,7 +5,10 @@
 
 let
   # Fill these in before the first deploy; the assertions below stop a deploy that still has the examples.
-  domain = "atlas.example.org";
+  # The address the app is reached at. With a domain, "https://atlas.example.org": Caddy gets a certificate.
+  # Until there is a domain, "http://<the server's IPv4 address>": plain HTTP, see ADR 0092 for what that gives up.
+  publicUrl = "https://atlas.example.org";
+  # For Let's Encrypt; only needed with https.
   acmeEmail = "admin@example.org";
   sshKeys = [
     # The owner's own key, so the server stays reachable without CI.
@@ -13,14 +16,19 @@ let
     # The deploy key whose private half is the DEPLOY_SSH_KEY secret of the GitHub environment `production`.
     # "ssh-ed25519 AAAA... atlas-deploy"
   ];
+
+  https = lib.hasPrefix "https://" publicUrl;
 in
 {
   imports = [ ./hardware-configuration.nix ./machine.nix ]
     ++ lib.optional (builtins.pathExists ./networking.nix) ./networking.nix;
 
   assertions = [
-    { assertion = domain != "atlas.example.org"; message = "hosts/atlas: set `domain` to the server's domain."; }
-    { assertion = acmeEmail != "admin@example.org"; message = "hosts/atlas: set `acmeEmail` for Let's Encrypt."; }
+    { assertion = publicUrl != "https://atlas.example.org"; message = "hosts/atlas: set `publicUrl` to the server's address."; }
+    {
+      assertion = https -> acmeEmail != "admin@example.org";
+      message = "hosts/atlas: set `acmeEmail` for Let's Encrypt.";
+    }
     { assertion = sshKeys != [ ]; message = "hosts/atlas: add the owner's and the deploy SSH keys, or nobody can log in."; }
     {
       # Set by machine.nix, not left at the default, which follows nixpkgs and would change on an update.
@@ -33,12 +41,12 @@ in
 
   services.atlas = {
     enable = true;
-    publicUrl = "https://${domain}";
+    inherit publicUrl;
     # Created by hand on the server (docs/deploy.md); it may be empty until Strava is set up.
     environmentFile = "/var/lib/secrets/atlas.env";
     caddy.enable = true;
   };
-  services.caddy.email = acmeEmail;
+  services.caddy.email = lib.mkIf https acmeEmail;
 
   # Deploys log in as root with a key; no passwords.
   services.openssh = {

@@ -94,4 +94,5 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0088 | [The Today screen is called Home](0088-today-renamed-home.md) | Accepted |
 | 0089 | [Matching accepts half to one and a half times the plan](0089-matching-tolerance-half.md) | Accepted |
 | 0090 | [Run Atlas on NixOS with a module and a systemd unit](0090-nixos-module.md) | Accepted (TLS and deployment: 0091) |
-| 0091 | [Deploy to a Hetzner VPS from GitHub Actions, behind Caddy](0091-deploy-to-hetzner-with-caddy.md) | Accepted |
+| 0091 | [Deploy to a Hetzner VPS from GitHub Actions, behind Caddy](0091-deploy-to-hetzner-with-caddy.md) | Accepted (plain HTTP for now: 0092) |
+| 0092 | [Plain HTTP on the server's IP address until there is a domain](0092-plain-http-on-the-ip-until-there-is-a-domain.md) | Accepted (temporary) |
