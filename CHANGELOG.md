@@ -49,6 +49,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Deployment to a Hetzner VPS: the server's NixOS configuration in `hosts/atlas/`, a Deploy workflow that switches it to each `master` commit that passed CI, and `services.atlas.caddy` for HTTPS with Let's Encrypt; steps in `docs/deploy.md` (ADR 0091).
 
 ### Changed
+- The Hetzner VPS (204.168.179.170) is configured here instead of in nixos-config: its hardware, disk, GRUB and network settings are in `nix/hosts/atlas`, it serves `http://204.168.179.170`, and root logs in with the owner's keys; the Deploy workflow is skipped until `DEPLOY_HOST` is set (ADR 0094).
 - Nix files other than `flake.nix` and `flake.lock` moved under `nix/`: the module and VM test to `nix/nixos/`, the server configuration to `nix/hosts/atlas/` (ADR 0093).
 - The server can run on plain HTTP at its IP address until there is a domain: `hosts/atlas` takes a full `publicUrl`, and Caddy serves an `http://` address without TLS or HSTS (ADR 0092).
 - An activity is suggested for a workout only when it is between half and one and a half times the planned distance (or duration); it was anything up to double (ADR 0089).

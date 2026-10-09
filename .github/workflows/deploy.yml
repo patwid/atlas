@@ -16,9 +16,11 @@ concurrency:
 
 jobs:
   deploy:
+    # Skipped until the environment is set up (docs/deploy.md), instead of failing on every push.
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+      vars.DEPLOY_HOST != '' && (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'))
     runs-on: ubuntu-latest
     # Secrets: DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS. Variable: DEPLOY_HOST (the server's address).
     environment: production
@@ -27,13 +29,6 @@ jobs:
         with:
           # The commit CI tested, not whatever master is by now.
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-
-      - name: The server configuration is in the repository
-        run: |
-          if [ ! -f nix/hosts/atlas/hardware-configuration.nix ]; then
-            echo "::error::nix/hosts/atlas/hardware-configuration.nix is missing; see docs/deploy.md."
-            exit 1
-          fi
 
       - uses: DeterminateSystems/nix-installer-action@v16
 

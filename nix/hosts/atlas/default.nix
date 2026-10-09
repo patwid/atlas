@@ -1,18 +1,20 @@
-# The production server: a Hetzner Cloud VPS running NixOS (ADR 0091), deployed by .github/workflows/deploy.yml.
-# What is specific to the machine (disks, boot loader, network, state version) is copied from the server into
-# hardware-configuration.nix, machine.nix and, if the server has one, networking.nix; see docs/deploy.md.
+# The production server: a Hetzner Cloud VPS running NixOS (ADR 0091, 0094), deployed by .github/workflows/deploy.yml.
+# What is specific to the machine (disk, boot loader, network, state version) is in hardware-configuration.nix and
+# machine.nix, taken over from the `vps` host of ~patwid/nixos-config.
 { lib, options, ... }:
 
 let
-  # Fill these in before the first deploy; the assertions below stop a deploy that still has the examples.
+  # The assertions below stop a deploy that still has the examples.
   # The address the app is reached at. With a domain, "https://atlas.example.org": Caddy gets a certificate.
   # Until there is a domain, "http://<the server's IPv4 address>": plain HTTP, see ADR 0092 for what that gives up.
-  publicUrl = "https://atlas.example.org";
+  publicUrl = "http://204.168.179.170";
   # For Let's Encrypt; only needed with https.
   acmeEmail = "admin@example.org";
   sshKeys = [
-    # The owner's own key, so the server stays reachable without CI.
-    # "ssh-ed25519 AAAA... owner@laptop"
+    # The owner's own keys, so the server stays reachable without CI (the same keys nixos-config gives the patwid user).
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIxXYugJIENGOXJIY11n2H+yHbfBLoh1pByszOe1s2BQ patwid@desktop"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKDwzQD/7hBZakOKm3Fxv4r8qz/y0MiDxuJ2X8hj8sJn patwid@htpc"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINpXEq+FIUxQkyX8yhm6jrXDJNZQn6H6nifNY5KsUZgh patwid@laptop"
     # The deploy key whose private half is the DEPLOY_SSH_KEY secret of the GitHub environment `production`.
     # "ssh-ed25519 AAAA... atlas-deploy"
   ];

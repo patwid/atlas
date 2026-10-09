@@ -19,39 +19,35 @@ of your own; everything below then works as with a domain.
 - If the server is in a Hetzner Cloud firewall, allow TCP 22, 80 and 443, and UDP 443 (HTTP/3). Caddy needs port 80
   reachable to get its Let's Encrypt certificate.
 
-### 2. Copy the machine's own settings into the repository
+### 2. The machine's settings (done)
 
-The deploy replaces the server's `/etc/nixos` configuration with `nix/hosts/atlas/`, so what is specific to the machine
-has to come along. From your laptop:
+The VPS (204.168.179.170, x86_64, legacy BIOS) used to be the `vps` host of ~patwid/nixos-config. Its machine settings
+are now in `nix/hosts/atlas/` ([ADR 0094](adr/0094-atlas-owns-the-vps.md)): `hardware-configuration.nix` unchanged, and the
+disk, GRUB, NetworkManager and `stateVersion` in `machine.nix`, checked to evaluate to the same values as before.
+`default.nix` has `publicUrl = "http://204.168.179.170"` and your three SSH keys for root.
+
+Apply the handover patch to nixos-config (it removes the `vps` host there, so a rebuild from nixos-config can no
+longer overwrite the server, and makes `ssh vps` log in as root):
 
 ```sh
-scp root@<server>:/etc/nixos/hardware-configuration.nix nix/hosts/atlas/
-scp root@<server>:/etc/nixos/networking.nix nix/hosts/atlas/   # only if it exists (nixos-infect writes one)
-ssh root@<server> cat /etc/nixos/configuration.nix         # read it for the next step
+cd nixos-config && git am ../nixos-config-vps-handover.patch
 ```
 
-- In `nix/hosts/atlas/machine.nix`, set the **boot loader** and **`system.stateVersion`** exactly as in that
-  `configuration.nix`. Anything else in it you want to keep (swap, extra users, packages) goes there too.
-- Check that `hardware-configuration.nix` sets `nixpkgs.hostPlatform` (`x86_64-linux`, or `aarch64-linux` on CAX);
-  add it if your file is older and lacks it.
-- In `nix/hosts/atlas/default.nix`, set `publicUrl` (`https://<domain>`, or `http://<IP>` for now), `acmeEmail` (only
-  for https) and `sshKeys`: your own public key, and the deploy key from step 3. Without your key in `sshKeys`, the
-  first deploy locks you out of SSH.
-
-`nix eval .#nixosConfigurations.atlas.config.system.build.toplevel.drvPath` lists anything still missing.
+The deploy replaces the whole system: the `patwid` user, doas and the other shared nixos-config modules are no longer
+on the server. Log in as `root` with your usual keys.
 
 ### 3. Deploy key and GitHub environment
 
 ```sh
 ssh-keygen -t ed25519 -N '' -C atlas-deploy -f atlas-deploy   # atlas-deploy.pub goes into sshKeys
-ssh-keyscan <server> > known_hosts
+ssh-keyscan 204.168.179.170 > known_hosts
 ```
 
 In the GitHub repository, under Settings → Environments, create `production` with:
 
 - secret `DEPLOY_SSH_KEY`: the contents of `atlas-deploy` (the private key), then delete the local file;
 - secret `DEPLOY_KNOWN_HOSTS`: the contents of `known_hosts`;
-- variable `DEPLOY_HOST`: the server's IP address or host name.
+- variable `DEPLOY_HOST`: `204.168.179.170`. Until it is set, the Deploy workflow is skipped.
 
 Optionally add yourself as a required reviewer, so every deploy waits for your approval.
 
@@ -68,22 +64,32 @@ STRAVA_VERIFY_TOKEN=...      # any random string, e.g. from `openssl rand -hex 2
 STRAVA_SUBSCRIPTION_ID=...   # added after the subscribe step below
 ```
 
-After changing it: `ssh root@<server> systemctl restart atlas`.
+After changing it: `ssh root@204.168.179.170 systemctl restart atlas`.
 
 ### 5. First deploy, from your laptop
 
-Do the first switch by hand, so you see it happen and can react:
+Do the first switch by hand, so you see it happen and can react. The server still runs the nixos-config system, where
+root only accepts the builds.sr.ht key and you are `patwid` with doas (no sudo), so this one goes through `patwid`:
+the server builds the system (patwid is a trusted Nix user), and doas activates it.
+
+```sh
+sys=$(nix build --no-link --print-out-paths --store ssh-ng://patwid@204.168.179.170 \
+  .#nixosConfigurations.atlas.config.system.build.toplevel)
+ssh -t patwid@204.168.179.170 \
+  "doas sh -c 'nix-env -p /nix/var/nix/profiles/system --set $sys && $sys/bin/switch-to-configuration switch'"
+```
+
+The switch removes `patwid` and doas and lets root in with your keys; the open session keeps running. Check from a
+second terminal that `ssh root@204.168.179.170` works before you close it. From then on (and for any later deploy by hand):
 
 ```sh
 nix run nixpkgs#nixos-rebuild -- switch --flake .#atlas \
-  --target-host root@<server> --build-host root@<server> --use-substitutes
+  --target-host root@204.168.179.170 --build-host root@204.168.179.170 --use-substitutes
 ```
-
-Then commit `nix/hosts/atlas/` and push; from then on the workflow deploys.
 
 ### 6. Inside the app
 
-1. **Superuser:** `ssh root@<server> atlas-pocketbase superuser upsert you@example.org '<password>'`. The admin
+1. **Superuser:** `ssh root@204.168.179.170 atlas-pocketbase superuser upsert you@example.org '<password>'`. The admin
    UI is at `<publicUrl>/_/`.
 2. **Behind the proxy:** in the admin UI, Settings → Application, set the trusted proxy header to `X-Forwarded-For`,
    so logs and rate limits see the visitor's address instead of Caddy's.
@@ -103,7 +109,7 @@ A push to `master` runs CI; when it passes, the Deploy workflow evaluates the se
 build and switch to it over SSH, and checks `<publicUrl>/api/health`. It can also be started by hand (Actions →
 Deploy → Run workflow). PocketBase applies new migrations when it starts, so take a backup before a deploy that adds one.
 
-**Rolling back:** `ssh root@<server> nixos-rebuild switch --rollback`, or pick the previous generation in the boot
+**Rolling back:** `ssh root@204.168.179.170 nixos-rebuild switch --rollback`, or pick the previous generation in the boot
 menu from the Hetzner console if the server no longer answers. Then revert the commit, or the next deploy brings it back.
 
 ## Data and backups
