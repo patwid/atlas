@@ -1039,22 +1039,6 @@ html[data-scrolled] .md-tab-bar { background: var(--md-sys-color-surface-contain
 @media (max-width: 74.9375rem) { .sheet-content .sidebar-panel { --field-container: var(--md-sys-color-surface-container); } }
 @media (min-width: 37.5rem) { dialog.form-dialog { --field-container: var(--md-sys-color-surface-container-high); } }
 
-/* List-detail (ADR 0060): Settings' list and the open section. Narrower than expanded, one pane shows at a time,
-   as two pages; from expanded both show side by side and the list marks the open section, so the app bar's back
-   button goes. */
-.list-detail.showing-detail > .list-pane, .list-detail.showing-list > .detail-pane { display: none; }
-.link-list a[aria-current="page"] {
-  background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container);
-}
-.link-list a[aria-current="page"] .icon { color: inherit; }
-@media (min-width: 52.5rem) {
-  main:has(.list-detail), body:has(.list-detail) .bar-content { max-width: 72rem; }
-  .list-detail { display: grid; grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
-  .list-detail.showing-detail > .list-pane, .list-detail.showing-list > .detail-pane { display: block; }
-  .list-detail > .list-pane { position: sticky; top: 5rem; }
-  body:has(.list-detail) .up-link { display: none; }
-}
-
 /* A simple dialog of choices (ADR 0062): each row is a choice, taken at once. */
 .choice-dialog .choices { list-style: none; margin: 0 -1.5rem 1rem; padding: 0; }
 .choice-row {

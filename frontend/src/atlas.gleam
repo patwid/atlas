@@ -32,7 +32,6 @@ import atlas/today
 import atlas/today_page
 import atlas/ui/banner
 import atlas/ui/button
-import atlas/ui/empty
 import atlas/ui/icon
 import atlas/ui/interaction
 import atlas/ui/layout
@@ -1220,31 +1219,30 @@ fn page(model: Model, session: Session) -> Element(Msg) {
         activities_page.view(model.activities, activities_context(session)),
         ActivitiesPage,
       )
-    // Settings is a list and a section side by side from the expanded window class (ADR 0060); on narrower
-    // screens the list and a section are pages of their own.
+    // Settings is a list whose rows open a section's page, one pane at every width (ADR 0065).
     route.Settings ->
-      settings_layout(
-        session,
-        model.syncing,
-        None,
-        empty.view(
-          icon.Settings,
-          "Choose a section",
-          "Its settings show here.",
-          None,
-        ),
-      )
+      html.div([], [
+        sync_banners(model.syncing),
+        settings_list(session, model.syncing),
+      ])
     route.SettingsPage(page) ->
-      settings_layout(session, model.syncing, Some(page), case page {
-        route.Zones ->
-          element.map(zones_page.view(model.zones, session.user_id), ZonesPage)
-        route.Coaches ->
-          element.map(
-            coaches_page.view(model.coaches, session.user_id),
-            CoachesPage,
-          )
-        route.Strava -> element.map(strava_page.view(model.strava), StravaPage)
-      })
+      html.div([], [
+        sync_banners(model.syncing),
+        case page {
+          route.Zones ->
+            element.map(
+              zones_page.view(model.zones, session.user_id),
+              ZonesPage,
+            )
+          route.Coaches ->
+            element.map(
+              coaches_page.view(model.coaches, session.user_id),
+              CoachesPage,
+            )
+          route.Strava ->
+            element.map(strava_page.view(model.strava), StravaPage)
+        },
+      ])
     route.Athletes ->
       athletes_page.view_list(grants.athletes_of(
         model.coaches.grants,
@@ -1269,40 +1267,7 @@ fn page(model: Model, session: Session) -> Element(Msg) {
 
 /// Settings is a list (ADR 0049, 0055): the account and the sync state as rows of their own, then a row per section
 /// that opens the section's page. Sync problems show at the top of every Settings page, so they are not missed.
-/// Settings as M3's list-detail layout (ADR 0060): the sync banners, then the list and the open section side by side
-/// from the expanded window class. On narrower screens CSS shows the list on `/settings` and the section on its own
-/// page, as before.
-fn settings_layout(
-  session: Session,
-  sync_state: syncing.State,
-  current: Option(route.SettingsPage),
-  detail: Element(Msg),
-) -> Element(Msg) {
-  html.div([], [
-    sync_banners(sync_state),
-    html.div(
-      [
-        attribute.class("list-detail"),
-        attribute.classes([
-          #("showing-list", current == None),
-          #("showing-detail", current != None),
-        ]),
-      ],
-      [
-        html.div([attribute.class("list-pane")], [
-          settings_list(session, sync_state, current),
-        ]),
-        html.div([attribute.class("detail-pane")], [detail]),
-      ],
-    ),
-  ])
-}
-
-fn settings_list(
-  session: Session,
-  sync_state: syncing.State,
-  current: Option(route.SettingsPage),
-) -> Element(Msg) {
+fn settings_list(session: Session, sync_state: syncing.State) -> Element(Msg) {
   html.section([attribute.class("settings")], [
     html.ul([attribute.class("list link-list")], [
       layout.info_item(
@@ -1326,7 +1291,6 @@ fn settings_list(
           symbol,
           route.settings_title(page),
           supporting,
-          current == Some(page),
         )
       })
     ]),

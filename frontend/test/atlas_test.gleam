@@ -704,21 +704,13 @@ pub fn the_strava_section_is_shown_in_settings_test() {
   assert string.contains(html, "Checking")
 }
 
-pub fn a_settings_section_shows_beside_the_list_with_its_row_marked_test() {
+pub fn a_settings_section_is_a_page_of_its_own_test() {
   let html =
     element.to_string(atlas.view(
       Model(..signed_in(), route: route.SettingsPage(route.Zones)),
     ))
-  assert string.contains(html, "list-detail showing-detail")
-  assert string.contains(html, "aria-current=\"page\" href=\"/settings/zones\"")
-  assert !string.contains(
-    html,
-    "aria-current=\"page\" href=\"/settings/strava\"",
-  )
-  let list =
-    element.to_string(atlas.view(Model(..signed_in(), route: route.Settings)))
-  assert string.contains(list, "list-detail showing-list")
-  assert string.contains(list, "Choose a section")
+  assert !string.contains(html, "href=\"/settings/strava\"")
+  assert string.contains(html, "aria-label=\"All settings\"")
 }
 
 pub fn settings_is_a_list_of_its_sections_test() {

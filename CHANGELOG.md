@@ -77,6 +77,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Choosing the activity for a workout on Today is a dialog; the calendar on a phone keeps the week's label in view and makes empty days smaller; plan and athlete pages have the larger app bar that shrinks on scroll (ADR 0062).
 - All phase bands in the plan calendar have the same light background as the base phase (ADR 0063).
 - A week's distance goal is the plan's weekly goal scaled by the week's intensity: a week at 60% aims for 60% of it (ADR 0064).
+- Settings is one pane at every width again: the list, and each section on its own page (ADR 0065).
 - CI builds the flake's checks (`atlas-app`, `gleam-test`, `backend-test`, `frontend-js-test`) offline instead of running the test scripts in `nix develop`; `nix flake check` runs them locally, and a suite whose source is unchanged is not run again. `test-frontend-js.sh` accepts `ATLAS_NPM_INSTALL=0` (ADR 0042).
 
 ### Fixed
