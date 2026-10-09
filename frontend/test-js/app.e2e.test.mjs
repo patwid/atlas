@@ -292,7 +292,8 @@ test("the owner sets a week's intensity and the plan's phases and goal in the si
     const p = await onServer()
     return p.weekly_distance_m === 40000 && p.base_weeks === 3
   })
-  await waitFor("the week against the goal", () => d.querySelector(".calendar-sidebar")?.textContent.includes("20.00 km of 40.00 km (50%)"))
+  // Week 2 is at 80%, so it aims for 80% of 40 km (ADR 0064).
+  await waitFor("the week against its goal", () => d.querySelector(".calendar-sidebar")?.textContent.includes("20.00 km of 32.00 km (63%)"))
   await waitFor("five weeks now", () => d.querySelectorAll(".calendar-week").length === 5)
   assert.equal((await onServer()).week_intensity[1], 0.8, "the intensity stays")
   w.close()

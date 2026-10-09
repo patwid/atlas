@@ -1,6 +1,6 @@
 # 0043. Plan phases, a weekly distance goal, week intensity and a calendar view
 
-- Status: Proposed
+- Status: Accepted. The open questions are answered in [0064](0064-intensity-scales-the-weekly-goal.md).
 - Date: 2026-10-08
 - Deciders: owner (asked for phases, a weekly distance goal, a per-week intensity and a calendar with a sidebar); agent (the details below)
 

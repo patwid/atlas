@@ -131,3 +131,17 @@ pub fn the_next_position_is_after_the_last_one_on_that_day_test() {
   assert plan_schedule.next_position(workouts, 1) == 0
   assert plan_schedule.next_position([], 0) == 0
 }
+
+pub fn a_weeks_goal_follows_its_intensity_test() {
+  assert plan_schedule.week_goal(Some(40_000.0), Ok(0.6)) == Some(24_000.0)
+  assert plan_schedule.week_goal(Some(40_000.0), Error(Nil)) == Some(40_000.0)
+  assert plan_schedule.week_goal(None, Ok(0.6)) == None
+  // A week at 0% has no distance to reach: no share is shown.
+  let assert [week] =
+    plan_schedule.weeks(no_phases, [w("a", 0, 0, 10_000.0, 1)])
+  assert plan_schedule.goal_share(
+      week,
+      plan_schedule.week_goal(Some(40_000.0), Ok(0.0)),
+    )
+    == Error(Nil)
+}

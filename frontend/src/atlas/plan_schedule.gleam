@@ -91,6 +91,19 @@ pub fn week_label(phases: Phases, number: Int) -> String {
   }
 }
 
+/// A week's distance goal (ADR 0064): the plan's weekly goal scaled by the week's intensity, so an easy week at 60%
+/// aims for 60% of it; the full goal when the week has no intensity, and none when the plan has no goal.
+pub fn week_goal(
+  goal_m: option.Option(Float),
+  intensity: Result(Float, Nil),
+) -> option.Option(Float) {
+  case goal_m, intensity {
+    option.Some(goal), Ok(level) -> option.Some(goal *. level)
+    option.Some(goal), Error(Nil) -> option.Some(goal)
+    option.None, _ -> option.None
+  }
+}
+
 /// The planned distance of a week against the plan's goal, from 0 (none) up; above 1.0 when over it.
 /// An error when the plan has no goal.
 pub fn goal_share(

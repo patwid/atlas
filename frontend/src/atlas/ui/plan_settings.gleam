@@ -62,7 +62,16 @@ pub fn inputs(
     field.text(
       prefix <> "-goal",
       "Weekly distance goal",
-      field.with_error(field.Help("Optional", "km", None), "goal", wrong, error),
+      field.with_error(
+        field.Help(
+          "Optional. A week with an intensity aims for that share of it.",
+          "km",
+          None,
+        ),
+        "goal",
+        wrong,
+        error,
+      ),
       [
         attribute.type_("text"),
         attribute.attribute("inputmode", "decimal"),

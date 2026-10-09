@@ -46,7 +46,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0040 | [Drop Web Awesome; roll our own styling with Bootstrap's palette](0040-drop-web-awesome.md) | Accepted (palette superseded by 0044) |
 | 0041 | [Run CI on GitHub Actions through the Nix flake](0041-github-actions-ci.md) | Superseded by 0042 |
 | 0042 | [Run the test suites as flake checks](0042-ci-through-flake-checks.md) | Accepted |
-| 0043 | [Plan phases, a weekly distance goal, week intensity and a calendar view](0043-plan-phases-goal-and-calendar.md) | Proposed |
+| 0043 | [Plan phases, a weekly distance goal, week intensity and a calendar view](0043-plan-phases-goal-and-calendar.md) | Accepted |
 | 0044 | [Style the app after Material Design 3, by hand](0044-material-design-3-styling.md) | Accepted (colors superseded by 0045) |
 | 0045 | [Use Material Design 3's baseline colors only](0045-material-baseline-colors.md) | Accepted (intensity changed by 0061, phase bands by 0063) |
 | 0046 | [Name buttons after Material Design 3 and drop the danger button](0046-material-button-names.md) | Accepted |
@@ -67,3 +67,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0061 | [Harmonized custom colours for training intensity](0061-harmonized-intensity-colours.md) | Accepted |
 | 0062 | [Material review, remaining items: a choice dialog, chips, the phone calendar, the medium app bar](0062-material-review-remaining-items.md) | Accepted |
 | 0063 | [One background for all phase bands](0063-one-colour-for-phase-bands.md) | Accepted |
+| 0064 | [A week's intensity scales its distance goal; the goal stays one per plan](0064-intensity-scales-the-weekly-goal.md) | Accepted |

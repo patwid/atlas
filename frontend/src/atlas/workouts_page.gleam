@@ -867,6 +867,15 @@ fn week_panel(
     Error(Nil) -> element.none()
     Ok(week) -> {
       let intensity = dict.get(on_screen.week_intensity, week.number)
+      // The week's goal follows its intensity (ADR 0064), also while the slider is being dragged.
+      let goal =
+        plan_schedule.week_goal(
+          on_screen.weekly_distance_m,
+          case model.intensity_draft {
+            Some(#(dragged, level)) if dragged == week.number -> Ok(level)
+            _ -> intensity
+          },
+        )
       panel("Week " <> int.to_string(week.number), [
         case week.phase {
           Ok(_) ->
@@ -879,7 +888,7 @@ fn week_panel(
         html.dl([class("facts")], [
           html.dt([], [html.text("Distance")]),
           html.dd([], [
-            html.text(distance_text(week, on_screen.weekly_distance_m)),
+            html.text(distance_text(week, goal)),
           ]),
           html.dt([], [html.text("Time")]),
           html.dd([], [
@@ -891,7 +900,7 @@ fn week_panel(
           html.dt([], [html.text("Workouts")]),
           html.dd([], [html.text(int.to_string(workout_count(week)))]),
         ]),
-        goal_meter(week, on_screen.weekly_distance_m),
+        goal_meter(week, goal),
       ])
     }
   }
@@ -989,7 +998,7 @@ fn goal_meter(week: plan_schedule.Week, goal: Option(Float)) -> Element(Msg) {
           class("goal-meter"),
           attribute.classes([#("over", share >. 1.0)]),
           attribute.role("meter"),
-          attribute.attribute("aria-label", "Distance against the weekly goal"),
+          attribute.attribute("aria-label", "Distance against this week's goal"),
           attribute.attribute(
             "aria-valuenow",
             int.to_string(float.round(share *. 100.0)),

@@ -287,9 +287,10 @@ pub fn the_sidebar_shows_the_selected_week_against_the_goal_test() {
     )
   let html = html_of(model, False)
   assert string.contains(html, "Base, week 2")
-  assert string.contains(html, "16.00 km of 40.00 km (40%)")
+  // Week 2 is at 80%, so its goal is 80% of 40 km (ADR 0064).
+  assert string.contains(html, "16.00 km of 32.00 km (50%)")
   assert string.contains(html, ">80%<")
-  assert string.contains(html, "aria-valuenow=\"40\"")
+  assert string.contains(html, "aria-valuenow=\"50\"")
 }
 
 pub fn selecting_a_week_or_a_workout_shows_it_in_the_sidebar_test() {
