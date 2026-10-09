@@ -15,6 +15,7 @@ import atlas/ui/button
 import atlas/ui/error
 import atlas/ui/field
 import atlas/ui/layout
+import atlas/ui/progress
 import atlas/ui/snackbar
 import gleam/dynamic.{type Dynamic}
 import gleam/int
@@ -228,6 +229,15 @@ fn replace_at(values: List(String), zone: Int, value: String) -> List(String) {
 // VIEWS -------------------------------------------------------------------------------------------
 
 pub fn view(model: Model, me: String) -> Element(Msg) {
+  case model.loaded {
+    True -> form_view(model, me)
+    // Not the form with the defaults: an edit made before the saved zones arrive would keep them from filling in,
+    // and saving would put the defaults over them.
+    False -> progress.loading("Loading…")
+  }
+}
+
+fn form_view(model: Model, me: String) -> Element(Msg) {
   // The end of each zone follows from the next one's start, so it is shown once that part is valid.
   let hr_ends = case hr_zones.parse(model.hr) {
     Ok(zones) ->

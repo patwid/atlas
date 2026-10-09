@@ -173,3 +173,9 @@ pub fn an_unusable_stored_row_falls_back_to_the_defaults_test() {
   assert model.rows == []
   assert zones_page.current(model, "me") == athlete_settings.defaults()
 }
+
+pub fn the_form_waits_for_the_saved_zones_test() {
+  let html = element.to_string(zones_page.view(zones_page.new(), "me"))
+  assert string.contains(html, "Loading…")
+  assert !string.contains(html, "hr-max")
+}

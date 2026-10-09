@@ -84,6 +84,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - CI builds the flake's checks (`atlas-app`, `gleam-test`, `backend-test`, `frontend-js-test`) offline instead of running the test scripts in `nix develop`; `nix flake check` runs them locally, and a suite whose source is unchanged is not run again. `test-frontend-js.sh` accepts `ATLAS_NPM_INSTALL=0` (ADR 0042).
 
 ### Fixed
+- Training zones show a loading indicator until the saved zones are read, instead of the defaults, which an early edit could have saved over them.
 - Today no longer offers "Link an activity" on workouts still to come, whose day has no activities to link yet.
 - Drop-downs (day, kind, sport, visibility, athlete) open on the form's current value again instead of the first option: `field.select` marks the selected option instead of setting the `<select>`'s value before its options exist.
 - The whole-app tests look for confirmation questions and buttons only in the open dialog, so they no longer press another item's closed one.
