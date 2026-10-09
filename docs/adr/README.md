@@ -79,3 +79,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0073 | [Today: the past week before the week ahead, shorter details, a menu for a confirmed link](0073-today-order-details-and-menu.md) | Accepted |
 | 0074 | [Activity rows without the usual, a Duration field, and the Strava page's problems and actions](0074-activity-rows-and-strava-page.md) | Accepted |
 | 0075 | [The calendar's add button, workout titles, intensity and week names](0075-calendar-add-button-titles-and-week-names.md) | Accepted |
+| 0076 | [A long plan description is cut to three lines, with More](0076-long-plan-description-cut-to-three-lines.md) | Accepted |

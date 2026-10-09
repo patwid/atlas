@@ -67,6 +67,8 @@ pub type Model {
     copy: CopyState,
     /// The plan page's tab on show (ADR 0058): `"calendar"`, `"schedule"` or `"sharing"`.
     tab: String,
+    /// Whether a long description is shown in full, not cut to three lines (ADR 0076).
+    description_open: Bool,
   )
 }
 
@@ -96,6 +98,8 @@ pub type Msg {
   CopyMade(String, String)
   CopyFailed(String, String)
   CopyAgainClicked
+  /// More or Less under a long description.
+  DescriptionToggled
 }
 
 /// A change the user made. The app performs it with the sync runner.
@@ -109,7 +113,16 @@ pub type Action {
 }
 
 pub fn new() -> Model {
-  Model([], False, Browsing, plan_form.empty(), undo.new(), NoCopy, "calendar")
+  Model(
+    [],
+    False,
+    Browsing,
+    plan_form.empty(),
+    undo.new(),
+    NoCopy,
+    "calendar",
+    False,
+  )
 }
 
 pub fn refresh() -> Effect(Msg) {
@@ -270,6 +283,12 @@ pub fn update(
 
     TabSelected(tab) -> #(Model(..model, tab: tab), effect.none(), [])
 
+    DescriptionToggled -> #(
+      Model(..model, description_open: !model.description_open),
+      effect.none(),
+      [],
+    )
+
     CopyClicked(id) ->
       case model.copy, find(model.plans, id) {
         // One copy at a time, and no second one by a double click.
@@ -415,10 +434,7 @@ pub fn view_detail_with(
             "" -> element.none()
             text -> html.p([class("plan-summary")], [html.text(text)])
           },
-          case found.description {
-            "" -> element.none()
-            text -> html.p([class("description")], [html.text(text)])
-          },
+          description_view(found.description, model.description_open),
           case mine {
             False ->
               html.p([class("muted")], [
@@ -437,6 +453,46 @@ pub fn view_detail_with(
         ]),
       ])
     }
+  }
+}
+
+/// A long description is cut to three lines above the tabs, so it does not push the calendar off a phone's screen;
+/// More shows the rest (ADR 0076).
+fn description_view(text: String, open: Bool) -> Element(Msg) {
+  let long =
+    string.length(text) > 240 || list.length(string.split(text, "\n")) > 3
+  case text, long {
+    "", _ -> element.none()
+    _, False -> html.p([class("description")], [html.text(text)])
+    _, True ->
+      html.div([], [
+        html.p(
+          [
+            class("description"),
+            attribute.id("plan-description"),
+            attribute.classes([#("clamped", !open)]),
+          ],
+          [html.text(text)],
+        ),
+        button.text(
+          [
+            attribute.type_("button"),
+            class("description-toggle"),
+            attribute.attribute("aria-expanded", case open {
+              True -> "true"
+              False -> "false"
+            }),
+            attribute.attribute("aria-controls", "plan-description"),
+            event.on_click(DescriptionToggled),
+          ],
+          [
+            html.text(case open {
+              True -> "Less"
+              False -> "More"
+            }),
+          ],
+        ),
+      ])
   }
 }
 

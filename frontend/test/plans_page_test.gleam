@@ -3,8 +3,9 @@ import atlas/plan.{type Plan}
 import atlas/plan_form.{Form}
 import atlas/plans_page.{
   BaseWeeksChanged, Browsing, CompetitionWeeksChanged, Create, Creating, Delete,
-  DeleteClicked, DeleteExpired, Edit, EditClicked, Editing, GoalChanged, Model,
-  NewClicked, PlansRead, PreCompetitionWeeksChanged, Submitted, TitleChanged,
+  DeleteClicked, DeleteExpired, DescriptionToggled, Edit, EditClicked, Editing,
+  GoalChanged, Model, NewClicked, PlansRead, PreCompetitionWeeksChanged,
+  Submitted, TitleChanged,
 }
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -403,4 +404,29 @@ pub fn the_plans_phases_and_goal_are_summed_up_in_a_line_test() {
     == "10 weeks: 4 base, 4 pre-competition, 2 competition"
   assert plans_page.summary(plan.Plan(..p, phases: plan.Phases(0, 0, 0)))
     == "40 km a week"
+}
+
+pub fn a_long_description_shows_three_lines_until_more_test() {
+  let long =
+    plan.Plan(
+      ..plan.new("l", "u1", "Long", "", plan.Private, "T-l"),
+      description: "one\ntwo\nthree\nfour",
+    )
+  let closed = html_of(plans_page.view_detail(with_plans([long]), "l", "u1"))
+  assert string.contains(closed, "description clamped")
+  assert string.contains(closed, ">More<")
+  let #(model, _, _) =
+    plans_page.update(with_plans([long]), DescriptionToggled, "u1")
+  let open = html_of(plans_page.view_detail(model, "l", "u1"))
+  assert !string.contains(open, "clamped")
+  assert string.contains(open, ">Less<")
+  let short =
+    plan.Plan(
+      ..plan.new("s", "u1", "Short", "", plan.Private, "T-s"),
+      description: "one line",
+    )
+  assert !string.contains(
+    html_of(plans_page.view_detail(with_plans([short]), "s", "u1")),
+    ">More<",
+  )
 }

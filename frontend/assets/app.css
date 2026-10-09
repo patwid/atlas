@@ -590,6 +590,12 @@ label {
 .status-done { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
 .status-details { color: var(--md-sys-color-on-surface-variant); font-size: 0.875rem; line-height: 1.25rem; }
 .description { white-space: pre-wrap; }
+/* A long description shows three lines until More (ADR 0076). */
+.description.clamped {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden;
+  margin-bottom: 0;
+}
+.description-toggle { margin-left: -0.75rem; }
 /* Panels: filled containers on the page surface. */
 .plan-form, .found {
   background: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-large);
