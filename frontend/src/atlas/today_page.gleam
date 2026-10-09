@@ -316,7 +316,8 @@ fn item_view(item: Item, model: Model, inputs: Inputs) -> Element(Msg) {
   html.li([class("item")], [
     html.div([], [
       html.strong([], [html.text(w.title)]),
-      chip.label(workout_form.kind_label(w.kind)),
+      // In a chip row, which keeps it apart from the title as on the other lists.
+      chip.row([chip.label(workout_form.kind_label(w.kind))]),
       case details(item, inputs) {
         "" -> element.none()
         text -> html.span([class("muted")], [html.text(" · " <> text)])

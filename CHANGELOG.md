@@ -101,6 +101,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Form dialogs space their fields evenly, stack pairs of fields on a phone, and on wider screens end with Cancel and a filled Save; the plan form groups its schedule and the activity form its optional fields (ADR 0085).
 
 ### Fixed
+- On Today, a workout's kind chip is spaced from its title, as on the other lists.
 - The Settings list's rows all have the same padding: the rows that open a page no longer have it twice, so their hover and ripple cover the whole row, and the account and Sync rows no longer change shape on hover.
 - Fields side by side line up again when one has help text under it (Distance and Duration), and the zones page's Calculate buttons sit level with the field beside them.
 - Screen readers hear the Settings tab's badge as "3 sync problems", and a plan's tabs and the calendar's week labels stay below the app bar on phones with a notch (ADR 0079).
