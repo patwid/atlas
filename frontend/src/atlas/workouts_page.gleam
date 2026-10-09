@@ -623,9 +623,17 @@ fn intensity_chip(level: Float) -> Element(Msg) {
     _ if level <. 0.7 -> "medium"
     _ -> "high"
   }
-  html.span([class("intensity intensity-" <> band)], [
-    html.text(plan.intensity_percent(level)),
-  ])
+  // "50%" next to a distance could be read as progress, so it says what it is to screen readers and on hover.
+  html.span(
+    [
+      class("intensity intensity-" <> band),
+      attribute.title("Intensity " <> plan.intensity_percent(level)),
+    ],
+    [
+      html.span([class("visually-hidden")], [html.text("Intensity ")]),
+      html.text(plan.intensity_percent(level)),
+    ],
+  )
 }
 
 fn day_cell(
@@ -664,7 +672,7 @@ fn day_cell(
                   ),
                   event.on_click(AddClicked(week.number, day.number)),
                 ],
-                [html.text("+")],
+                [icon.view(icon.Add)],
               )
             False -> element.none()
           },
@@ -802,19 +810,9 @@ fn week_dialog(
       dialog.details(
         "week-dialog",
         True,
-        "Week " <> int.to_string(week.number),
+        plan_schedule.week_label(on_screen.phases, week.number),
         WeekClosed,
         [
-          case week.phase {
-            Ok(_) ->
-              html.p([class("muted")], [
-                html.text(plan_schedule.week_label(
-                  on_screen.phases,
-                  week.number,
-                )),
-              ])
-            Error(Nil) -> element.none()
-          },
           intensity_view(model, week.number, intensity, can_edit),
           html.dl([class("facts")], [
             html.dt([], [html.text("Distance")]),
@@ -853,12 +851,20 @@ fn intensity_view(
     Error(Nil) -> "Not set"
   }
   html.div([class("intensity-setting")], [
-    html.div([class("intensity-heading")], [
-      html.label([attribute.for("week-intensity")], [html.text("Intensity")]),
-      html.output([attribute.for("week-intensity"), class("intensity-value")], [
-        html.text(text),
-      ]),
-    ]),
+    // Only the slider can be labelled: someone who cannot edit sees the words and a bar.
+    html.div([class("intensity-heading")], case can_edit {
+      True -> [
+        html.label([attribute.for("week-intensity")], [html.text("Intensity")]),
+        html.output(
+          [attribute.for("week-intensity"), class("intensity-value")],
+          [html.text(text)],
+        ),
+      ]
+      False -> [
+        html.span([], [html.text("Intensity")]),
+        html.span([class("intensity-value")], [html.text(text)]),
+      ]
+    }),
     case can_edit {
       False ->
         case shown {

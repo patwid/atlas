@@ -82,12 +82,14 @@ pub fn bands(weeks: List(Week)) -> List(Band) {
   })
 }
 
-/// "Base, week 2" or, after the phases, "Week 14".
+/// "Week 6 · Pre-competition 2" or, outside the phases, "Week 14". It starts with the number the calendar's rows
+/// show, so a week reads the same in a form or dialog as in the calendar.
 pub fn week_label(phases: Phases, number: Int) -> String {
+  let week = "Week " <> int.to_string(number)
   case plan.phase_of_week(phases, number) {
     Ok(#(phase, in_phase)) ->
-      plan.phase_label(phase) <> ", week " <> int.to_string(in_phase)
-    Error(Nil) -> "Week " <> int.to_string(number)
+      week <> " · " <> plan.phase_label(phase) <> " " <> int.to_string(in_phase)
+    Error(Nil) -> week
   }
 }
 

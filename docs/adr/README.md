@@ -78,3 +78,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0072 | [The phone calendar leaves out empty days for those who cannot edit the plan](0072-phone-calendar-without-empty-days-for-viewers.md) | Accepted |
 | 0073 | [Today: the past week before the week ahead, shorter details, a menu for a confirmed link](0073-today-order-details-and-menu.md) | Accepted |
 | 0074 | [Activity rows without the usual, a Duration field, and the Strava page's problems and actions](0074-activity-rows-and-strava-page.md) | Accepted |
+| 0075 | [The calendar's add button, workout titles, intensity and week names](0075-calendar-add-button-titles-and-week-names.md) | Accepted |

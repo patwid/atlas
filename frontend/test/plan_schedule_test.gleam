@@ -44,9 +44,9 @@ pub fn workouts_after_the_phases_add_weeks_without_a_phase_test() {
 
 pub fn weeks_are_named_by_their_phase_test() {
   let phases = plan.Phases(4, 4, 4)
-  assert plan_schedule.week_label(phases, 1) == "Base, week 1"
-  assert plan_schedule.week_label(phases, 6) == "Pre-competition, week 2"
-  assert plan_schedule.week_label(phases, 12) == "Competition, week 4"
+  assert plan_schedule.week_label(phases, 1) == "Week 1 · Base 1"
+  assert plan_schedule.week_label(phases, 6) == "Week 6 · Pre-competition 2"
+  assert plan_schedule.week_label(phases, 12) == "Week 12 · Competition 4"
   assert plan_schedule.week_label(phases, 13) == "Week 13"
   assert plan_schedule.week_label(no_phases, 2) == "Week 2"
 }

@@ -99,7 +99,7 @@ pub fn every_field_has_its_own_error_test() {
   assert workout_form.validate(
       Form(..form(), description: string.repeat("a", 5001)),
     )
-    == Error("The description can have at most 5000 characters.")
+    == Error("The notes can have at most 5000 characters.")
   assert workout_form.validate(Form(..form(), distance_km: "far"))
     == Error("Enter the distance in kilometres, for example 8 or 8.5.")
   assert workout_form.validate(Form(..form(), distance_km: "1001"))

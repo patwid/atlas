@@ -100,10 +100,7 @@ pub fn validate_fields(form: Form) -> Result(Valid, #(String, String)) {
     Ok(week), Ok(day), _ ->
       case string.length(description) > max_description {
         True ->
-          Error(#(
-            "description",
-            "The description can have at most 5000 characters.",
-          ))
+          Error(#("description", "The notes can have at most 5000 characters."))
         False ->
           case
             target_distance(form.distance_km),

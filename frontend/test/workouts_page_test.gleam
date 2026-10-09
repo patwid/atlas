@@ -291,7 +291,7 @@ pub fn the_week_dialog_shows_the_week_against_its_goal_test() {
       week_open: True,
     )
   let html = html_of(model, False)
-  assert string.contains(html, "Base, week 2")
+  assert string.contains(html, "Week 2 · Base 2")
   // Week 2 is at 80%, so its goal is 80% of 40 km (ADR 0064).
   assert string.contains(html, "16 km of 32 km (50%)")
   assert string.contains(html, ">80%<")

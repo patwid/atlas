@@ -88,6 +88,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - On a phone, the calendar of a plan you cannot edit leaves out days without workouts (ADR 0072).
 - Today lists the last seven days before the week ahead, names the plan only when you follow several, puts a confirmed link's Change and Unlink in a menu, and leads to Activities when a day has none (ADR 0073).
 - Activities entered by hand have no source chip and don't repeat their sport, figures stand out, and "Time" is "Duration"; the Strava page shows problems as banners with Try again, and Disconnect is the quieter button (ADR 0074).
+- The calendar's add button is a larger icon button and always visible on touch screens, long workout titles wrap between words, the intensity is read out as such, and weeks are named "Week 6 · Pre-competition 2" everywhere (ADR 0075).
 
 ### Fixed
 - A wrong or missing e-mail or password marks the sign-in fields as invalid for screen readers.

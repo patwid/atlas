@@ -276,11 +276,11 @@ test("the owner sets a week's intensity in its dialog and the plan's phases and 
 
   // Select week 2 and make it a hard week.
   click(w, [...d.querySelectorAll(".week-label")].find((b) => b.textContent.startsWith("Week 2")))
-  await waitFor("week 2 in its dialog", () => d.querySelector("#week-dialog[open]")?.textContent.includes("Base, week 2"))
+  await waitFor("week 2 in its dialog", () => d.querySelector("#week-dialog[open]")?.textContent.includes("Week 2 · Base 2"))
   assert.equal(d.querySelector("#week-intensity").type, "range")
   choose(w, d.querySelector("#week-intensity"), "0.8")
   await waitFor("the intensity on the server", async () => (await onServer()).week_intensity?.[1] === 0.8)
-  await waitFor("the intensity in the calendar", () => d.querySelector(".calendar-week.selected .intensity-high")?.textContent === "80%")
+  await waitFor("the intensity in the calendar", () => d.querySelector(".calendar-week.selected .intensity-high")?.textContent === "Intensity 80%")
 
   // Set a 40 km goal and a longer base phase.
   // The phases and goal are part of the plan, changed with its Edit (ADR 0066).
