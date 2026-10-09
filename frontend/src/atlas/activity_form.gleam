@@ -145,7 +145,7 @@ pub fn validate_fields(form: Form) -> Result(Valid, #(String, String)) {
                     True ->
                       Error(#(
                         "distance",
-                        "Enter a distance or a time, or both.",
+                        "Enter a distance or a duration, or both.",
                       ))
                     False ->
                       Ok(Valid(

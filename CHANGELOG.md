@@ -87,6 +87,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Planned distances are written in round numbers ("16 / 32 km", "8.5 km"); distances run keep two decimals (ADR 0071).
 - On a phone, the calendar of a plan you cannot edit leaves out days without workouts (ADR 0072).
 - Today lists the last seven days before the week ahead, names the plan only when you follow several, puts a confirmed link's Change and Unlink in a menu, and leads to Activities when a day has none (ADR 0073).
+- Activities entered by hand have no source chip and don't repeat their sport, figures stand out, and "Time" is "Duration"; the Strava page shows problems as banners with Try again, and Disconnect is the quieter button (ADR 0074).
 
 ### Fixed
 - Today shows a loading indicator until the plans you follow are read, instead of briefly saying you follow none.

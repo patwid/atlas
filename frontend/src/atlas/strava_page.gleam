@@ -4,9 +4,10 @@
 
 import atlas/api.{type StravaStatus}
 import atlas/http
+import atlas/ui/banner
 import atlas/ui/button
 import atlas/ui/dialog
-import atlas/ui/error
+import atlas/ui/icon
 import atlas/ui/layout
 import atlas/ui/progress
 import atlas/ui/snackbar
@@ -282,18 +283,41 @@ fn can_open(url: String) -> Bool {
 // VIEWS -------------------------------------------------------------------------------------------
 
 pub fn view(model: Model) -> Element(Msg) {
+  // Problems are banners at the top (ADR 0049, 0074), where they are seen, with what can be done about them.
   html.section([class("strava")], [
-    case model.status {
-      Unknown | Checking -> progress.loading("Checking…")
-      Unavailable(reason) -> html.p([class("muted")], [html.text(reason)])
-      Known(status) -> status_view(model, status)
-    },
     case model.message {
       Some(Info(text)) -> snackbar.view(text, None, MessageClosed)
-      Some(Problem(text)) -> error.message(text)
+      Some(Problem(text)) ->
+        problem(
+          text,
+          button.text(
+            [attribute.type_("button"), event.on_click(MessageClosed)],
+            [html.text("Dismiss")],
+          ),
+        )
       None -> element.none()
     },
+    case model.status {
+      Unknown | Checking -> progress.loading("Checking…")
+      Unavailable(reason) ->
+        problem(
+          reason,
+          button.text([attribute.type_("button"), event.on_click(Refresh)], [
+            html.text("Try again"),
+          ]),
+        )
+      Known(status) -> status_view(model, status)
+    },
   ])
+}
+
+fn problem(text: String, action: Element(Msg)) -> Element(Msg) {
+  banner.view(
+    [class("banner-error"), attribute.role("alert")],
+    icon.ErrorOutline,
+    [html.text(text)],
+    [action],
+  )
 }
 
 fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
@@ -304,7 +328,7 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
       ])
     True, False ->
       html.div([], [
-        html.p([class("muted")], [
+        html.p([], [
           html.text(
             "Bring your runs in from Strava automatically. Atlas can then match them to your plans.",
           ),
@@ -335,7 +359,9 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
           html.text("Connected to Strava. New activities arrive by themselves."),
         ]),
         layout.actions([
-          button.outlined(
+          // Importing again is harmless and the page's main use; disconnecting removes data, so it is the
+          // quieter button, set apart at the end.
+          button.tonal(
             [
               attribute.type_("button"),
               attribute.disabled(model.busy),
@@ -343,9 +369,10 @@ fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
             ],
             [html.text("Import the last 30 days again")],
           ),
-          button.outlined(
+          button.text(
             [
               attribute.type_("button"),
+              class("disconnect"),
               attribute.disabled(model.busy),
               event.on_click(DisconnectClicked),
             ],

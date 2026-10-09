@@ -638,7 +638,7 @@ pub fn an_invalid_activity_is_not_queued_test() {
   let assert option.Some(engine) = model.syncing.sync
   assert outbox.is_empty(sync.outbox(engine))
   assert model.activities.form.error
-    == option.Some("Enter a distance or a time, or both.")
+    == option.Some("Enter a distance or a duration, or both.")
 }
 
 pub fn signing_out_clears_the_activities_on_screen_test() {

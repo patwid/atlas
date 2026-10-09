@@ -819,7 +819,7 @@ fn week_dialog(
           html.dl([class("facts")], [
             html.dt([], [html.text("Distance")]),
             html.dd([], [html.text(distance_text(week, goal))]),
-            html.dt([], [html.text("Time")]),
+            html.dt([], [html.text("Duration")]),
             html.dd([], [
               html.text(case week.duration_s {
                 0 -> "—"
@@ -1095,7 +1095,7 @@ fn form_fields(
         ),
         field.text(
           "workout-duration",
-          "Time",
+          "Duration",
           on(
             field.help("Minutes, or hours and minutes: 45 or 1:30"),
             "duration",

@@ -213,6 +213,10 @@ pub fn messages_are_announced_test() {
       ),
     )
   assert string.contains(problem, "role=\"alert\"")
+  // At the top, before the page's own content.
+  let assert [before, _] =
+    string.split(problem, "Strava access was not granted.")
+  assert !string.contains(before, "Connected to Strava")
 }
 
 pub fn checking_and_unavailable_states_are_shown_test() {
@@ -227,6 +231,8 @@ pub fn checking_and_unavailable_states_are_shown_test() {
       ),
     )
   assert string.contains(off, "You are offline")
+  assert string.contains(off, "banner-error")
+  assert string.contains(off, ">Try again<")
 }
 
 pub fn only_web_addresses_are_followed_test() {

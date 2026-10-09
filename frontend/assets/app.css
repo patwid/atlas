@@ -559,6 +559,8 @@ label {
 .list .row-link:focus-visible::after { outline: var(--focus-ring); outline-offset: -3px; }
 .list p { margin: 0.125rem 0 0; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; color: var(--md-sys-color-on-surface-variant); }
 .list .actions { margin-top: 0.5rem; }
+/* An activity's figures are what the row is about: in the body colour, not the supporting text's. */
+.list p.figures { color: var(--md-sys-color-on-surface); }
 .chip-row { margin-left: 0.5rem; }
 .label-chip {
   gap: 0.25rem; display: inline-flex; align-items: center; height: 1.5rem; padding: 0 0.5rem; margin-right: 0.25rem;
@@ -758,6 +760,8 @@ button.strava-connect img { display: block; }
 button.strava-connect:disabled { opacity: 0.6; cursor: progress; }
 .attribution { margin: 0.75rem 0 0; line-height: 0; }
 .attribution img { height: 15px; width: auto; }
+/* Disconnect, the quieter action, is set apart at the end of the row (ADR 0074). */
+.strava .actions .disconnect { margin-left: auto; }
 /* "View on Strava" must be identifiable as a link: bold, underlined and in Strava's orange. */
 a.strava-link { color: #FC5200; font-weight: 700; text-decoration: underline; }
 /* Training zones in Settings (ADR 0034, 0035) */

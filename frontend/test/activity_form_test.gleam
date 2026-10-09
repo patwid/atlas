@@ -49,9 +49,9 @@ pub fn a_distance_alone_or_a_time_alone_is_enough_test() {
   assert activity_form.validate(Form(..form(), distance_km: ""))
     == Ok(Valid(Date(2026, 10, 1), 7, 30, activity.Run, "", 0.0, 2700, 0, 0))
   assert activity_form.validate(Form(..form(), distance_km: "", duration: ""))
-    == Error("Enter a distance or a time, or both.")
+    == Error("Enter a distance or a duration, or both.")
   assert activity_form.validate(Form(..form(), distance_km: "0", duration: "0"))
-    == Error("Enter a distance or a time, or both.")
+    == Error("Enter a distance or a duration, or both.")
 }
 
 pub fn times_are_read_strictly_test() {

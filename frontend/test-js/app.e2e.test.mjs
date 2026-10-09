@@ -555,7 +555,7 @@ test("a user adds, edits and deletes an activity by hand; the start is stored in
   typeInto(w, d.querySelector("#activity-date"), "2026-10-05")
   typeInto(w, d.querySelector("#activity-time"), "07:30")
   submit(w, d.querySelector(".activity-form"))
-  await waitFor("a distance or time error", () => d.querySelector("[role=alert]")?.textContent === "Enter a distance or a time, or both.")
+  await waitFor("a distance or time error", () => d.querySelector("[role=alert]")?.textContent === "Enter a distance or a duration, or both.")
   assert.equal((await activities()).length, 1, "nothing is sent for an invalid form")
   pick(w, "sport", "trail_run")
   typeInto(w, d.querySelector("#activity-name"), "Morning loop")

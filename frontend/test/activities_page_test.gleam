@@ -131,7 +131,7 @@ pub fn an_invalid_activity_shows_its_error_and_saves_nothing_test() {
   let #(model, actions) = update(model, Submitted)
   assert actions == []
   assert model.mode == Adding
-  assert model.form.error == Some("Enter a distance or a time, or both.")
+  assert model.form.error == Some("Enter a distance or a duration, or both.")
   let #(model, _) = update(model, DistanceChanged("5"))
   assert model.form.error == None
 }
@@ -279,7 +279,9 @@ pub fn a_list_entry_shows_local_time_figures_and_pace_test() {
   assert string.contains(html, "5:18 /km")
   assert string.contains(html, "120 m")
   assert string.contains(html, "152 bpm")
-  assert string.contains(html, "Added by hand")
+  // Entered by hand, the usual case: no chip says so.
+  assert !string.contains(html, "Added by hand")
+  assert string.contains(html, "Thu 1 Oct 2026, 07:30 · Run")
 }
 
 pub fn an_unnamed_activity_is_called_by_its_sport_test() {
@@ -290,6 +292,8 @@ pub fn an_unnamed_activity_is_called_by_its_sport_test() {
       ]),
     )
   assert string.contains(html, ">Run<")
+  // The title is the sport, so the date line does not repeat it.
+  assert !string.contains(html, "07:30 · Run")
 }
 
 pub fn strava_entries_have_no_buttons_and_say_where_they_come_from_test() {
@@ -348,7 +352,7 @@ pub fn the_form_is_labelled_and_shows_errors_test() {
         "",
         "",
         "",
-        Some("Enter a distance or a time, or both."),
+        Some("Enter a distance or a duration, or both."),
       ),
     )
   let html = html_of(model)
@@ -358,7 +362,7 @@ pub fn the_form_is_labelled_and_shows_errors_test() {
   assert string.contains(html, "for=\"activity-distance\"")
   assert string.contains(html, "Trail run")
   assert string.contains(html, "role=\"alert\"")
-  assert string.contains(html, "Enter a distance or a time, or both.")
+  assert string.contains(html, "Enter a distance or a duration, or both.")
 }
 
 pub fn an_activitys_actions_are_in_a_menu_test() {

@@ -401,7 +401,7 @@ fn row_view(row: Row, context: Context) -> Element(Msg) {
     html.p([class("muted")], [html.text(when(row, context))]),
     case figures(row) {
       "" -> element.none()
-      text -> html.p([], [html.text(text)])
+      text -> html.p([class("figures")], [html.text(text)])
     },
     view_on_strava(row),
     case editable(row, context.user_id) {
@@ -437,10 +437,11 @@ fn title(row: Row) -> String {
   }
 }
 
-/// Where an activity came from: entered by hand, or from a connected service (ADR 0050).
+/// Where an activity came from, a connected service or a file (ADR 0050). Most are entered by hand, so those
+/// have no chip (ADR 0074).
 fn source_chip(source: Source) -> Element(Msg) {
   case source {
-    activity.Manual -> chip.with_icon(icon.EditNote, source_label(source))
+    activity.Manual -> element.none()
     activity.Strava | activity.Garmin ->
       chip.with_icon(icon.Link, source_label(source))
     activity.Fit -> chip.label(source_label(source))
@@ -456,7 +457,7 @@ fn source_label(source: Source) -> String {
   }
 }
 
-/// `Thu 1 Oct 2026, 07:30 · Run`, in the user's local time.
+/// `Thu 1 Oct 2026, 07:30 · Run`, in the user's local time. The sport is left out when it is already the title.
 fn when(row: Row, context: Context) -> String {
   let offset = context.offset_at_utc(row.activity.started_at)
   let moment = case date.local_datetime(row.activity.started_at, offset) {
@@ -464,7 +465,10 @@ fn when(row: Row, context: Context) -> String {
       date.format(day) <> ", " <> pad2(hour) <> ":" <> pad2(minute)
     Error(Nil) -> "Unknown time"
   }
-  moment <> " · " <> activity_form.sport_label(row.activity.sport)
+  case row.name {
+    "" -> moment
+    _ -> moment <> " · " <> activity_form.sport_label(row.activity.sport)
+  }
 }
 
 fn figures(row: Row) -> String {
@@ -613,7 +617,11 @@ fn form_fields(form: activity_form.Form) -> Element(Msg) {
         field.text(
           "activity-distance",
           "Distance",
-          on(field.suffix("km"), "distance"),
+          // One of the two is needed: said up front rather than only once Save is pressed.
+          on(
+            field.Help("A distance, a duration or both", "km", None),
+            "distance",
+          ),
           [
             attribute.type_("text"),
             attribute.attribute("inputmode", "decimal"),
@@ -624,7 +632,7 @@ fn form_fields(form: activity_form.Form) -> Element(Msg) {
         ),
         field.text(
           "activity-duration",
-          "Time",
+          "Duration",
           on(
             field.help("Minutes, or hours and minutes: 45 or 1:30"),
             "duration",
