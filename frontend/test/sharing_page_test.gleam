@@ -241,7 +241,7 @@ pub fn an_unshared_plan_says_so_and_loading_is_shown_first_test() {
 pub fn the_form_uses_the_sharing_wording_test() {
   let html = html_of(found(Person("bob", "Bob Runner")))
   assert string.contains(html, "for=\"share-email\"")
-  assert string.contains(html, "Share with someone by e-mail address")
+  assert string.contains(html, "Who to share this plan with")
   assert string.contains(html, "Found Bob Runner. Share this plan with them?")
   assert string.contains(html, "Share plan")
 }

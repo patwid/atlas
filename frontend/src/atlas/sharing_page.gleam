@@ -198,7 +198,8 @@ pub fn view(model: Model, context: Context) -> Element(Msg) {
       person_finder.Labels(
         field_id: "share-email",
         form_class: "share-form",
-        field_label: "Share with someone by e-mail address",
+        field_label: "E-mail address",
+        field_help: "Who to share this plan with",
         question: fn(name) {
           "Found " <> name <> ". Share this plan with them?"
         },

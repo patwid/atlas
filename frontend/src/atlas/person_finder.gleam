@@ -9,6 +9,7 @@ import atlas/http
 import atlas/ui/button
 import atlas/ui/error
 import atlas/ui/field
+import atlas/ui/icon
 import atlas/ui/layout
 import gleam/option.{type Option, None, Some}
 import gleam/string
@@ -137,6 +138,8 @@ pub type Labels {
     field_id: String,
     form_class: String,
     field_label: String,
+    /// The line under the field, until there is an error to show there.
+    field_help: String,
     /// What is asked once someone is found, given the name: "Found Bob. Let them see your training?"
     question: fn(String) -> String,
     confirm_label: String,
@@ -154,13 +157,15 @@ pub fn view(
   html.form(
     [class(labels.form_class), event.on_submit(fn(_) { wrap(FindClicked) })],
     [
-      html.div([class("row")], [
+      // The search is the field's own button, at its end, so the field has the width to itself and the button
+      // that confirms someone is the one filled button (ADR 0083).
+      field.with_trigger(
         field.text(
           labels.field_id,
           labels.field_label,
           case model.lookup {
             Failed(message) -> field.Help(..field.plain, error: Some(message))
-            _ -> field.plain
+            _ -> field.help(labels.field_help)
           },
           [
             attribute.type_("email"),
@@ -170,23 +175,33 @@ pub fn view(
             event.on_input(fn(text) { wrap(EmailChanged(text)) }),
           ],
         ),
-        // Once someone is found, confirming is the one filled button.
         case model.lookup {
-          Found(_) -> button.tonal
-          _ -> button.filled
-        }(
-          [
-            attribute.type_("submit"),
-            attribute.disabled(model.lookup == Looking),
-          ],
-          [
-            html.text(case model.lookup {
-              Looking -> "Looking…"
-              _ -> "Find"
-            }),
-          ],
-        ),
-      ]),
+          Looking ->
+            button.button(
+              [
+                attribute.type_("submit"),
+                class("md-icon-button field-trigger"),
+                attribute.attribute("aria-label", "Looking…"),
+                attribute.disabled(True),
+              ],
+              [
+                html.span(
+                  [
+                    class("md-loading-indicator"),
+                    attribute.attribute("aria-hidden", "true"),
+                  ],
+                  [],
+                ),
+              ],
+            )
+          _ ->
+            button.icon(
+              [attribute.type_("submit"), class("field-trigger")],
+              icon.Search,
+              "Find",
+            )
+        },
+      ),
       case model.lookup {
         Unreachable(message) -> error.message(message)
         Found(person) ->

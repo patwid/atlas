@@ -86,3 +86,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0080 | [A workout or activity you can change opens in its form, with Delete there](0080-open-items-in-their-form.md) | Accepted |
 | 0081 | [Today: "Link activity" as a text button beside the status](0081-today-link-activity-beside-the-status.md) | Accepted |
 | 0082 | [Today, newest first](0082-today-newest-first.md) | Accepted |
+| 0083 | [The person finder's search as an icon button in its field](0083-person-finder-search-in-the-field.md) | Accepted |

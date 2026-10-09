@@ -151,6 +151,7 @@ fn labels() -> person_finder.Labels {
     field_id: "the-email",
     form_class: "the-form",
     field_label: "Who?",
+    field_help: "Their address",
     question: fn(name) { "Found " <> name <> ". Sure?" },
     confirm_label: "Yes please",
   )
@@ -172,6 +173,9 @@ pub fn the_form_is_labelled_and_uses_the_screens_wording_test() {
   assert string.contains(html, "class=\"the-form\"")
   assert string.contains(html, "type=\"email\"")
   assert string.contains(html, "Who?")
+  // The search is the field's own icon button, named for screen readers; the help shows until there is an error.
+  assert string.contains(html, "aria-label=\"Find\"")
+  assert string.contains(html, "Their address")
   assert string.contains(html, "Found Bob Coach. Sure?")
   assert string.contains(html, "Yes please")
   assert string.contains(html, "role=\"status\"")
@@ -184,6 +188,7 @@ pub fn failures_are_announced_and_looking_disables_the_button_test() {
   assert string.contains(failed, "Nobody with this e-mail address uses Atlas.")
   // About the address: under the field, which is marked. A lost connection is not about it.
   assert string.contains(failed, "aria-invalid=\"true\"")
+  assert !string.contains(failed, "Their address")
   let offline = html_of(Model("a@b.c", Unreachable("You are offline.")))
   assert string.contains(offline, "role=\"alert\"")
   assert !string.contains(offline, "aria-invalid")

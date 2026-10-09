@@ -1007,9 +1007,9 @@ pub fn the_plan_list_says_who_shared_a_plan_test() {
 
 pub fn only_the_owner_sees_the_sharing_section_test() {
   let owner = element.to_string(atlas.view(sharing_screen("u1")))
-  assert string.contains(owner, "Share with someone by e-mail address")
+  assert string.contains(owner, "Who to share this plan with")
   let other = element.to_string(atlas.view(sharing_screen("someone-else")))
-  assert !string.contains(other, "Share with someone by e-mail address")
+  assert !string.contains(other, "Who to share this plan with")
 }
 
 pub fn signing_out_clears_the_shares_on_screen_test() {

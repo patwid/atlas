@@ -843,10 +843,17 @@ a.strava-link { color: #FC5200; font-weight: 700; text-decoration: underline; }
 
 /* A field with a picker button at its end (ADR 0054). The browser's own picker button is hidden where it can be
    (Chrome, Edge, Safari); the field still takes typing. */
-.field-with-trigger { position: relative; }
+/* The wrapper takes the field's top margin, so the button lines up with the input whether or not that margin would
+   collapse through the wrapper (it does not in a flex row). */
+.field-with-trigger { position: relative; margin-top: 0.5rem; }
+.field-with-trigger > .md-field { margin-top: 0; }
 .field-with-trigger .md-text-field { padding-right: 3.5rem; }
 .field-with-trigger input::-webkit-calendar-picker-indicator { display: none; }
 .field-trigger { position: absolute; right: 0.5rem; top: 0.5rem; }
+/* The person finder's search turns into a small loading indicator while it looks (ADR 0083). */
+.field-trigger:disabled { cursor: progress; }
+.field-trigger .md-loading-indicator { width: 1.5rem; height: 1.5rem; }
+.field-trigger .md-loading-indicator::before { width: 1.25rem; height: 1.25rem; }
 
 /* M3's modal pickers (ADR 0054): a label, a headline or the time fields, the picking area, and Cancel and OK. */
 dialog.picker { padding: 0; min-width: 0; width: auto; max-width: calc(100% - 2rem); }

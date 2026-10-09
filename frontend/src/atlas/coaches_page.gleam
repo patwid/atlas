@@ -169,7 +169,8 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
       person_finder.Labels(
         field_id: "coach-email",
         form_class: "coach-form",
-        field_label: "Add a coach by e-mail address",
+        field_label: "E-mail address",
+        field_help: "The coach to let see your training",
         question: fn(name) {
           "Found " <> name <> ". Let them see your training?"
         },

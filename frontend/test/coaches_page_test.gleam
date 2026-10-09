@@ -160,7 +160,7 @@ pub fn the_form_and_the_confirmation_use_the_coach_wording_test() {
     )
   let html = html_of(found)
   assert string.contains(html, "for=\"coach-email\"")
-  assert string.contains(html, "Add a coach by e-mail address")
+  assert string.contains(html, "The coach to let see your training")
   assert string.contains(html, "Found Bob Coach. Let them see your training?")
   assert string.contains(html, "Give access")
 }

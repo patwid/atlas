@@ -43,6 +43,7 @@ pub type Icon {
   MoreVert
   PersonAdd
   PlayArrow
+  Search
 }
 
 pub type Style {
@@ -260,6 +261,10 @@ fn paths(icon: Icon, style: Style) -> List(String) {
     ]
     PersonAdd, Filled -> [
       "M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z",
+    ]
+    // search: finds a person by e-mail address
+    Search, _ -> [
+      "M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z",
     ]
     // play_arrow: starts a plan
     PlayArrow, Outlined -> ["M10 8.64 15.27 12 10 15.36V8.64M8 5v14l11-7L8 5z"]
