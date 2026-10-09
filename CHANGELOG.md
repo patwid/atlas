@@ -117,6 +117,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - The sign-in form is centred vertically on the screen.
 
 ### Fixed
+- The Home screen without a plan shows the Home icon, not the calendar icon left from when it was called Today.
 - A week's Clear intensity button sits beside Close in its dialog: the slider no longer narrows under the pointer once an intensity is set, and the focus moves to the slider after clearing instead of being lost.
 - The Deploy workflow runs after CI on `master` again: its check for `DEPLOY_HOST` could not see the `production` environment's variables and skipped every deploy.
 - A plan's title is centred in its row on the plans list; one-line rows on every list now have their text in the middle.

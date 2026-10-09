@@ -243,7 +243,7 @@ pub fn view(model: Model, inputs: Inputs) -> Element(Msg) {
     case inputs.assignments {
       [] ->
         empty.view(
-          icon.Today,
+          icon.Home,
           "You are not following a plan yet",
           "Open a plan and start it to see your workouts here.",
           Some(empty.link(route.to_path(route.Plans), "Go to plans")),
