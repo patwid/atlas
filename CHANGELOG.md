@@ -85,6 +85,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Section headings look the same on every screen (list subheaders), Today's first one carries the date, whole rows of the plan and athlete lists open them, and every empty list or missing page has an empty state with what to do next (ADR 0069).
 - A workout on the plan calendar shows its kind in words, and screen readers hear its week and day (ADR 0070).
 - Planned distances are written in round numbers ("16 / 32 km", "8.5 km"); distances run keep two decimals (ADR 0071).
+- On a phone, the calendar of a plan you cannot edit leaves out days without workouts (ADR 0072).
 
 ### Fixed
 - Today shows a loading indicator until the plans you follow are read, instead of briefly saying you follow none.

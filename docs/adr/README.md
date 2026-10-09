@@ -75,3 +75,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0069 | [One section heading, whole-row links and an empty state on every list](0069-subheaders-row-links-and-empty-states.md) | Accepted |
 | 0070 | [A workout's kind in words on the calendar, and its week and day in its name](0070-workout-kind-in-words-on-the-calendar.md) | Accepted |
 | 0071 | [Planned distances in round numbers](0071-planned-distances-in-round-numbers.md) | Accepted |
+| 0072 | [The phone calendar leaves out empty days for those who cannot edit the plan](0072-phone-calendar-without-empty-days-for-viewers.md) | Accepted |

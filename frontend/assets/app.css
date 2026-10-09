@@ -1022,12 +1022,14 @@ html[data-scrolled] .md-tab-bar { background: var(--md-sys-color-surface-contain
 .choice-row:focus-visible { outline: var(--focus-ring); outline-offset: -3px; }
 .choice-row .icon { color: var(--md-sys-color-on-surface-variant); }
 
-/* The calendar on a phone (ADR 0062): a week's label stays under the app bar and the plan's tabs while its days
-   scroll by, and a day without workouts takes less room. */
+/* The calendar on a phone (ADR 0062, 0072): a week's label stays under the app bar and the plan's tabs while its days
+   scroll by, and a day without workouts takes less room, or none when it cannot be added to. */
 @media (max-width: 52.4375rem) {
   .calendar-week .week-label { position: sticky; top: 7rem; z-index: 1; }
   .calendar-day:not(:has(.workout)) { min-height: 0; padding-top: 0.125rem; padding-bottom: 0.125rem; }
   .calendar-day:not(:has(.workout)) .day-name { opacity: 0.7; }
+  /* For someone who cannot edit the plan an empty day holds nothing, so the stacked days leave it out (ADR 0072). */
+  .calendar-day:not(:has(.workout, .add-here)) { display: none; }
 }
 
 /* M3's medium app bar (ADR 0062) on a plan's or athlete's page: the name on its own line in headline-medium, under
