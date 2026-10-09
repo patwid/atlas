@@ -811,6 +811,10 @@ a.strava-link { color: #FC5200; font-weight: 700; text-decoration: underline; }
 /* Training zones in Settings (ADR 0034, 0035) */
 .zones-form .subheader { margin: 1.25rem 0 0; }
 .zones-form > .muted { font-size: 0.875rem; margin: 0.25rem 0 0; }
+/* The value zones are calculated from, with its Calculate button on the line under its help (ADR 0084): beside the
+   field, the long label left the field narrow and wrapped on a phone. */
+.zone-source { display: grid; justify-items: start; gap: 0.75rem; }
+.zone-source > .md-field { justify-self: stretch; }
 /* A zone (ADR 0077): an outlined field with its unit, and where the zone ends beside it, lined up with the input. */
 .zones { display: grid; gap: 0.75rem; margin-top: 0.75rem; }
 .zone { display: grid; grid-template-columns: minmax(0, 13rem) 1fr; align-items: start; gap: 1rem; }

@@ -318,7 +318,7 @@ fn form_view(model: Model, me: String) -> Element(Msg) {
     ]),
     html.form([class("zones-form"), event.on_submit(fn(_) { Submitted })], [
       layout.subheader("Heart rate"),
-      html.div([class("row")], [
+      html.div([class("zone-source")], [
         field.text(
           "hr-max",
           "Maximum heart rate",
@@ -369,7 +369,7 @@ fn form_view(model: Model, me: String) -> Element(Msg) {
         fn(n, v) { LactateStartChanged(n, v) },
       ),
       layout.subheader("Pace"),
-      html.div([class("row")], [
+      html.div([class("zone-source")], [
         field.text(
           "pace-threshold",
           "Threshold pace",
