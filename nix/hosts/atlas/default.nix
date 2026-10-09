@@ -16,7 +16,7 @@ let
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKDwzQD/7hBZakOKm3Fxv4r8qz/y0MiDxuJ2X8hj8sJn patwid@htpc"
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINpXEq+FIUxQkyX8yhm6jrXDJNZQn6H6nifNY5KsUZgh patwid@laptop"
     # The deploy key whose private half is the DEPLOY_SSH_KEY secret of the GitHub environment `production`.
-    # "ssh-ed25519 AAAA... atlas-deploy"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBnQKZ9oU8UqtC+aZmQMd9aGRRXy//RRCn1T6OtOYoRD atlas-deploy"
   ];
 
   https = lib.hasPrefix "https://" publicUrl;
