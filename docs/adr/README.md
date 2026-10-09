@@ -103,3 +103,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0097 | [A subtitle in a plan's medium app bar](0097-app-bar-subtitle.md) | Accepted |
 | 0098 | [Medium buttons for a screen's only action, and a button group in a plan's app bar](0098-medium-buttons-and-button-group.md) | Accepted |
 | 0099 | [Serve Atlas over HTTPS on atlas.patwid.ch](0099-https-on-atlas-patwid-ch.md) | Accepted |
+| 0100 | [Import activities from FIT files with a decoder in Gleam](0100-fit-file-import.md) | Accepted |
