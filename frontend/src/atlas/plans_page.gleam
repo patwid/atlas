@@ -25,8 +25,10 @@ import atlas/ui/plan_settings
 import atlas/ui/progress
 import atlas/ui/snackbar
 import atlas/ui/undo.{type Undo}
+import atlas/units
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
+import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/order
@@ -416,6 +418,10 @@ pub fn view_detail_with(
         form_view(model, model.mode == Editing(id), "Edit plan"),
         html.div([], [
           chips(found),
+          case summary(found) {
+            "" -> element.none()
+            text -> html.p([class("plan-summary")], [html.text(text)])
+          },
           case found.description {
             "" -> element.none()
             text -> html.p([class("description")], [html.text(text)])
@@ -639,4 +645,38 @@ fn form_fields(form: plan_form.Form) -> Element(Msg) {
       },
     ],
   )
+}
+
+/// The plan's phases and weekly goal in a line (ADR 0066): "12 weeks: 4 base, 4 pre-competition, 4 competition ·
+/// 40.00 km a week". Empty for a plan with neither. They are changed with the plan's Edit.
+pub fn summary(p: Plan) -> String {
+  let phases = p.phases
+  let weeks = case plan.phase_weeks(phases) {
+    0 -> ""
+    n ->
+      plural(n, "week")
+      <> ": "
+      <> int.to_string(phases.base_weeks)
+      <> " base, "
+      <> int.to_string(phases.pre_competition_weeks)
+      <> " pre-competition, "
+      <> int.to_string(phases.competition_weeks)
+      <> " competition"
+  }
+  let goal = case p.weekly_distance_m {
+    Some(m) if m >. 0.0 -> units.format_distance_km(m) <> " a week"
+    _ -> ""
+  }
+  case weeks, goal {
+    "", _ -> goal
+    _, "" -> weeks
+    _, _ -> weeks <> " · " <> goal
+  }
+}
+
+fn plural(n: Int, word: String) -> String {
+  case n {
+    1 -> "1 " <> word
+    _ -> int.to_string(n) <> " " <> word <> "s"
+  }
 }

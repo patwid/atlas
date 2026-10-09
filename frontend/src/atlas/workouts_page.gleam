@@ -1,5 +1,5 @@
-//// The workouts of one plan as a calendar: a row per week, a column per day, grouped by the plan's phases, with a
-//// sidebar for the open workout, the selected week and the plan's settings (ADR 0022, 0043).
+//// The workouts of one plan as a calendar: a row per week, a column per day, grouped by the plan's phases. A week's
+//// row shows its distance against its goal; a week and a workout open in a dialog (ADR 0022, 0043, 0066).
 //// Own state and messages, embedded by the app; writes come back as `Action`s (ADR 0020).
 
 import atlas/collection
@@ -13,13 +13,12 @@ import atlas/store
 import atlas/ui/button
 import atlas/ui/chip
 import atlas/ui/choice
+import atlas/ui/dialog
 import atlas/ui/error
 import atlas/ui/field
 import atlas/ui/focus
 import atlas/ui/form_dialog
 import atlas/ui/icon
-import atlas/ui/layout
-import atlas/ui/plan_settings
 import atlas/ui/progress
 import atlas/ui/undo.{type Undo}
 import atlas/units
@@ -38,11 +37,9 @@ import lustre/event
 
 const form_title_id = "workout-title"
 
-const settings_first_id = "sidebar-base-weeks"
-
 pub type Mode {
   Browsing
-  /// A workout shown in the sidebar.
+  /// A workout shown in its dialog.
   Viewing(id: String)
   Adding
   Editing(id: String)
@@ -55,18 +52,14 @@ pub type Model {
     loaded: Bool,
     mode: Mode,
     form: workout_form.Form,
-    /// The workout whose "Delete" was clicked once.
     /// A delete that can still be undone (ADR 0056).
     undo: Undo,
-    /// The week shown in the sidebar, from 1.
+    /// The week last chosen, from 1: the one whose dialog opens, and where a new workout goes.
     selected_week: Int,
-    /// The plan's phases and goal as typed in the sidebar; `None` while they are only shown.
-    settings: Option(plan_form.Settings),
-    settings_error: Option(String),
     /// Where the intensity slider of a week is while it is being dragged, before it is let go.
     intensity_draft: Option(#(Int, Float)),
-    /// On a phone the sidebar is a bottom sheet (ADR 0052): whether it is pulled up or shows only its summary.
-    sheet_expanded: Bool,
+    /// Whether the selected week's dialog is open (ADR 0066).
+    week_open: Bool,
   )
 }
 
@@ -95,15 +88,10 @@ pub type Msg {
   /// The slider was let go (or moved with the keyboard): the value is written.
   IntensityChanged(String)
   IntensityCleared
-  SettingsEditClicked
-  SettingsCancelClicked
-  BaseWeeksChanged(String)
-  PreCompetitionWeeksChanged(String)
-  CompetitionWeeksChanged(String)
-  GoalChanged(String)
-  SettingsSubmitted
-  /// The bottom sheet's handle was pressed (ADR 0052).
-  SheetToggled
+  /// The week's dialog closed (ADR 0066).
+  WeekClosed
+  /// The workout's dialog closed.
+  WorkoutClosed
 }
 
 pub type Action {
@@ -122,8 +110,6 @@ pub fn new() -> Model {
     workout_form.empty_for(1, 1),
     undo.new(),
     1,
-    None,
-    None,
     None,
     False,
   )
@@ -175,33 +161,35 @@ pub fn update(
     }
     WorkoutsRead(Error(Nil)) -> #(model, effect.none(), [])
 
-    SheetToggled -> #(
-      Model(..model, sheet_expanded: !model.sheet_expanded),
-      effect.none(),
-      [],
-    )
-
-    // Picking something on the calendar, or opening a form, pulls the bottom sheet up to show it (ADR 0052).
+    // A week opens in its dialog (ADR 0066).
     WeekSelected(week) -> #(
       Model(
         ..model,
         selected_week: week,
         intensity_draft: None,
-        sheet_expanded: True,
+        week_open: True,
       ),
       effect.none(),
       [],
     )
 
+    WeekClosed -> #(
+      Model(..model, week_open: False, intensity_draft: None),
+      effect.none(),
+      [],
+    )
+
+    // Only closing the workout's own dialog ends the viewing; it also closes when Edit opens the form over it.
+    WorkoutClosed ->
+      case model.mode {
+        Viewing(_) -> #(Model(..model, mode: Browsing), effect.none(), [])
+        _ -> #(model, effect.none(), [])
+      }
+
     WorkoutSelected(id) ->
       case find(rows_of(model, plan_id), id) {
         Ok(row) -> #(
-          Model(
-            ..model,
-            mode: Viewing(id),
-            selected_week: week_of(row.workout),
-            sheet_expanded: True,
-          ),
+          Model(..model, mode: Viewing(id), selected_week: week_of(row.workout)),
           effect.none(),
           [],
         )
@@ -366,64 +354,6 @@ pub fn update(
       }
 
     IntensityCleared -> set_intensity(model, on_screen, can_edit, None)
-
-    SettingsEditClicked ->
-      case can_edit, on_screen {
-        True, Some(p) -> #(
-          Model(
-            ..model,
-            settings: Some(plan_form.settings_from(p)),
-            settings_error: None,
-            sheet_expanded: True,
-          ),
-          focus.soon(settings_first_id),
-          [],
-        )
-        _, _ -> #(model, effect.none(), [])
-      }
-
-    SettingsCancelClicked -> #(
-      Model(..model, settings: None, settings_error: None),
-      effect.none(),
-      [],
-    )
-
-    BaseWeeksChanged(value) ->
-      typed_settings(model, fn(s) { plan_form.Settings(..s, base_weeks: value) })
-    PreCompetitionWeeksChanged(value) ->
-      typed_settings(model, fn(s) {
-        plan_form.Settings(..s, pre_competition_weeks: value)
-      })
-    CompetitionWeeksChanged(value) ->
-      typed_settings(model, fn(s) {
-        plan_form.Settings(..s, competition_weeks: value)
-      })
-    GoalChanged(value) ->
-      typed_settings(model, fn(s) { plan_form.Settings(..s, goal_km: value) })
-
-    SettingsSubmitted ->
-      case can_edit, on_screen, model.settings {
-        True, Some(p), Some(settings) ->
-          case plan_form.validate_settings(settings) {
-            Error(message) -> #(
-              Model(..model, settings_error: Some(message)),
-              effect.none(),
-              [],
-            )
-            Ok(valid) -> {
-              let fields = plan_form.changed_settings_fields(p, valid)
-              #(
-                Model(..model, settings: None, settings_error: None),
-                effect.none(),
-                case dict.is_empty(fields) {
-                  True -> []
-                  False -> [EditPlan(p.id, fields, p.updated)]
-                },
-              )
-            }
-          }
-        _, _, _ -> #(model, effect.none(), [])
-      }
   }
 }
 
@@ -471,20 +401,6 @@ fn typed(
     effect.none(),
     [],
   )
-}
-
-fn typed_settings(
-  model: Model,
-  change: fn(plan_form.Settings) -> plan_form.Settings,
-) -> #(Model, Effect(Msg), List(Action)) {
-  case model.settings {
-    Some(settings) -> #(
-      Model(..model, settings: Some(change(settings)), settings_error: None),
-      effect.none(),
-      [],
-    )
-    None -> #(model, effect.none(), [])
-  }
 }
 
 fn find(rows: List(Row), id: String) -> Result(Row, Nil) {
@@ -537,88 +453,34 @@ pub fn view(model: Model, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
         )
       _, _ -> element.none()
     },
-    html.div([class("calendar-layout")], [
-      html.div([class("calendar")], case model.loaded {
-        False -> [progress.loading("Loading…")]
-        True -> [
-          case rows {
-            [] ->
-              html.p([class("muted")], [
-                html.text(case can_edit {
-                  True -> "This plan has no workouts yet. Add the first one."
-                  False -> "This plan has no workouts yet."
-                }),
-              ])
-            _ -> element.none()
-          },
-          case weeks {
-            [] -> element.none()
-            _ ->
-              html.div([], [
-                calendar_head(),
-                ..list.map(plan_schedule.bands(weeks), fn(band) {
-                  band_view(band, on_screen, rows, model, can_edit)
-                })
-              ])
-          },
-        ]
-      }),
-      // The sidebar beside the calendar on a wide screen; a bottom sheet on a phone (ADR 0052), whose handle
-      // and summary only show there.
-      html.aside(
-        [
-          class("calendar-sidebar"),
-          attribute.classes([#("expanded", model.sheet_expanded)]),
-          attribute.attribute("aria-label", "Details"),
-        ],
-        [
-          html.button(
-            [
-              class("sheet-handle"),
-              attribute.type_("button"),
-              attribute.attribute("aria-expanded", case model.sheet_expanded {
-                True -> "true"
-                False -> "false"
+    html.div([class("calendar")], case model.loaded {
+      False -> [progress.loading("Loading…")]
+      True -> [
+        case rows {
+          [] ->
+            html.p([class("muted")], [
+              html.text(case can_edit {
+                True -> "This plan has no workouts yet. Add the first one."
+                False -> "This plan has no workouts yet."
               }),
-              attribute.attribute("aria-controls", sheet_content_id),
-              event.on_click(SheetToggled),
-            ],
-            [
-              html.span([class("sheet-grip")], []),
-              html.span([class("sheet-summary")], [
-                html.text(sheet_summary(model, rows, weeks)),
-              ]),
-            ],
-          ),
-          html.div([class("sheet-content"), attribute.id(sheet_content_id)], [
-            workout_panel(model, on_screen, rows, can_edit),
-            week_panel(model, on_screen, weeks, can_edit),
-            plan_panel(model, on_screen, can_edit),
-          ]),
-        ],
-      ),
-    ]),
+            ])
+          _ -> element.none()
+        },
+        case weeks {
+          [] -> element.none()
+          _ ->
+            html.div([], [
+              calendar_head(),
+              ..list.map(plan_schedule.bands(weeks), fn(band) {
+                band_view(band, on_screen, rows, model, can_edit)
+              })
+            ])
+        },
+      ]
+    }),
+    workout_dialog(model, on_screen, rows, can_edit),
+    week_dialog(model, on_screen, weeks, can_edit),
   ])
-}
-
-const sheet_content_id = "calendar-sheet-content"
-
-/// What the collapsed bottom sheet says it holds: the open workout, or the selected week.
-fn sheet_summary(
-  model: Model,
-  rows: List(Row),
-  weeks: List(plan_schedule.Week),
-) -> String {
-  let week = "Week " <> int.to_string(clamp_week(model.selected_week, weeks))
-  case model.mode {
-    Adding -> "New workout"
-    Viewing(id) | Editing(id) ->
-      case find(rows, id) {
-        Ok(row) -> row.workout.title
-        Error(Nil) -> week
-      }
-    Browsing -> week
-  }
 }
 
 fn clamp_week(week: Int, weeks: List(plan_schedule.Week)) -> Int {
@@ -685,6 +547,7 @@ fn week_row(
 ) -> Element(Msg) {
   let selected = week.number == model.selected_week
   let intensity = dict.get(on_screen.week_intensity, week.number)
+  let goal = plan_schedule.week_goal(on_screen.weekly_distance_m, intensity)
   html.div(
     [
       class("calendar-week"),
@@ -695,10 +558,7 @@ fn week_row(
         [
           attribute.type_("button"),
           class("week-label"),
-          attribute.attribute("aria-pressed", case selected {
-            True -> "true"
-            False -> "false"
-          }),
+          attribute.attribute("aria-haspopup", "dialog"),
           event.on_click(WeekSelected(week.number)),
         ],
         [
@@ -707,13 +567,8 @@ fn week_row(
             Ok(level) -> intensity_chip(level)
             Error(Nil) -> element.none()
           },
-          case week.distance_m >. 0.0 {
-            True ->
-              html.span([class("week-distance")], [
-                html.text(units.format_distance_km(week.distance_m)),
-              ])
-            False -> element.none()
-          },
+          // The week's distance against its goal, always in view (ADR 0066).
+          week_distance(week, goal),
         ],
       ),
       ..list.map(week.days, fn(day) {
@@ -721,6 +576,50 @@ fn week_row(
       })
     ],
   )
+}
+
+fn week_distance(
+  week: plan_schedule.Week,
+  goal: Option(Float),
+) -> Element(Msg) {
+  case goal, plan_schedule.goal_share(week, goal) {
+    Some(g), Ok(share) ->
+      html.span([class("week-distance")], [
+        html.text(
+          units.format_distance_km(week.distance_m)
+          <> " / "
+          <> units.format_distance_km(g),
+        ),
+        // Decorative: the text says the same.
+        html.span(
+          [
+            class("goal-meter week-meter"),
+            attribute.classes([#("over", share >. 1.0)]),
+            attribute.attribute("aria-hidden", "true"),
+          ],
+          [
+            html.span(
+              [
+                attribute.style(
+                  "width",
+                  int.to_string(int.min(float.round(share *. 100.0), 100))
+                    <> "%",
+                ),
+              ],
+              [],
+            ),
+          ],
+        ),
+      ])
+    _, _ ->
+      case week.distance_m >. 0.0 {
+        True ->
+          html.span([class("week-distance")], [
+            html.text(units.format_distance_km(week.distance_m)),
+          ])
+        False -> element.none()
+      }
+  }
 }
 
 /// The percentage, colored by band: easy below 40%, moderate below 70%, hard from there.
@@ -803,69 +702,76 @@ fn workout_chip(w: Workout, mode: Mode) -> Element(Msg) {
   )
 }
 
-// SIDEBAR -----------------------------------------------------------------------------------------
+// DIALOGS -----------------------------------------------------------------------------------------
 
-fn workout_panel(
+/// The open workout, with Edit and Delete for the owner (ADR 0066).
+fn workout_dialog(
   model: Model,
   on_screen: Plan,
   rows: List(Row),
   can_edit: Bool,
 ) -> Element(Msg) {
-  case model.mode, can_edit {
-    Viewing(id), _ | Editing(id), False ->
-      case find(rows, id) {
-        Ok(row) -> workout_details(row, on_screen, can_edit)
-        Error(Nil) -> element.none()
-      }
-    _, _ -> element.none()
+  let shown = case model.mode {
+    Viewing(id) -> option.from_result(find(rows, id))
+    _ -> None
+  }
+  case shown {
+    None -> dialog.details("workout-dialog", False, "", WorkoutClosed, [], [])
+    Some(row) -> {
+      let w = row.workout
+      dialog.details(
+        "workout-dialog",
+        True,
+        w.title,
+        WorkoutClosed,
+        [
+          html.p([class("muted")], [
+            html.text(
+              plan_schedule.week_label(on_screen.phases, week_of(w))
+              <> " · day "
+              <> int.to_string(w.day_index % 7 + 1),
+            ),
+          ]),
+          html.p([], [chip.label(workout_form.kind_label(w.kind))]),
+          case targets(w) {
+            "" -> element.none()
+            text -> html.p([], [html.text(text)])
+          },
+          case row.description {
+            "" -> element.none()
+            text -> html.p([class("description")], [html.text(text)])
+          },
+        ],
+        case can_edit {
+          False -> []
+          True -> [
+            button.text(
+              [attribute.type_("button"), event.on_click(DeleteClicked(w.id))],
+              [icon.view(icon.Delete), html.text("Delete")],
+            ),
+            button.text(
+              [attribute.type_("button"), event.on_click(EditClicked(w.id))],
+              [icon.view(icon.Edit), html.text("Edit")],
+            ),
+          ]
+        },
+      )
+    }
   }
 }
 
-fn workout_details(row: Row, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
-  let w = row.workout
-  panel(w.title, [
-    html.p([class("muted")], [
-      html.text(
-        plan_schedule.week_label(on_screen.phases, week_of(w))
-        <> " · day "
-        <> int.to_string(w.day_index % 7 + 1),
-      ),
-    ]),
-    html.p([], [chip.label(workout_form.kind_label(w.kind))]),
-    case targets(w) {
-      "" -> element.none()
-      text -> html.p([], [html.text(text)])
-    },
-    case row.description {
-      "" -> element.none()
-      text -> html.p([class("description")], [html.text(text)])
-    },
-    case can_edit {
-      False -> element.none()
-      True ->
-        layout.actions([
-          button.filled(
-            [attribute.type_("button"), event.on_click(EditClicked(w.id))],
-            [icon.view(icon.Edit), html.text("Edit")],
-          ),
-          button.outlined(
-            [attribute.type_("button"), event.on_click(DeleteClicked(w.id))],
-            [icon.view(icon.Delete), html.text("Delete")],
-          ),
-        ])
-    },
-  ])
-}
-
-fn week_panel(
+/// The selected week: its intensity (set here by the owner) and its figures against its goal (ADR 0066).
+fn week_dialog(
   model: Model,
   on_screen: Plan,
   weeks: List(plan_schedule.Week),
   can_edit: Bool,
 ) -> Element(Msg) {
-  case list.find(weeks, fn(w) { w.number == model.selected_week }) {
-    Error(Nil) -> element.none()
-    Ok(week) -> {
+  case
+    model.week_open,
+    list.find(weeks, fn(w) { w.number == model.selected_week })
+  {
+    True, Ok(week) -> {
       let intensity = dict.get(on_screen.week_intensity, week.number)
       // The week's goal follows its intensity (ADR 0064), also while the slider is being dragged.
       let goal =
@@ -876,33 +782,42 @@ fn week_panel(
             _ -> intensity
           },
         )
-      panel("Week " <> int.to_string(week.number), [
-        case week.phase {
-          Ok(_) ->
-            html.p([class("muted")], [
-              html.text(plan_schedule.week_label(on_screen.phases, week.number)),
-            ])
-          Error(Nil) -> element.none()
-        },
-        intensity_view(model, week.number, intensity, can_edit),
-        html.dl([class("facts")], [
-          html.dt([], [html.text("Distance")]),
-          html.dd([], [
-            html.text(distance_text(week, goal)),
+      dialog.details(
+        "week-dialog",
+        True,
+        "Week " <> int.to_string(week.number),
+        WeekClosed,
+        [
+          case week.phase {
+            Ok(_) ->
+              html.p([class("muted")], [
+                html.text(plan_schedule.week_label(
+                  on_screen.phases,
+                  week.number,
+                )),
+              ])
+            Error(Nil) -> element.none()
+          },
+          intensity_view(model, week.number, intensity, can_edit),
+          html.dl([class("facts")], [
+            html.dt([], [html.text("Distance")]),
+            html.dd([], [html.text(distance_text(week, goal))]),
+            html.dt([], [html.text("Time")]),
+            html.dd([], [
+              html.text(case week.duration_s {
+                0 -> "—"
+                s -> units.format_duration(s)
+              }),
+            ]),
+            html.dt([], [html.text("Workouts")]),
+            html.dd([], [html.text(int.to_string(workout_count(week)))]),
           ]),
-          html.dt([], [html.text("Time")]),
-          html.dd([], [
-            html.text(case week.duration_s {
-              0 -> "—"
-              s -> units.format_duration(s)
-            }),
-          ]),
-          html.dt([], [html.text("Workouts")]),
-          html.dd([], [html.text(int.to_string(workout_count(week)))]),
-        ]),
-        goal_meter(week, goal),
-      ])
+          goal_meter(week, goal),
+        ],
+        [],
+      )
     }
+    _, _ -> dialog.details("week-dialog", False, "", WeekClosed, [], [])
   }
 }
 
@@ -1026,110 +941,6 @@ fn workout_count(week: plan_schedule.Week) -> Int {
   |> list.flat_map(fn(day) { day.workouts })
   |> list.filter(fn(w) { w.kind != plan.Rest })
   |> list.length
-}
-
-fn plan_panel(model: Model, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
-  case model.settings, can_edit {
-    Some(settings), True ->
-      panel("Plan settings", [
-        html.form(
-          [class("settings-form"), event.on_submit(fn(_) { SettingsSubmitted })],
-          [
-            plan_settings.inputs(
-              "sidebar",
-              settings,
-              plan_settings.Messages(
-                base_weeks: BaseWeeksChanged,
-                pre_competition_weeks: PreCompetitionWeeksChanged,
-                competition_weeks: CompetitionWeeksChanged,
-                goal_km: GoalChanged,
-              ),
-              model.settings_error,
-            ),
-            // A problem about the phases or the goal shows there (ADR 0059); any other at the end.
-            case
-              model.settings_error,
-              plan_form.settings_error_field(settings)
-            {
-              Some(message), "" -> error.message(message)
-              _, _ -> element.none()
-            },
-            layout.actions([
-              button.filled([attribute.type_("submit")], [
-                html.text("Save settings"),
-              ]),
-              button.outlined(
-                [
-                  attribute.type_("button"),
-                  event.on_click(SettingsCancelClicked),
-                ],
-                [html.text("Cancel")],
-              ),
-            ]),
-          ],
-        ),
-      ])
-    _, _ -> {
-      let phases = on_screen.phases
-      panel("Plan settings", [
-        html.dl([class("facts")], case plan.phase_weeks(phases) {
-          0 -> [
-            html.dt([], [html.text("Phases")]),
-            html.dd([], [html.text("Not set")]),
-            ..goal_facts(on_screen)
-          ]
-          _ -> [
-            html.dt([], [html.text("Base")]),
-            html.dd([], [html.text(weeks_count(phases.base_weeks))]),
-            html.dt([], [html.text("Pre-competition")]),
-            html.dd([], [html.text(weeks_count(phases.pre_competition_weeks))]),
-            html.dt([], [html.text("Competition")]),
-            html.dd([], [html.text(weeks_count(phases.competition_weeks))]),
-            ..goal_facts(on_screen)
-          ]
-        }),
-        case can_edit {
-          True ->
-            layout.actions([
-              button.outlined(
-                [
-                  attribute.type_("button"),
-                  event.on_click(SettingsEditClicked),
-                ],
-                [html.text("Edit settings")],
-              ),
-            ])
-          False -> element.none()
-        },
-      ])
-    }
-  }
-}
-
-fn goal_facts(on_screen: Plan) -> List(Element(Msg)) {
-  [
-    html.dt([], [html.text("Weekly goal")]),
-    html.dd([], [
-      html.text(case on_screen.weekly_distance_m {
-        Some(m) -> units.format_distance_km(m)
-        None -> "None"
-      }),
-    ]),
-  ]
-}
-
-fn weeks_count(n: Int) -> String {
-  case n {
-    1 -> "1 week"
-    _ -> int.to_string(n) <> " weeks"
-  }
-}
-
-fn panel(title: String, children: List(Element(Msg))) -> Element(Msg) {
-  html.section([class("sidebar-panel")], [
-    html.h3([], [html.text(title)]),
-    ..children
-  ])
 }
 
 /// The delete to write for a workout whose Undo ran out. It is looked up among all the plans' workouts: the user

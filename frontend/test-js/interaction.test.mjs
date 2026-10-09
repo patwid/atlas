@@ -9,7 +9,6 @@ const dom = new JSDOM(`<!doctype html><body>
   <button class="md-button" disabled>Off</button>
   <nav class="tabs"><a href="/"><span class="nav-indicator"></span>Today</a></nav>
   <p class="plain">text</p>
-  <button class="sheet-handle" aria-expanded="false">Week 1</button>
   <div role="tablist"><button role="tab">A</button><button role="tab">B</button><button role="tab">C</button></div>
   <div class="md-menu" id="m">
     <button role="menuitem">Edit</button><button role="menuitem">Delete</button><button role="menuitem">Share</button>
@@ -56,27 +55,6 @@ test("the page is marked as scrolled once it scrolls, and unmarked at the top", 
   assert.equal(d.documentElement.dataset.scrolled, undefined)
 })
 
-test("dragging a sheet's handle up opens it and down closes it; a short drag does nothing", () => {
-  const handle = d.querySelector(".sheet-handle")
-  let clicks = 0
-  handle.addEventListener("click", () => {
-    clicks++
-    handle.setAttribute("aria-expanded", handle.getAttribute("aria-expanded") === "true" ? "false" : "true")
-  })
-  const drag = (from, to) => {
-    handle.dispatchEvent(new dom.window.MouseEvent("pointerdown", { bubbles: true, clientY: from }))
-    d.body.dispatchEvent(new dom.window.MouseEvent("pointerup", { bubbles: true, clientY: to }))
-  }
-  drag(500, 490)
-  assert.equal(clicks, 0, "too short")
-  drag(500, 300)
-  assert.equal(handle.getAttribute("aria-expanded"), "true")
-  drag(500, 300)
-  assert.equal(clicks, 1, "up again does not close an open sheet")
-  drag(300, 500)
-  assert.equal(handle.getAttribute("aria-expanded"), "false")
-})
-
 test("the arrow keys, Home and End move between a menu's items, wrapping around", () => {
   const items = [...d.querySelectorAll('[role="menuitem"]')]
   const key = (el, k) => el.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: k, bubbles: true }))
@@ -118,5 +96,19 @@ test("the arrow keys choose the next or previous tab, wrapping around", () => {
   key(tabs[0], "ArrowLeft")
   assert.deepEqual(chosen, ["B", "C", "A", "C"])
   assert.equal(d.activeElement, tabs[2])
+})
+
+test("a basic dialog closes on a click outside it; a form dialog does not", async () => {
+  const basic = d.createElement("dialog")
+  basic.dataset.open = "true"
+  const form = d.createElement("dialog")
+  form.className = "form-dialog"
+  form.dataset.open = "true"
+  d.body.append(basic, form)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  basic.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }))
+  form.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }))
+  assert.ok(!basic.hasAttribute("open"), "the basic dialog closed")
+  assert.ok(form.hasAttribute("open"), "the form dialog stays")
 })
 

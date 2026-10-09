@@ -2,10 +2,9 @@ import atlas/outbox
 import atlas/plan.{Workout}
 import atlas/workout_form.{type Row, Form, Row}
 import atlas/workouts_page.{
-  AddClicked, Adding, BaseWeeksChanged, Browsing, Create, DayChanged, Delete,
-  DeleteClicked, DeleteExpired, Edit, EditClicked, EditPlan, Editing,
-  GoalChanged, IntensityChanged, IntensityCleared, IntensityInput, KindChanged,
-  Model, SettingsEditClicked, SettingsSubmitted, Submitted, TitleChanged,
+  AddClicked, Adding, Browsing, Create, DayChanged, Delete, DeleteClicked,
+  DeleteExpired, Edit, EditClicked, EditPlan, Editing, IntensityChanged,
+  IntensityCleared, IntensityInput, KindChanged, Model, Submitted, TitleChanged,
   Viewing, WeekChanged, WeekSelected, WorkoutSelected, WorkoutsRead,
 }
 import gleam/dict
@@ -202,7 +201,6 @@ pub fn nothing_can_be_changed_without_permission_test() {
   assert attempt(IntensityChanged("0.3")) == #(True, [])
   assert attempt(IntensityInput("0.3")) == #(True, [])
   assert attempt(IntensityCleared) == #(True, [])
-  assert attempt(SettingsEditClicked) == #(True, [])
 }
 
 pub fn only_workouts_of_the_plan_on_screen_can_be_changed_test() {
@@ -245,26 +243,32 @@ pub fn weeks_days_and_totals_are_shown_test() {
 
 pub fn the_owner_can_add_edit_and_delete_test() {
   let model =
-    Model(..with_rows([row("a", "p1", 0, 0, "Easy run")]), mode: Viewing("a"))
+    Model(
+      ..with_rows([row("a", "p1", 0, 0, "Easy run")]),
+      mode: Viewing("a"),
+      week_open: True,
+    )
   let html = html_of(model, True)
   assert string.contains(html, "Add workout")
   assert string.contains(html, ">Edit<")
   assert string.contains(html, ">Delete<")
   assert string.contains(html, "Add a workout to week 1, day 1")
-  assert string.contains(html, ">Edit settings<")
   assert string.contains(html, "id=\"week-intensity\"")
 }
 
 pub fn others_only_read_test() {
   let model =
-    Model(..with_rows([row("a", "p1", 0, 0, "Easy run")]), mode: Viewing("a"))
+    Model(
+      ..with_rows([row("a", "p1", 0, 0, "Easy run")]),
+      mode: Viewing("a"),
+      week_open: True,
+    )
   let html = html_of(model, False)
   assert string.contains(html, "Easy run")
   assert !string.contains(html, "Add workout")
   assert !string.contains(html, "Add a workout to week")
   assert !string.contains(html, ">Edit<")
   assert !string.contains(html, ">Delete<")
-  assert !string.contains(html, "Edit settings")
   assert !string.contains(html, "id=\"week-intensity\"")
 }
 
@@ -279,11 +283,12 @@ pub fn the_calendar_shows_every_phase_week_with_its_intensity_test() {
   assert string.contains(html, ">80%<")
 }
 
-pub fn the_sidebar_shows_the_selected_week_against_the_goal_test() {
+pub fn the_week_dialog_shows_the_week_against_its_goal_test() {
   let model =
     Model(
       ..with_rows([row("a", "p1", 7, 0, "Easy"), row("b", "p1", 9, 0, "Steady")]),
       selected_week: 2,
+      week_open: True,
     )
   let html = html_of(model, False)
   assert string.contains(html, "Base, week 2")
@@ -293,10 +298,13 @@ pub fn the_sidebar_shows_the_selected_week_against_the_goal_test() {
   assert string.contains(html, "aria-valuenow=\"50\"")
 }
 
-pub fn selecting_a_week_or_a_workout_shows_it_in_the_sidebar_test() {
+pub fn selecting_a_week_or_a_workout_opens_its_dialog_test() {
   let model = with_rows([row("a", "p1", 15, 0, "Tempo")])
   let #(model, _) = update(model, WeekSelected(2))
   assert model.selected_week == 2
+  assert model.week_open
+  let #(model, _) = update(model, workouts_page.WeekClosed)
+  assert !model.week_open
   let #(model, actions) = update(model, WorkoutSelected("a"))
   assert model.mode == Viewing("a")
   assert model.selected_week == 3
@@ -304,7 +312,7 @@ pub fn selecting_a_week_or_a_workout_shows_it_in_the_sidebar_test() {
 }
 
 pub fn the_intensity_of_the_selected_week_is_written_when_the_slider_is_let_go_test() {
-  let model = Model(..with_rows([]), selected_week: 3)
+  let model = Model(..with_rows([]), selected_week: 3, week_open: True)
   let #(dragging, actions) = update(model, IntensityInput("0.35"))
   assert actions == []
   assert dragging.intensity_draft == Some(#(3, 0.35))
@@ -330,7 +338,7 @@ pub fn the_intensity_of_the_selected_week_is_written_when_the_slider_is_let_go_t
 }
 
 pub fn the_slider_shows_the_week_and_others_see_a_bar_test() {
-  let model = Model(..with_rows([]), selected_week: 2)
+  let model = Model(..with_rows([]), selected_week: 2, week_open: True)
   let html = html_of(model, True)
   assert string.contains(html, "type=\"range\"")
   assert string.contains(html, "aria-valuetext=\"80%\"")
@@ -341,38 +349,6 @@ pub fn the_slider_shows_the_week_and_others_see_a_bar_test() {
   let read_only = html_of(model, False)
   assert !string.contains(read_only, "type=\"range\"")
   assert string.contains(read_only, "width:80%")
-}
-
-pub fn the_plan_settings_are_edited_in_the_sidebar_test() {
-  let #(model, _) = update(with_rows([]), SettingsEditClicked)
-  let assert Some(settings) = model.settings
-  assert settings.base_weeks == "2"
-  assert settings.goal_km == "40"
-  let #(model, _) = update(model, BaseWeeksChanged("6"))
-  let #(model, _) = update(model, GoalChanged("45"))
-  let #(model, actions) = update(model, SettingsSubmitted)
-  assert model.settings == None
-  assert actions
-    == [
-      EditPlan(
-        "p1",
-        dict.from_list([
-          outbox.field_int("base_weeks", 6),
-          outbox.field_float("weekly_distance_m", 45_000.0),
-        ]),
-        "T-p1",
-      ),
-    ]
-}
-
-pub fn invalid_plan_settings_stay_open_with_a_message_test() {
-  let #(model, _) = update(with_rows([]), SettingsEditClicked)
-  let #(model, _) = update(model, BaseWeeksChanged("99"))
-  let #(model, actions) = update(model, SettingsSubmitted)
-  assert actions == []
-  assert model.settings_error
-    == Some("The base phase must be a number of weeks from 0 to 52.")
-  assert string.contains(html_of(model, True), "Save settings")
 }
 
 pub fn an_empty_plan_invites_the_first_workout_test() {
@@ -432,28 +408,31 @@ pub fn the_edit_form_opens_in_a_dialog_over_the_calendar_test() {
   )
 }
 
-pub fn the_bottom_sheet_starts_collapsed_and_its_handle_toggles_it_test() {
-  let model = with_rows([row("a", "p1", 0, 0, "Easy run")])
-  assert !model.sheet_expanded
-  let html = html_of(model, True)
-  assert string.contains(html, "aria-expanded=\"false\"")
-  assert string.contains(html, "aria-controls=\"calendar-sheet-content\"")
-  assert string.contains(html, ">Week 1<")
-  let #(open, _) = update(model, workouts_page.SheetToggled)
-  assert open.sheet_expanded
-  assert string.contains(html_of(open, True), "aria-expanded=\"true\"")
-  let #(closed, _) = update(open, workouts_page.SheetToggled)
-  assert !closed.sheet_expanded
+pub fn a_weeks_row_shows_its_distance_against_its_goal_test() {
+  let html =
+    html_of(
+      with_rows([row("a", "p1", 7, 0, "Easy"), row("b", "p1", 9, 0, "Steady")]),
+      False,
+    )
+  // Week 2 is at 80% of a 40 km goal (ADR 0064, 0066).
+  assert string.contains(html, "16.00 km / 32.00 km")
+  assert string.contains(html, "aria-haspopup=\"dialog\"")
+  // Closed, the dialogs are there for opening, but empty.
+  assert string.contains(html, "id=\"week-dialog\"")
+  assert !string.contains(html, "id=\"week-intensity\"")
 }
 
-pub fn picking_a_workout_pulls_the_sheet_up_and_names_it_test() {
+pub fn a_workouts_dialog_closes_only_its_own_viewing_test() {
   let model = with_rows([row("a", "p1", 0, 0, "Easy run")])
-  let #(viewing, _) = update(model, workouts_page.WorkoutSelected("a"))
-  assert viewing.sheet_expanded
+  let #(viewing, _) = update(model, WorkoutSelected("a"))
   assert string.contains(
     html_of(viewing, True),
-    "<span class=\"sheet-summary\">Easy run</span>",
+    "id=\"workout-dialog-headline\"",
   )
-  let #(week, _) = update(model, workouts_page.WeekSelected(2))
-  assert week.sheet_expanded
+  let #(closed, _) = update(viewing, workouts_page.WorkoutClosed)
+  assert closed.mode == Browsing
+  // Edit opens the form over it, which closes the workout's dialog: that must not end the edit.
+  let #(editing, _) = update(viewing, EditClicked("a"))
+  let #(still, _) = update(editing, workouts_page.WorkoutClosed)
+  assert still.mode == Editing("a")
 }

@@ -231,8 +231,8 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
 
   // Move the first workout to day 4 and rename it: open it in the sidebar, then edit it there.
   click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Easy run")))
-  await waitFor("the workout in the sidebar", () => d.querySelector(".calendar-sidebar")?.textContent.includes("Week 1 · day 2"))
-  click(w, [...d.querySelectorAll(".calendar-sidebar button")].find((b) => b.textContent === "Edit"))
+  await waitFor("the workout in its dialog", () => d.querySelector("#workout-dialog[open]")?.textContent.includes("Week 1 · day 2"))
+  click(w, [...d.querySelectorAll("#workout-dialog button")].find((b) => b.textContent === "Edit"))
   await waitFor("the edit form", () => d.querySelector("#workout-title")?.value === "Easy run")
   assert.equal(d.querySelector("#workout-distance").value, "8.5")
   assert.equal(d.querySelector("#workout-duration").value, "1:15")
@@ -247,8 +247,8 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
   // Delete the second one; Undo brings it back, and the next delete is written when its snackbar is closed.
   const deleteCore = async () => {
     click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Core session")))
-    await waitFor("the second workout in the sidebar", () => d.querySelector(".calendar-sidebar h3")?.textContent === "Core session")
-    click(w, [...d.querySelectorAll(".calendar-sidebar button")].find((b) => b.textContent === "Delete"))
+    await waitFor("the second workout in its dialog", () => d.querySelector("#workout-dialog[open] h2")?.textContent === "Core session")
+    click(w, [...d.querySelectorAll("#workout-dialog button")].find((b) => b.textContent === "Delete"))
     await waitFor("the Undo snackbar", () => d.body.textContent.includes("Workout deleted") && !d.querySelector(".calendar").textContent.includes("Core session"))
   }
   await deleteCore()
@@ -262,7 +262,7 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
   w.close()
 })
 
-test("the owner sets a week's intensity and the plan's phases and goal in the sidebar (ADR 0043)", { skip: !built && "frontend not built" }, async () => {
+test("the owner sets a week's intensity in its dialog and the plan's phases and goal with Edit (ADR 0043, 0066)", { skip: !built && "frontend not built" }, async () => {
   await h.world()
   const alice = h.people.alice
   await h.create("alice", "plans", { id: "phaseplan000001", owner: alice.id, title: "Season", visibility: "private", base_weeks: 2, pre_competition_weeks: 1, competition_weeks: 1 })
@@ -276,24 +276,27 @@ test("the owner sets a week's intensity and the plan's phases and goal in the si
 
   // Select week 2 and make it a hard week.
   click(w, [...d.querySelectorAll(".week-label")].find((b) => b.textContent.startsWith("Week 2")))
-  await waitFor("week 2 in the sidebar", () => d.querySelector(".calendar-sidebar")?.textContent.includes("Base, week 2"))
+  await waitFor("week 2 in its dialog", () => d.querySelector("#week-dialog[open]")?.textContent.includes("Base, week 2"))
   assert.equal(d.querySelector("#week-intensity").type, "range")
   choose(w, d.querySelector("#week-intensity"), "0.8")
   await waitFor("the intensity on the server", async () => (await onServer()).week_intensity?.[1] === 0.8)
   await waitFor("the intensity in the calendar", () => d.querySelector(".calendar-week.selected .intensity-high")?.textContent === "80%")
 
   // Set a 40 km goal and a longer base phase.
-  click(w, button(w, "Edit settings"))
-  await waitFor("the settings form", () => d.querySelector("#sidebar-goal"))
-  typeInto(w, d.querySelector("#sidebar-goal"), "40")
-  typeInto(w, d.querySelector("#sidebar-base-weeks"), "3")
-  submit(w, d.querySelector(".settings-form"))
+  // The phases and goal are part of the plan, changed with its Edit (ADR 0066).
+  click(w, byLabel(w, "Edit plan"))
+  await waitFor("the plan form", () => d.querySelector("#plan-goal"))
+  typeInto(w, d.querySelector("#plan-goal"), "40")
+  typeInto(w, d.querySelector("#plan-base-weeks"), "3")
+  submit(w, d.querySelector(".plan-form"))
   await waitFor("the settings on the server", async () => {
     const p = await onServer()
     return p.weekly_distance_m === 40000 && p.base_weeks === 3
   })
   // Week 2 is at 80%, so it aims for 80% of 40 km (ADR 0064).
-  await waitFor("the week against its goal", () => d.querySelector(".calendar-sidebar")?.textContent.includes("20.00 km of 32.00 km (63%)"))
+  await waitFor("the week against its goal, in its row", () => d.querySelector(".calendar")?.textContent.includes("20.00 km / 32.00 km"))
+  click(w, [...d.querySelectorAll(".week-label")].find((b) => b.textContent.startsWith("Week 2")))
+  await waitFor("and in its dialog", () => d.querySelector("#week-dialog[open]")?.textContent.includes("20.00 km of 32.00 km (63%)"))
   await waitFor("five weeks now", () => d.querySelectorAll(".calendar-week").length === 5)
   assert.equal((await onServer()).week_intensity[1], 0.8, "the intensity stays")
   w.close()

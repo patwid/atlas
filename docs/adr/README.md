@@ -46,7 +46,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0040 | [Drop Web Awesome; roll our own styling with Bootstrap's palette](0040-drop-web-awesome.md) | Accepted (palette superseded by 0044) |
 | 0041 | [Run CI on GitHub Actions through the Nix flake](0041-github-actions-ci.md) | Superseded by 0042 |
 | 0042 | [Run the test suites as flake checks](0042-ci-through-flake-checks.md) | Accepted |
-| 0043 | [Plan phases, a weekly distance goal, week intensity and a calendar view](0043-plan-phases-goal-and-calendar.md) | Accepted |
+| 0043 | [Plan phases, a weekly distance goal, week intensity and a calendar view](0043-plan-phases-goal-and-calendar.md) | Accepted (sidebar replaced by 0066) |
 | 0044 | [Style the app after Material Design 3, by hand](0044-material-design-3-styling.md) | Accepted (colors superseded by 0045) |
 | 0045 | [Use Material Design 3's baseline colors only](0045-material-baseline-colors.md) | Accepted (intensity changed by 0061, phase bands by 0063) |
 | 0046 | [Name buttons after Material Design 3 and drop the danger button](0046-material-button-names.md) | Accepted |
@@ -55,7 +55,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0049 | [Settings as a list of pages, and banners for offline and sync problems](0049-settings-list-and-banners.md) | Accepted (partly changed by 0055) |
 | 0050 | [Badges with icons, empty states and icons in buttons](0050-chips-empty-states-button-icons.md) | Accepted |
 | 0051 | [Material slider and progress, a phone layout for the athlete table, calendar cards, ripple and motion](0051-material-slider-progress-motion.md) | Accepted |
-| 0052 | [The plan calendar's sidebar as a bottom sheet on smaller screens](0052-calendar-bottom-sheet.md) | Accepted |
+| 0052 | [The plan calendar's sidebar as a bottom sheet on smaller screens](0052-calendar-bottom-sheet.md) | Superseded by 0066 |
 | 0053 | [Adopt Material 3 Expressive's shapes, motion and components where they fit](0053-material-3-expressive.md) | Accepted |
 | 0054 | [Material 3 date and time pickers beside the native fields](0054-material-date-and-time-pickers.md) | Accepted |
 | 0055 | [Material review, quick fixes: titles, dialogs, offline, badges, loading, icons, Settings](0055-material-review-quick-fixes.md) | Accepted |
@@ -69,3 +69,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0063 | [One background for all phase bands](0063-one-colour-for-phase-bands.md) | Accepted |
 | 0064 | [A week's intensity scales its distance goal; the goal stays one per plan](0064-intensity-scales-the-weekly-goal.md) | Accepted |
 | 0065 | [Settings as one pane at every width](0065-settings-single-pane.md) | Accepted |
+| 0066 | [The plan calendar without a sidebar: week and workout dialogs, settings in the plan's Edit](0066-plan-calendar-without-a-sidebar.md) | Accepted |

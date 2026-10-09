@@ -78,6 +78,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - All phase bands in the plan calendar have the same light background as the base phase (ADR 0063).
 - A week's distance goal is the plan's weekly goal scaled by the week's intensity: a week at 60% aims for 60% of it (ADR 0064).
 - Settings is one pane at every width again: the list, and each section on its own page (ADR 0065).
+- The plan calendar has no sidebar or bottom sheet any more: each week's row shows its distance against its goal and opens a week dialog with the intensity; a workout opens in a dialog with Edit and Delete; the phases and goal are changed with the plan's Edit and summed up under its description (ADR 0066).
 - CI builds the flake's checks (`atlas-app`, `gleam-test`, `backend-test`, `frontend-js-test`) offline instead of running the test scripts in `nix develop`; `nix flake check` runs them locally, and a suite whose source is unchanged is not run again. `test-frontend-js.sh` accepts `ATLAS_NPM_INSTALL=0` (ADR 0042).
 
 ### Fixed

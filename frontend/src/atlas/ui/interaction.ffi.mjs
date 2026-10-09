@@ -1,7 +1,7 @@
-// Material 3 touch feedback, the app bar's scrolled state (ADR 0051), dragging a bottom sheet (ADR 0052) and
-// placing and moving through menus (ADR 0056), opening and closing form dialogs (ADR 0057), and moving
-// between tabs (ADR 0058). Both only set data attributes and CSS
-// variables, never add or remove nodes, so Lustre's view of the DOM stays right.
+// Page-wide interaction that needs the DOM: touch feedback and the app bar's scrolled state (ADR 0051), placing
+// and moving through menus (ADR 0056), opening and closing dialogs with data-open (ADR 0057, 0066), and moving
+// between tabs (ADR 0058). It only sets attributes, CSS variables and focus and calls the dialogs' own methods; it
+// never adds or removes nodes, so Lustre's view of the DOM stays right.
 
 const rippling = ".md-button, .md-fab, .md-icon-button, .choice-label, .link-list a, .tabs a .nav-indicator"
 
@@ -20,24 +20,6 @@ export function install() {
     target.style.setProperty("--ripple-y", `${event.clientY - box.top}px`)
     target.style.setProperty("--ripple-size", `${size}px`)
     target.dataset.ripple = target.dataset.ripple === "a" ? "b" : "a"
-  }, { passive: true })
-
-  // A bottom sheet's handle can be dragged as well as pressed (ADR 0052): a swipe up opens the sheet and a swipe
-  // down closes it, by clicking the handle, so the page's own message does the work. A swipe that ends on the
-  // handle needs nothing: the browser clicks it anyway.
-  let drag = null
-  document.addEventListener("pointerdown", (event) => {
-    const handle = event.target instanceof Element ? event.target.closest(".sheet-handle") : null
-    drag = handle ? { handle, y: event.clientY } : null
-  }, { passive: true })
-  document.addEventListener("pointerup", (event) => {
-    if (!drag) return
-    const { handle, y } = drag
-    drag = null
-    if (event.target instanceof Element && handle.contains(event.target)) return
-    const moved = event.clientY - y
-    const open = handle.getAttribute("aria-expanded") === "true"
-    if ((moved < -30 && !open) || (moved > 30 && open)) handle.click()
   }, { passive: true })
 
   // Menus (ADR 0056) are native popovers. When one opens it is placed under the button that opened it, lined up
@@ -89,7 +71,15 @@ export function install() {
   const syncDialogs = () => {
     for (const dialog of document.querySelectorAll("dialog[data-open]")) {
       const wanted = dialog.dataset.open === "true"
-      if (wanted && !dialog.open) dialog.showModal()
+      if (wanted && !dialog.open) {
+        // Basic dialogs (details, choices; ADR 0066) close on a click outside them, as M3's do; form dialogs do not,
+        // so nothing typed is lost (ADR 0057).
+        if (!dialog.classList.contains("form-dialog") && !dialog.dataset.lightDismiss) {
+          dialog.dataset.lightDismiss = "on"
+          dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close() })
+        }
+        dialog.showModal()
+      }
       else if (!wanted && dialog.open) dialog.close()
     }
   }

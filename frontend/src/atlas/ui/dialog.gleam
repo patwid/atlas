@@ -10,6 +10,7 @@
 //// can't drift apart, regardless of how it was closed.
 
 import gleam/dynamic/decode
+import gleam/list
 import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -53,5 +54,55 @@ pub fn view(
         footer,
       ),
     ],
+  )
+}
+
+/// A basic dialog that shows something, such as a workout or a week (ADR 0066): a headline, the content, the
+/// `actions` and Close. Like the form dialogs it is declarative: `open` says whether it shows, and
+/// `atlas/ui/interaction` opens or closes it to match (`data-open`). Escape, a click outside and Close send `on_close`.
+pub fn details(
+  id: String,
+  open: Bool,
+  headline: String,
+  on_close: msg,
+  body: List(Element(msg)),
+  actions: List(Element(msg)),
+) -> Element(msg) {
+  let headline_id = id <> "-headline"
+  html.dialog(
+    [
+      attribute.id(id),
+      attribute.class("details-dialog"),
+      attribute.attribute("data-open", case open {
+        True -> "true"
+        False -> "false"
+      }),
+      attribute.attribute("aria-labelledby", headline_id),
+      event.on("close", decode.success(on_close)),
+    ],
+    case open {
+      False -> []
+      True -> [
+        html.h2(
+          [attribute.id(headline_id), attribute.class("dialog-headline")],
+          [
+            html.text(headline),
+          ],
+        ),
+        html.div([attribute.class("details-body")], body),
+        html.form(
+          [attribute.attribute("method", "dialog"), attribute.class("actions")],
+          list.append(actions, [
+            html.button(
+              [
+                attribute.type_("submit"),
+                attribute.class("md-button md-button-text"),
+              ],
+              [html.text("Close")],
+            ),
+          ]),
+        ),
+      ]
+    },
   )
 }

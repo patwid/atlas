@@ -1,6 +1,6 @@
 # 0052. The plan calendar's sidebar as a bottom sheet on smaller screens
 
-- Status: Accepted
+- Status: Superseded by [0066](0066-plan-calendar-without-a-sidebar.md)
 - Date: 2026-10-08
 - Deciders: owner (asked for a bottom sheet); agent (the details below)
 

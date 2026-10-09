@@ -568,7 +568,7 @@ label {
 .status-details { color: var(--md-sys-color-on-surface-variant); font-size: 0.875rem; line-height: 1.25rem; }
 .description { white-space: pre-wrap; }
 /* Panels: filled containers on the page surface. */
-.plan-form, .found, .sidebar-panel {
+.plan-form, .found {
   background: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-large);
 }
 .plan-form { padding: 1rem 1rem 1.25rem; margin-bottom: 1rem; }
@@ -579,11 +579,10 @@ label {
 .found p { margin: 0.25rem 0; }
 .totals { color: var(--md-sys-color-on-surface-variant); font-weight: 400; margin-left: 0.5rem; font-size: 0.875rem; }
 
-/* Plan calendar with a sidebar (ADR 0043): weeks as rows, days as columns, bands per phase. On a phone the days
-   of a week stack, and below the large window class (75rem) the sidebar is a bottom sheet (ADR 0052, 0060). */
+/* Plan calendar (ADR 0043, 0066): weeks as rows, days as columns, bands per phase, the full width at every size. On
+   a phone the days of a week stack. A week and a workout open in dialogs. */
 /* The header lines up with the wider page. */
 main:has(.plan-calendar), body:has(.plan-calendar) .bar-content { max-width: 80rem; }
-.calendar-layout { display: grid; gap: 1rem; align-items: start; }
 .calendar { min-width: 0; }
 .calendar-head { display: none; }
 .phase-band { border-radius: var(--md-sys-shape-corner-large); padding: 0.25rem 0.5rem 0.5rem; margin-bottom: 0.75rem; }
@@ -649,7 +648,7 @@ main:has(.plan-calendar), body:has(.plan-calendar) .bar-content { max-width: 80r
   flex: 1; min-width: 0; height: 2.75rem; margin: 0; background: transparent; cursor: pointer;
   -webkit-appearance: none; appearance: none;
 }
-.sidebar-panel .intensity-control input[type="range"] { --gap-color: var(--md-sys-color-surface-container-low); }
+.details-dialog .intensity-control input[type="range"] { --gap-color: var(--md-sys-color-surface-container-high); }
 .intensity-control input[type="range"]::-webkit-slider-runnable-track {
   height: 1rem; border-radius: var(--md-sys-shape-corner-full);
   background: linear-gradient(to right, var(--md-sys-color-primary) var(--fill, 0%), var(--md-sys-color-secondary-container) var(--fill, 0%));
@@ -674,49 +673,6 @@ main:has(.plan-calendar), body:has(.plan-calendar) .bar-content { max-width: 80r
 /* A week without an intensity: the slider sits at 0 but looks inactive until it is moved. */
 .intensity-control input[type="range"].unset { opacity: 0.38; }
 .intensity-meter { margin-top: 0.25rem; }
-.calendar-sidebar, .sheet-content { display: grid; gap: 0.75rem; }
-.sheet-handle { display: none; }
-/* Below the width where the sidebar fits beside the calendar, it is a standard (non-modal) bottom sheet (ADR 0052):
-   collapsed to its handle and a summary, pulled up by the handle or by picking something on the calendar. */
-@media (max-width: 74.9375rem) {
-  main:has(.calendar-sidebar) { padding-bottom: 7rem; }
-  .calendar-sidebar {
-    position: fixed; z-index: 3; left: 0; right: 0; bottom: var(--nav-bar-height); display: block;
-    width: 100%; max-width: 40rem; margin: 0 auto; padding: 0 1rem;
-    background: var(--md-sys-color-surface-container-low); color: var(--md-sys-color-on-surface);
-    border-radius: var(--md-sys-shape-corner-extra-large) var(--md-sys-shape-corner-extra-large) 0 0;
-    box-shadow: var(--md-sys-elevation-1);
-  }
-  .sheet-handle {
-    display: flex; flex-direction: column; align-items: center; width: 100%; padding: 1.375rem 0 1rem;
-    border: 0; background: none; cursor: pointer; color: var(--md-sys-color-on-surface);
-    font: 500 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.009375rem; -webkit-tap-highlight-color: transparent;
-  }
-  .sheet-handle:focus-visible { outline: var(--focus-ring); outline-offset: -3px; border-radius: var(--md-sys-shape-corner-large); }
-  .sheet-grip {
-    width: 2rem; height: 0.25rem; margin-bottom: 0.75rem; border-radius: var(--md-sys-shape-corner-full);
-    background: var(--md-sys-color-on-surface-variant); opacity: 0.4;
-  }
-  .sheet-summary { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .sheet-content {
-    max-height: 0; overflow: hidden; visibility: hidden;
-    transition: max-height var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial),
-      visibility 0s var(--md-sys-motion-spring-default-spatial-duration);
-  }
-  .calendar-sidebar.expanded .sheet-content {
-    max-height: min(65dvh, 40rem); overflow-y: auto; overscroll-behavior: contain; visibility: visible;
-    padding-bottom: 1rem;
-    transition: max-height var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial);
-  }
-  .sheet-content .sidebar-panel { background: var(--md-sys-color-surface-container); }
-  .sheet-content .sidebar-panel .intensity-control input[type="range"] { --gap-color: var(--md-sys-color-surface-container); }
-}
-@media (max-width: 74.9375rem) and (prefers-reduced-motion: reduce) { .sheet-content { transition: none; } }
-.sidebar-panel { padding: 1rem; }
-.sidebar-panel h3 { font: 400 1.375rem/1.75rem var(--md-ref-typeface); margin: 0 0 0.25rem; overflow-wrap: anywhere; }
-.sidebar-panel p { margin: 0.25rem 0; }
-/* Denser fields in the narrow sidebar. */
-.sidebar-panel .md-text-field { min-height: 2.5rem; padding: 0.5rem 0.75rem; }
 .facts { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 0.75rem; margin: 0.5rem 0 0; align-items: center; }
 .facts dt { color: var(--md-sys-color-on-surface-variant); font-size: 0.875rem; }
 .facts dt label { margin: 0; }
@@ -750,10 +706,6 @@ main:has(.plan-calendar), body:has(.plan-calendar) .bar-content { max-width: 80r
   .calendar-day .day-name { display: none; }
   .add-here { opacity: 0.4; }
   .calendar-day:hover .add-here, .add-here:focus-visible { opacity: 1; }
-}
-@media (min-width: 75rem) {
-  .calendar-layout { grid-template-columns: minmax(0, 1fr) 20rem; }
-  .calendar-sidebar { position: sticky; top: 8rem; max-height: calc(100vh - 9rem); overflow-y: auto; } /* under the app bar and the plan tabs */
 }
 
 .summary { font-weight: 500; }
@@ -1035,8 +987,6 @@ html[data-scrolled] .md-tab-bar { background: var(--md-sys-color-surface-contain
 .md-field.has-error .md-field-supporting, .phases-error { color: var(--md-sys-color-error); }
 @media (prefers-reduced-motion: reduce) { .md-field-label { transition: none; } }
 /* What fields sit on. */
-.sidebar-panel { --field-container: var(--md-sys-color-surface-container-low); }
-@media (max-width: 74.9375rem) { .sheet-content .sidebar-panel { --field-container: var(--md-sys-color-surface-container); } }
 @media (min-width: 37.5rem) { dialog.form-dialog { --field-container: var(--md-sys-color-surface-container-high); } }
 
 /* A simple dialog of choices (ADR 0062): each row is a choice, taken at once. */
@@ -1072,4 +1022,13 @@ html[data-scrolled] .md-tab-bar { background: var(--md-sys-color-surface-contain
 html[data-scrolled] .bar-medium .bar-content { flex-wrap: nowrap; }
 html[data-scrolled] .bar-medium h1 { order: 0; flex-basis: auto; padding: 0; font-size: 1.375rem; line-height: 1.75rem; }
 @media (prefers-reduced-motion: reduce) { .bar-medium h1 { transition: none; } }
+
+/* Details dialogs (ADR 0066): a workout or a week, over the calendar. */
+.details-body p { margin: 0.25rem 0; }
+.details-body .facts { margin-top: 1rem; }
+.details-dialog .actions { justify-content: flex-end; margin-top: 1.5rem; }
+/* A week's row: its distance against its goal, with a small bar (ADR 0066). */
+.week-distance { display: inline-flex; align-items: center; gap: 0.5rem; }
+.goal-meter.week-meter { width: 3rem; margin: 0; height: 0.5rem; }
+.plan-summary { margin: 0.25rem 0 0; color: var(--md-sys-color-on-surface-variant); font-size: 0.875rem; line-height: 1.25rem; }
 
