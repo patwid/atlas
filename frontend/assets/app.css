@@ -164,8 +164,11 @@
   --intensity-medium: var(--md-custom-color-medium);
   --intensity-high: var(--md-custom-color-high);
   --focus-ring: 3px solid var(--md-sys-color-secondary);
-  /* The navigation bar's height, which floating things (FAB, snackbar) keep clear of; 0 next to the rail. */
-  --nav-bar-height: calc(5rem + env(safe-area-inset-bottom));
+  /* The navigation bar's height, which floating things (FAB, snackbar) keep clear of; 0 next to the rail. M3
+     Expressive's flexible navigation bar is 64px (ADR 0095). */
+  --nav-bar-height: calc(4rem + env(safe-area-inset-bottom));
+  /* M3 Expressive's collapsed navigation rail is 96px wide (ADR 0095). */
+  --nav-rail-width: 6rem;
   /* The small app bar's height, with the room it leaves for a phone's status bar in an installed app: what sticks
      under it (a plan's tabs, the calendar's week labels) starts there (ADR 0079). */
   --app-bar-height: calc(4rem + max(0px, env(safe-area-inset-top, 0px) - 0.5rem));
@@ -197,13 +200,13 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
   min-height: 2.5rem; padding: 0 1rem; border: 0; border-radius: var(--md-sys-shape-corner-full);
   font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem; text-align: center;
   cursor: pointer; user-select: none; isolation: isolate; background: transparent; color: var(--md-sys-color-primary);
-  transition: box-shadow 0.2s var(--md-sys-motion-easing),
+  transition: box-shadow var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects),
     border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
   -webkit-tap-highlight-color: transparent;
 }
 .md-button::before {
   content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
-  background: currentColor; opacity: 0; transition: opacity 0.15s var(--md-sys-motion-easing);
+  background: currentColor; opacity: 0; transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
 .md-button:not(:disabled):hover::before { opacity: var(--md-sys-state-hover); }
 .md-button:not(:disabled):focus-visible::before { opacity: var(--md-sys-state-focus); }
@@ -237,7 +240,7 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 }
 .md-icon-button::before {
   content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
-  background: currentColor; opacity: 0; transition: opacity 0.15s var(--md-sys-motion-easing);
+  background: currentColor; opacity: 0; transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
 .md-icon-button:hover::before { opacity: var(--md-sys-state-hover); }
 .md-icon-button:focus-visible::before, .md-icon-button:active::before { opacity: var(--md-sys-state-focus); }
@@ -256,7 +259,7 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 }
 .md-fab::before {
   content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
-  background: currentColor; opacity: 0; transition: opacity 0.15s var(--md-sys-motion-easing);
+  background: currentColor; opacity: 0; transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
 .md-fab:hover::before { opacity: var(--md-sys-state-hover); }
 .md-fab:focus-visible::before, .md-fab:active::before { opacity: var(--md-sys-state-focus); }
@@ -280,7 +283,7 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
   animation: snackbar-in var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial);
 }
 @media (max-width: 37.4375rem) { body:has(.md-fab) .snackbar { bottom: calc(var(--nav-bar-height) + 5.5rem); } }
-@media (min-width: 37.5rem) { .snackbar { left: calc(50% + 2.5rem); } }
+@media (min-width: 37.5rem) { .snackbar { left: calc(50% + var(--nav-rail-width) / 2); } }
 .snackbar-text { flex: 1; padding: 0.5rem 0; }
 .snackbar .snackbar-action { color: var(--md-sys-color-inverse-primary); text-decoration: none; }
 .snackbar .md-icon-button { color: var(--md-sys-color-inverse-on-surface); }
@@ -305,7 +308,7 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 }
 .choice-label::before {
   content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
-  background: currentColor; opacity: 0; transition: opacity 0.15s var(--md-sys-motion-easing);
+  background: currentColor; opacity: 0; transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
 .choice-label:hover::before { opacity: var(--md-sys-state-hover); }
 .choice-label .icon { display: none; width: 1.125rem; height: 1.125rem; margin-left: -0.5rem; }
@@ -346,7 +349,7 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
   font: 400 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
   color: var(--md-sys-color-on-surface); background: transparent; caret-color: var(--md-sys-color-primary);
   border: 1px solid var(--md-sys-color-outline); border-radius: var(--md-sys-shape-corner-extra-small);
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects), box-shadow var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
 textarea.md-text-field { resize: vertical; min-height: 6rem; }
 .md-text-field:hover:not(:disabled):not(:focus) { border-color: var(--md-sys-color-on-surface); }
@@ -385,11 +388,12 @@ dialog[open] { animation: dialog-in var(--md-sys-motion-spring-default-spatial-d
 /* The frame: a small top app bar, the page, and a navigation bar (a navigation rail on wide screens). */
 .shell { min-height: 100dvh; display: flex; flex-direction: column; }
 .bar {
-  background: var(--md-sys-color-surface); position: sticky; top: 0; z-index: 2;
-  transition: background-color 0.2s var(--md-sys-motion-easing);
+  --bar-background: var(--md-sys-color-surface);
+  background: var(--bar-background); position: sticky; top: 0; z-index: 2;
+  transition: background-color var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects);
 }
 /* Once the page scrolls under it, the app bar takes a container color (ADR 0051; set by atlas/ui/interaction). */
-html[data-scrolled] .bar { background: var(--md-sys-color-surface-container); }
+html[data-scrolled] .bar { --bar-background: var(--md-sys-color-surface-container); }
 /* A new page fades in (ADR 0051). Opacity only: a transform would move the FAB and snackbar while it runs. */
 .page { animation: page-in var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects); }
 @keyframes page-in { from { opacity: 0; } }
@@ -402,7 +406,7 @@ html[data-scrolled] .bar { background: var(--md-sys-color-surface-container); }
 /* The back button (ADR 0048) sits at the bar's leading edge, its icon lined up with the page's margin. */
 .bar-content > .md-icon-button { margin: 0 -0.25rem 0 -0.5rem; color: var(--md-sys-color-on-surface); }
 /* Linear progress under the app bar while a sync runs (ADR 0048). It fades in late, so a quick sync does not
-   flicker. */
+   flicker. As in M3 Expressive (ADR 0095), a 4px gap in the bar's colour parts the indicator from the track. */
 .md-linear-progress {
   position: absolute; left: 0; right: 0; bottom: 0; height: 0.25rem; overflow: hidden;
   background: var(--md-sys-color-secondary-container); opacity: 0;
@@ -410,7 +414,8 @@ html[data-scrolled] .bar { background: var(--md-sys-color-surface-container); }
 }
 .md-linear-progress::before {
   content: ""; position: absolute; top: 0; bottom: 0; width: 40%; border-radius: var(--md-sys-shape-corner-full);
-  background: var(--md-sys-color-primary); animation: progress-slide 1.6s var(--md-sys-motion-easing) infinite;
+  background: var(--md-sys-color-primary); box-shadow: 0 0 0 0.25rem var(--bar-background);
+  animation: progress-slide 1.6s var(--md-sys-motion-easing) infinite;
 }
 @keyframes progress-appear { to { opacity: 1; } }
 @keyframes progress-slide { from { left: -40%; } to { left: 100%; } }
@@ -441,8 +446,8 @@ main { flex: 1; padding: 0 1rem 1.5rem; max-width: var(--content-max); width: 10
 .tabs { position: sticky; bottom: 0; z-index: 2; background: var(--md-sys-color-surface-container); }
 .tabs-content {
   display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0.5rem;
-  max-width: 48rem; width: 100%; margin: 0 auto; padding: 0.75rem 0.5rem 1rem;
-  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  max-width: 48rem; width: 100%; margin: 0 auto; padding: 0.375rem 0.5rem;
+  padding-bottom: max(0.375rem, env(safe-area-inset-bottom));
 }
 .tabs a {
   display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
@@ -450,26 +455,27 @@ main { flex: 1; padding: 0 1rem 1.5rem; max-width: var(--content-max); width: 10
   font: 500 0.75rem/1rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
   -webkit-tap-highlight-color: transparent;
 }
+/* The active indicator grows out from its centre on the fast spatial spring (M3 Expressive, ADR 0095). */
 .nav-indicator {
-  position: relative; display: grid; place-items: center; width: 4rem; height: 2rem;
+  position: relative; display: grid; place-items: center; width: 3.5rem; height: 2rem;
   border-radius: var(--md-sys-shape-corner-full); isolation: isolate;
-  transition: background-color 0.2s var(--md-sys-motion-easing);
+  background: linear-gradient(var(--md-sys-color-secondary-container), var(--md-sys-color-secondary-container)) center / 0 100% no-repeat;
+  transition: background-size var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
 }
 .nav-indicator::before {
   content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
-  background: var(--md-sys-color-on-surface); opacity: 0; transition: opacity 0.15s;
+  background: var(--md-sys-color-on-surface); opacity: 0; transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
 .tabs a:hover .nav-indicator::before { opacity: var(--md-sys-state-hover); }
 .tabs a:active .nav-indicator::before { opacity: var(--md-sys-state-pressed); }
-.tabs a[aria-current="page"] { color: var(--md-sys-color-on-surface); font-weight: 700; }
-.tabs a[aria-current="page"] .nav-indicator {
-  background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container);
-}
+.tabs a[aria-current="page"] { color: var(--md-sys-color-secondary); font-weight: 700; }
+.tabs a[aria-current="page"] .nav-indicator { background-size: 100% 100%; color: var(--md-sys-color-on-secondary-container); }
+@media (prefers-reduced-motion: reduce) { .nav-indicator { transition: none; } }
 .tabs a:focus-visible { outline: 0; }
 .tabs a:focus-visible .nav-indicator { outline: var(--focus-ring); outline-offset: 2px; }
 @media (min-width: 37.5rem) {
-  .shell { padding-left: 5rem; }
-  .tabs { position: fixed; top: 0; bottom: 0; left: 0; width: 5rem; background: var(--md-sys-color-surface); }
+  .shell { padding-left: var(--nav-rail-width); }
+  .tabs { position: fixed; top: 0; bottom: 0; left: 0; width: var(--nav-rail-width); background: var(--md-sys-color-surface); }
   .tabs-content {
     grid-auto-flow: row; grid-auto-rows: max-content; gap: 0.75rem;
     padding: max(2.75rem, env(safe-area-inset-top)) 0 1rem;
@@ -536,7 +542,7 @@ label {
 }
 .link-list a::before {
   content: ""; position: absolute; inset: 0; z-index: -1; background: var(--md-sys-color-on-surface);
-  opacity: 0; transition: opacity 0.15s var(--md-sys-motion-easing);
+  opacity: 0; transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
 .link-list a:hover { text-decoration: none; }
 .link-list a:hover::before { opacity: var(--md-sys-state-hover); }
@@ -570,7 +576,7 @@ label {
    segmented list's shape change on hover, like the Settings list. */
 .list .row-link::after {
   content: ""; position: absolute; inset: 0; background: var(--md-sys-color-on-surface);
-  opacity: 0; transition: opacity 0.15s var(--md-sys-motion-easing);
+  opacity: 0; transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
 .list .row-link:hover { text-decoration: none; }
 /* A row that opens a dialog has a button for its headline (ADR 0080), drawn like the link. */
@@ -670,7 +676,7 @@ label {
   border: 0; border-radius: var(--md-sys-shape-corner-small); box-shadow: inset 0.25rem 0 0 var(--kind);
   padding: 0.375rem 0.5rem 0.375rem 0.75rem; background: var(--md-sys-color-surface-container-high); color: var(--md-sys-color-on-surface);
   display: flex; flex-direction: column; overflow-wrap: break-word; hyphens: auto;
-  transition: background-color 0.15s var(--md-sys-motion-easing);
+  transition: background-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
 .workout:hover { background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, var(--md-sys-color-surface-container-high)); }
 .workout.open { background: var(--selected); color: var(--md-sys-color-on-secondary-container); }
@@ -695,7 +701,7 @@ label {
   display: grid; place-items: center; width: 2.5rem; height: 2.5rem; padding: 0; cursor: pointer; align-self: flex-start;
   border: 0; border-radius: var(--md-sys-shape-corner-full);
   background: none; color: var(--md-sys-color-on-surface-variant);
-  transition: background-color 0.15s var(--md-sys-motion-easing);
+  transition: background-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
 .add-here .icon { width: 1.25rem; height: 1.25rem; }
 .add-here:hover { color: var(--md-sys-color-on-secondary-container); background: var(--md-sys-color-secondary-container); }
@@ -897,7 +903,7 @@ dialog.date-picker { width: 22.5rem; }
 }
 .date-picker-day::before {
   content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
-  background: currentColor; opacity: 0; transition: opacity 0.15s var(--md-sys-motion-easing);
+  background: currentColor; opacity: 0; transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
 .date-picker-day:hover::before { opacity: var(--md-sys-state-hover); }
 .date-picker-day:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
@@ -968,20 +974,25 @@ dialog .dialog-supporting { margin: 0 0 1.5rem; font-size: 0.875rem; line-height
 }
 .info-item .md-button { margin-right: -0.5rem; }
 
-/* Menus (ADR 0056): a native popover, placed by atlas/ui/interaction under the button that opens it. */
+/* Menus (ADR 0056): a native popover, placed by atlas/ui/interaction under the button that opens it. M3 Expressive's
+   rounder menu (ADR 0095): large corners, and items inset 4px with the medium corner, concentric with the menu's. */
 .md-menu {
-  position: fixed; inset: auto; margin: 0; padding: 0.5rem 0; min-width: 7rem; max-width: 17.5rem; border: 0;
-  border-radius: var(--md-sys-shape-corner-extra-small); box-shadow: var(--md-sys-elevation-2);
+  position: fixed; inset: auto; margin: 0; padding: 0.25rem; min-width: 7rem; max-width: 17.5rem; border: 0;
+  border-radius: var(--md-sys-shape-corner-large); box-shadow: var(--md-sys-elevation-2);
   background: var(--md-sys-color-surface-container); color: var(--md-sys-color-on-surface);
 }
 .md-menu:popover-open { animation: menu-in var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects); }
 @keyframes menu-in { from { opacity: 0; transform: translateY(-0.25rem); } }
 .md-menu-item {
   position: relative; display: flex; align-items: center; gap: 0.75rem; width: 100%; height: 3rem; padding: 0 0.75rem;
-  border: 0; background: none; cursor: pointer; isolation: isolate; text-align: left; white-space: nowrap;
+  border: 0; border-radius: var(--md-sys-shape-corner-medium); background: none; cursor: pointer; isolation: isolate;
+  text-align: left; white-space: nowrap;
   color: var(--md-sys-color-on-surface); font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem;
 }
-.md-menu-item::before { content: ""; position: absolute; inset: 0; z-index: -1; background: currentColor; opacity: 0; }
+.md-menu-item::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: currentColor; opacity: 0;
+  transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+}
 .md-menu-item:hover::before { opacity: var(--md-sys-state-hover); }
 .md-menu-item:focus-visible { outline: none; }
 .md-menu-item:focus-visible::before { opacity: var(--md-sys-state-focus); }

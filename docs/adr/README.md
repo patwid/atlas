@@ -56,7 +56,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0050 | [Badges with icons, empty states and icons in buttons](0050-chips-empty-states-button-icons.md) | Accepted |
 | 0051 | [Material slider and progress, a phone layout for the athlete table, calendar cards, ripple and motion](0051-material-slider-progress-motion.md) | Accepted |
 | 0052 | [The plan calendar's sidebar as a bottom sheet on smaller screens](0052-calendar-bottom-sheet.md) | Superseded by 0066 |
-| 0053 | [Adopt Material 3 Expressive's shapes, motion and components where they fit](0053-material-3-expressive.md) | Accepted |
+| 0053 | [Adopt Material 3 Expressive's shapes, motion and components where they fit](0053-material-3-expressive.md) | Accepted (navigation, progress, menus and motion extended by 0095) |
 | 0054 | [Material 3 date and time pickers beside the native fields](0054-material-date-and-time-pickers.md) | Accepted |
 | 0055 | [Material review, quick fixes: titles, dialogs, offline, badges, loading, icons, Settings](0055-material-review-quick-fixes.md) | Accepted |
 | 0056 | [Menus for item actions, and Undo instead of confirming deletes](0056-menus-and-undo.md) | Accepted |
@@ -98,3 +98,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0092 | [Plain HTTP on the server's IP address until there is a domain](0092-plain-http-on-the-ip-until-there-is-a-domain.md) | Accepted (temporary) |
 | 0093 | [Nix files under `nix/`, the flake at the top](0093-nix-files-under-nix.md) | Accepted |
 | 0094 | [Atlas takes over the VPS from nixos-config](0094-atlas-owns-the-vps.md) | Accepted |
+| 0095 | [M3 Expressive's navigation bar and rail, progress gap, menus and springs throughout](0095-expressive-navigation-progress-menus-motion.md) | Accepted |

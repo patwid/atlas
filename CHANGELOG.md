@@ -108,6 +108,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - On larger screens a form dialog is as high as its form and scrolls only on a screen too short for it (ADR 0086, 0087).
 - The Today tab is called Home, with a house icon; its group for the day is still headed Today (ADR 0088).
 - The training zones form shows pace before blood lactate.
+- Material 3 Expressive navigation: a 64px navigation bar and a 96px rail whose active indicator grows from its centre, sync progress with a gap around its indicator, rounder menus, and spring motion for the remaining transitions (ADR 0095).
 
 ### Fixed
 - The calendar and clock buttons sit in the middle of the date and time fields in every browser (ADR 0086).
