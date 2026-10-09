@@ -69,6 +69,18 @@ pub fn fab(
   ])
 }
 
+/// M3 Expressive's medium button size (ADR 0098), 56px high, for an action that is all a screen offers, such as
+/// signing in or an empty state's way on. Add it to a common button's attributes; buttons are small otherwise.
+pub fn medium() -> Attribute(msg) {
+  attribute.class("md-button-medium")
+}
+
+/// M3 Expressive's standard button group (ADR 0098): buttons side by side, the one pressed widening while its
+/// neighbours give way, such as a plan's Edit and More in the app bar.
+pub fn group(children: List(Element(msg))) -> Element(msg) {
+  html.div([attribute.class("button-group")], children)
+}
+
 /// An icon button, for a small action such as closing a snackbar. `label` names it for screen readers.
 pub fn icon(
   attributes: List(Attribute(msg)),

@@ -101,3 +101,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0095 | [M3 Expressive's navigation bar and rail, progress gap, menus and springs throughout](0095-expressive-navigation-progress-menus-motion.md) | Accepted |
 | 0096 | [Google Sans Flex instead of Roboto Flex](0096-google-sans-flex.md) | Accepted |
 | 0097 | [A subtitle in a plan's medium app bar](0097-app-bar-subtitle.md) | Accepted |
+| 0098 | [Medium buttons for a screen's only action, and a button group in a plan's app bar](0098-medium-buttons-and-button-group.md) | Accepted |

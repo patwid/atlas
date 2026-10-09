@@ -225,11 +225,27 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 .md-button-text { padding: 0 0.75rem; }
 /* Expressive buttons morph while pressed: the round shape squares off to the small corner (ADR 0053). */
 .md-button:not(:disabled):active, .md-fab:active, .md-icon-button:active { border-radius: var(--md-sys-shape-corner-small); }
+/* M3 Expressive's medium button (ADR 0098): 56px, 24px side space, title-medium label and 24px icon; it squares off
+   to the medium corner while pressed. */
+.md-button-medium { min-height: 3.5rem; padding: 0 1.5rem; font-size: 1rem; line-height: 1.5rem; letter-spacing: 0.009375rem; }
+.md-button-medium .icon { width: 1.5rem; height: 1.5rem; }
+.md-button-medium:not(:disabled):active { border-radius: var(--md-sys-shape-corner-medium); }
 .md-button-tonal { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
 .md-button-tonal:not(:disabled):hover { box-shadow: var(--md-sys-elevation-1); }
 .md-button-tonal:disabled { background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent); box-shadow: none; }
 .icon { width: 1.5rem; height: 1.5rem; fill: currentColor; flex: none; }
 .md-button .icon { width: 1.25rem; height: 1.25rem; margin-left: -0.25rem; }
+
+/* M3 Expressive's standard button group (ADR 0098): the pressed button widens by 15% on the fast spatial spring and
+   the buttons next to it narrow to make room. */
+.button-group { display: flex; align-items: center; gap: 0.125rem; }
+.button-group > .md-icon-button {
+  width: 2.5rem; transition: width var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
+}
+.button-group > .md-icon-button:active { width: 2.875rem; }
+.button-group > .md-icon-button:has(+ .md-icon-button:active), .button-group > .md-icon-button:active + .md-icon-button { width: 2.125rem; }
+@media (prefers-reduced-motion: reduce) { .button-group > .md-icon-button { transition: none; } }
 
 /* Icon button (ADR 0047): a 40px circle around a 24px icon. */
 .md-icon-button {
@@ -406,6 +422,8 @@ html[data-scrolled] .bar { --bar-background: var(--md-sys-color-surface-containe
 .bar h1 { flex: 1; min-width: 0; font: 500 1.375rem/1.75rem var(--md-ref-typeface); margin: 0; } /* title-large emphasized */
 /* The back button (ADR 0048) sits at the bar's leading edge, its icon lined up with the page's margin. */
 .bar-content > .md-icon-button { margin: 0 -0.25rem 0 -0.5rem; color: var(--md-sys-color-on-surface); }
+.bar-content > .button-group { margin: 0 -0.25rem 0 -0.5rem; }
+.bar-content > .button-group > .md-icon-button { color: var(--md-sys-color-on-surface); }
 /* Linear progress under the app bar while a sync runs (ADR 0048). It fades in late, so a quick sync does not
    flicker. As in M3 Expressive (ADR 0095), a 4px gap in the bar's colour parts the indicator from the track. */
 .md-linear-progress {
@@ -502,6 +520,7 @@ main { flex: 1; padding: 0 1rem 1.5rem; max-width: var(--content-max); width: 10
 a.md-button { text-decoration: none; }
 .signin { max-width: 24rem; margin: 0 auto; padding: 4rem 1.5rem; }
 .signin h1 { font: 400 2.25rem/2.75rem var(--md-ref-typeface); margin: 0 0 0.5rem; }
+.signin .md-button { margin-top: 1rem; }
 .muted { color: var(--md-sys-color-on-surface-variant); margin-top: 0; }
 form { display: grid; gap: 0.5rem; }
 label {

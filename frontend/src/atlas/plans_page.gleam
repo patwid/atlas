@@ -553,7 +553,7 @@ pub fn app_bar_actions(
   case find(model.plans, id) {
     Error(Nil) -> element.none()
     Ok(found) if found.owner_id == user_id ->
-      element.fragment([
+      button.group([
         button.icon(
           [attribute.type_("button"), event.on_click(EditClicked(id))],
           icon.Edit,
