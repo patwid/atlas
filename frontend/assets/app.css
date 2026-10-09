@@ -1044,7 +1044,9 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
 .form-dialog-bar form { display: contents; }
 .form-dialog-bar h2 { flex: 1; min-width: 0; margin: 0 0 0 0.25rem; font: 400 1.375rem/1.75rem var(--md-ref-typeface); }
 .form-dialog-body { flex: 1; overflow-y: auto; padding: 0 1.5rem 1.5rem; padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
-.form-dialog .plan-form { background: none; padding: 0; margin: 0; border-radius: 0; }
+/* The plan form drops its card look in a dialog but keeps the dialog form's top padding, which its first field's
+   floating label needs to stay inside the scrolling body. */
+.form-dialog .plan-form { background: none; padding: 0.5rem 0 0; margin: 0; border-radius: 0; }
 /* The form (ADR 0085): one 16px rhythm between fields, chips and groups, so a floating label never meets the help
    line above it. Pairs of fields stack on a phone and sit side by side, in equal columns, from 600px. */
 .form-dialog-body > form { display: grid; gap: 1rem; padding-top: 0.5rem; }
