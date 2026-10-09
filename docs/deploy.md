@@ -92,8 +92,10 @@ Later deploys by hand use the same command.
 
 1. **Superuser:** `ssh root@204.168.179.170 atlas-pocketbase superuser upsert you@example.org '<password>'`. The admin
    UI is at `<publicUrl>/_/`.
-2. **Behind the proxy:** in the admin UI, Settings → Application, set the trusted proxy header to `X-Forwarded-For`,
-   so logs and rate limits see the visitor's address instead of Caddy's.
+2. **Behind the proxy:** in the admin UI, Settings → Application, set the trusted proxy header to `X-Forwarded-For`
+   with IP priority *rightmost*, so logs and rate limits see the visitor's address instead of Caddy's. Today Caddy
+   replaces any `X-Forwarded-For` the client sends, so both choices give the same address; rightmost stays correct if
+   Caddy ever passes the header on, where leftmost would be whatever the client claims.
 3. **Accounts:** the app has no sign-up page; create users in the admin UI (`users` collection).
 4. **Strava:** in the Strava API settings, set the authorization callback domain to `atlas.patwid.ch`. Subscribe to webhooks
    once, with a superuser token (from the admin UI or `POST /api/collections/_superusers/auth-with-password`):
