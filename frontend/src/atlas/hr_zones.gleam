@@ -74,38 +74,49 @@ pub fn fill_from_max(form: Form) -> Result(Form, String) {
 /// Checks the form: whole numbers from 30 to 250, each zone starting above the one before, and
 /// zone 5 starting at most at the maximum.
 pub fn parse(form: Form) -> Result(HrZones, String) {
-  use max_hr <- result.try(bpm(form.max_hr, "maximum heart rate"))
+  parse_at(form) |> result.map_error(fn(problem) { problem.1 })
+}
+
+/// `parse`, with the input each problem is about (ADR 0077): 0 for the maximum, 1 to 5 for a zone's start, -1 for
+/// the whole form.
+pub fn parse_at(form: Form) -> Result(HrZones, #(Int, String)) {
+  use max_hr <- result.try(at(bpm(form.max_hr, "maximum heart rate"), 0))
   use starts <- result.try(
     list.index_map(form.starts, fn(text, index) {
-      bpm(text, "start of zone " <> int.to_string(index + 1))
+      at(bpm(text, "start of zone " <> int.to_string(index + 1)), index + 1)
     })
     |> result.all,
   )
   case list.length(starts) == 5 {
-    False -> Error("There must be five zones.")
+    False -> Error(#(-1, "There must be five zones."))
     True -> {
       use _ <- result.try(rising(starts, 1))
       case list.last(starts) {
         Ok(last) if last > max_hr ->
-          Error("Zone 5 must start at or below the maximum heart rate.")
+          Error(#(5, "Zone 5 must start at or below the maximum heart rate."))
         _ -> Ok(HrZones(max_hr, starts))
       }
     }
   }
 }
 
+fn at(parsed: Result(a, String), input: Int) -> Result(a, #(Int, String)) {
+  result.map_error(parsed, fn(message) { #(input, message) })
+}
+
 /// Each start above the one before; `number` is the zone of the first one.
-fn rising(starts: List(Int), number: Int) -> Result(Nil, String) {
+fn rising(starts: List(Int), number: Int) -> Result(Nil, #(Int, String)) {
   case starts {
     [a, b, ..rest] if b > a -> rising([b, ..rest], number + 1)
     [_, _, ..] ->
-      Error(
+      Error(#(
+        number + 1,
         "Zone "
-        <> int.to_string(number + 1)
-        <> " must start higher than zone "
-        <> int.to_string(number)
-        <> ".",
-      )
+          <> int.to_string(number + 1)
+          <> " must start higher than zone "
+          <> int.to_string(number)
+          <> ".",
+      ))
     _ -> Ok(Nil)
   }
 }

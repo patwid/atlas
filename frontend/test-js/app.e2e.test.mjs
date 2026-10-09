@@ -421,7 +421,7 @@ test("training zones start as the defaults, are saved under the athlete's ID, an
   assert.equal(d.querySelector("#pace-threshold").value, "5:00")
   assert.deepEqual([1, 2, 3, 4, 5].map((n) => d.querySelector(`#pace-zone-${n}`).value), ["7:00", "6:27", "5:42", "5:18", "4:57"])
   typeInto(w, d.querySelector("#pace-threshold"), "4:00")
-  click(w, button(w, "Work out zones from threshold pace"))
+  click(w, button(w, "Calculate pace zones"))
   await waitFor("the pace zones worked out", () => d.querySelector("#pace-zone-1").value === "5:36")
   submit(w, d.querySelector(".zones-form"))
   const row = await waitFor("the zones on the server", async () => (await settings())[0])

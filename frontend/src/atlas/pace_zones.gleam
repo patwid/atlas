@@ -86,15 +86,25 @@ pub fn fill_from_threshold(form: Form) -> Result(Form, String) {
 /// Checks the form: paces as `m:ss` (or whole minutes) from 2:00 to 15:00 /km, each zone faster than the one
 /// before.
 pub fn parse(form: Form) -> Result(PaceZones, String) {
-  use threshold <- result.try(pace(form.threshold, "threshold pace"))
+  parse_at(form) |> result.map_error(fn(problem) { problem.1 })
+}
+
+/// `parse`, with the input each problem is about (ADR 0077): 0 for the threshold, 1 to 5 for a zone's start, -1
+/// for the whole form.
+pub fn parse_at(form: Form) -> Result(PaceZones, #(Int, String)) {
+  use threshold <- result.try(
+    pace(form.threshold, "threshold pace")
+    |> result.map_error(fn(message) { #(0, message) }),
+  )
   use starts <- result.try(
     list.index_map(form.starts, fn(text, index) {
       pace(text, "start of pace zone " <> int.to_string(index + 1))
+      |> result.map_error(fn(message) { #(index + 1, message) })
     })
     |> result.all,
   )
   case list.length(starts) == 5 {
-    False -> Error("There must be five pace zones.")
+    False -> Error(#(-1, "There must be five pace zones."))
     True -> {
       use _ <- result.try(faster(starts, 1))
       Ok(PaceZones(threshold, starts))
@@ -137,17 +147,18 @@ fn pace(text: String, what: String) -> Result(Int, String) {
 }
 
 /// Each start faster than the one before; `number` is the zone of the first one.
-fn faster(starts: List(Int), number: Int) -> Result(Nil, String) {
+fn faster(starts: List(Int), number: Int) -> Result(Nil, #(Int, String)) {
   case starts {
     [a, b, ..rest] if b < a -> faster([b, ..rest], number + 1)
     [_, _, ..] ->
-      Error(
+      Error(#(
+        number + 1,
         "Pace zone "
-        <> int.to_string(number + 1)
-        <> " must start faster than pace zone "
-        <> int.to_string(number)
-        <> ".",
-      )
+          <> int.to_string(number + 1)
+          <> " must start faster than pace zone "
+          <> int.to_string(number)
+          <> ".",
+      ))
     _ -> Ok(Nil)
   }
 }

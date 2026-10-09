@@ -64,12 +64,20 @@ pub fn to_form(settings: LactateZones) -> List(String) {
 /// Checks the five starts as typed (`2.5` or `2,5`): numbers from 0.1 to 30.0 with at most one decimal,
 /// each zone starting above the one before.
 pub fn parse(starts: List(String)) -> Result(LactateZones, String) {
+  parse_at(starts) |> result.map_error(fn(problem) { problem.1 })
+}
+
+/// `parse`, with the input each problem is about (ADR 0077): 1 to 5 for a zone's start, -1 for the whole form.
+pub fn parse_at(starts: List(String)) -> Result(LactateZones, #(Int, String)) {
   use values <- result.try(
-    list.index_map(starts, fn(text, index) { value(text, index + 1) })
+    list.index_map(starts, fn(text, index) {
+      value(text, index + 1)
+      |> result.map_error(fn(message) { #(index + 1, message) })
+    })
     |> result.all,
   )
   case list.length(values) == 5 {
-    False -> Error("There must be five lactate zones.")
+    False -> Error(#(-1, "There must be five lactate zones."))
     True -> {
       use _ <- result.try(rising(values, 1))
       Ok(LactateZones(values))
@@ -114,17 +122,18 @@ fn value(text: String, number: Int) -> Result(Int, String) {
 }
 
 /// Each start above the one before; `number` is the zone of the first one.
-fn rising(starts: List(Int), number: Int) -> Result(Nil, String) {
+fn rising(starts: List(Int), number: Int) -> Result(Nil, #(Int, String)) {
   case starts {
     [a, b, ..rest] if b > a -> rising([b, ..rest], number + 1)
     [_, _, ..] ->
-      Error(
+      Error(#(
+        number + 1,
         "Lactate zone "
-        <> int.to_string(number + 1)
-        <> " must start higher than lactate zone "
-        <> int.to_string(number)
-        <> ".",
-      )
+          <> int.to_string(number + 1)
+          <> " must start higher than lactate zone "
+          <> int.to_string(number)
+          <> ".",
+      ))
     _ -> Ok(Nil)
   }
 }

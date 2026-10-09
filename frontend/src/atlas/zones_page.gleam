@@ -14,6 +14,7 @@ import atlas/store
 import atlas/ui/button
 import atlas/ui/error
 import atlas/ui/field
+import atlas/ui/focus
 import atlas/ui/layout
 import atlas/ui/progress
 import atlas/ui/snackbar
@@ -37,6 +38,8 @@ pub type Model {
     lactate: List(String),
     pace: pace_zones.Form,
     error: Option(String),
+    /// The ID of the input the error is about, or "" for the whole form (ADR 0077).
+    error_field: String,
     /// The user changed the form since it was filled, so synced changes do not overwrite it.
     edited: Bool,
     saved: Bool,
@@ -73,6 +76,7 @@ pub fn new() -> Model {
       [],
       pace_zones.Form("", []),
       None,
+      "",
       False,
       False,
     ),
@@ -152,13 +156,13 @@ pub fn update(
     FillFromMaxClicked ->
       case hr_zones.fill_from_max(model.hr) {
         Ok(form) -> edited(Model(..model, hr: form))
-        Error(message) -> refused(model, message)
+        Error(message) -> refused(model, "hr-max", message)
       }
 
     FillFromThresholdClicked ->
       case pace_zones.fill_from_threshold(model.pace) {
         Ok(form) -> edited(Model(..model, pace: form))
-        Error(message) -> refused(model, message)
+        Error(message) -> refused(model, "pace-threshold", message)
       }
 
     ResetClicked -> #(filled(model, me), effect.none(), [])
@@ -167,7 +171,7 @@ pub fn update(
 
     Submitted ->
       case parse(model) {
-        Error(message) -> refused(model, message)
+        Error(#(field, message)) -> refused(model, field, message)
         Ok(zones) -> {
           let fields = athlete_settings.fields(me, zones)
           let action = case athlete_settings.row_of(model.rows, me) {
@@ -182,11 +186,35 @@ pub fn update(
   }
 }
 
-fn parse(model: Model) -> Result(athlete_settings.Zones, String) {
-  use hr <- result.try(hr_zones.parse(model.hr))
-  use lactate <- result.try(lactate_zones.parse(model.lactate))
-  use pace <- result.try(pace_zones.parse(model.pace))
+/// The zones, or the ID of the input that is wrong ("" for none in particular) and what is wrong with it.
+fn parse(model: Model) -> Result(athlete_settings.Zones, #(String, String)) {
+  use hr <- result.try(
+    hr_zones.parse_at(model.hr) |> result.map_error(input("hr-max", "hr-zone-")),
+  )
+  use lactate <- result.try(
+    lactate_zones.parse_at(model.lactate)
+    |> result.map_error(input("", "lactate-zone-")),
+  )
+  use pace <- result.try(
+    pace_zones.parse_at(model.pace)
+    |> result.map_error(input("pace-threshold", "pace-zone-")),
+  )
   Ok(athlete_settings.Zones(hr, lactate, pace))
+}
+
+/// The input's ID for a zone module's problem: 0 is `first`, 1 to 5 a zone's start, anything else none.
+fn input(
+  first: String,
+  zone_prefix: String,
+) -> fn(#(Int, String)) -> #(String, String) {
+  fn(problem) {
+    let #(number, message) = problem
+    case number {
+      0 -> #(first, message)
+      n if n >= 1 && n <= 5 -> #(zone_prefix <> int.to_string(n), message)
+      _ -> #("", message)
+    }
+  }
 }
 
 /// The form filled with the zones that apply to `me`, as saved.
@@ -201,20 +229,34 @@ fn with_zones(model: Model, zones: athlete_settings.Zones) -> Model {
     lactate: lactate_zones.to_form(zones.lactate),
     pace: pace_zones.to_form(zones.pace),
     error: None,
+    error_field: "",
     edited: False,
     saved: False,
   )
 }
 
+/// The problem shows under its input, which gets the focus so that it is in view (ADR 0059, 0077).
 fn refused(
   model: Model,
+  field: String,
   message: String,
 ) -> #(Model, Effect(Msg), List(Action)) {
-  #(Model(..model, error: Some(message)), effect.none(), [])
+  #(
+    Model(..model, error: Some(message), error_field: field),
+    case field {
+      "" -> effect.none()
+      id -> focus.soon(id)
+    },
+    [],
+  )
 }
 
 fn edited(model: Model) -> #(Model, Effect(Msg), List(Action)) {
-  #(Model(..model, error: None, edited: True, saved: False), effect.none(), [])
+  #(
+    Model(..model, error: None, error_field: "", edited: True, saved: False),
+    effect.none(),
+    [],
+  )
 }
 
 fn replace_at(values: List(String), zone: Int, value: String) -> List(String) {
@@ -277,77 +319,108 @@ fn form_view(model: Model, me: String) -> Element(Msg) {
     html.form([class("zones-form"), event.on_submit(fn(_) { Submitted })], [
       layout.subheader("Heart rate"),
       html.div([class("row")], [
-        field.text("hr-max", "Maximum heart rate", field.suffix("bpm"), [
-          attribute.type_("text"),
-          attribute.attribute("inputmode", "numeric"),
-          attribute.name("max_hr"),
-          attribute.value(model.hr.max_hr),
-          event.on_input(MaxChanged),
-        ]),
+        field.text(
+          "hr-max",
+          "Maximum heart rate",
+          on(
+            model,
+            field.Help(
+              "Zones start at 50 to 90% of it ("
+                <> int.to_string(hr_zones.default_max_hr)
+                <> " bpm until you set yours)",
+              "bpm",
+              None,
+            ),
+            "hr-max",
+          ),
+          [
+            attribute.type_("text"),
+            attribute.attribute("inputmode", "numeric"),
+            attribute.name("max_hr"),
+            attribute.value(model.hr.max_hr),
+            event.on_input(MaxChanged),
+          ],
+        ),
         button.tonal(
           [attribute.type_("button"), event.on_click(FillFromMaxClicked)],
-          [html.text("Work out zones from maximum")],
+          [html.text("Calculate heart rate zones")],
         ),
-      ]),
-      html.p([class("muted")], [
-        html.text(
-          "Defaults: 50, 60, 70, 80 and 90 percent of the maximum ("
-          <> int.to_string(hr_zones.default_max_hr)
-          <> " bpm until you set yours).",
-        ),
-      ]),
-      zones_view("hr-zone-", "numeric", model.hr.starts, hr_ends, fn(n, v) {
-        HrStartChanged(n, v)
-      }),
-      layout.subheader("Blood lactate"),
-      html.p([class("muted")], [
-        html.text("In mmol/L. Defaults: 1.0, 1.5, 2.5, 4.0 and 6.0."),
       ]),
       zones_view(
+        model,
+        "hr-zone-",
+        "numeric",
+        "bpm",
+        model.hr.starts,
+        hr_ends,
+        fn(n, v) { HrStartChanged(n, v) },
+      ),
+      layout.subheader("Blood lactate"),
+      html.p([class("muted")], [
+        html.text("Defaults: 1.0, 1.5, 2.5, 4.0 and 6.0 mmol/L."),
+      ]),
+      zones_view(
+        model,
         "lactate-zone-",
         "decimal",
+        "mmol/L",
         model.lactate,
         lactate_ends,
         fn(n, v) { LactateStartChanged(n, v) },
       ),
       layout.subheader("Pace"),
       html.div([class("row")], [
-        field.text("pace-threshold", "Threshold pace", field.suffix("min/km"), [
-          attribute.type_("text"),
-          attribute.name("threshold_pace"),
-          attribute.value(model.pace.threshold),
-          attribute.placeholder("5:00"),
-          event.on_input(ThresholdChanged),
-        ]),
+        field.text(
+          "pace-threshold",
+          "Threshold pace",
+          on(
+            model,
+            field.Help(
+              "What you could hold for an hour, as m:ss ("
+                <> pace_zones.format(pace_zones.default_threshold_s)
+                <> " until you set yours)",
+              "/km",
+              None,
+            ),
+            "pace-threshold",
+          ),
+          [
+            attribute.type_("text"),
+            attribute.name("threshold_pace"),
+            attribute.value(model.pace.threshold),
+            event.on_input(ThresholdChanged),
+          ],
+        ),
         button.tonal(
           [attribute.type_("button"), event.on_click(FillFromThresholdClicked)],
-          [html.text("Work out zones from threshold pace")],
+          [html.text("Calculate pace zones")],
         ),
       ]),
-      html.p([class("muted")], [
-        html.text(
-          "The pace you could hold for about an hour. Defaults: zones start at 140, 129, 114, 106 and 99 percent of its time per km ("
-          <> pace_zones.format(pace_zones.default_threshold_s)
-          <> " /km until you set yours).",
-        ),
-      ]),
-      zones_view("pace-zone-", "text", model.pace.starts, pace_ends, fn(n, v) {
-        PaceStartChanged(n, v)
-      }),
-      case model.error {
-        Some(message) -> error.message(message)
-        None -> element.none()
+      zones_view(
+        model,
+        "pace-zone-",
+        "text",
+        "/km",
+        model.pace.starts,
+        pace_ends,
+        fn(n, v) { PaceStartChanged(n, v) },
+      ),
+      // A problem with no input of its own shows by the buttons.
+      case model.error, model.error_field {
+        Some(message), "" -> error.message(message)
+        _, _ -> element.none()
       },
+      // The buttons stay in view at the bottom while the long form scrolls (ADR 0077).
       layout.actions([
         button.filled([attribute.type_("submit")], [html.text("Save zones")]),
-        case model.edited {
-          True ->
-            button.outlined(
-              [attribute.type_("button"), event.on_click(ResetClicked)],
-              [html.text("Undo changes")],
-            )
-          False -> element.none()
-        },
+        button.outlined(
+          [
+            attribute.type_("button"),
+            attribute.disabled(!model.edited),
+            event.on_click(ResetClicked),
+          ],
+          [html.text("Discard changes")],
+        ),
         case model.saved {
           True -> snackbar.view("Zones saved.", None, SavedClosed)
           False -> element.none()
@@ -357,9 +430,17 @@ fn form_view(model: Model, me: String) -> Element(Msg) {
   ])
 }
 
+/// The help for input `id`, with the form's problem when it is about that input.
+fn on(model: Model, help: field.Help, id: String) -> field.Help {
+  field.with_error(help, id, model.error_field, model.error)
+}
+
+/// One outlined field per zone, with its unit, and where the zone ends beside it.
 fn zones_view(
+  model: Model,
   id_prefix: String,
   input_mode: String,
+  unit: String,
   starts: List(String),
   ends: List(String),
   changed: fn(Int, String) -> Msg,
@@ -371,17 +452,18 @@ fn zones_view(
         let number = index + 1
         let id = id_prefix <> int.to_string(number)
         html.div([class("zone")], [
-          html.label([attribute.for(id)], [
-            html.text("Zone " <> int.to_string(number) <> " from"),
-          ]),
-          field.input([
-            attribute.id(id),
-            attribute.type_("text"),
-            attribute.attribute("inputmode", input_mode),
-            attribute.value(pair.0),
-            event.on_input(fn(value) { changed(number, value) }),
-          ]),
-          html.span([class("muted")], [html.text(pair.1)]),
+          field.text(
+            id,
+            "Zone " <> int.to_string(number) <> " from",
+            on(model, field.suffix(unit), id),
+            [
+              attribute.type_("text"),
+              attribute.attribute("inputmode", input_mode),
+              attribute.value(pair.0),
+              event.on_input(fn(value) { changed(number, value) }),
+            ],
+          ),
+          html.span([class("zone-end")], [html.text(pair.1)]),
         ])
       }),
   )

@@ -90,6 +90,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Activities entered by hand have no source chip and don't repeat their sport, figures stand out, and "Time" is "Duration"; the Strava page shows problems as banners with Try again, and Disconnect is the quieter button (ADR 0074).
 - The calendar's add button is a larger icon button and always visible on touch screens, long workout titles wrap between words, the intensity is read out as such, and weeks are named "Week 6 · Pre-competition 2" everywhere (ADR 0075).
 - A long plan description shows three lines, with More for the rest (ADR 0076).
+- The training zones form has outlined fields with units, shows a problem under the input it is about and moves to it, and keeps Save in view (ADR 0077).
 
 ### Fixed
 - A wrong or missing e-mail or password marks the sign-in fields as invalid for screen readers.

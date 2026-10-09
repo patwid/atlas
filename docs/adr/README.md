@@ -80,3 +80,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0074 | [Activity rows without the usual, a Duration field, and the Strava page's problems and actions](0074-activity-rows-and-strava-page.md) | Accepted |
 | 0075 | [The calendar's add button, workout titles, intensity and week names](0075-calendar-add-button-titles-and-week-names.md) | Accepted |
 | 0076 | [A long plan description is cut to three lines, with More](0076-long-plan-description-cut-to-three-lines.md) | Accepted |
+| 0077 | [The training zones form: outlined fields, errors at their input, Save in view](0077-training-zones-form-fields-and-errors.md) | Accepted |

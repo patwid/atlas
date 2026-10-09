@@ -125,17 +125,29 @@ pub fn an_invalid_form_is_not_saved_test() {
   let #(model, actions) = update(model, Submitted)
   assert actions == []
   assert model.error == Some("Pace zone 3 must start faster than pace zone 2.")
+  assert model.error_field == "pace-zone-3"
+  // Under the input it is about, which is marked.
+  let html = element.to_string(zones_page.view(model, "me"))
   assert string.contains(
-    element.to_string(zones_page.view(model, "me")),
-    "Pace zone 3 must start faster than pace zone 2.",
+    html,
+    "pace-zone-3-help\" role=\"alert\">Pace zone 3 must start faster than pace zone 2.",
+  )
+  assert string.contains(
+    html,
+    "aria-describedby=\"pace-zone-3-help\" aria-invalid=\"true\"",
   )
   let #(model, _) = update(model, LactateStartChanged(3, "1.2"))
   let #(model, _) = update(model, Submitted)
   assert model.error
     == Some("Lactate zone 3 must start higher than lactate zone 2.")
+  assert model.error_field == "lactate-zone-3"
   let #(model, _) = update(model, HrStartChanged(3, "100"))
   let #(model, _) = update(model, Submitted)
   assert model.error == Some("Zone 3 must start higher than zone 2.")
+  assert model.error_field == "hr-zone-3"
+  let #(model, _) = update(model, MaxChanged("x"))
+  let #(model, _) = update(model, Submitted)
+  assert model.error_field == "hr-max"
 }
 
 pub fn synced_changes_do_not_overwrite_what_the_user_is_typing_test() {
