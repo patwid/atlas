@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        check: [atlas-app, gleam-test, backend-test, frontend-js-test]
+        check: [atlas-app, gleam-test, backend-test, frontend-js-test, nixos-module]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

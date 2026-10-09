@@ -93,3 +93,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0087 | [Form dialogs as high as their form](0087-form-dialog-as-high-as-its-form.md) | Accepted |
 | 0088 | [The Today screen is called Home](0088-today-renamed-home.md) | Accepted |
 | 0089 | [Matching accepts half to one and a half times the plan](0089-matching-tolerance-half.md) | Accepted |
+| 0090 | [Run Atlas on NixOS with a module and a systemd unit](0090-nixos-module.md) | Accepted |

@@ -32,4 +32,4 @@ build sandbox anyway.
   data model and the Strava routes; the 37 browser-side tests still pass with the changed script. The built `atlas.js` is made by Bun 1.4.2 from nixpkgs, not by the Bun that `lustre_dev_tools` downloads, so the bytes differ from `scripts/build-frontend.sh` output.
 - Not tested: aarch64 or macOS builds; upgrading a database created by an older build (migrations are applied at start as with the scripts).
 - Updating PocketBase through nixpkgs ([0032](0032-nix-flake-dev-shell.md) warns about the version) changes what `nix run` serves; run the backend tests first.
-- No NixOS module yet: running as a service, TLS, backups and secrets are left to the host.
+- No NixOS module yet: running as a service, TLS, backups and secrets are left to the host. (The module came in [0090](0090-nixos-module.md).)

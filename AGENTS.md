@@ -45,6 +45,7 @@ Record decisions and changes yourself. Do not wait to be asked, and do not ask f
 - Install toolchain: `scripts/install-tools.sh` (versions in `.tool-versions`, ADR 0006)
 - Or, with Nix: `nix develop` (`flake.nix`, nixpkgs unstable, ADR 0032)
 - Build and run with Nix: `nix build .#atlas-app`, `nix run` (data in `$ATLAS_DATA_DIR`; ADR 0033). New files the build reads must be tracked in git.
+- Deploy on NixOS: `nixosModules.default` (`services.atlas`, `nixos/module.nix`, VM test `nixos/test.nix`; ADR 0090). Steps in `docs/deploy.md`.
 - All tests and the build as CI runs them: `nix flake check -L` (flake checks, ADR 0042). A test reading a new directory needs that path in its check's fileset in `flake.nix`.
 - Backend rule tests: `scripts/test-backend.sh` (run it after any change to `pb_migrations`, ADR 0009)
 - Strava hooks need `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_VERIFY_TOKEN` and `ATLAS_PUBLIC_URL` in the environment (ADR 0012). Never commit them.

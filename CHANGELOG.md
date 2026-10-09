@@ -45,6 +45,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Strava's official "Connect with Strava" button and "Powered by Strava" logo (unchanged, checked by checksum), and a "View on Strava" link on Strava activities (ADR 0027).
 - GitHub Actions CI (`.github/workflows/ci.yml`): builds the Nix package and runs the Gleam, backend and frontend-JS test suites on every push and pull request (ADR 0041).
 - Plan phases (base, pre-competition, competition; 4 weeks each by default), a weekly distance goal and an intensity per week (0–100%, set with a slider). The plan screen is now a calendar, weeks as rows and days as columns in bands per phase, with a sidebar for the open workout, the selected week against the goal, and the plan's settings (ADR 0043).
+- NixOS module `services.atlas` (`nixosModules.default`): PocketBase as a hardened systemd service with its data in `/var/lib/atlas`, secrets from an environment file, and `atlas-pocketbase` for admin commands; a VM test checks it, and `docs/deploy.md` describes a deployment (ADR 0090).
 
 ### Changed
 - An activity is suggested for a workout only when it is between half and one and a half times the planned distance (or duration); it was anything up to double (ADR 0089).

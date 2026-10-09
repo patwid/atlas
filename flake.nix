@@ -154,7 +154,16 @@
     {
       packages = forAll (pkgs: (atlasFor pkgs).packages);
 
-      checks = forAll (pkgs: (atlasFor pkgs).checks);
+      # The VM test of the NixOS module needs Linux (ADR 0090).
+      checks = forAll (pkgs: (atlasFor pkgs).checks // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+        nixos-module = pkgs.testers.runNixOSTest (import ./nixos/test.nix { module = self.nixosModules.default; });
+      });
+
+      # Atlas as a systemd service: `services.atlas` (ADR 0090).
+      nixosModules.default = import ./nixos/module.nix {
+        atlasPackages = self.packages;
+        flakePkgs = nixpkgs.legacyPackages;
+      };
 
       apps = forAll (pkgs: {
         default = {
