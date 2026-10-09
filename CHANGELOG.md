@@ -112,6 +112,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - A new plan opens as soon as it is saved, instead of staying on the list.
 
 ### Fixed
+- A plan's title is centred in its row on the plans list; one-line rows on every list now have their text in the middle.
 - The calendar and clock buttons sit in the middle of the date and time fields in every browser (ADR 0086).
 - On Today, a workout's kind chip is spaced from its title, as on the other lists.
 - The Settings list's rows all have the same padding: the rows that open a page no longer have it twice, so their hover and ripple cover the whole row, and the account and Sync rows no longer change shape on hover.

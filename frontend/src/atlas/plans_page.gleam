@@ -595,8 +595,10 @@ fn plan_list(
   layout.list(
     list.map(plans, fn(p) {
       html.li([], [
-        layout.row_link(route.to_path(route.Plan(p.id)), p.title),
-        chips(p),
+        html.div([], [
+          layout.row_link(route.to_path(route.Plan(p.id)), p.title),
+          chips(p),
+        ]),
         case shared_by(p) {
           Some(name) ->
             html.p([class("muted")], [html.text("Shared by " <> name)])

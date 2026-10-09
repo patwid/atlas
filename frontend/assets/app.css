@@ -565,6 +565,8 @@ label {
   background: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-extra-small);
   transition: border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
 }
+/* The item's lines are centred in it, so a one-line item is as high as M3's 56px with its text in the middle. */
+.list li:not(.info-item) { display: flex; flex-direction: column; justify-content: center; }
 .list li:first-child { border-top-left-radius: var(--md-sys-shape-corner-large); border-top-right-radius: var(--md-sys-shape-corner-large); }
 .list li:last-child { border-bottom-left-radius: var(--md-sys-shape-corner-large); border-bottom-right-radius: var(--md-sys-shape-corner-large); }
 /* Only rows that open something change shape when pointed at. */
