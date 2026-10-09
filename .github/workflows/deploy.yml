@@ -30,8 +30,8 @@ jobs:
 
       - name: The server configuration is in the repository
         run: |
-          if [ ! -f hosts/atlas/hardware-configuration.nix ]; then
-            echo "::error::hosts/atlas/hardware-configuration.nix is missing; see docs/deploy.md."
+          if [ ! -f nix/hosts/atlas/hardware-configuration.nix ]; then
+            echo "::error::nix/hosts/atlas/hardware-configuration.nix is missing; see docs/deploy.md."
             exit 1
           fi
 

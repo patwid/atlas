@@ -2,7 +2,7 @@
 
 Atlas runs on a Hetzner Cloud VPS with NixOS, behind Caddy ([ADR 0090](adr/0090-nixos-module.md),
 [ADR 0091](adr/0091-deploy-to-hetzner-with-caddy.md)). The server's whole configuration is in this repository
-(`hosts/atlas/`), and `.github/workflows/deploy.yml` switches the server to every `master` commit that passed CI.
+(`nix/hosts/atlas/`), and `.github/workflows/deploy.yml` switches the server to every `master` commit that passed CI.
 
 **Without a domain, for now** ([ADR 0092](adr/0092-plain-http-on-the-ip-until-there-is-a-domain.md)): set `publicUrl` to
 `http://<the server's IPv4 address>` and skip the DNS records, `acmeEmail` and the Strava steps. Caddy then serves plain HTTP
@@ -21,20 +21,20 @@ of your own; everything below then works as with a domain.
 
 ### 2. Copy the machine's own settings into the repository
 
-The deploy replaces the server's `/etc/nixos` configuration with `hosts/atlas/`, so what is specific to the machine
+The deploy replaces the server's `/etc/nixos` configuration with `nix/hosts/atlas/`, so what is specific to the machine
 has to come along. From your laptop:
 
 ```sh
-scp root@<server>:/etc/nixos/hardware-configuration.nix hosts/atlas/
-scp root@<server>:/etc/nixos/networking.nix hosts/atlas/   # only if it exists (nixos-infect writes one)
+scp root@<server>:/etc/nixos/hardware-configuration.nix nix/hosts/atlas/
+scp root@<server>:/etc/nixos/networking.nix nix/hosts/atlas/   # only if it exists (nixos-infect writes one)
 ssh root@<server> cat /etc/nixos/configuration.nix         # read it for the next step
 ```
 
-- In `hosts/atlas/machine.nix`, set the **boot loader** and **`system.stateVersion`** exactly as in that
+- In `nix/hosts/atlas/machine.nix`, set the **boot loader** and **`system.stateVersion`** exactly as in that
   `configuration.nix`. Anything else in it you want to keep (swap, extra users, packages) goes there too.
 - Check that `hardware-configuration.nix` sets `nixpkgs.hostPlatform` (`x86_64-linux`, or `aarch64-linux` on CAX);
   add it if your file is older and lacks it.
-- In `hosts/atlas/default.nix`, set `publicUrl` (`https://<domain>`, or `http://<IP>` for now), `acmeEmail` (only
+- In `nix/hosts/atlas/default.nix`, set `publicUrl` (`https://<domain>`, or `http://<IP>` for now), `acmeEmail` (only
   for https) and `sshKeys`: your own public key, and the deploy key from step 3. Without your key in `sshKeys`, the
   first deploy locks you out of SSH.
 
@@ -79,7 +79,7 @@ nix run nixpkgs#nixos-rebuild -- switch --flake .#atlas \
   --target-host root@<server> --build-host root@<server> --use-substitutes
 ```
 
-Then commit `hosts/atlas/` and push; from then on the workflow deploys.
+Then commit `nix/hosts/atlas/` and push; from then on the workflow deploys.
 
 ### 6. Inside the app
 

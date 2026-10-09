@@ -156,19 +156,19 @@
 
       # The VM test of the NixOS module needs Linux (ADR 0090).
       checks = forAll (pkgs: (atlasFor pkgs).checks // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
-        nixos-module = pkgs.testers.runNixOSTest (import ./nixos/test.nix { module = self.nixosModules.default; });
+        nixos-module = pkgs.testers.runNixOSTest (import ./nix/nixos/test.nix { module = self.nixosModules.default; });
       });
 
       # The production server (ADR 0091). It exists once the server's hardware-configuration.nix has been copied
-      # into hosts/atlas; the system for it comes from that file (`nixpkgs.hostPlatform`).
-      nixosConfigurations = nixpkgs.lib.optionalAttrs (builtins.pathExists ./hosts/atlas/hardware-configuration.nix) {
+      # into nix/hosts/atlas; the system for it comes from that file (`nixpkgs.hostPlatform`).
+      nixosConfigurations = nixpkgs.lib.optionalAttrs (builtins.pathExists ./nix/hosts/atlas/hardware-configuration.nix) {
         atlas = nixpkgs.lib.nixosSystem {
-          modules = [ self.nixosModules.default ./hosts/atlas ];
+          modules = [ self.nixosModules.default ./nix/hosts/atlas ];
         };
       };
 
       # Atlas as a systemd service: `services.atlas` (ADR 0090).
-      nixosModules.default = import ./nixos/module.nix {
+      nixosModules.default = import ./nix/nixos/module.nix {
         atlasPackages = self.packages;
         flakePkgs = nixpkgs.legacyPackages;
       };

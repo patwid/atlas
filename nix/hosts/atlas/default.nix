@@ -24,16 +24,16 @@ in
     ++ lib.optional (builtins.pathExists ./networking.nix) ./networking.nix;
 
   assertions = [
-    { assertion = publicUrl != "https://atlas.example.org"; message = "hosts/atlas: set `publicUrl` to the server's address."; }
+    { assertion = publicUrl != "https://atlas.example.org"; message = "nix/hosts/atlas: set `publicUrl` to the server's address."; }
     {
       assertion = https -> acmeEmail != "admin@example.org";
-      message = "hosts/atlas: set `acmeEmail` for Let's Encrypt.";
+      message = "nix/hosts/atlas: set `acmeEmail` for Let's Encrypt.";
     }
-    { assertion = sshKeys != [ ]; message = "hosts/atlas: add the owner's and the deploy SSH keys, or nobody can log in."; }
+    { assertion = sshKeys != [ ]; message = "nix/hosts/atlas: add the owner's and the deploy SSH keys, or nobody can log in."; }
     {
       # Set by machine.nix, not left at the default, which follows nixpkgs and would change on an update.
       assertion = options.system.stateVersion.highestPrio < (lib.mkOptionDefault null).priority;
-      message = "hosts/atlas: copy system.stateVersion from the server into machine.nix.";
+      message = "nix/hosts/atlas: copy system.stateVersion from the server into machine.nix.";
     }
   ];
 

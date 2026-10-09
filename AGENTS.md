@@ -43,9 +43,9 @@ Record decisions and changes yourself. Do not wait to be asked, and do not ask f
 - Sandbox network access: add new external hosts to `sbx/default/spec.yaml` (ADR 0007). The owner applies it with `sbx kit add`.
 - Sandbox environment: `sbxenv.yaml` (ADR 0008). Never add `lifecycle:`, `secrets:` or `bindings:` to it.
 - Install toolchain: `scripts/install-tools.sh` (versions in `.tool-versions`, ADR 0006)
-- Or, with Nix: `nix develop` (`flake.nix`, nixpkgs unstable, ADR 0032)
+- Or, with Nix: `nix develop` (`flake.nix`, nixpkgs unstable, ADR 0032). Nix files other than `flake.nix` and `flake.lock` live under `nix/` (ADR 0093).
 - Build and run with Nix: `nix build .#atlas-app`, `nix run` (data in `$ATLAS_DATA_DIR`; ADR 0033). New files the build reads must be tracked in git.
-- Deploy on NixOS: `nixosModules.default` (`services.atlas`, `nixos/module.nix`, VM test `nixos/test.nix`; ADR 0090). The production server is `hosts/atlas/`, deployed by `.github/workflows/deploy.yml` after CI on `master` (ADR 0091). Steps in `docs/deploy.md`.
+- Deploy on NixOS: `nixosModules.default` (`services.atlas`, `nix/nixos/module.nix`, VM test `nix/nixos/test.nix`; ADR 0090). The production server is `nix/hosts/atlas/`, deployed by `.github/workflows/deploy.yml` after CI on `master` (ADR 0091). Steps in `docs/deploy.md`.
 - All tests and the build as CI runs them: `nix flake check -L` (flake checks, ADR 0042). A test reading a new directory needs that path in its check's fileset in `flake.nix`.
 - Backend rule tests: `scripts/test-backend.sh` (run it after any change to `pb_migrations`, ADR 0009)
 - Strava hooks need `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_VERIFY_TOKEN` and `ATLAS_PUBLIC_URL` in the environment (ADR 0012). Never commit them.
