@@ -156,6 +156,7 @@ fn nav(current: Route, coaching: Bool, problems: Int) -> Element(msg) {
               badge(target, problems),
             ]),
             html.text(label),
+            badge_text(target, problems),
           ],
         )
       })
@@ -163,18 +164,26 @@ fn nav(current: Route, coaching: Bool, problems: Int) -> Element(msg) {
   ])
 }
 
-/// A Material 3 badge with the number of sync problems on the Settings tab, so they are seen from anywhere. It is
-/// read out with the tab's name.
+/// A Material 3 badge with the number of sync problems on the Settings tab, so they are seen from anywhere. The
+/// number is drawn only; `badge_text` reads it out after the tab's name (an `aria-label` on a `span` is not read).
 fn badge(target: Route, problems: Int) -> Element(msg) {
   case target, problems {
     route.Settings, n if n > 0 ->
-      html.span(
-        [
-          class("nav-badge"),
-          attribute.aria_label(int.to_string(n) <> " sync problems"),
-        ],
-        [html.text(int.to_string(int.min(n, 99)))],
-      )
+      html.span([class("nav-badge"), attribute.aria_hidden(True)], [
+        html.text(int.to_string(int.min(n, 99))),
+      ])
+    _, _ -> element.none()
+  }
+}
+
+fn badge_text(target: Route, problems: Int) -> Element(msg) {
+  case target, problems {
+    route.Settings, 1 ->
+      html.span([class("visually-hidden")], [html.text(", 1 sync problem")])
+    route.Settings, n if n > 1 ->
+      html.span([class("visually-hidden")], [
+        html.text(", " <> int.to_string(n) <> " sync problems"),
+      ])
     _, _ -> element.none()
   }
 }

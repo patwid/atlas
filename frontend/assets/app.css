@@ -5,6 +5,14 @@
    baseline scheme, unchanged (the values of Google's @material/web tokens, M3 34.0); every color in the app is one
    of these roles, except Strava's brand orange (ADR 0027) and the intensity colours (ADR 0061). The type scale, shapes, state layers and component
    measures follow m3.material.io. */
+/* Roboto Flex, M3's typeface, served with the app (ADR 0079): the Latin subset with the weight axis, so the type scale
+   looks as designed on every device and offline. Other scripts fall back to the system font. Licence: fonts/OFL.txt. */
+@font-face {
+  font-family: "Roboto Flex"; font-style: normal; font-weight: 100 1000; font-display: swap;
+  src: url("/fonts/roboto-flex-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 :root {
   --md-sys-color-primary: #6750a4;
   --md-sys-color-on-primary: #ffffff;
@@ -158,6 +166,9 @@
   --focus-ring: 3px solid var(--md-sys-color-secondary);
   /* The navigation bar's height, which floating things (FAB, snackbar) keep clear of; 0 next to the rail. */
   --nav-bar-height: calc(5rem + env(safe-area-inset-bottom));
+  /* The small app bar's height, with the room it leaves for a phone's status bar in an installed app: what sticks
+     under it (a plan's tabs, the calendar's week labels) starts there (ADR 0079). */
+  --app-bar-height: calc(4rem + max(0px, env(safe-area-inset-top, 0px) - 0.5rem));
   /* The content column's widest; the app bar lines up with it. */
   --content-max: 48rem;
 }
@@ -980,7 +991,7 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
 /* Primary tabs (ADR 0058): under the app bar, the selected tab's label in primary with a 3px indicator under it
    that is as wide as the label, with rounded top corners. */
 .md-tab-bar {
-  position: sticky; top: 4rem; z-index: 1; display: flex; margin: 0.5rem -1rem 1rem; padding: 0 1rem;
+  position: sticky; top: var(--app-bar-height); z-index: 1; display: flex; margin: 0.5rem -1rem 1rem; padding: 0 1rem;
   background: var(--md-sys-color-surface); border-bottom: 1px solid var(--md-sys-color-surface-container-highest);
 }
 html[data-scrolled] .md-tab-bar { background: var(--md-sys-color-surface-container); }
@@ -1062,7 +1073,7 @@ html[data-scrolled] .md-tab-bar { background: var(--md-sys-color-surface-contain
 /* The calendar on a phone (ADR 0062, 0072): a week's label stays under the app bar and the plan's tabs while its days
    scroll by, and a day without workouts takes less room, or none when it cannot be added to. */
 @media (max-width: 52.4375rem) {
-  .calendar-week .week-label { position: sticky; top: 7rem; z-index: 1; }
+  .calendar-week .week-label { position: sticky; top: calc(var(--app-bar-height) + 3rem); z-index: 1; }
   .calendar-day:not(:has(.workout)) { min-height: 0; padding-top: 0.125rem; padding-bottom: 0.125rem; }
   .calendar-day:not(:has(.workout)) .day-name { opacity: 0.7; }
   /* For someone who cannot edit the plan an empty day holds nothing, so the stacked days leave it out (ADR 0072). */

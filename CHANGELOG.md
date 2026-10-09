@@ -92,8 +92,10 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - A long plan description shows three lines, with More for the rest (ADR 0076).
 - The training zones form has outlined fields with units, shows a problem under the input it is about and moves to it, and keeps Save in view (ADR 0077).
 - The person finder shows a problem with the address under its field, and Settings rows say what is set: your zones, who can see your training, whether Strava is connected (ADR 0078).
+- The app is set in Roboto Flex, served with it and cached for offline use (ADR 0079).
 
 ### Fixed
+- Screen readers hear the Settings tab's badge as "3 sync problems", and a plan's tabs and the calendar's week labels stay below the app bar on phones with a notch (ADR 0079).
 - A wrong or missing e-mail or password marks the sign-in fields as invalid for screen readers.
 - Today shows a loading indicator until the plans you follow are read, instead of briefly saying you follow none.
 - Training zones show a loading indicator until the saved zones are read, instead of the defaults, which an early edit could have saved over them.

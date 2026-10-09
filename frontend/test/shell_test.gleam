@@ -68,7 +68,10 @@ pub fn being_offline_shows_an_icon_in_the_app_bar_test() {
 
 pub fn sync_problems_are_a_badge_on_the_settings_tab_test() {
   let html = html_of(shell.Frame(..frame(route.Today), problems: 3))
-  assert string.contains(html, "aria-label=\"3 sync problems\"")
+  assert string.contains(
+    html,
+    "Settings<span class=\"visually-hidden\">, 3 sync problems",
+  )
   assert !string.contains(html_of(frame(route.Today)), "nav-badge")
 }
 
