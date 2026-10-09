@@ -351,10 +351,14 @@ fn status(
 fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
   case item.status {
     today.RestDay -> status("rest", None, "Rest day", "")
+    // Only activities of the workout's own day can be linked, so a workout still to come has nothing to offer.
     today.Planned ->
       html.div([], [
         status("planned", Some(icon.Pending), "To do", ""),
-        link_button("Link an activity", ChooseClicked(key)),
+        case item.scheduled.date == inputs.today {
+          True -> link_button("Link an activity", ChooseClicked(key))
+          False -> element.none()
+        },
       ])
     today.Missed ->
       html.div([], [

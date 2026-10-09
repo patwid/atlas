@@ -285,6 +285,14 @@ pub fn missed_workouts_say_so_and_offer_a_link_test() {
   assert string.contains(html, "Link an activity")
 }
 
+pub fn workouts_still_to_come_offer_no_link_test() {
+  let tomorrow_only = Inputs(..inputs([]), today: monday, activities: [])
+  let html = html_of(today_page.new(), tomorrow_only)
+  let assert [_, coming_up] = string.split(html, "Coming up")
+  assert string.contains(coming_up, "To do")
+  assert !string.contains(coming_up, "Link an activity")
+}
+
 pub fn the_activity_list_offers_that_days_activities_test() {
   let model = Model(..today_page.new(), choosing: Some(wednesday_key))
   let html = html_of(model, inputs([]))
