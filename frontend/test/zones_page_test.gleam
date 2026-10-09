@@ -121,26 +121,27 @@ pub fn a_coachs_device_ignores_the_athletes_zones_test() {
 }
 
 pub fn an_invalid_form_is_not_saved_test() {
-  let #(model, _) = update(loaded("[]"), PaceStartChanged(3, "7:30"))
+  let #(model, _) = update(loaded("[]"), LactateStartChanged(3, "1.2"))
   let #(model, actions) = update(model, Submitted)
   assert actions == []
-  assert model.error == Some("Pace zone 3 must start faster than pace zone 2.")
-  assert model.error_field == "pace-zone-3"
+  assert model.error
+    == Some("Lactate zone 3 must start higher than lactate zone 2.")
+  assert model.error_field == "lactate-zone-3"
   // Under the input it is about, which is marked.
   let html = element.to_string(zones_page.view(model, "me"))
   assert string.contains(
     html,
-    "pace-zone-3-help\" role=\"alert\">Pace zone 3 must start faster than pace zone 2.",
+    "lactate-zone-3-help\" role=\"alert\">Lactate zone 3 must start higher than lactate zone 2.",
   )
   assert string.contains(
     html,
-    "aria-describedby=\"pace-zone-3-help\" aria-invalid=\"true\"",
+    "aria-describedby=\"lactate-zone-3-help\" aria-invalid=\"true\"",
   )
-  let #(model, _) = update(model, LactateStartChanged(3, "1.2"))
+  // The problem higher up the form is shown first.
+  let #(model, _) = update(model, PaceStartChanged(3, "7:30"))
   let #(model, _) = update(model, Submitted)
-  assert model.error
-    == Some("Lactate zone 3 must start higher than lactate zone 2.")
-  assert model.error_field == "lactate-zone-3"
+  assert model.error == Some("Pace zone 3 must start faster than pace zone 2.")
+  assert model.error_field == "pace-zone-3"
   let #(model, _) = update(model, HrStartChanged(3, "100"))
   let #(model, _) = update(model, Submitted)
   assert model.error == Some("Zone 3 must start higher than zone 2.")

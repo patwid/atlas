@@ -1,5 +1,5 @@
 //// Training zones, in Settings (ADR 0034, 0035, 0036): the maximum heart rate and where each heart-rate zone
-//// starts, where each lactate zone starts, and the threshold pace and where each pace zone starts. The form is filled with the saved zones, or with the defaults until the
+//// starts, the threshold pace and where each pace zone starts, and where each lactate zone starts. The form is filled with the saved zones, or with the defaults until the
 //// athlete saves their own. One row per athlete, whose ID is the athlete's user ID, so devices that save offline
 //// write to the same row. Own state and messages; writes come back as `Action`s.
 
@@ -191,13 +191,13 @@ fn parse(model: Model) -> Result(athlete_settings.Zones, #(String, String)) {
   use hr <- result.try(
     hr_zones.parse_at(model.hr) |> result.map_error(input("hr-max", "hr-zone-")),
   )
-  use lactate <- result.try(
-    lactate_zones.parse_at(model.lactate)
-    |> result.map_error(input("", "lactate-zone-")),
-  )
   use pace <- result.try(
     pace_zones.parse_at(model.pace)
     |> result.map_error(input("pace-threshold", "pace-zone-")),
+  )
+  use lactate <- result.try(
+    lactate_zones.parse_at(model.lactate)
+    |> result.map_error(input("", "lactate-zone-")),
   )
   Ok(athlete_settings.Zones(hr, lactate, pace))
 }
@@ -355,19 +355,6 @@ fn form_view(model: Model, me: String) -> Element(Msg) {
         hr_ends,
         fn(n, v) { HrStartChanged(n, v) },
       ),
-      layout.subheader("Blood lactate"),
-      html.p([class("muted")], [
-        html.text("Defaults: 1.0, 1.5, 2.5, 4.0 and 6.0 mmol/L."),
-      ]),
-      zones_view(
-        model,
-        "lactate-zone-",
-        "decimal",
-        "mmol/L",
-        model.lactate,
-        lactate_ends,
-        fn(n, v) { LactateStartChanged(n, v) },
-      ),
       layout.subheader("Pace"),
       html.div([class("zone-source")], [
         field.text(
@@ -404,6 +391,19 @@ fn form_view(model: Model, me: String) -> Element(Msg) {
         model.pace.starts,
         pace_ends,
         fn(n, v) { PaceStartChanged(n, v) },
+      ),
+      layout.subheader("Blood lactate"),
+      html.p([class("muted")], [
+        html.text("Defaults: 1.0, 1.5, 2.5, 4.0 and 6.0 mmol/L."),
+      ]),
+      zones_view(
+        model,
+        "lactate-zone-",
+        "decimal",
+        "mmol/L",
+        model.lactate,
+        lactate_ends,
+        fn(n, v) { LactateStartChanged(n, v) },
       ),
       // A problem with no input of its own shows by the buttons.
       case model.error, model.error_field {
