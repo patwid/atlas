@@ -159,6 +159,14 @@
         nixos-module = pkgs.testers.runNixOSTest (import ./nixos/test.nix { module = self.nixosModules.default; });
       });
 
+      # The production server (ADR 0091). It exists once the server's hardware-configuration.nix has been copied
+      # into hosts/atlas; the system for it comes from that file (`nixpkgs.hostPlatform`).
+      nixosConfigurations = nixpkgs.lib.optionalAttrs (builtins.pathExists ./hosts/atlas/hardware-configuration.nix) {
+        atlas = nixpkgs.lib.nixosSystem {
+          modules = [ self.nixosModules.default ./hosts/atlas ];
+        };
+      };
+
       # Atlas as a systemd service: `services.atlas` (ADR 0090).
       nixosModules.default = import ./nixos/module.nix {
         atlasPackages = self.packages;

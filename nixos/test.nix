@@ -1,5 +1,6 @@
-# VM test of the NixOS module (ADR 0090): the service starts, serves the app, applies the migrations, reads its
-# secrets from the environment file, keeps its data across a restart, and the admin CLI writes as the service user.
+# VM test of the NixOS module (ADR 0090, 0091): the service starts, serves the app, applies the migrations, reads its
+# secrets from the environment file, keeps its data across a restart, the admin CLI writes as the service user, and
+# Caddy serves it over HTTPS.
 { module }:
 {
   name = "atlas-nixos-module";
@@ -8,7 +9,9 @@
     imports = [ module ];
     services.atlas = {
       enable = true;
-      publicUrl = "https://atlas.example.org";
+      publicUrl = "https://atlas.test";
+      # No Let's Encrypt in a VM: Caddy signs the certificate with its own CA.
+      caddy = { enable = true; extraConfig = "tls internal"; };
       # Only a test file in the store; a real host keeps this outside the store.
       environmentFile = pkgs.writeText "atlas.env" ''
         STRAVA_CLIENT_ID=12345
@@ -17,6 +20,7 @@
       '';
     };
     environment.systemPackages = [ pkgs.curl pkgs.jq ];
+    networking.hosts."127.0.0.1" = [ "atlas.test" ];
     virtualisation.memorySize = 1024;
   };
 
@@ -59,6 +63,16 @@
         assert api("GET", "/api/collections/plans/records", token=alice)["items"] == []
         status = api("GET", "/api/atlas/strava/status", token=alice)
         assert status == {"configured": True, "connected": False}, status
+
+    with subtest("Caddy serves the app over HTTPS"):
+        machine.wait_for_unit("caddy.service")
+        machine.wait_for_open_port(443)
+        machine.wait_until_succeeds("curl -skf https://atlas.test/api/health", timeout=60)
+        headers = machine.succeed("curl -skI https://atlas.test/")
+        assert "strict-transport-security: max-age=31536000" in headers.lower(), headers
+        machine.succeed("curl -skf https://atlas.test/ | grep -q '<html'")
+        redirect = machine.succeed("curl -s -o /dev/null -w '%{http_code} %{redirect_url}' http://atlas.test/plans")
+        assert redirect.startswith("308 https://atlas.test/plans"), redirect
 
     with subtest("the data survives a restart"):
         machine.systemctl("restart atlas.service")

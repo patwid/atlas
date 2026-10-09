@@ -1,0 +1,61 @@
+name: Deploy
+
+# Deploys master to the production server after CI passed on it, or by hand (ADR 0091). The server builds its own
+# system (`--build-host`), so the runner only evaluates the flake and talks SSH, whatever the server's CPU.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [master]
+  workflow_dispatch:
+
+# One deploy at a time; a newer one waits instead of cancelling a switch half-way.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    # Secrets: DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS. Variable: DEPLOY_HOST (the server's address).
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The commit CI tested, not whatever master is by now.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: The server configuration is in the repository
+        run: |
+          if [ ! -f hosts/atlas/hardware-configuration.nix ]; then
+            echo "::error::hosts/atlas/hardware-configuration.nix is missing; see docs/deploy.md."
+            exit 1
+          fi
+
+      - uses: DeterminateSystems/nix-installer-action@v16
+
+      - name: SSH access
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Switch the server to this commit
+        env:
+          HOST: root@${{ vars.DEPLOY_HOST }}
+        run: |
+          nix shell --inputs-from . nixpkgs#nixos-rebuild --command \
+            nixos-rebuild switch --flake .#atlas \
+              --target-host "$HOST" --build-host "$HOST" --use-substitutes --no-reexec
+
+      - name: The app answers on its public address
+        run: |
+          url=$(nix eval --raw .#nixosConfigurations.atlas.config.services.atlas.publicUrl)
+          curl -fsS --retry 10 --retry-delay 6 --retry-all-errors "$url/api/health"

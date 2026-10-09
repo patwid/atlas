@@ -1,81 +1,113 @@
-# Deploying Atlas on NixOS
+# Deploying Atlas
 
-The flake has a NixOS module that runs Atlas as a systemd service ([ADR 0090](adr/0090-nixos-module.md)). TLS and
-backups are up to the host; this page shows one way to do both.
+Atlas runs on a Hetzner Cloud VPS with NixOS, behind Caddy ([ADR 0090](adr/0090-nixos-module.md),
+[ADR 0091](adr/0091-deploy-to-hetzner-with-caddy.md)). The server's whole configuration is in this repository
+(`hosts/atlas/`), and `.github/workflows/deploy.yml` switches the server to every `master` commit that passed CI.
 
-## Host configuration
+## One-time setup
 
-```nix
-# flake.nix of the host
-{
-  inputs.atlas.url = "github:<owner>/atlas";
+### 1. DNS and the Hetzner firewall
 
-  outputs = { nixpkgs, atlas, ... }: {
-    nixosConfigurations.myhost = nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
-      modules = [
-        atlas.nixosModules.default
-        ./configuration.nix
-      ];
-    };
-  };
-}
+- Point the domain at the server: an `A` record to its IPv4 address and an `AAAA` record to its IPv6 address.
+- If the server is in a Hetzner Cloud firewall, allow TCP 22, 80 and 443, and UDP 443 (HTTP/3). Caddy needs port 80
+  reachable to get its Let's Encrypt certificate.
+
+### 2. Copy the machine's own settings into the repository
+
+The deploy replaces the server's `/etc/nixos` configuration with `hosts/atlas/`, so what is specific to the machine
+has to come along. From your laptop:
+
+```sh
+scp root@<server>:/etc/nixos/hardware-configuration.nix hosts/atlas/
+scp root@<server>:/etc/nixos/networking.nix hosts/atlas/   # only if it exists (nixos-infect writes one)
+ssh root@<server> cat /etc/nixos/configuration.nix         # read it for the next step
 ```
 
-```nix
-# configuration.nix
-{
-  services.atlas = {
-    enable = true;
-    publicUrl = "https://atlas.example.org";
-    environmentFile = "/var/lib/secrets/atlas.env";   # not in the Nix store
-  };
+- In `hosts/atlas/machine.nix`, set the **boot loader** and **`system.stateVersion`** exactly as in that
+  `configuration.nix`. Anything else in it you want to keep (swap, extra users, packages) goes there too.
+- Check that `hardware-configuration.nix` sets `nixpkgs.hostPlatform` (`x86_64-linux`, or `aarch64-linux` on CAX);
+  add it if your file is older and lacks it.
+- In `hosts/atlas/default.nix`, set `domain`, `acmeEmail` and `sshKeys`: your own public key, and the deploy key
+  from step 3. Without your key in `sshKeys`, the first deploy locks you out of SSH.
 
-  # TLS: Caddy gets a Let's Encrypt certificate and proxies to PocketBase on 127.0.0.1:8090.
-  services.caddy = {
-    enable = true;
-    virtualHosts."atlas.example.org".extraConfig = ''
-      reverse_proxy 127.0.0.1:8090
-    '';
-  };
-  networking.firewall.allowedTCPPorts = [ 80 443 ];
-}
+`nix eval .#nixosConfigurations.atlas.config.system.build.toplevel.drvPath` lists anything still missing.
+
+### 3. Deploy key and GitHub environment
+
+```sh
+ssh-keygen -t ed25519 -N '' -C atlas-deploy -f atlas-deploy   # atlas-deploy.pub goes into sshKeys
+ssh-keyscan <server> > known_hosts
 ```
 
-The environment file holds the Strava secrets, one `NAME=value` per line, readable by root only:
+In the GitHub repository, under Settings → Environments, create `production` with:
+
+- secret `DEPLOY_SSH_KEY`: the contents of `atlas-deploy` (the private key), then delete the local file;
+- secret `DEPLOY_KNOWN_HOSTS`: the contents of `known_hosts`;
+- variable `DEPLOY_HOST`: the server's IP address or host name.
+
+Optionally add yourself as a required reviewer, so every deploy waits for your approval.
+
+### 4. Secrets on the server
+
+The Strava secrets never go into the repository. Create the file before the first deploy; it may stay empty until
+the Strava app exists:
+
+```sh
+ssh root@<server> 'install -d -m 700 /var/lib/secrets && install -m 600 /dev/null /var/lib/secrets/atlas.env'
+```
+
+Its lines, once you have them:
 
 ```sh
 STRAVA_CLIENT_ID=...
 STRAVA_CLIENT_SECRET=...
 STRAVA_VERIFY_TOKEN=...      # any random string, e.g. from `openssl rand -hex 24`
-STRAVA_SUBSCRIPTION_ID=...   # added after step 3 below
+STRAVA_SUBSCRIPTION_ID=...   # added after the subscribe step below
 ```
 
-Other options: `listenAddress`, `port`, `openFirewall`, `environment` (for example `ATLAS_PURGE_RETENTION_DAYS`),
-`package` and `pocketbasePackage`.
+After changing it: `ssh root@<server> systemctl restart atlas`.
 
-## First start
+### 5. First deploy, from your laptop
 
-1. **Superuser:** `sudo atlas-pocketbase superuser upsert you@example.org '<password>'`. The command runs as the
-   service user, so the database stays owned by it. The admin UI is at `https://atlas.example.org/_/`.
-2. **Accounts:** the app has no sign-up page; create users in the admin UI (`users` collection).
-3. **Strava:** in the Strava API settings, set the authorization callback domain to `atlas.example.org`. Then
-   subscribe to webhooks once, with a superuser token from the admin UI or from
-   `POST /api/collections/_superusers/auth-with-password`:
+Do the first switch by hand, so you see it happen and can react:
+
+```sh
+nix run nixpkgs#nixos-rebuild -- switch --flake .#atlas \
+  --target-host root@<server> --build-host root@<server> --use-substitutes
+```
+
+Then commit `hosts/atlas/` and push; from then on the workflow deploys.
+
+### 6. Inside the app
+
+1. **Superuser:** `ssh root@<server> atlas-pocketbase superuser upsert you@example.org '<password>'`. The admin
+   UI is at `https://<domain>/_/`.
+2. **Behind the proxy:** in the admin UI, Settings → Application, set the trusted proxy header to `X-Forwarded-For`,
+   so logs and rate limits see the visitor's address instead of Caddy's.
+3. **Accounts:** the app has no sign-up page; create users in the admin UI (`users` collection).
+4. **Strava:** in the Strava API settings, set the authorization callback domain to your domain. Subscribe to webhooks
+   once, with a superuser token (from the admin UI or `POST /api/collections/_superusers/auth-with-password`):
 
    ```sh
-   curl -X POST https://atlas.example.org/api/atlas/strava/subscribe -H "Authorization: <superuser token>"
+   curl -X POST https://<domain>/api/atlas/strava/subscribe -H "Authorization: <superuser token>"
    ```
 
-   Put the returned id into `STRAVA_SUBSCRIPTION_ID` and restart: `systemctl restart atlas`.
+   Put the returned id into `STRAVA_SUBSCRIPTION_ID` and restart the service.
 
-## Data, backups and upgrades
+## Every deploy
 
-- Everything lives in `/var/lib/atlas/pb_data` (SQLite database, uploads, logs), owned by `atlas`, mode 0700.
-  The Strava tokens are stored there in plain text ([ADR 0012](adr/0012-strava-integration-hooks.md)).
-- Backups: PocketBase's own backups (admin UI → Settings → Backups, with a schedule and optional S3 storage)
-  copy the database consistently while the service runs. A file-level backup of `/var/lib/atlas` is only
-  consistent with the service stopped.
-- Upgrades: update the `atlas` input and rebuild. The service restarts, and PocketBase applies new migrations
-  at start. Take a backup first.
-- Logs: `journalctl -u atlas`.
+A push to `master` runs CI; when it passes, the Deploy workflow evaluates the server's configuration, has the server
+build and switch to it over SSH, and checks `https://<domain>/api/health`. It can also be started by hand (Actions →
+Deploy → Run workflow). PocketBase applies new migrations when it starts, so take a backup before a deploy that adds one.
+
+**Rolling back:** `ssh root@<server> nixos-rebuild switch --rollback`, or pick the previous generation in the boot
+menu from the Hetzner console if the server no longer answers. Then revert the commit, or the next deploy brings it back.
+
+## Data and backups
+
+- Everything lives in `/var/lib/atlas/pb_data` (SQLite database, uploads, logs), owned by `atlas`, mode 0700. The
+  Strava tokens are stored there in plain text ([ADR 0012](adr/0012-strava-integration-hooks.md)).
+- PocketBase's own backups (admin UI → Settings → Backups, with a schedule and optional S3 storage) copy the database
+  consistently while the service runs. Hetzner's server backups or snapshots copy the disk as it is at that moment,
+  which is not guaranteed to be consistent for SQLite.
+- Logs: `journalctl -u atlas` and `journalctl -u caddy`.

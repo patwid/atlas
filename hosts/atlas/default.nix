@@ -1,0 +1,64 @@
+# The production server: a Hetzner Cloud VPS running NixOS (ADR 0091), deployed by .github/workflows/deploy.yml.
+# What is specific to the machine (disks, boot loader, network, state version) is copied from the server into
+# hardware-configuration.nix, machine.nix and, if the server has one, networking.nix; see docs/deploy.md.
+{ lib, options, ... }:
+
+let
+  # Fill these in before the first deploy; the assertions below stop a deploy that still has the examples.
+  domain = "atlas.example.org";
+  acmeEmail = "admin@example.org";
+  sshKeys = [
+    # The owner's own key, so the server stays reachable without CI.
+    # "ssh-ed25519 AAAA... owner@laptop"
+    # The deploy key whose private half is the DEPLOY_SSH_KEY secret of the GitHub environment `production`.
+    # "ssh-ed25519 AAAA... atlas-deploy"
+  ];
+in
+{
+  imports = [ ./hardware-configuration.nix ./machine.nix ]
+    ++ lib.optional (builtins.pathExists ./networking.nix) ./networking.nix;
+
+  assertions = [
+    { assertion = domain != "atlas.example.org"; message = "hosts/atlas: set `domain` to the server's domain."; }
+    { assertion = acmeEmail != "admin@example.org"; message = "hosts/atlas: set `acmeEmail` for Let's Encrypt."; }
+    { assertion = sshKeys != [ ]; message = "hosts/atlas: add the owner's and the deploy SSH keys, or nobody can log in."; }
+    {
+      # Set by machine.nix, not left at the default, which follows nixpkgs and would change on an update.
+      assertion = options.system.stateVersion.highestPrio < (lib.mkOptionDefault null).priority;
+      message = "hosts/atlas: copy system.stateVersion from the server into machine.nix.";
+    }
+  ];
+
+  networking.hostName = lib.mkDefault "atlas";
+
+  services.atlas = {
+    enable = true;
+    publicUrl = "https://${domain}";
+    # Created by hand on the server (docs/deploy.md); it may be empty until Strava is set up.
+    environmentFile = "/var/lib/secrets/atlas.env";
+    caddy.enable = true;
+  };
+  services.caddy.email = acmeEmail;
+
+  # Deploys log in as root with a key; no passwords.
+  services.openssh = {
+    enable = true;
+    settings = {
+      PasswordAuthentication = false;
+      KbdInteractiveAuthentication = false;
+      PermitRootLogin = "prohibit-password";
+    };
+  };
+  users.users.root.openssh.authorizedKeys.keys = sshKeys;
+  networking.firewall.enable = true;
+
+  # The deploy builds on the server, so it needs flakes; old generations are cleaned up weekly.
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 30d";
+  };
+  boot.loader.grub.configurationLimit = lib.mkDefault 10;
+  boot.loader.systemd-boot.configurationLimit = lib.mkDefault 10;
+}

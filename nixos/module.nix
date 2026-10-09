@@ -8,6 +8,7 @@ let
   inherit (lib) mkOption mkEnableOption types;
   system = pkgs.stdenv.hostPlatform.system;
   stateDir = "/var/lib/atlas";
+  listen = "${if lib.hasInfix ":" cfg.listenAddress then "[${cfg.listenAddress}]" else cfg.listenAddress}:${toString cfg.port}";
 
   # PocketBase pointed at the app and the service's data. The service runs it, and an admin runs it for the
   # CLI (`sudo atlas-pocketbase superuser upsert ...`); as root it switches to the service user first, so no
@@ -95,9 +96,42 @@ in
       default = "atlas";
       description = "User and group the service runs as. It owns `/var/lib/atlas`.";
     };
+
+    caddy = {
+      enable = mkEnableOption ''
+        Caddy as the HTTPS reverse proxy for `publicUrl` (ADR 0091). Caddy gets the certificate from Let's Encrypt;
+        set `services.caddy.email` for its account. Opens ports 80 and 443 (TCP, and UDP for HTTP/3)'';
+
+      extraConfig = mkOption {
+        type = types.lines;
+        default = "";
+        example = "tls internal";
+        description = "Further Caddyfile directives for the site.";
+      };
+    };
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [{
+      assertion = cfg.caddy.enable -> cfg.publicUrl != null;
+      message = "services.atlas.caddy needs services.atlas.publicUrl: it serves that address.";
+    }];
+
+    services.caddy = lib.mkIf cfg.caddy.enable {
+      enable = true;
+      virtualHosts.${cfg.publicUrl}.extraConfig = ''
+        encode zstd gzip
+        header {
+          Strict-Transport-Security "max-age=31536000"
+          X-Content-Type-Options "nosniff"
+          Referrer-Policy "strict-origin-when-cross-origin"
+          -Server
+        }
+        reverse_proxy ${listen}
+        ${cfg.caddy.extraConfig}
+      '';
+    };
+
     users.users.${cfg.user} = {
       isSystemUser = true;
       group = cfg.user;
@@ -107,7 +141,10 @@ in
 
     environment.systemPackages = [ atlas-pocketbase ];
 
-    networking.firewall.allowedTCPPorts = lib.mkIf cfg.openFirewall [ cfg.port ];
+    networking.firewall = {
+      allowedTCPPorts = lib.optional cfg.openFirewall cfg.port ++ lib.optionals cfg.caddy.enable [ 80 443 ];
+      allowedUDPPorts = lib.optional cfg.caddy.enable 443;
+    };
 
     systemd.services.atlas = {
       description = "Atlas (PocketBase)";
@@ -121,9 +158,7 @@ in
 
       serviceConfig = {
         # Pending migrations are applied when PocketBase starts, so an upgrade is a rebuild and a restart.
-        ExecStart = "${lib.getExe atlas-pocketbase} serve --http=${
-          if lib.hasInfix ":" cfg.listenAddress then "[${cfg.listenAddress}]" else cfg.listenAddress
-        }:${toString cfg.port}";
+        ExecStart = "${lib.getExe atlas-pocketbase} serve --http=${listen}";
         EnvironmentFile = lib.mkIf (cfg.environmentFile != null) cfg.environmentFile;
         User = cfg.user;
         Group = cfg.user;

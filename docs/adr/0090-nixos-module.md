@@ -1,6 +1,6 @@
 # 0090. Run Atlas on NixOS with a module and a systemd unit
 
-- Status: Accepted
+- Status: Accepted; TLS and deployment are now covered by [0091](0091-deploy-to-hetzner-with-caddy.md)
 - Date: 2026-10-09
 - Deciders: owner (asked for a NixOS module with a systemd unit); agent (the details below)
 
