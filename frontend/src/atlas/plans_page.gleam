@@ -721,19 +721,11 @@ fn form_fields(form: plan_form.Form) -> Element(Msg) {
 
 /// The plan's phases and weekly goal in a line (ADR 0066): "12 weeks: 4 base, 4 pre-competition, 4 competition ·
 /// 40.00 km a week". Empty for a plan with neither. They are changed with the plan's Edit.
-pub fn summary(p: Plan) -> String {
-  let phases = p.phases
-  let weeks = case plan.phase_weeks(phases) {
+/// The plan in a line for the app bar's subtitle (ADR 0097): its length and weekly goal.
+pub fn subtitle(p: Plan) -> String {
+  let weeks = case plan.phase_weeks(p.phases) {
     0 -> ""
-    n ->
-      plural(n, "week")
-      <> ": "
-      <> int.to_string(phases.base_weeks)
-      <> " base, "
-      <> int.to_string(phases.pre_competition_weeks)
-      <> " pre-competition, "
-      <> int.to_string(phases.competition_weeks)
-      <> " competition"
+    n -> plural(n, "week")
   }
   let goal = case p.weekly_distance_m {
     Some(m) if m >. 0.0 -> units.format_planned_km(m) <> " a week"
@@ -743,6 +735,21 @@ pub fn summary(p: Plan) -> String {
     "", _ -> goal
     _, "" -> weeks
     _, _ -> weeks <> " · " <> goal
+  }
+}
+
+/// How the plan's weeks split into phases, under the app bar's subtitle, which has their total.
+pub fn summary(p: Plan) -> String {
+  let phases = p.phases
+  case plan.phase_weeks(phases) {
+    0 -> ""
+    _ ->
+      int.to_string(phases.base_weeks)
+      <> " base, "
+      <> int.to_string(phases.pre_competition_weeks)
+      <> " pre-competition and "
+      <> int.to_string(phases.competition_weeks)
+      <> " competition weeks"
   }
 }
 

@@ -110,6 +110,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - The training zones form shows pace before blood lactate.
 - Material 3 Expressive navigation: a 64px navigation bar and a 96px rail whose active indicator grows from its centre, sync progress with a gap around its indicator, rounder menus, and spring motion for the remaining transitions (ADR 0095).
 - The app is set in Google Sans Flex, Material 3 Expressive's typeface, instead of Roboto Flex (ADR 0096).
+- A plan's app bar has its length and weekly goal under its name, and the page sums up its phases (ADR 0097).
 - A new plan opens as soon as it is saved, instead of staying on the list.
 
 ### Fixed

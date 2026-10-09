@@ -8,6 +8,7 @@ fn frame(r: route.Route) -> shell.Frame(Nil) {
   shell.Frame(
     route: r,
     title: route.title(r),
+    subtitle: "",
     online: True,
     coaching: False,
     syncing: False,
@@ -46,6 +47,15 @@ pub fn the_app_bar_shows_the_title_it_is_given_test() {
   let html =
     html_of(shell.Frame(..frame(route.Plan("p1")), title: "Autumn 10k"))
   assert string.contains(html, "<h1>Autumn 10k</h1>")
+}
+
+pub fn the_medium_app_bar_has_a_subtitle_only_when_given_one_test() {
+  let plan = shell.Frame(..frame(route.Plan("p1")), title: "Autumn 10k")
+  assert !string.contains(html_of(plan), "bar-subtitle")
+  assert string.contains(
+    html_of(shell.Frame(..plan, subtitle: "10 weeks · 40 km a week")),
+    "<p class=\"bar-subtitle\">10 weeks · 40 km a week</p>",
+  )
 }
 
 pub fn a_running_sync_shows_a_progress_bar_test() {

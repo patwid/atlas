@@ -1089,6 +1089,14 @@ pub fn view(model: Model) -> Element(Msg) {
         shell.Frame(
           route: model.route,
           title: title(model, session),
+          subtitle: case model.route {
+            route.Plan(id) ->
+              case list.find(model.plans.plans, fn(p) { p.id == id }) {
+                Ok(found) -> plans_page.subtitle(found)
+                Error(Nil) -> ""
+              }
+            _ -> ""
+          },
           online: model.online,
           coaching: grants.athletes_of(model.coaches.grants, session.user_id)
             != [],

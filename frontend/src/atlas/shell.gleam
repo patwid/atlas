@@ -19,6 +19,8 @@ pub type Frame(msg) {
     route: Route,
     /// The app bar's title: the page's, or the name of the plan or athlete on show (ADR 0055).
     title: String,
+    /// A line under the title in the medium app bar, such as a plan's length and goal (ADR 0097); "" for none.
+    subtitle: String,
     online: Bool,
     /// Adds the Athletes tab, for people whom someone has given access to (ADR 0031).
     coaching: Bool,
@@ -54,6 +56,10 @@ pub fn view(frame: Frame(msg), page: Element(msg)) -> Element(msg) {
         html.div([class("bar-content")], [
           up(frame.route),
           html.h1([], [html.text(frame.title)]),
+          case frame.subtitle {
+            "" -> element.none()
+            text -> html.p([class("bar-subtitle")], [html.text(text)])
+          },
           frame.main_action,
           frame.actions,
           case frame.online {

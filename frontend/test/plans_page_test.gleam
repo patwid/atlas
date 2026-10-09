@@ -399,12 +399,14 @@ pub fn the_plans_phases_and_goal_are_summed_up_in_a_line_test() {
       phases: plan.Phases(4, 4, 2),
       weekly_distance_m: Some(40_000.0),
     )
-  assert plans_page.summary(p)
-    == "10 weeks: 4 base, 4 pre-competition, 2 competition · 40 km a week"
-  assert plans_page.summary(plan.Plan(..p, weekly_distance_m: None))
-    == "10 weeks: 4 base, 4 pre-competition, 2 competition"
-  assert plans_page.summary(plan.Plan(..p, phases: plan.Phases(0, 0, 0)))
+  assert plans_page.subtitle(p) == "10 weeks · 40 km a week"
+  assert plans_page.subtitle(plan.Plan(..p, weekly_distance_m: None))
+    == "10 weeks"
+  assert plans_page.subtitle(plan.Plan(..p, phases: plan.Phases(0, 0, 0)))
     == "40 km a week"
+  assert plans_page.summary(p)
+    == "4 base, 4 pre-competition and 2 competition weeks"
+  assert plans_page.summary(plan.Plan(..p, phases: plan.Phases(0, 0, 0))) == ""
 }
 
 pub fn a_long_description_shows_three_lines_until_more_test() {

@@ -1158,6 +1158,14 @@ html[data-scrolled] .md-tab-bar { background: var(--md-sys-color-surface-contain
 html[data-scrolled] .bar-medium .bar-content { flex-wrap: nowrap; }
 html[data-scrolled] .bar-medium h1 { order: 0; flex-basis: auto; padding: 0; font-size: 1.375rem; line-height: 1.75rem; }
 @media (prefers-reduced-motion: reduce) { .bar-medium h1 { transition: none; } }
+/* M3 Expressive's medium flexible app bar (ADR 0097): a subtitle under the name, such as a plan's length and goal. The
+   small bar it becomes on scrolling has the name only. */
+.bar-subtitle {
+  order: 2; flex-basis: 100%; margin: 0 0 0.5rem; color: var(--md-sys-color-on-surface-variant);
+  font: 400 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.009375rem;
+}
+.bar-medium h1:has(+ .bar-subtitle) { padding-bottom: 0; }
+html[data-scrolled] .bar-subtitle { display: none; }
 
 /* Details dialogs (ADR 0066): a workout or a week, over the calendar. */
 .details-body p { margin: 0.25rem 0; }
