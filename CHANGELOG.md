@@ -94,6 +94,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - The person finder shows a problem with the address under its field, and Settings rows say what is set: your zones, who can see your training, whether Strava is connected (ADR 0078).
 - The app is set in Roboto Flex, served with it and cached for offline use (ADR 0079).
 - Pressing a workout in your own plan, or an activity you entered, opens its form straight away, with Delete in the form's top bar; others still see a workout in a read-only dialog (ADR 0080).
+- On Today, "Link activity" is a text button beside a workout's status instead of an outlined button under it, and Choose another is a text button (ADR 0081).
 
 ### Fixed
 - The Settings list's rows all have the same padding: the rows that open a page no longer have it twice, so their hover and ripple cover the whole row, and the account and Sync rows no longer change shape on hover.

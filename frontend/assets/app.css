@@ -610,6 +610,8 @@ label {
 .status-suggested { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
 .status-done { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
 .status-details { color: var(--md-sys-color-on-surface-variant); font-size: 0.875rem; line-height: 1.25rem; }
+/* The status's action follows it on its line (ADR 0081); the text button's own padding lines its label up. */
+.status .status-action { margin-left: -0.25rem; }
 .description { white-space: pre-wrap; }
 /* A long description shows three lines until More (ADR 0076). */
 .description.clamped {

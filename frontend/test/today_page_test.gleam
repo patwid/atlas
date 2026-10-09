@@ -294,7 +294,7 @@ pub fn missed_workouts_say_so_and_offer_a_link_test() {
   let html = html_of(today_page.new(), no_runs)
   assert string.contains(html, "Missed")
   assert string.contains(html, "To do")
-  assert string.contains(html, "Link an activity")
+  assert string.contains(html, "Link activity")
 }
 
 pub fn workouts_still_to_come_offer_no_link_test() {
@@ -302,7 +302,7 @@ pub fn workouts_still_to_come_offer_no_link_test() {
   let html = html_of(today_page.new(), tomorrow_only)
   let assert [_, coming_up] = string.split(html, "Coming up")
   assert string.contains(coming_up, "To do")
-  assert !string.contains(coming_up, "Link an activity")
+  assert !string.contains(coming_up, "Link activity")
 }
 
 pub fn the_activity_list_offers_that_days_activities_test() {

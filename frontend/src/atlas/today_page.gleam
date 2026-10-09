@@ -348,12 +348,14 @@ fn details(item: Item, inputs: Inputs) -> String {
   |> string.join(" · ")
 }
 
-/// The day's state as a chip in the color of its kind, then what was run, if anything (ADR 0048).
+/// The day's state as a chip in the color of its kind, then what was run, if anything (ADR 0048), then the action
+/// that belongs to it, on the same line (ADR 0081).
 fn status(
   kind: String,
   symbol: Option(icon.Icon),
   label: String,
   details: String,
+  action: Element(Msg),
 ) -> Element(Msg) {
   html.p([class("status")], [
     html.span([class("status-chip status-" <> kind)], [
@@ -367,26 +369,27 @@ fn status(
       "" -> element.none()
       text -> html.span([class("status-details")], [html.text(text)])
     },
+    action,
   ])
 }
 
 fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
   case item.status {
-    today.RestDay -> status("rest", None, "Rest day", "")
+    today.RestDay -> status("rest", None, "Rest day", "", element.none())
     // Only activities of the workout's own day can be linked, so a workout still to come has nothing to offer.
     today.Planned ->
-      html.div([], [
-        status("planned", Some(icon.Pending), "To do", ""),
+      status(
+        "planned",
+        Some(icon.Pending),
+        "To do",
+        "",
         case item.scheduled.date == inputs.today {
-          True -> link_button("Link an activity", ChooseClicked(key))
+          True -> link_button(key)
           False -> element.none()
         },
-      ])
+      )
     today.Missed ->
-      html.div([], [
-        status("missed", Some(icon.Close), "Missed", ""),
-        link_button("Link an activity", ChooseClicked(key)),
-      ])
+      status("missed", Some(icon.Close), "Missed", "", link_button(key))
     today.Done(activity_id, False) ->
       html.div([], [
         status(
@@ -394,6 +397,7 @@ fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
           Some(icon.Check),
           "Looks done",
           summary(inputs, activity_id),
+          element.none(),
         ),
         layout.actions([
           button.filled(
@@ -403,12 +407,21 @@ fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
             ],
             [html.text("Confirm")],
           ),
-          link_button("Choose another", ChooseClicked(key)),
+          button.text(
+            [attribute.type_("button"), event.on_click(ChooseClicked(key))],
+            [html.text("Choose another")],
+          ),
         ]),
       ])
     today.Done(activity_id, True) ->
       html.div([], [
-        status("done", Some(icon.Check), "Done", summary(inputs, activity_id)),
+        status(
+          "done",
+          Some(icon.Check),
+          "Done",
+          summary(inputs, activity_id),
+          element.none(),
+        ),
         // Changing or removing a confirmed link is rare: a menu, as an activity's actions are (ADR 0056).
         menu.view(
           "today-menu-" <> key.assignment_id <> "-" <> key.workout_id,
@@ -422,10 +435,17 @@ fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
   }
 }
 
-fn link_button(label: String, msg: Msg) -> Element(Msg) {
-  button.outlined([attribute.type_("button"), event.on_click(msg)], [
-    html.text(label),
-  ])
+/// Linking is a text button with an icon (ADR 0081): low emphasis, so it does not look like the status chip
+/// beside it, and a list of missed workouts is not a column of buttons.
+fn link_button(key: Key) -> Element(Msg) {
+  button.text(
+    [
+      attribute.type_("button"),
+      class("status-action"),
+      event.on_click(ChooseClicked(key)),
+    ],
+    [icon.view(icon.Link), html.text("Link activity")],
+  )
 }
 
 /// Choosing the activity is M3's simple dialog (ADR 0062): the activities are its choices, and a choice is taken
