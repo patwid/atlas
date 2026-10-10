@@ -1,6 +1,6 @@
 # 0082. Today, newest first
 
-- Status: Accepted
+- Status: Superseded by [0102](0102-today-first-on-home.md) (section order only)
 - Date: 2026-10-09
 - Deciders: owner (asked for newer events first and the week ahead on top)
 
