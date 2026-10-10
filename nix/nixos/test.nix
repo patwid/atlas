@@ -71,6 +71,10 @@
         headers = machine.succeed("curl -skI https://atlas.test/")
         assert "strict-transport-security: max-age=31536000" in headers.lower(), headers
         machine.succeed("curl -skf https://atlas.test/ | grep -q '<html'")
+        # A deploy must reach installed apps: the shell is never answered with 304 on its Nix store date (ADR 0101).
+        sw = machine.succeed("curl -skI -H 'If-Modified-Since: Thu, 01 Jan 1970 00:00:01 GMT' https://atlas.test/sw.js").lower()
+        assert sw.split()[1] == "200", sw
+        assert "cache-control: no-cache" in sw and "last-modified" not in sw, sw
         redirect = machine.succeed("curl -s -o /dev/null -w '%{http_code} %{redirect_url}' http://atlas.test/plans")
         assert redirect.startswith("308 https://atlas.test/plans"), redirect
 

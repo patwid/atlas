@@ -128,6 +128,15 @@ in
           Referrer-Policy "strict-origin-when-cross-origin"
           -Server
         }
+        # The app shell comes from the Nix store, where every file is dated 1970, so PocketBase answers each
+        # If-Modified-Since with 304 and a browser never sees a new sw.js or index.html. Without the dates the shell
+        # is always fetched in full; the service worker keeps it cached (ADR 0101).
+        @shell not path /api/* /_/*
+        request_header @shell -If-Modified-Since
+        header @shell {
+          -Last-Modified
+          Cache-Control "no-cache"
+        }
         reverse_proxy ${listen}
         ${cfg.caddy.extraConfig}
       '';
