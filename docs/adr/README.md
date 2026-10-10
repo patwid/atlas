@@ -85,7 +85,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0079 | [Roboto Flex served with the app, the badge read out, and sticky offsets from the app bar's height](0079-bundled-roboto-flex-badge-text-and-app-bar-height.md) | Accepted (typeface superseded by 0096) |
 | 0080 | [A workout or activity you can change opens in its form, with Delete there](0080-open-items-in-their-form.md) | Accepted |
 | 0081 | [Today: "Link activity" as a text button beside the status](0081-today-link-activity-beside-the-status.md) | Accepted |
-| 0082 | [Today, newest first](0082-today-newest-first.md) | Accepted |
+| 0082 | [Today, newest first](0082-today-newest-first.md) | Superseded by 0102 |
 | 0083 | [The person finder's search as an icon button in its field](0083-person-finder-search-in-the-field.md) | Accepted |
 | 0084 | [Training zones: the Calculate buttons under their field](0084-zone-calculate-buttons-under-their-field.md) | Accepted |
 | 0085 | [Form dialogs: one spacing, pairs only where they fit, buttons at the bottom on wider screens](0085-form-dialog-spacing-pairs-and-buttons.md) | Accepted |
@@ -105,3 +105,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0099 | [Serve Atlas over HTTPS on atlas.patwid.ch](0099-https-on-atlas-patwid-ch.md) | Accepted |
 | 0100 | [Import activities from FIT files with a decoder in Gleam](0100-fit-file-import.md) | Accepted |
 | 0101 | [Serve the app shell without dates, so deploys reach installed apps](0101-no-dates-on-the-app-shell.md) | Accepted |
+| 0102 | [Today first on the home screen](0102-today-first-on-home.md) | Accepted |

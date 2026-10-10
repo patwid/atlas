@@ -250,7 +250,14 @@ pub fn view(model: Model, inputs: Inputs) -> Element(Msg) {
         )
       _ ->
         html.div([], [
-          // Newest first, from the end of the week ahead down to the last seven days (ADR 0082).
+          // Today first, then the week ahead and the last seven days, each newest first (ADR 0102).
+          group(
+            "Today · " <> date.format(inputs.today),
+            sections.today,
+            model,
+            inputs,
+            "Nothing planned for today.",
+          ),
           group(
             "Coming up",
             newest_first(sections.upcoming),
@@ -259,13 +266,6 @@ pub fn view(model: Model, inputs: Inputs) -> Element(Msg) {
             "Nothing planned in the next "
               <> int.to_string(today.window_days)
               <> " days.",
-          ),
-          group(
-            "Today · " <> date.format(inputs.today),
-            sections.today,
-            model,
-            inputs,
-            "Nothing planned for today.",
           ),
           case sections.recent {
             [] -> element.none()
