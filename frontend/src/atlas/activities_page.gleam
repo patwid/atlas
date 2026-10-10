@@ -721,6 +721,7 @@ fn form_view(model: Model, today: Date) -> Element(Msg) {
 fn import_view(model: Model) -> Element(Msg) {
   html.div([class("activity-import")], [
     button.tonal([attribute.type_("button"), event.on_click(ImportClicked)], [
+      icon.view(icon.UploadFile),
       html.text("Import a .fit file"),
     ]),
     html.input([
