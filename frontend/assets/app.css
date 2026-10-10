@@ -1059,9 +1059,14 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
 .form-dialog-body > form .row { display: grid; gap: 1rem; }
 .form-dialog-body > form > .supporting { margin-top: -0.75rem; }
 .form-dialog-body > form > .subheader { margin: 0.5rem 0 -0.5rem; }
-/* Import a .fit file (ADR 0100): above the New activity form, with what came of it under the button. */
-.form-dialog-body > .activity-import { display: grid; justify-items: start; gap: 0.5rem; padding-top: 0.5rem; }
-.activity-import > :is(.muted, .error) { margin: 0; }
+/* Import a .fit file (ADR 0100): above the New activity form, with what came of it under the button, and a divider
+   between it and the fields filled in by hand. The divider keeps the form's 16px rhythm: 16px above it, and 8px
+   below plus the form's own 8px top padding, which the Day field's floating label needs. */
+.form-dialog-body > .activity-import {
+  display: grid; justify-items: start; gap: 0.5rem; padding: 0.5rem 0 1rem; margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+.activity-import > :is(.muted, .error) { margin: 0; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; }
 .form-dialog .plan-settings { display: grid; gap: 1rem; }
 .form-dialog .plan-settings legend { margin-bottom: 0.5rem; }
 .form-dialog .plan-settings .phases-error { margin-top: -0.75rem; }
