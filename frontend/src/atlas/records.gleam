@@ -145,8 +145,18 @@ pub fn workout_row(record: Dynamic) -> Result(Row, Nil) {
             decode.success(None),
           ]),
         )
+        // Not required: workouts saved before it existed have none (ADR 0105).
+        use zone <- decode.optional_field(
+          "zone",
+          0,
+          decode.one_of(whole_number(), [decode.success(0)]),
+        )
         use updated <- decode.optional_field("updated", "", decode.string)
-        decode.success(Row(found, description, intervals, updated))
+        let zone = case zone >= 1 && zone <= 5 {
+          True -> zone
+          False -> 0
+        }
+        decode.success(Row(found, description, intervals, zone, updated))
       })
   }
 }

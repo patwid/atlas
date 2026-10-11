@@ -244,14 +244,17 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
   typeInto(w, d.querySelector("#workout-reps"), "6")
   typeInto(w, d.querySelector("#workout-rep-distance"), "800")
   typeInto(w, d.querySelector("#workout-recovery"), "1:30")
+  choose(w, d.querySelector("#workout-zone"), "4")
   submit(w, d.querySelector(".workout-form"))
   const track = await waitFor("the interval workout", async () => (await workouts()).find((x) => x.title === "Track"))
   assert.deepEqual(track.steps, { v: 1, reps: 6, work: { distance_m: 800 }, recovery: { duration_s: 90 } })
-  await waitFor("the repetitions on the calendar", () => d.querySelector(".calendar").textContent.includes("6 × 800 m, 1:30 recovery"))
+  assert.equal(track.zone, 4, "its target zone (ADR 0105)")
+  await waitFor("the zone and repetitions on the calendar", () => d.querySelector(".calendar").textContent.includes("Zone 4 · 6 × 800 m, 1:30 recovery"))
   click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Track")))
   await waitFor("the repetitions in the form", () => d.querySelector("#workout-reps")?.value === "6")
   assert.equal(d.querySelector("#workout-rep-distance").value, "800")
   assert.equal(d.querySelector("#workout-recovery").value, "1:30")
+  assert.equal(d.querySelector("#workout-zone").value, "4")
   pick(w, "kind", "tempo")
   submit(w, d.querySelector(".workout-form"))
   await waitFor("the repetitions cleared with the kind", async () => (await workouts()).find((x) => x.id === track.id && x.kind === "tempo")?.steps === null)
@@ -810,7 +813,7 @@ test("a user copies someone else's public plan with its workouts, then edits the
   const alice = h.people.alice
   const bob = h.people.bob
   await setup(h.create("alice", "plans", { id: "copysrcplan0001", owner: alice.id, title: "Autumn 10k", description: "Eight weeks", visibility: "public" }))
-  await setup(h.create("alice", "workouts", { id: "copysrcwork0001", plan: "copysrcplan0001", day_index: 3, position: 0, title: "Tempo", kind: "tempo", description: "3 x 10 min", distance_m: 8000, duration_s: 2700, steps: { v: 1, reps: 3, work: { duration_s: 600 } } }))
+  await setup(h.create("alice", "workouts", { id: "copysrcwork0001", plan: "copysrcplan0001", day_index: 3, position: 0, title: "Tempo", kind: "tempo", description: "3 x 10 min", distance_m: 8000, duration_s: 2700, steps: { v: 1, reps: 3, work: { duration_s: 600 } }, zone: 3 }))
   await setup(h.create("alice", "workouts", { id: "copysrcwork0002", plan: "copysrcplan0001", day_index: 0, position: 0, title: "Easy run", kind: "easy", distance_m: 5000 }))
 
   const w = startApp("/plans/copysrcplan0001", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
@@ -836,6 +839,7 @@ test("a user copies someone else's public plan with its workouts, then edits the
   assert.equal(copied[1].distance_m, 8000)
   assert.equal(copied[1].duration_s, 2700)
   assert.deepEqual(copied[1].steps, { v: 1, reps: 3, work: { duration_s: 600 } }, "the repetitions came along (ADR 0104)")
+  assert.equal(copied[1].zone, 3, "the zone came along (ADR 0105)")
 
   // The original has not changed.
   const original = (await h.api("GET", "collections/plans/records/copysrcplan0001", { token: alice.token })).body

@@ -42,6 +42,7 @@ fn row(
     ),
     "",
     None,
+    0,
     "T-" <> id,
   )
 }
@@ -412,6 +413,7 @@ pub fn the_form_is_labelled_and_shows_errors_test() {
         "1",
         "",
         plan.Easy,
+        "",
         "",
         "",
         "",

@@ -29,6 +29,9 @@ const max_rep_distance_m = 20_000.0
 
 const max_rep_seconds = 3600
 
+/// The training zones of the athlete's settings: five of each kind (ADR 0034, 0035, 0036).
+pub const zones = [1, 2, 3, 4, 5]
+
 pub type Form {
   Form(
     /// 1-based, as typed.
@@ -47,6 +50,8 @@ pub type Form {
     /// Seconds, or minutes and seconds: `90`, `1:30`.
     rep_time: String,
     recovery: String,
+    /// The target zone, `""` for none (ADR 0105).
+    zone: String,
     error: Option(String),
   )
 }
@@ -62,6 +67,8 @@ pub type Valid {
     description: String,
     /// `None` unless the workout is an interval workout with repetitions.
     intervals: Option(Intervals),
+    /// 1-5, 0 for none (ADR 0105).
+    zone: Int,
   )
 }
 
@@ -71,6 +78,7 @@ pub type Row {
     workout: Workout,
     description: String,
     intervals: Option(Intervals),
+    zone: Int,
     updated: String,
   )
 }
@@ -81,6 +89,7 @@ pub fn empty_for(week: Int, day: Int) -> Form {
     int.to_string(day),
     "",
     plan.Easy,
+    "",
     "",
     "",
     "",
@@ -125,12 +134,16 @@ pub fn from_row(row: Row) -> Form {
       Some(i) if i.recovery_s > 0 -> format_rep_time(i.recovery_s)
       _ -> ""
     },
+    zone: case row.zone {
+      0 -> ""
+      n -> int.to_string(n)
+    },
     error: None,
   )
 }
 
 /// Checks the form; a problem names the field it is about: `week`, `day`, `title`, `description`, `distance`,
-/// `duration`, `reps`, `rep_distance`, `rep_time` or `recovery`.
+/// `duration`, `reps`, `rep_distance`, `rep_time`, `recovery` or `zone`.
 pub fn validate_fields(form: Form) -> Result(Valid, #(String, String)) {
   let title = string.trim(form.title)
   let description = string.trim(form.description)
@@ -156,12 +169,14 @@ pub fn validate_fields(form: Form) -> Result(Valid, #(String, String)) {
           case
             target_distance(form.distance_km),
             target_duration(form.duration),
-            intervals(form)
+            intervals(form),
+            target_zone(form)
           {
-            Error(message), _, _ -> Error(#("distance", message))
-            _, Error(message), _ -> Error(#("duration", message))
-            _, _, Error(problem) -> Error(problem)
-            Ok(distance), Ok(duration), Ok(intervals) ->
+            Error(message), _, _, _ -> Error(#("distance", message))
+            _, Error(message), _, _ -> Error(#("duration", message))
+            _, _, Error(problem), _ -> Error(problem)
+            _, _, _, Error(message) -> Error(#("zone", message))
+            Ok(distance), Ok(duration), Ok(intervals), Ok(zone) ->
               Ok(Valid(
                 day_index: { week - 1 } * 7 + { day - 1 },
                 title: title,
@@ -170,6 +185,7 @@ pub fn validate_fields(form: Form) -> Result(Valid, #(String, String)) {
                 duration_s: duration,
                 description: description,
                 intervals: intervals,
+                zone: zone,
               ))
           }
       }
@@ -201,6 +217,24 @@ fn target_duration(text: String) -> Result(Int, String) {
             "Enter the duration in minutes (45) or as hours and minutes (1:30).",
           )
       }
+  }
+}
+
+/// The target zone; a rest day has none, whatever was chosen before its kind was changed (ADR 0105).
+fn target_zone(form: Form) -> Result(Int, String) {
+  case form.kind, int.parse(string.trim(form.zone)) {
+    plan.Rest, _ -> Ok(0)
+    _, _ if form.zone == "" -> Ok(0)
+    _, Ok(n) if n >= 1 && n <= 5 -> Ok(n)
+    _, _ -> Error("Choose a zone from 1 to 5.")
+  }
+}
+
+/// `Zone 2`, `""` for none.
+pub fn zone_label(zone: Int) -> String {
+  case zone {
+    0 -> ""
+    n -> "Zone " <> int.to_string(n)
   }
 }
 
@@ -414,6 +448,7 @@ pub fn changed_fields(
         "distance_m" -> valid.distance_m != option.unwrap(w.distance_m, 0.0)
         "duration_s" -> valid.duration_s != option.unwrap(w.duration_s, 0)
         "steps" -> valid.intervals != row.intervals
+        "zone" -> valid.zone != row.zone
         _ -> False
       }
     })
@@ -433,6 +468,7 @@ fn value_fields(valid: Valid) -> List(#(String, String)) {
     outbox.field_float("distance_m", valid.distance_m),
     outbox.field_int("duration_s", valid.duration_s),
     steps_field(valid.intervals),
+    outbox.field_int("zone", valid.zone),
   ]
 }
 

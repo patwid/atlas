@@ -114,6 +114,14 @@ test("workouts: only the plan owner can write", async () => {
   assert.equal((await update("alice", "workouts", w.id, { plan: (await mkPlan("alice")).id })).status, 404)
 })
 
+test("workouts: a target zone from 1 to 5 is stored, none is 0, others are refused (ADR 0105)", async () => {
+  const plan = await mkPlan("alice")
+  assert.equal((await mkWorkout("alice", plan, { zone: 2 })).zone, 2)
+  assert.equal((await mkWorkout("alice", plan)).zone, 0, "workouts without a zone stay valid")
+  const tooHigh = await create("alice", "workouts", { id: id(), plan: plan.id, day_index: 0, title: "x", kind: "easy", zone: 6 })
+  assert.equal(tooHigh.status, 400)
+})
+
 test("workouts: deleted plans and workouts are hidden from readers but kept for the owner's sync", async () => {
   const plan = await mkPlan("alice", { visibility: "public" })
   const w = await mkWorkout("alice", plan)

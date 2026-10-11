@@ -187,6 +187,23 @@ pub fn a_workout_row_reads_the_repetitions_of_its_steps_test() {
   assert row.intervals == None
 }
 
+pub fn a_workout_row_reads_its_zone_test() {
+  let with = fn(zone) {
+    records.workout_row(parse(
+      "{\"id\":\"w1\",\"plan\":\"p1\",\"title\":\"Easy\",\"kind\":\"easy\""
+      <> zone
+      <> "}",
+    ))
+  }
+  let assert Ok(row) = with(",\"zone\":2")
+  assert row.zone == 2
+  // Saved before zones, or a value this client does not know: no zone.
+  let assert Ok(row) = with("")
+  assert row.zone == 0
+  let assert Ok(row) = with(",\"zone\":9")
+  assert row.zone == 0
+}
+
 pub fn an_assignment_row_carries_who_made_it_and_the_local_updated_test() {
   let text =
     "{\"id\":\"a1\",\"plan\":\"p1\",\"athlete\":\"u1\",\"assigned_by\":\"u2\",\"start_date\":\"2026-11-02\",\"updated\":\"T9\"}"

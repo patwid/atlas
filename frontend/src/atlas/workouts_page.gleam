@@ -84,6 +84,7 @@ pub type Msg {
   RepDistanceChanged(String)
   RepTimeChanged(String)
   RecoveryChanged(String)
+  ZoneChanged(String)
   Submitted
   /// Deletes at once, with Undo for a few seconds (ADR 0056).
   DeleteClicked(String)
@@ -261,6 +262,8 @@ pub fn update(
       typed(model, fn(f) { workout_form.Form(..f, rep_time: value) })
     RecoveryChanged(value) ->
       typed(model, fn(f) { workout_form.Form(..f, recovery: value) })
+    ZoneChanged(value) ->
+      typed(model, fn(f) { workout_form.Form(..f, zone: value) })
 
     Submitted ->
       case can_edit, workout_form.validate(model.form) {
@@ -977,10 +980,11 @@ fn delete_of(model: Model, id: String) -> List(Action) {
   }
 }
 
-/// The repetitions of an interval workout (ADR 0104), then its distance and duration.
+/// The target zone (ADR 0105), the repetitions of an interval workout (ADR 0104), then its distance and duration.
 fn targets(row: Row) -> String {
   let w = row.workout
   [
+    workout_form.zone_label(row.zone),
     case row.intervals {
       Some(intervals) -> workout_form.intervals_summary(intervals)
       None -> ""
@@ -1110,6 +1114,24 @@ fn form_fields(
         }),
         KindChanged,
       ),
+      // A rest day has no zone (ADR 0105).
+      case form.kind {
+        plan.Rest -> element.none()
+        _ ->
+          field.choose(
+            "workout-zone",
+            "Zone",
+            on(field.help("Optional"), "zone"),
+            [attribute.name("zone"), event.on_change(ZoneChanged)],
+            form.zone,
+            [
+              #("", "No zone"),
+              ..list.map(workout_form.zones, fn(n) {
+                #(int.to_string(n), workout_form.zone_label(n))
+              })
+            ],
+          )
+      },
       case form.kind {
         plan.Interval -> interval_fields(form, on)
         _ -> element.none()

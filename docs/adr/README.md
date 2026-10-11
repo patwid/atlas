@@ -108,3 +108,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0102 | [Today first on the home screen](0102-today-first-on-home.md) | Accepted |
 | 0103 | [Check for updates when the app is resumed, and reload when a new version takes over](0103-update-installed-apps-on-resume.md) | Accepted |
 | 0104 | [Repetitions of an interval workout, kept in its steps](0104-interval-repetitions.md) | Accepted |
+| 0105 | [A target zone for each workout](0105-workout-target-zone.md) | Accepted |
