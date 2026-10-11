@@ -117,6 +117,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Atlas is served over HTTPS at https://atlas.patwid.ch, with a Let's Encrypt certificate from Caddy, instead of plain HTTP at the server's IP; sign in again there (ADR 0099).
 - A new plan opens as soon as it is saved, instead of staying on the list.
 - The sign-in form is centred vertically on the screen.
+- A workout's week choice offers only the plan's weeks, no longer one more after its last phase.
 
 ### Fixed
 - Installed apps never updated after a deploy: PocketBase answered every check for a new `sw.js` with 304, because files in the Nix store are all dated 1970. Caddy now serves the app shell without dates and with `Cache-Control: no-cache` (ADR 0101).

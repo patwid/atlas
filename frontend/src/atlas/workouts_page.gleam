@@ -998,13 +998,14 @@ fn targets(row: Row) -> String {
   |> string.join(" · ")
 }
 
-/// The weeks a workout can be put in: those of the plan, one more after them, and the one in the form.
+/// The weeks a workout can be put in: those of the plan and the one in the form. A plan grows by its phases,
+/// not by a workout past them.
 fn week_options(
   on_screen: Plan,
   weeks: List(plan_schedule.Week),
   current: String,
 ) -> List(#(String, String)) {
-  let last = int.min(list.length(weeks) + 1, workout_form.max_weeks)
+  let last = int.min(list.length(weeks), workout_form.max_weeks)
   let numbers = case int.parse(current) {
     Ok(n) if n > last && n <= workout_form.max_weeks ->
       list.append(one_to(last), [n])
