@@ -12,7 +12,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0006 | [Monorepo layout and pinned toolchain](0006-repository-layout-and-toolchain.md) | Accepted |
 | 0007 | [Declare the dev sandbox's network access as a committed sbx kit](0007-sandbox-network-policy-as-kit.md) | Accepted |
 | 0008 | [Start the dev sandbox from a committed `sbxenv.yaml`](0008-sandbox-environment-file.md) | Accepted |
-| 0009 | [Data model and API rules](0009-data-model-and-api-rules.md) | Accepted (plan start dates and day numbering: 0108) |
+| 0009 | [Data model and API rules](0009-data-model-and-api-rules.md) | Accepted (plan start dates and day numbering: 0108; no public plans or shares: 0110) |
 | 0010 | [Select users by exact e-mail lookup](0010-user-lookup-by-email.md) | Accepted |
 | 0011 | [Refuse stale updates with a server-side `base_updated` guard](0011-sync-conflict-guard.md) | Accepted |
 | 0012 | [Strava integration as PocketBase hooks](0012-strava-integration-hooks.md) | Accepted |
@@ -26,13 +26,13 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0020 | [The sync runner in the app, local writes and conflicted copies](0020-sync-runner-and-conflicted-copies.md) | Accepted |
 | 0021 | [The plans screens](0021-plans-screens.md) | Accepted |
 | 0022 | [Workouts in a plan](0022-workouts-in-a-plan.md) | Superseded by 0043 (layout and form; interval repetitions: 0104) |
-| 0023 | [Starting plans: assignments](0023-assignments.md) | Accepted (assignments that follow the plan's date: 0108) |
+| 0023 | [Starting plans: assignments](0023-assignments.md) | Accepted (assignments that follow the plan's date: 0108; one per plan: 0110) |
 | 0024 | [Coach access: grants with names, and the Coaches screen](0024-coach-grants-screen.md) | Accepted |
 | 0025 | [Entering activities by hand](0025-manual-activities.md) | Accepted |
 | 0026 | [The Today screen and stored matches](0026-today-screen.md) | Accepted |
 | 0027 | [The Strava section in Settings](0027-strava-screen.md) | Accepted |
 | 0028 | [Copying a plan](0028-copy-a-plan.md) | Accepted (steps copied since 0104) |
-| 0029 | [Sharing a plan with named people](0029-sharing-plans.md) | Accepted |
+| 0029 | [Sharing a plan with named people](0029-sharing-plans.md) | Superseded by 0110 |
 | 0030 | [The membership sweep: access that is taken away reaches the device](0030-membership-sweep.md) | Accepted |
 | 0031 | [The coach's view of an athlete's progress](0031-coach-view-of-an-athlete.md) | Accepted |
 | 0032 | [Provide the development tools through a Nix flake](0032-nix-flake-dev-shell.md) | Accepted |
@@ -61,7 +61,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0055 | [Material review, quick fixes: titles, dialogs, offline, badges, loading, icons, Settings](0055-material-review-quick-fixes.md) | Accepted |
 | 0056 | [Menus for item actions, and Undo instead of confirming deletes](0056-menus-and-undo.md) | Accepted |
 | 0057 | [Create and edit forms in full-screen dialogs](0057-forms-in-full-screen-dialogs.md) | Accepted |
-| 0058 | [The plan page: tabs, actions in the app bar, and floating action buttons](0058-plan-page-tabs-and-app-bar-actions.md) | Accepted |
+| 0058 | [The plan page: tabs, actions in the app bar, and floating action buttons](0058-plan-page-tabs-and-app-bar-actions.md) | Accepted (tabs gone: 0110) |
 | 0059 | [Floating labels, units and errors on the field they are about](0059-floating-labels-and-field-errors.md) | Accepted |
 | 0060 | [Material window size classes, the FAB in the rail, and Settings as list-detail](0060-window-size-classes-and-list-detail.md) | Accepted (list-detail dropped by 0065, FAB in the rail by 0067) |
 | 0061 | [Harmonized custom colours for training intensity](0061-harmonized-intensity-colours.md) | Accepted |
@@ -111,5 +111,6 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0105 | [A target zone for each workout](0105-workout-target-zone.md) | Accepted |
 | 0106 | [Work distances and times out from the target zone's pace](0106-targets-from-the-zone-pace.md) | Accepted |
 | 0107 | [On a phone, a day's add button at the trailing edge](0107-phone-calendar-add-button-at-the-trailing-edge.md) | Accepted |
-| 0108 | [A plan has a start date; its calendar shows real days from a Monday](0108-plan-start-date.md) | Accepted |
+| 0108 | [A plan has a start date; its calendar shows real days from a Monday](0108-plan-start-date.md) | Accepted (no own dates on assignments: 0110) |
 | 0109 | [Name a dated plan's weeks by their week of the year](0109-plan-weeks-named-by-week-of-the-year.md) | Accepted |
+| 0110 | [Every plan is for one athlete; sharing and public plans are gone](0110-one-athlete-per-plan.md) | Accepted |

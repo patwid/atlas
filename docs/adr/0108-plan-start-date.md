@@ -1,6 +1,6 @@
 # 0108. A plan has a start date; its calendar shows real days from a Monday
 
-- Status: Accepted
+- Status: Accepted. Assignments with dates of their own are gone: [0110](0110-one-athlete-per-plan.md).
 - Date: 2026-10-11
 - Deciders: owner (a start date set when a plan is made and changeable later, days and weeks with dates, assignments
   driven by the plan's date, a calendar anchored on Mondays with days outside the plan dimmed and read-only); agent

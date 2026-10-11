@@ -117,9 +117,9 @@ test("webhook: a created activity is fetched with laps; an update changes it; a 
   assert.equal(rows[0].name, "Tempo 2")
 
   // a match on it disappears with it
-  const plan = (await h.create("alice", "plans", { id: id(), owner: h.people.alice.id, title: "p", visibility: "private" })).body
+  const plan = (await h.create("alice", "plans", { id: id(), owner: h.people.alice.id, title: "p" })).body
   const w = (await h.create("alice", "workouts", { id: id(), plan: plan.id, title: "w", kind: "easy" })).body
-  const asg = (await h.create("alice", "assignments", { id: id(), plan: plan.id, athlete: h.people.alice.id, assigned_by: h.people.alice.id, start_date: "2026-10-01" })).body
+  const asg = (await h.create("alice", "assignments", { id: id(), plan: plan.id, athlete: h.people.alice.id, assigned_by: h.people.alice.id })).body
   const m = (await h.create("alice", "matches", { id: id(), owner: h.people.alice.id, activity: rows[0].id, assignment: asg.id, workout: w.id })).body
   await webhook({ ...ev, aspect_type: "delete" })
   const gone = (await h.get("alice", "activities", rows[0].id)).body

@@ -1,6 +1,6 @@
 # 0009. Data model and API rules
 
-- Status: Accepted. A plan's start date and what `day_index` counts from are changed by [0108](0108-plan-start-date.md).
+- Status: Accepted. A plan's start date and what `day_index` counts from are changed by [0108](0108-plan-start-date.md); public plans and `plan_shares` are removed by [0110](0110-one-athlete-per-plan.md).
 - Date: 2026-10-06
 - Deciders: agent (within the product scope set by 0004 and 0005)
 

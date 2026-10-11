@@ -23,7 +23,7 @@ const get = (...a) => h.get(...a)
 const list = (...a) => h.list(...a)
 
 const mkPlan = async (owner, extra = {}) => {
-  const r = await create(owner, "plans", { id: id(), owner: people[owner].id, title: "10k", visibility: "private", ...extra })
+  const r = await create(owner, "plans", { id: id(), owner: people[owner].id, title: "10k", ...extra })
   assert.equal(r.status, 200, JSON.stringify(r.body))
   return r.body
 }
@@ -34,6 +34,13 @@ const mkWorkout = async (owner, plan, extra = {}) => {
 }
 const grant = async (athlete, coach) => {
   const r = await create(athlete, "coach_grants", { id: id(), athlete: people[athlete].id, coach: people[coach].id })
+  assert.equal(r.status, 200, JSON.stringify(r.body))
+  return r.body
+}
+// A plan is for one athlete, given by the assignment made with it (ADR 0110).
+const assign = async (plan, athlete, by = plan.owner) => {
+  const owner = Object.keys(h.people).find((k) => people[k].id === by)
+  const r = await create(owner, "assignments", { id: id(), plan: plan.id, athlete: people[athlete].id, assigned_by: by })
   assert.equal(r.status, 200, JSON.stringify(r.body))
   return r.body
 }
@@ -50,18 +57,30 @@ test("client-generated IDs are kept", async () => {
   assert.equal((await get("alice", "plans", plan.id)).body.id, plan.id)
 })
 
-test("plans: private to owner, public to signed-in users, anonymous sees nothing", async () => {
-  const priv = await mkPlan("alice")
+test("plans: read by the owner and the plan's athlete, nobody else, and anonymous sees nothing", async () => {
+  const own = await mkPlan("alice")
+  await assign(own, "alice")
+  assert.equal((await get("bob", "plans", own.id)).status, 404)
+  assert.equal((await get(null, "plans", own.id)).status, 404)
+  await grant("carol", "alice")
+  const forCarol = await mkPlan("alice")
+  const w = await mkWorkout("alice", forCarol)
+  assert.equal((await get("carol", "plans", forCarol.id)).status, 404, "not hers until it is assigned to her")
+  await assign(forCarol, "carol")
+  assert.equal((await get("carol", "plans", forCarol.id)).status, 200)
+  assert.equal((await get("carol", "workouts", w.id)).status, 200)
+  assert.equal((await update("carol", "plans", forCarol.id, { title: "x" })).status, 404, "only the owner changes it")
+  assert.equal((await get("bob", "plans", forCarol.id)).status, 404)
+  // Public plans are gone: the field is ignored.
   const pub = await mkPlan("alice", { visibility: "public" })
-  assert.equal((await get("bob", "plans", priv.id)).status, 404)
-  assert.equal((await get("bob", "plans", pub.id)).status, 200)
-  assert.equal((await get(null, "plans", pub.id)).status, 404)
+  assert.equal(pub.visibility, undefined)
+  assert.equal((await get("bob", "plans", pub.id)).status, 404)
 })
 
 test("plans: cannot create for someone else, cannot change owner, cannot edit others' plans", async () => {
-  const bad = await create("bob", "plans", { id: id(), owner: people.alice.id, title: "x", visibility: "private" })
+  const bad = await create("bob", "plans", { id: id(), owner: people.alice.id, title: "x" })
   assert.equal(bad.status, 400)
-  const pub = await mkPlan("alice", { visibility: "public" })
+  const pub = await mkPlan("alice")
   assert.equal((await update("bob", "plans", pub.id, { title: "hacked" })).status, 404)
   assert.equal((await update("alice", "plans", pub.id, { owner: people.bob.id })).status, 404)
   assert.equal((await update("alice", "plans", pub.id, { title: "renamed" })).status, 200)
@@ -74,7 +93,7 @@ test("plans: phase weeks, a weekly distance goal and week intensities are stored
   assert.deepEqual(p.week_intensity, [null, 0.8])
   const old = await mkPlan("alice")
   assert.equal(old.base_weeks, 0, "plans without phases stay valid")
-  const tooLong = await create("alice", "plans", { id: id(), owner: people.alice.id, title: "x", visibility: "private", base_weeks: 53 })
+  const tooLong = await create("alice", "plans", { id: id(), owner: people.alice.id, title: "x", base_weeks: 53 })
   assert.equal(tooLong.status, 400)
   const changed = await update("alice", "plans", p.id, { week_intensity: [null, 0.8, null, null, 0.3] })
   assert.equal(changed.status, 200)
@@ -87,26 +106,8 @@ test("plans: clients cannot hard-delete", async () => {
   assert.equal((await update("alice", "plans", plan.id, { deleted: true })).status, 200)
 })
 
-test("plan_shares: the owner shares a plan with a user, who can read it and its workouts", async () => {
-  const plan = await mkPlan("alice")
-  const workout = await mkWorkout("alice", plan)
-  assert.equal((await get("bob", "plans", plan.id)).status, 404)
-  assert.equal((await get("bob", "workouts", workout.id)).status, 404)
-  const share = await create("alice", "plan_shares", { id: id(), plan: plan.id, user: people.bob.id })
-  assert.equal(share.status, 200, JSON.stringify(share.body))
-  assert.equal((await get("bob", "plans", plan.id)).status, 200)
-  assert.equal((await get("bob", "workouts", workout.id)).status, 200)
-  assert.equal((await get("carol", "plans", plan.id)).status, 404)
-  assert.equal((await update("bob", "plans", plan.id, { title: "x" })).status, 404)
-  // a non-owner cannot share someone else's plan
-  assert.equal((await create("bob", "plan_shares", { id: id(), plan: plan.id, user: people.carol.id })).status, 400)
-  // revoking hides it again
-  assert.equal((await update("alice", "plan_shares", share.body.id, { deleted: true })).status, 200)
-  assert.equal((await get("bob", "plans", plan.id)).status, 404)
-})
-
 test("workouts: only the plan owner can write", async () => {
-  const plan = await mkPlan("alice", { visibility: "public" })
+  const plan = await mkPlan("alice")
   const bad = await create("bob", "workouts", { id: id(), plan: plan.id, day_index: 0, title: "x", kind: "easy" })
   assert.equal(bad.status, 400)
   const w = await mkWorkout("alice", plan)
@@ -123,8 +124,11 @@ test("workouts: a target zone from 1 to 5 is stored, none is 0, others are refus
 })
 
 test("workouts: deleted plans and workouts are hidden from readers but kept for the owner's sync", async () => {
-  const plan = await mkPlan("alice", { visibility: "public" })
+  await grant("bob", "alice")
+  const plan = await mkPlan("alice")
+  await assign(plan, "bob")
   const w = await mkWorkout("alice", plan)
+  assert.equal((await get("bob", "workouts", w.id)).status, 200)
   await update("alice", "workouts", w.id, { deleted: true })
   assert.equal((await get("bob", "workouts", w.id)).status, 404)
   assert.equal((await get("alice", "workouts", w.id)).body.deleted, true)
@@ -198,37 +202,39 @@ test("activities: owner and source cannot change; external ids are unique per ow
   assert.equal((await mkActivity("bob", { external_id: "hash1" })).source, "fit")
 })
 
-test("assignments: athletes assign to themselves; coaches assign to granted athletes; strangers cannot", async () => {
+test("assignments: the plan's owner assigns it once, to themselves or a granted athlete; nobody changes it", async () => {
   const coachPlan = await mkPlan("bob")
   const w = await mkWorkout("bob", coachPlan)
-  const mine = (athlete, by, plan = coachPlan) => ({ id: id(), plan: plan.id, athlete: people[athlete].id, assigned_by: people[by].id, start_date: "2026-11-01" })
-  assert.equal((await create("alice", "assignments", mine("alice", "alice"))).status, 400) // bob's private plan is not readable
-  assert.equal((await create("bob", "assignments", mine("alice", "bob"))).status, 400) // no grant yet
+  const mine = (athlete, by, plan = coachPlan) => ({ id: id(), plan: plan.id, athlete: people[athlete].id, assigned_by: people[by].id })
+  assert.equal((await create("alice", "assignments", mine("alice", "alice"))).status, 400, "not her plan")
+  assert.equal((await create("bob", "assignments", mine("alice", "bob"))).status, 400, "no grant yet")
   await grant("alice", "bob")
+  assert.equal((await create("bob", "assignments", { ...mine("alice", "bob"), start_date: "2026-11-02" })).status, 400, "it follows the plan's date")
   const given = await create("bob", "assignments", mine("alice", "bob"))
   assert.equal(given.status, 200, JSON.stringify(given.body))
-  // the athlete now reads the coach's private plan and its workouts through the assignment
+  assert.equal((await create("bob", "assignments", mine("bob", "bob"))).status, 400, "one athlete per plan")
+  // the athlete reads the coach's plan and its workouts through the assignment, and so does the owner
   assert.equal((await get("alice", "plans", coachPlan.id)).status, 200)
   assert.equal((await get("alice", "workouts", w.id)).status, 200)
   assert.equal((await get("alice", "assignments", given.body.id)).status, 200)
   assert.equal((await get("carol", "assignments", given.body.id)).status, 404)
   assert.equal((await create("carol", "assignments", mine("alice", "carol"))).status, 400)
-  assert.equal((await create("carol", "assignments", { ...mine("alice", "bob") })).status, 400) // assigned_by must be oneself
-  assert.equal((await update("alice", "assignments", given.body.id, { start_date: "2026-11-08" })).status, 200)
-  assert.equal((await update("alice", "assignments", given.body.id, { athlete: people.carol.id })).status, 404)
-})
-
-test("assignments: a self-assignment of a public plan", async () => {
-  const plan = await mkPlan("carol", { visibility: "public" })
-  const r = await create("alice", "assignments", { id: id(), plan: plan.id, athlete: people.alice.id, assigned_by: people.alice.id, start_date: "2026-12-01" })
-  assert.equal(r.status, 200, JSON.stringify(r.body))
-  assert.equal((await create("alice", "assignments", { id: id(), plan: plan.id, athlete: people.alice.id, assigned_by: people.alice.id, start_date: "01.12.2026" })).status, 400)
+  // Neither the athlete nor the coach changes or removes it; the coach deletes the plan instead.
+  for (const who of ["alice", "bob"]) {
+    assert.equal((await update(who, "assignments", given.body.id, { deleted: true })).status, 403)
+    assert.equal((await update(who, "assignments", given.body.id, { start_date: "2026-11-09" })).status, 403)
+  }
+  // The coach keeps seeing who the plan is for after the athlete takes back access.
+  const g = (await list("alice", "coach_grants")).body.items[0]
+  assert.equal((await update("alice", "coach_grants", g.id, { deleted: true })).status, 200)
+  assert.equal((await get("bob", "assignments", given.body.id)).status, 200)
+  assert.equal((await get("alice", "plans", coachPlan.id)).status, 200, "and the athlete her plan")
 })
 
 test("matches: the owner links own activity to own assignment; coach reads; others cannot", async () => {
   const plan = await mkPlan("alice")
   const w = await mkWorkout("alice", plan)
-  const asg = (await create("alice", "assignments", { id: id(), plan: plan.id, athlete: people.alice.id, assigned_by: people.alice.id, start_date: "2026-10-01" })).body
+  const asg = (await create("alice", "assignments", { id: id(), plan: plan.id, athlete: people.alice.id, assigned_by: people.alice.id })).body
   const act = await mkActivity("alice")
   const bobAct = await mkActivity("bob")
   const m = await create("alice", "matches", { id: id(), owner: people.alice.id, activity: act.id, assignment: asg.id, workout: w.id })
@@ -280,15 +286,15 @@ test("coach_grants: carry display names for both people, as labels only", async 
 })
 
 test("matches: an activity can be linked again to a workout of another assignment of the same user, not of someone else's", async () => {
-  const mk = async (owner, vis = "private") => {
-    const p = await mkPlan(owner, { visibility: vis })
+  const mk = async (owner) => {
+    const p = await mkPlan(owner)
     const w = await mkWorkout(owner, p)
-    const asg = (await create(owner, "assignments", { id: id(), plan: p.id, athlete: people[owner].id, assigned_by: people[owner].id, start_date: "2026-10-01" })).body
+    const asg = (await create(owner, "assignments", { id: id(), plan: p.id, athlete: people[owner].id, assigned_by: people[owner].id })).body
     return { p, w, asg }
   }
   const first = await mk("alice")
   const second = await mk("alice")
-  const bobs = await mk("bob", "public")
+  const bobs = await mk("bob")
   const act = await mkActivity("alice")
   const m = (await create("alice", "matches", { id: id(), owner: people.alice.id, activity: act.id, assignment: first.asg.id, workout: first.w.id })).body
   // Remove, then link again to the other assignment through the same row.
@@ -302,43 +308,6 @@ test("matches: an activity can be linked again to a workout of another assignmen
   assert.equal((await update("alice", "matches", m.id, { assignment: bobs.asg.id })).status, 404)
   assert.equal((await update("alice", "matches", m.id, { activity: (await mkActivity("alice")).id })).status, 404)
   assert.equal((await update("alice", "matches", m.id, { owner: people.bob.id })).status, 404)
-})
-
-test("plan_shares: carry display names for both people, as labels only", async () => {
-  const plan = await mkPlan("alice")
-  const s = await create("alice", "plan_shares", {
-    id: id(), plan: plan.id, user: people.bob.id, user_name: "Bob", shared_by_name: "Alice",
-  })
-  assert.equal(s.status, 200, JSON.stringify(s.body))
-  const seen = (await get("bob", "plan_shares", s.body.id)).body
-  assert.equal(seen.user_name, "Bob")
-  assert.equal(seen.shared_by_name, "Alice")
-  assert.equal((await create("alice", "plan_shares", { id: id(), plan: plan.id, user: people.carol.id, user_name: "x".repeat(201) })).status, 400)
-  // Sharing again after removal reuses the row: the pair is unique, and a removed row keeps its place.
-  assert.equal((await update("alice", "plan_shares", s.body.id, { deleted: true })).status, 200)
-  assert.equal((await create("alice", "plan_shares", { id: id(), plan: plan.id, user: people.bob.id })).status, 400)
-  assert.equal((await update("alice", "plan_shares", s.body.id, { deleted: false, user_name: "Bobby" })).status, 200)
-  assert.equal((await get("bob", "plans", plan.id)).status, 200)
-})
-
-test("assignments: a plan shared with you can be started by you, but not once the share is removed, nor if shared with someone else", async () => {
-  const plan = await mkPlan("alice") // private
-  const startFor = (who) => create(who, "assignments", { id: id(), plan: plan.id, athlete: people[who].id, assigned_by: people[who].id, start_date: "2026-11-02" })
-  assert.equal((await startFor("bob")).status, 400, "not shared yet")
-  const share = (await create("alice", "plan_shares", { id: id(), plan: plan.id, user: people.bob.id })).body
-  assert.equal((await startFor("bob")).status, 200, "shared with Bob")
-  assert.equal((await startFor("carol")).status, 400, "Carol has no share")
-  assert.equal((await update("alice", "plan_shares", share.id, { deleted: true })).status, 200)
-  assert.equal((await startFor("bob")).status, 400, "the share was removed")
-})
-
-test("assignments: a coach can start a shared plan for an athlete who granted access, and only then", async () => {
-  const plan = await mkPlan("alice")
-  await create("alice", "plan_shares", { id: id(), plan: plan.id, user: people.bob.id })
-  const forCarol = () => create("bob", "assignments", { id: id(), plan: plan.id, athlete: people.carol.id, assigned_by: people.bob.id, start_date: "2026-11-02" })
-  assert.equal((await forCarol()).status, 400, "Carol has not granted Bob access")
-  await grant("carol", "bob")
-  assert.equal((await forCarol()).status, 200)
 })
 
 test("athlete_settings: one row per athlete under their own user ID, readable by their coach, with checked heart rates", async () => {

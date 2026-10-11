@@ -85,11 +85,12 @@ export async function startPocketBase(env = {}, { publicDir, migrationsBefore } 
       }
     },
     log: () => log,
-    /** Applies the migrations left out by `migrationsBefore`, with the server stopped, and starts it again. */
-    upgrade: async () => {
+    /** Applies the migrations left out by `migrationsBefore`, with the server stopped, and starts it again; with
+     * `before`, only those whose file name sorts before it. */
+    upgrade: async (before) => {
       kill()
       await new Promise((r) => server.once("exit", r))
-      migrations(() => true)
+      migrations((name) => !before || !name.endsWith(".js") || name < before)
       execFileSync("pocketbase", ["migrate", "up", ...pb()], { stdio: "pipe", env: childEnv })
       await serve()
     },

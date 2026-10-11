@@ -8,7 +8,7 @@ let h
 before(async () => { h = await startPocketBase() })
 after(() => h?.stop())
 const test = (name, fn) => nodeTest(name, async () => { await h.world(); await fn() })
-const plan = (who, extra = {}) => ({ id: id(), owner: h.people[who].id, title: "t", visibility: "private", ...extra })
+const plan = (who, extra = {}) => ({ id: id(), owner: h.people[who].id, title: "t", ...extra })
 const jwtPayload = (token) => JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString())
 
 test("sign-in: 200 with token and a record holding id, name and e-mail; the token carries an `exp` claim", async () => {
@@ -64,7 +64,7 @@ test("create: 200 returns the record with `updated`; the same ID again is 400 wi
   assert.equal(again.status, 400)
   assert.equal(again.body.data.id.code, "validation_not_unique")
   // validation errors elsewhere do not look like that
-  const invalid = await h.create("alice", "plans", plan("alice", { visibility: "weird" }))
+  const invalid = await h.create("alice", "plans", plan("alice", { start_date: "2.11.2026" }))
   assert.equal(invalid.status, 400)
   assert.equal(invalid.body.data.id, undefined)
 })

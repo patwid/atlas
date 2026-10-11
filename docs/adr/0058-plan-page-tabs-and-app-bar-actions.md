@@ -1,6 +1,6 @@
 # 0058. The plan page: tabs, actions in the app bar, and floating action buttons
 
-- Status: Accepted
+- Status: Accepted. The tabs are gone: [0110](0110-one-athlete-per-plan.md).
 - Date: 2026-10-08
 - Deciders: owner (asked to go ahead with the Material review's next steps); agent (the details below)
 

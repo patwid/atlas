@@ -5,6 +5,8 @@ import assert from "node:assert/strict"
 import { startPocketBase, id } from "./harness.mjs"
 
 const MIGRATION = "1760000900_plan_start_date.js"
+// The rules as this migration left them; 1760001000 changed them again (ADR 0110), see one_athlete_per_plan.test.mjs.
+const NEXT = "1760001000_one_athlete_per_plan.js"
 
 let h
 before(async () => { h = await startPocketBase({}, { migrationsBefore: MIGRATION }) })
@@ -33,7 +35,7 @@ test("existing plans keep their dates; the owner's assignments follow the plan f
   const older = await ok(h.create("alice", "assignments", { id: id(), plan: plan.id, athlete: alice.id, assigned_by: alice.id, start_date: "2026-09-02" }))
   const bobs = await ok(h.create("bob", "assignments", { id: id(), plan: plan.id, athlete: bob.id, assigned_by: bob.id, start_date: "2026-11-04" }))
 
-  await h.upgrade()
+  await h.upgrade(NEXT)
 
   const read = (collection, rid) => h.get("admin", collection, rid).then((r) => r.body)
   assert.equal((await read("plans", plan.id)).start_date, "2026-11-04")

@@ -1,6 +1,6 @@
 # 0029. Sharing a plan with named people
 
-- Status: Accepted
+- Status: Superseded by [0110](0110-one-athlete-per-plan.md)
 - Date: 2026-10-06
 - Deciders: agent (product scope: plans can be shared; the rule change was proposed to the owner with the order of work and went ahead)
 

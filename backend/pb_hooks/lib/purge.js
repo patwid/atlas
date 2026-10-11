@@ -2,7 +2,7 @@
 // See docs/adr/0014-purge-soft-deleted-rows.md.
 
 // Children before parents, so nothing is removed by a cascade before its own turn.
-const COLLECTIONS = ["matches", "activities", "assignments", "workouts", "plan_shares", "plans", "coach_grants"]
+const COLLECTIONS = ["matches", "activities", "assignments", "workouts", "plans", "coach_grants"]
 const BATCH = 500
 
 function retentionDays() {

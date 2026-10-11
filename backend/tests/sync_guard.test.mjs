@@ -10,7 +10,7 @@ const test = (name, fn) => nodeTest(name, async () => { await h.world(); await f
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 const mkPlan = async () => {
-  const r = await h.create("alice", "plans", { id: id(), owner: h.people.alice.id, title: "10k", visibility: "private" })
+  const r = await h.create("alice", "plans", { id: id(), owner: h.people.alice.id, title: "10k" })
   assert.equal(r.status, 200, JSON.stringify(r.body))
   return r.body
 }
