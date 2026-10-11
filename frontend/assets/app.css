@@ -793,12 +793,10 @@ label {
 /* A determinate linear progress indicator as Material 3 draws it (ADR 0051): the indicator, a gap, the rest of the
    track, and a stop dot at its end. */
 .goal-meter { position: relative; display: flex; align-items: center; gap: 0.25rem; height: 0.625rem; margin-top: 0.75rem; }
-/* The active indicator is M3 Expressive's wave (ADR 0053): 3px amplitude, 40px wavelength, 4px thick, drawn by
-   masking the bar with a repeating wave. */
+/* The active indicator is a flat bar, not Expressive's wave (ADR 0111): these meters are readings, not activity. */
 .goal-meter span {
-  flex: none; display: block; height: 100%; max-width: calc(100% - 0.25rem); background: var(--md-sys-color-primary);
-  --wave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 10'%3E%3Cpath d='M0 5Q10-1 20 5T40 5' fill='none' stroke='%23000' stroke-width='4'/%3E%3C/svg%3E");
-  -webkit-mask: var(--wave) repeat-x left center / 2.5rem 0.625rem; mask: var(--wave) repeat-x left center / 2.5rem 0.625rem;
+  flex: none; display: block; height: 0.25rem; max-width: calc(100% - 0.25rem);
+  border-radius: var(--md-sys-shape-corner-full); background: var(--md-sys-color-primary);
 }
 .goal-meter::after { content: ""; flex: 1; height: 0.25rem; border-radius: var(--md-sys-shape-corner-full); background: var(--md-sys-color-secondary-container); }
 .goal-meter::before {
