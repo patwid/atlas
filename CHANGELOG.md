@@ -131,6 +131,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Sharing a plan with named people, public plans and starting someone else's plan: a plan is for one person, and reusing one means copying it (ADR 0110). The Schedule and Sharing tabs are gone.
 
 ### Fixed
+- On a phone, a plan's week labels stay right under the app bar again, without the gap left from the removed Schedule and Sharing tabs (ADR 0110).
 - Installed apps never updated after a deploy: PocketBase answered every check for a new `sw.js` with 304, because files in the Nix store are all dated 1970. Caddy now serves the app shell without dates and with `Cache-Control: no-cache` (ADR 0101).
 - The installed app still showed the old version after a deploy: it now checks for a new version when brought back to the foreground and reloads once it takes over, and the service worker no longer precaches stale copies from the HTTP cache (ADR 0103).
 - On a phone, Training zones' Save and Discard bar sits right above the navigation bar, without the extra space under the buttons.

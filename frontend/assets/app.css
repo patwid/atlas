@@ -1161,10 +1161,10 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
   .calendar-day:hover .add-here, .add-here:focus-visible { opacity: 1; }
 }
 
-/* The calendar on a phone (ADR 0062, 0072): a week's label stays under the app bar and the plan's tabs while its days
+/* The calendar on a phone (ADR 0062, 0072): a week's label stays under the app bar while its days
    scroll by, and a day without workouts takes less room, or none when it cannot be added to. */
 @media (max-width: 52.4375rem) {
-  .calendar-week .week-label { position: sticky; top: calc(var(--app-bar-height) + 3rem); z-index: 1; }
+  .calendar-week .week-label { position: sticky; top: var(--app-bar-height); z-index: 1; }
   .calendar-day:not(:has(.workout)) { min-height: 0; padding-top: 0.125rem; padding-bottom: 0.125rem; align-items: center; }
   .calendar-day:not(:has(.workout)) .day-name { opacity: 0.7; padding-top: 0; }
   /* For someone who cannot edit the plan an empty day holds nothing, so the stacked days leave it out (ADR 0072). */
