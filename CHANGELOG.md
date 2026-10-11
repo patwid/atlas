@@ -121,6 +121,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Atlas is served over HTTPS at https://atlas.patwid.ch, with a Let's Encrypt certificate from Caddy, instead of plain HTTP at the server's IP; sign in again there (ADR 0099).
 - A new plan opens as soon as it is saved, instead of staying on the list.
 - The sign-in form is centred vertically on the screen.
+- The e-mail field on the sign-in page has the focus when the page opens.
 - A workout's week choice offers only the plan's weeks, no longer one more after its last phase.
 
 ### Fixed

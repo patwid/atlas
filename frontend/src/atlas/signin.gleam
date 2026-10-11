@@ -45,6 +45,7 @@ pub fn view(
         attribute.type_("email"),
         attribute.name("email"),
         attribute.autocomplete("username"),
+        attribute.autofocus(True),
         attribute.value(form.email),
         attribute.required(True),
         event.on_input(on_email),
