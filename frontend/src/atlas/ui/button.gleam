@@ -75,8 +75,8 @@ pub fn medium() -> Attribute(msg) {
   attribute.class("md-button-medium")
 }
 
-/// M3 Expressive's standard button group (ADR 0098): buttons side by side, such as a plan's Edit and More in the app
-/// bar. They keep their width while pressed (ADR 0112).
+/// M3 Expressive's standard button group (ADR 0098): buttons side by side, the one pressed widening while its
+/// neighbours give way, such as a plan's Edit and More in the app bar.
 pub fn group(children: List(Element(msg))) -> Element(msg) {
   html.div([attribute.class("button-group")], children)
 }

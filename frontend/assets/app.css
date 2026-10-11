@@ -201,7 +201,8 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
   min-height: 2.5rem; padding: 0 1rem; border: 0; border-radius: var(--md-sys-shape-corner-full);
   font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem; text-align: center;
   cursor: pointer; user-select: none; isolation: isolate; background: transparent; color: var(--md-sys-color-primary);
-  transition: box-shadow var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+  transition: box-shadow var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects),
+    border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
   -webkit-tap-highlight-color: transparent;
 }
 .md-button::before {
@@ -222,18 +223,29 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 .md-button-outlined { border: 1px solid var(--md-sys-color-outline-variant); color: var(--md-sys-color-on-surface-variant); }
 .md-button-outlined:disabled { border-color: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent); }
 .md-button-text { padding: 0 0.75rem; }
-/* Buttons keep their shape and size while pressed or held; the state layer shows the press (ADR 0112). */
-/* M3 Expressive's medium button (ADR 0098): 56px, 24px side space, title-medium label and 24px icon. */
+/* Expressive buttons morph while pressed: the round shape squares off to the small corner (ADR 0053). */
+.md-button:not(:disabled):active, .md-fab:active, .md-icon-button:active { border-radius: var(--md-sys-shape-corner-small); }
+/* M3 Expressive's medium button (ADR 0098): 56px, 24px side space, title-medium label and 24px icon; it squares off
+   to the medium corner while pressed. */
 .md-button-medium { min-height: 3.5rem; padding: 0 1.5rem; font-size: 1rem; line-height: 1.5rem; letter-spacing: 0.009375rem; }
 .md-button-medium .icon { width: 1.5rem; height: 1.5rem; }
+.md-button-medium:not(:disabled):active { border-radius: var(--md-sys-shape-corner-medium); }
 .md-button-tonal { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
 .md-button-tonal:not(:disabled):hover { box-shadow: var(--md-sys-elevation-1); }
 .md-button-tonal:disabled { background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent); box-shadow: none; }
 .icon { width: 1.5rem; height: 1.5rem; fill: currentColor; flex: none; }
 .md-button .icon { width: 1.25rem; height: 1.25rem; margin-left: -0.25rem; }
 
-/* M3 Expressive's standard button group (ADR 0098), without its press widening (ADR 0112). */
+/* M3 Expressive's standard button group (ADR 0098): the pressed button widens by 15% on the fast spatial spring and
+   the buttons next to it narrow to make room. */
 .button-group { display: flex; align-items: center; gap: 0.125rem; }
+.button-group > .md-icon-button {
+  width: 2.5rem; transition: width var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
+}
+.button-group > .md-icon-button:active { width: 2.875rem; }
+.button-group > .md-icon-button:has(+ .md-icon-button:active), .button-group > .md-icon-button:active + .md-icon-button { width: 2.125rem; }
+@media (prefers-reduced-motion: reduce) { .button-group > .md-icon-button { transition: none; } }
 
 /* Icon button (ADR 0047): a 40px circle around a 24px icon. */
 .md-icon-button {
@@ -241,6 +253,7 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
   padding: 0; border: 0; border-radius: var(--md-sys-shape-corner-full); background: transparent;
   color: var(--md-sys-color-on-surface-variant); cursor: pointer; isolation: isolate;
   -webkit-tap-highlight-color: transparent;
+  transition: border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
 }
 .md-icon-button::before {
   content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
@@ -259,6 +272,7 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
   background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container);
   font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem;
   box-shadow: var(--md-sys-elevation-3); -webkit-tap-highlight-color: transparent;
+  transition: border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
 }
 .md-fab::before {
   content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
@@ -321,7 +335,7 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 .choice-option input:checked + .choice-label .icon { display: block; }
 .choice-option input:focus-visible + .choice-label { outline: var(--focus-ring); outline-offset: 2px; }
 /* Segmented buttons drawn as M3 Expressive's connected button group (ADR 0053): tonal buttons 2px apart, round outer
-   corners, small inner corners, and the selected one fully round. */
+   corners, small inner corners that tighten while pressed, and the selected one fully round. */
 .segmented .choice-options { flex-wrap: nowrap; gap: 2px; }
 .segmented .choice-option { flex: 1; display: flex; }
 .segmented .choice-label {
@@ -333,6 +347,7 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 }
 .segmented .choice-option:first-child .choice-label { border-radius: var(--outer) var(--inner) var(--inner) var(--outer); }
 .segmented .choice-option:last-child .choice-label { border-radius: var(--inner) var(--outer) var(--outer) var(--inner); }
+.segmented .choice-label:active { --inner: var(--md-sys-shape-corner-extra-small); }
 .segmented .choice-option input:checked + .choice-label {
   border-radius: var(--md-sys-shape-corner-full);
   background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container);
@@ -574,14 +589,19 @@ label {
 .list li {
   position: relative; padding: 0.75rem 1rem; min-height: 3.5rem; overflow: hidden;
   background: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-extra-small);
+  transition: border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
 }
 /* The item's lines are centred in it, so a one-line item is as high as M3's 56px with its text in the middle. */
 .list li:not(.info-item) { display: flex; flex-direction: column; justify-content: center; }
 .list li:first-child { border-top-left-radius: var(--md-sys-shape-corner-large); border-top-right-radius: var(--md-sys-shape-corner-large); }
 .list li:last-child { border-bottom-left-radius: var(--md-sys-shape-corner-large); border-bottom-right-radius: var(--md-sys-shape-corner-large); }
+/* Only rows that open something change shape when pointed at. */
+.link-list li:has(> a):hover { border-radius: var(--md-sys-shape-corner-medium); }
+.link-list li:has(> a):active, .link-list li:has(> a):focus-within { border-radius: var(--md-sys-shape-corner-large); }
 .list a { color: var(--md-sys-color-on-surface); font: 400 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem; text-decoration: none; }
 .list a:hover { text-decoration: underline; }
-/* A row that opens a page (ADR 0069): its headline link covers the whole item, with M3's state layer. */
+/* A row that opens a page (ADR 0069): its headline link covers the whole item, with M3's state layer and the
+   segmented list's shape change on hover, like the Settings list. */
 .list .row-link::after {
   content: ""; position: absolute; inset: 0; background: var(--md-sys-color-on-surface);
   opacity: 0; transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
@@ -594,6 +614,7 @@ label {
 }
 .list li:has(.row-link):hover .row-link::after { opacity: var(--md-sys-state-hover); }
 .list li:has(.row-link):active .row-link::after { opacity: var(--md-sys-state-pressed); }
+.list li:has(.row-link):hover { border-radius: var(--md-sys-shape-corner-medium); }
 .list .row-link:focus-visible { outline: 0; }
 .list .row-link:focus-visible::after { outline: var(--focus-ring); outline-offset: -3px; }
 .list p { margin: 0.125rem 0 0; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; color: var(--md-sys-color-on-surface-variant); }
