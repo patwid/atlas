@@ -138,9 +138,38 @@ pub fn workout_row(record: Dynamic) -> Result(Row, Nil) {
           "",
           decode.string,
         )
+        use intervals <- decode.optional_field(
+          "steps",
+          None,
+          decode.one_of(decode.map(intervals_decoder(), Some), [
+            decode.success(None),
+          ]),
+        )
         use updated <- decode.optional_field("updated", "", decode.string)
-        decode.success(Row(found, description, updated))
+        decode.success(Row(found, description, intervals, updated))
       })
+  }
+}
+
+/// The repetitions in a workout's `steps` (ADR 0104). Steps this client cannot read, such as a later
+/// version, are ignored rather than making the workout unreadable.
+fn intervals_decoder() -> Decoder(plan.Intervals) {
+  use version <- decode.field("v", whole_number())
+  use reps <- decode.field("reps", whole_number())
+  use #(distance, time) <- decode.field("work", {
+    use distance <- decode.optional_field("distance_m", 0.0, number())
+    use time <- decode.optional_field("duration_s", 0, whole_number())
+    decode.success(#(distance, time))
+  })
+  use recovery <- decode.optional_field(
+    "recovery",
+    0,
+    decode.optional_field("duration_s", 0, whole_number(), decode.success),
+  )
+  let found = plan.Intervals(reps, distance, time, recovery)
+  case version == 1 && reps > 0 && { distance >. 0.0 || time > 0 } {
+    True -> decode.success(found)
+    False -> decode.failure(found, "Intervals")
   }
 }
 

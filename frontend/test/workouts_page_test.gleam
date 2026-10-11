@@ -4,8 +4,9 @@ import atlas/workout_form.{type Row, Form, Row}
 import atlas/workouts_page.{
   AddClicked, Adding, Browsing, Create, DayChanged, Delete, DeleteClicked,
   DeleteExpired, Edit, EditClicked, EditPlan, Editing, IntensityChanged,
-  IntensityCleared, IntensityInput, KindChanged, Model, Submitted, TitleChanged,
-  Viewing, WeekChanged, WeekSelected, WorkoutSelected, WorkoutsRead,
+  IntensityCleared, IntensityInput, KindChanged, Model, RecoveryChanged,
+  RepDistanceChanged, RepsChanged, Submitted, TitleChanged, Viewing, WeekChanged,
+  WeekSelected, WorkoutSelected, WorkoutsRead,
 }
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -40,6 +41,7 @@ fn row(
       Some(2700),
     ),
     "",
+    None,
     "T-" <> id,
   )
 }
@@ -106,6 +108,35 @@ pub fn adding_a_workout_creates_it_at_the_end_of_its_day_test() {
   assert dict.get(fields, "position") == Ok("2")
   assert dict.get(fields, "title") == Ok("\"Third\"")
   assert model.mode == Browsing
+}
+
+pub fn an_interval_workout_asks_for_its_repetitions_test() {
+  let #(model, _) = update(workouts_page.new(), AddClicked(1, 1))
+  let #(model, _) = update(model, TitleChanged("Track"))
+  assert !string.contains(html_of(model, True), "Repetitions")
+  let #(model, _) = update(model, KindChanged("interval"))
+  assert string.contains(html_of(model, True), "Repetitions")
+  let #(model, _) = update(model, RepsChanged("6"))
+  let #(model, _) = update(model, RepDistanceChanged("800"))
+  let #(model, _) = update(model, RecoveryChanged("1:30"))
+  let #(_, actions) = update(model, Submitted)
+  let assert [Create(_, fields)] = actions
+  assert dict.get(fields, "steps")
+    == Ok(
+      "{\"v\":1,\"reps\":6,\"work\":{\"distance_m\":800},\"recovery\":{\"duration_s\":90}}",
+    )
+}
+
+pub fn the_calendar_shows_the_repetitions_test() {
+  let track =
+    Row(
+      ..row("a", "p1", 0, 0, "Track"),
+      intervals: Some(plan.Intervals(6, 800.0, 0, 90)),
+    )
+  assert string.contains(
+    html_of(with_rows([track]), True),
+    "6 × 800 m, 1:30 recovery",
+  )
 }
 
 pub fn workouts_of_other_plans_do_not_affect_the_position_test() {
@@ -381,6 +412,10 @@ pub fn the_form_is_labelled_and_shows_errors_test() {
         "1",
         "",
         plan.Easy,
+        "",
+        "",
+        "",
+        "",
         "",
         "",
         "",

@@ -80,6 +80,10 @@ pub type Msg {
   DistanceChanged(String)
   DurationChanged(String)
   DescriptionChanged(String)
+  RepsChanged(String)
+  RepDistanceChanged(String)
+  RepTimeChanged(String)
+  RecoveryChanged(String)
   Submitted
   /// Deletes at once, with Undo for a few seconds (ADR 0056).
   DeleteClicked(String)
@@ -249,6 +253,14 @@ pub fn update(
       typed(model, fn(f) { workout_form.Form(..f, duration: value) })
     DescriptionChanged(value) ->
       typed(model, fn(f) { workout_form.Form(..f, description: value) })
+    RepsChanged(value) ->
+      typed(model, fn(f) { workout_form.Form(..f, reps: value) })
+    RepDistanceChanged(value) ->
+      typed(model, fn(f) { workout_form.Form(..f, rep_distance: value) })
+    RepTimeChanged(value) ->
+      typed(model, fn(f) { workout_form.Form(..f, rep_time: value) })
+    RecoveryChanged(value) ->
+      typed(model, fn(f) { workout_form.Form(..f, recovery: value) })
 
     Submitted ->
       case can_edit, workout_form.validate(model.form) {
@@ -652,7 +664,7 @@ fn day_cell(
       list.append(
         list.filter_map(day.workouts, fn(w) {
           case list.find(rows, fn(row) { row.workout.id == w.id }) {
-            Ok(_) -> Ok(workout_chip(w, week, day, model.mode))
+            Ok(row) -> Ok(workout_chip(row, week, day, model.mode))
             Error(Nil) -> Error(Nil)
           }
         }),
@@ -685,11 +697,12 @@ fn day_cell(
 /// A workout in the calendar. Its kind is written out as well as shown by the colour of its bar, which some kinds
 /// share; its name says the week and day, since the calendar's column heads are not read out (ADR 0070).
 fn workout_chip(
-  w: Workout,
+  row: Row,
   week: plan_schedule.Week,
   day: plan_schedule.Day,
   mode: Mode,
 ) -> Element(Msg) {
+  let w = row.workout
   let open = case mode {
     Viewing(id) | Editing(id) -> id == w.id
     _ -> False
@@ -709,7 +722,7 @@ fn workout_chip(
             <> int.to_string(week.number)
             <> ", day "
             <> int.to_string(day.number),
-          targets(w),
+          targets(row),
         ]
         |> list.filter(fn(part) { part != "" })
         |> string.join(", "),
@@ -719,7 +732,7 @@ fn workout_chip(
     [
       html.span([class("workout-kind")], [html.text(kind)]),
       html.span([class("workout-title")], [html.text(w.title)]),
-      case targets(w) {
+      case targets(row) {
         "" -> element.none()
         text -> html.span([class("workout-targets")], [html.text(text)])
       },
@@ -757,7 +770,7 @@ fn workout_dialog(
             ),
           ]),
           html.p([], [chip.label(workout_form.kind_label(w.kind))]),
-          case targets(w) {
+          case targets(row) {
             "" -> element.none()
             text -> html.p([], [html.text(text)])
           },
@@ -964,14 +977,25 @@ fn delete_of(model: Model, id: String) -> List(Action) {
   }
 }
 
-fn targets(w: Workout) -> String {
-  case w.distance_m, w.duration_s {
-    Some(d), Some(t) ->
-      units.format_planned_km(d) <> " · " <> units.format_duration(t)
-    Some(d), None -> units.format_planned_km(d)
-    None, Some(t) -> units.format_duration(t)
-    None, None -> ""
-  }
+/// The repetitions of an interval workout (ADR 0104), then its distance and duration.
+fn targets(row: Row) -> String {
+  let w = row.workout
+  [
+    case row.intervals {
+      Some(intervals) -> workout_form.intervals_summary(intervals)
+      None -> ""
+    },
+    case w.distance_m {
+      Some(d) -> units.format_planned_km(d)
+      None -> ""
+    },
+    case w.duration_s {
+      Some(t) -> units.format_duration(t)
+      None -> ""
+    },
+  ]
+  |> list.filter(fn(part) { part != "" })
+  |> string.join(" · ")
 }
 
 /// The weeks a workout can be put in: those of the plan, one more after them, and the one in the form.
@@ -1085,6 +1109,10 @@ fn form_fields(
         }),
         KindChanged,
       ),
+      case form.kind {
+        plan.Interval -> interval_fields(form, on)
+        _ -> element.none()
+      },
       html.div([class("row")], [
         field.text(
           "workout-distance",
@@ -1130,6 +1158,61 @@ fn form_fields(
       },
     ],
   )
+}
+
+/// The repetitions of an interval workout, shown only for that kind (ADR 0104).
+fn interval_fields(
+  form: workout_form.Form,
+  on: fn(field.Help, String) -> field.Help,
+) -> Element(Msg) {
+  let time_help = field.help("Seconds, or minutes and seconds: 90 or 1:30")
+  element.fragment([
+    html.div([class("row")], [
+      field.text(
+        "workout-reps",
+        "Repetitions",
+        on(field.help("For example 6"), "reps"),
+        [
+          attribute.type_("text"),
+          attribute.attribute("inputmode", "numeric"),
+          attribute.name("reps"),
+          attribute.value(form.reps),
+          event.on_input(RepsChanged),
+        ],
+      ),
+      field.text(
+        "workout-recovery",
+        "Recovery",
+        on(field.Help(..time_help, supporting: "Optional"), "recovery"),
+        [
+          attribute.type_("text"),
+          attribute.name("recovery"),
+          attribute.value(form.recovery),
+          event.on_input(RecoveryChanged),
+        ],
+      ),
+    ]),
+    html.div([class("row")], [
+      field.text(
+        "workout-rep-distance",
+        "Distance per rep",
+        on(field.Help("Distance, time or both", "m", None), "rep_distance"),
+        [
+          attribute.type_("text"),
+          attribute.attribute("inputmode", "decimal"),
+          attribute.name("rep_distance"),
+          attribute.value(form.rep_distance),
+          event.on_input(RepDistanceChanged),
+        ],
+      ),
+      field.text("workout-rep-time", "Time per rep", on(time_help, "rep_time"), [
+        attribute.type_("text"),
+        attribute.name("rep_time"),
+        attribute.value(form.rep_time),
+        event.on_input(RepTimeChanged),
+      ]),
+    ]),
+  ])
 }
 
 /// The calendar's main action (ADR 0068), for the plan's owner: a FAB on a phone, a button in the app bar on wider

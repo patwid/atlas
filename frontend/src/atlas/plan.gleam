@@ -67,6 +67,12 @@ pub type Workout {
   )
 }
 
+/// The repetitions of an interval workout, kept in its `steps` (ADR 0104): `reps` times a rep of
+/// `rep_distance_m`, `rep_s` or both, with `recovery_s` between them. 0 means not set.
+pub type Intervals {
+  Intervals(reps: Int, rep_distance_m: Float, rep_s: Int, recovery_s: Int)
+}
+
 pub type Assignment {
   Assignment(id: String, plan_id: String, athlete_id: String, start_date: Date)
 }

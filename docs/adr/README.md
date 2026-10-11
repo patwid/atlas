@@ -25,13 +25,13 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0019 | [The device database: IndexedDB records, meta values and one owner](0019-device-database.md) | Accepted |
 | 0020 | [The sync runner in the app, local writes and conflicted copies](0020-sync-runner-and-conflicted-copies.md) | Accepted |
 | 0021 | [The plans screens](0021-plans-screens.md) | Accepted |
-| 0022 | [Workouts in a plan](0022-workouts-in-a-plan.md) | Superseded by 0043 (layout and form) |
+| 0022 | [Workouts in a plan](0022-workouts-in-a-plan.md) | Superseded by 0043 (layout and form; interval repetitions: 0104) |
 | 0023 | [Starting plans: assignments](0023-assignments.md) | Accepted |
 | 0024 | [Coach access: grants with names, and the Coaches screen](0024-coach-grants-screen.md) | Accepted |
 | 0025 | [Entering activities by hand](0025-manual-activities.md) | Accepted |
 | 0026 | [The Today screen and stored matches](0026-today-screen.md) | Accepted |
 | 0027 | [The Strava section in Settings](0027-strava-screen.md) | Accepted |
-| 0028 | [Copying a plan](0028-copy-a-plan.md) | Accepted |
+| 0028 | [Copying a plan](0028-copy-a-plan.md) | Accepted (steps copied since 0104) |
 | 0029 | [Sharing a plan with named people](0029-sharing-plans.md) | Accepted |
 | 0030 | [The membership sweep: access that is taken away reaches the device](0030-membership-sweep.md) | Accepted |
 | 0031 | [The coach's view of an athlete's progress](0031-coach-view-of-an-athlete.md) | Accepted |
@@ -107,3 +107,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0101 | [Serve the app shell without dates, so deploys reach installed apps](0101-no-dates-on-the-app-shell.md) | Accepted |
 | 0102 | [Today first on the home screen](0102-today-first-on-home.md) | Accepted |
 | 0103 | [Check for updates when the app is resumed, and reload when a new version takes over](0103-update-installed-apps-on-resume.md) | Accepted |
+| 0104 | [Repetitions of an interval workout, kept in its steps](0104-interval-repetitions.md) | Accepted |

@@ -85,6 +85,7 @@ fn workout_fields(plan_id: String, row: Row) -> outbox.Fields {
     outbox.field_string("description", row.description),
     outbox.field_float("distance_m", option_float(w.distance_m)),
     outbox.field_int("duration_s", option_int(w.duration_s)),
+    workout_form.steps_field(row.intervals),
   ])
 }
 

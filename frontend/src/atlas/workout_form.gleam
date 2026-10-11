@@ -2,10 +2,11 @@
 //// which fields to write. Pure. Limits follow the server (ADR 0009).
 
 import atlas/outbox
-import atlas/plan.{type Kind, type Workout}
+import atlas/plan.{type Intervals, type Kind, type Workout, Intervals}
 import gleam/dict
 import gleam/float
 import gleam/int
+import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -22,6 +23,12 @@ const max_distance_km = 1000.0
 
 const max_duration_seconds = 172_800
 
+pub const max_reps = 100
+
+const max_rep_distance_m = 20_000.0
+
+const max_rep_seconds = 3600
+
 pub type Form {
   Form(
     /// 1-based, as typed.
@@ -33,6 +40,13 @@ pub type Form {
     distance_km: String,
     duration: String,
     description: String,
+    /// The repetitions of an interval workout, as typed; only read when the kind is intervals (ADR 0104).
+    reps: String,
+    /// Metres.
+    rep_distance: String,
+    /// Seconds, or minutes and seconds: `90`, `1:30`.
+    rep_time: String,
+    recovery: String,
     error: Option(String),
   )
 }
@@ -46,16 +60,36 @@ pub type Valid {
     distance_m: Float,
     duration_s: Int,
     description: String,
+    /// `None` unless the workout is an interval workout with repetitions.
+    intervals: Option(Intervals),
   )
 }
 
 /// A workout as stored, with the fields the domain type does not carry.
 pub type Row {
-  Row(workout: Workout, description: String, updated: String)
+  Row(
+    workout: Workout,
+    description: String,
+    intervals: Option(Intervals),
+    updated: String,
+  )
 }
 
 pub fn empty_for(week: Int, day: Int) -> Form {
-  Form(int.to_string(week), int.to_string(day), "", plan.Easy, "", "", "", None)
+  Form(
+    int.to_string(week),
+    int.to_string(day),
+    "",
+    plan.Easy,
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    None,
+  )
 }
 
 pub fn from_row(row: Row) -> Form {
@@ -74,12 +108,29 @@ pub fn from_row(row: Row) -> Form {
       None -> ""
     },
     description: row.description,
+    reps: case row.intervals {
+      Some(i) -> int.to_string(i.reps)
+      None -> ""
+    },
+    rep_distance: case row.intervals {
+      Some(i) if i.rep_distance_m >. 0.0 ->
+        int.to_string(float.round(i.rep_distance_m))
+      _ -> ""
+    },
+    rep_time: case row.intervals {
+      Some(i) if i.rep_s > 0 -> format_rep_time(i.rep_s)
+      _ -> ""
+    },
+    recovery: case row.intervals {
+      Some(i) if i.recovery_s > 0 -> format_rep_time(i.recovery_s)
+      _ -> ""
+    },
     error: None,
   )
 }
 
-/// Checks the form; a problem names the field it is about: `week`, `day`, `title`, `description`, `distance` or
-/// `duration`.
+/// Checks the form; a problem names the field it is about: `week`, `day`, `title`, `description`, `distance`,
+/// `duration`, `reps`, `rep_distance`, `rep_time` or `recovery`.
 pub fn validate_fields(form: Form) -> Result(Valid, #(String, String)) {
   let title = string.trim(form.title)
   let description = string.trim(form.description)
@@ -104,11 +155,13 @@ pub fn validate_fields(form: Form) -> Result(Valid, #(String, String)) {
         False ->
           case
             target_distance(form.distance_km),
-            target_duration(form.duration)
+            target_duration(form.duration),
+            intervals(form)
           {
-            Error(message), _ -> Error(#("distance", message))
-            _, Error(message) -> Error(#("duration", message))
-            Ok(distance), Ok(duration) ->
+            Error(message), _, _ -> Error(#("distance", message))
+            _, Error(message), _ -> Error(#("duration", message))
+            _, _, Error(problem) -> Error(problem)
+            Ok(distance), Ok(duration), Ok(intervals) ->
               Ok(Valid(
                 day_index: { week - 1 } * 7 + { day - 1 },
                 title: title,
@@ -116,6 +169,7 @@ pub fn validate_fields(form: Form) -> Result(Valid, #(String, String)) {
                 distance_m: distance,
                 duration_s: duration,
                 description: description,
+                intervals: intervals,
               ))
           }
       }
@@ -148,6 +202,105 @@ fn target_duration(text: String) -> Result(Int, String) {
           )
       }
   }
+}
+
+/// The repetitions, for an interval workout only: none when every field of them is empty, as before
+/// they existed (ADR 0104).
+fn intervals(form: Form) -> Result(Option(Intervals), #(String, String)) {
+  let reps = string.trim(form.reps)
+  let typed = [reps, form.rep_distance, form.rep_time, form.recovery]
+  case form.kind, list.all(typed, fn(text) { string.trim(text) == "" }) {
+    plan.Interval, False ->
+      case
+        int.parse(reps),
+        rep_distance(form.rep_distance),
+        rep_time(form.rep_time, "time of a rep"),
+        rep_time(form.recovery, "recovery")
+      {
+        Error(_), _, _, _ if reps == "" ->
+          Error(#("reps", "Enter how many repetitions."))
+        Error(_), _, _, _ ->
+          Error(#("reps", "Enter the repetitions as a whole number."))
+        Ok(n), _, _, _ if n < 1 || n > max_reps ->
+          Error(#("reps", "The repetitions must be between 1 and 100."))
+        _, Error(message), _, _ -> Error(#("rep_distance", message))
+        _, _, Error(message), _ -> Error(#("rep_time", message))
+        _, _, _, Error(message) -> Error(#("recovery", message))
+        _, Ok(0.0), Ok(0), _ ->
+          Error(#("rep_distance", "Give each rep a distance, a time or both."))
+        Ok(n), Ok(distance), Ok(time), Ok(recovery) ->
+          Ok(Some(Intervals(n, distance, time, recovery)))
+      }
+    _, _ -> Ok(None)
+  }
+}
+
+fn rep_distance(text: String) -> Result(Float, String) {
+  case string.trim(text) {
+    "" -> Ok(0.0)
+    typed ->
+      case parse_decimal(typed) {
+        Ok(m) if m <=. max_rep_distance_m -> Ok(int.to_float(float.round(m)))
+        Ok(_) -> Error("The distance of a rep can be at most 20000 m.")
+        Error(Nil) -> Error("Enter the distance in metres, for example 400.")
+      }
+  }
+}
+
+fn rep_time(text: String, what: String) -> Result(Int, String) {
+  case string.trim(text) {
+    "" -> Ok(0)
+    typed ->
+      case parse_rep_time(typed) {
+        Ok(seconds) if seconds <= max_rep_seconds -> Ok(seconds)
+        Ok(_) -> Error("The " <> what <> " can be at most 60 minutes.")
+        Error(Nil) ->
+          Error(
+            "Enter the "
+            <> what
+            <> " in seconds (90) or as minutes and seconds (1:30).",
+          )
+      }
+  }
+}
+
+/// Seconds from `90` (seconds), `1:30` (minutes and seconds) or `1:00:00` (with hours): reps and
+/// recoveries are short, so a plain number means seconds here, not minutes as in `parse_duration`.
+pub fn parse_rep_time(text: String) -> Result(Int, Nil) {
+  case list.try_map(string.split(string.trim(text), ":"), parse_part) {
+    Ok([seconds]) -> Ok(seconds)
+    Ok([minutes, seconds]) if seconds < 60 -> Ok(minutes * 60 + seconds)
+    Ok([hours, minutes, seconds]) if minutes < 60 && seconds < 60 ->
+      Ok(hours * 3600 + minutes * 60 + seconds)
+    _ -> Error(Nil)
+  }
+}
+
+/// A rep or recovery time as it is typed back into the form and shown: `0:45`, `3:00`, `1:00:00`.
+pub fn format_rep_time(seconds: Int) -> String {
+  case seconds >= 3600 {
+    True -> format_duration(seconds)
+    False -> int.to_string(seconds / 60) <> ":" <> pad2(seconds % 60)
+  }
+}
+
+/// `6 × 400 m in 1:15, 1:30 recovery`.
+pub fn intervals_summary(intervals: Intervals) -> String {
+  let distance = case intervals.rep_distance_m {
+    m if m >=. 1000.0 -> format_km(m) <> " km"
+    m if m >. 0.0 -> int.to_string(float.round(m)) <> " m"
+    _ -> ""
+  }
+  let rep = case distance, intervals.rep_s {
+    "", s -> format_rep_time(s)
+    _, 0 -> distance
+    _, s -> distance <> " in " <> format_rep_time(s)
+  }
+  let recovery = case intervals.recovery_s {
+    0 -> ""
+    s -> ", " <> format_rep_time(s) <> " recovery"
+  }
+  int.to_string(intervals.reps) <> " × " <> rep <> recovery
 }
 
 /// A non-negative decimal number, with a point or a comma: `5`, `5.5`, `5,5`, `.5`.
@@ -260,6 +413,7 @@ pub fn changed_fields(
         "description" -> valid.description != row.description
         "distance_m" -> valid.distance_m != option.unwrap(w.distance_m, 0.0)
         "duration_s" -> valid.duration_s != option.unwrap(w.duration_s, 0)
+        "steps" -> valid.intervals != row.intervals
         _ -> False
       }
     })
@@ -278,7 +432,38 @@ fn value_fields(valid: Valid) -> List(#(String, String)) {
     outbox.field_string("description", valid.description),
     outbox.field_float("distance_m", valid.distance_m),
     outbox.field_int("duration_s", valid.duration_s),
+    steps_field(valid.intervals),
   ]
+}
+
+/// The repetitions as the `steps` JSON (ADR 0104), `null` when there are none. Unset values are left out.
+pub fn steps_field(intervals: Option(Intervals)) -> #(String, String) {
+  case intervals {
+    None -> outbox.field_null("steps")
+    Some(i) -> {
+      let work =
+        [
+          #("distance_m", i.rep_distance_m >. 0.0, json.float(i.rep_distance_m)),
+          #("duration_s", i.rep_s > 0, json.int(i.rep_s)),
+        ]
+        |> list.filter(fn(part) { part.1 })
+        |> list.map(fn(part) { #(part.0, part.2) })
+      let recovery = case i.recovery_s {
+        0 -> []
+        s -> [#("recovery", json.object([#("duration_s", json.int(s))]))]
+      }
+      #(
+        "steps",
+        json.object([
+          #("v", json.int(1)),
+          #("reps", json.int(i.reps)),
+          #("work", json.object(work)),
+          ..recovery
+        ])
+          |> json.to_string,
+      )
+    }
+  }
 }
 
 pub fn kind_label(kind: Kind) -> String {

@@ -433,6 +433,10 @@ fn plan_screen(owner: String) -> atlas.Model {
         "8",
         "45",
         "",
+        "",
+        "",
+        "",
+        "",
         None,
       ),
     ),
@@ -474,6 +478,7 @@ pub fn signing_out_clears_the_workouts_on_screen_too_test() {
         workout_form.Row(
           plan.Workout("w1", "p1", 0, 0, "Secret", plan.Easy, None, None),
           "",
+          None,
           "T",
         ),
       ]),
@@ -691,6 +696,7 @@ fn today_screen() -> atlas.Model {
       workout_form.Row(
         plan.Workout("w1", "p1", 0, 0, "Easy", plan.Easy, None, None),
         "",
+        None,
         "T",
       ),
     ]),
@@ -857,11 +863,13 @@ fn copy_screen(workouts_loaded: Bool) -> atlas.Model {
             None,
           ),
           "",
+          None,
           "T",
         ),
         workout_form.Row(
           plan.Workout("w1", "src", 0, 0, "Easy", plan.Easy, None, None),
           "",
+          None,
           "T",
         ),
         workout_form.Row(
@@ -876,6 +884,7 @@ fn copy_screen(workouts_loaded: Bool) -> atlas.Model {
             None,
           ),
           "",
+          None,
           "T",
         ),
       ],

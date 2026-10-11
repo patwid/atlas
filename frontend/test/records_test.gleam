@@ -160,6 +160,33 @@ pub fn a_workout_row_carries_description_and_the_local_updated_test() {
   assert records.workout_row(parse("{\"id\":\"w3\"}")) == Error(Nil)
 }
 
+pub fn a_workout_row_reads_the_repetitions_of_its_steps_test() {
+  let with = fn(steps) {
+    records.workout_row(parse(
+      "{\"id\":\"w1\",\"plan\":\"p1\",\"title\":\"Track\",\"kind\":\"interval\",\"steps\":"
+      <> steps
+      <> "}",
+    ))
+  }
+  let assert Ok(row) =
+    with(
+      "{\"v\":1,\"reps\":6,\"work\":{\"distance_m\":800,\"duration_s\":170},\"recovery\":{\"duration_s\":90}}",
+    )
+  assert row.intervals == Some(plan.Intervals(6, 800.0, 170, 90))
+  let assert Ok(row) =
+    with("{\"v\":1,\"reps\":10,\"work\":{\"duration_s\":60}}")
+  assert row.intervals == Some(plan.Intervals(10, 0.0, 60, 0))
+  // No steps, or steps this client cannot read: the workout still reads, without repetitions.
+  let assert Ok(row) = with("null")
+  assert row.intervals == None
+  let assert Ok(row) = with("{\"v\":2,\"blocks\":[]}")
+  assert row.intervals == None
+  let assert Ok(row) = with("{\"v\":1,\"reps\":6,\"work\":{}}")
+  assert row.intervals == None
+  let assert Ok(row) = with("[]")
+  assert row.intervals == None
+}
+
 pub fn an_assignment_row_carries_who_made_it_and_the_local_updated_test() {
   let text =
     "{\"id\":\"a1\",\"plan\":\"p1\",\"athlete\":\"u1\",\"assigned_by\":\"u2\",\"start_date\":\"2026-11-02\",\"updated\":\"T9\"}"

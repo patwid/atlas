@@ -234,6 +234,28 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
   assert.equal(second.day_index, 1)
   assert.equal(second.position, 1, "it goes after the first one on that day")
 
+  // An interval workout with its repetitions, kept in steps (ADR 0104).
+  click(w, byLabel(w, "Add a workout to week 1, day 5"))
+  await waitFor("the form for day 5", () => d.querySelector("#workout-title") && d.querySelector("#workout-day").value === "5")
+  assert.equal(d.querySelector("#workout-reps"), null, "no repetitions for an easy run")
+  typeInto(w, d.querySelector("#workout-title"), "Track")
+  pick(w, "kind", "interval")
+  await waitFor("the repetition fields", () => d.querySelector("#workout-reps"))
+  typeInto(w, d.querySelector("#workout-reps"), "6")
+  typeInto(w, d.querySelector("#workout-rep-distance"), "800")
+  typeInto(w, d.querySelector("#workout-recovery"), "1:30")
+  submit(w, d.querySelector(".workout-form"))
+  const track = await waitFor("the interval workout", async () => (await workouts()).find((x) => x.title === "Track"))
+  assert.deepEqual(track.steps, { v: 1, reps: 6, work: { distance_m: 800 }, recovery: { duration_s: 90 } })
+  await waitFor("the repetitions on the calendar", () => d.querySelector(".calendar").textContent.includes("6 × 800 m, 1:30 recovery"))
+  click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Track")))
+  await waitFor("the repetitions in the form", () => d.querySelector("#workout-reps")?.value === "6")
+  assert.equal(d.querySelector("#workout-rep-distance").value, "800")
+  assert.equal(d.querySelector("#workout-recovery").value, "1:30")
+  pick(w, "kind", "tempo")
+  submit(w, d.querySelector(".workout-form"))
+  await waitFor("the repetitions cleared with the kind", async () => (await workouts()).find((x) => x.id === track.id && x.kind === "tempo")?.steps === null)
+
   // Move the first workout to day 4 and rename it: the owner opens it straight in its form (ADR 0080).
   click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Easy run")))
   await waitFor("the edit form", () => d.querySelector("#workout-title")?.value === "Easy run")
@@ -788,7 +810,7 @@ test("a user copies someone else's public plan with its workouts, then edits the
   const alice = h.people.alice
   const bob = h.people.bob
   await setup(h.create("alice", "plans", { id: "copysrcplan0001", owner: alice.id, title: "Autumn 10k", description: "Eight weeks", visibility: "public" }))
-  await setup(h.create("alice", "workouts", { id: "copysrcwork0001", plan: "copysrcplan0001", day_index: 3, position: 0, title: "Tempo", kind: "tempo", description: "3 x 10 min", distance_m: 8000, duration_s: 2700 }))
+  await setup(h.create("alice", "workouts", { id: "copysrcwork0001", plan: "copysrcplan0001", day_index: 3, position: 0, title: "Tempo", kind: "tempo", description: "3 x 10 min", distance_m: 8000, duration_s: 2700, steps: { v: 1, reps: 3, work: { duration_s: 600 } } }))
   await setup(h.create("alice", "workouts", { id: "copysrcwork0002", plan: "copysrcplan0001", day_index: 0, position: 0, title: "Easy run", kind: "easy", distance_m: 5000 }))
 
   const w = startApp("/plans/copysrcplan0001", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
@@ -813,6 +835,7 @@ test("a user copies someone else's public plan with its workouts, then edits the
   assert.equal(copied[1].description, "3 x 10 min")
   assert.equal(copied[1].distance_m, 8000)
   assert.equal(copied[1].duration_s, 2700)
+  assert.deepEqual(copied[1].steps, { v: 1, reps: 3, work: { duration_s: 600 } }, "the repetitions came along (ADR 0104)")
 
   // The original has not changed.
   const original = (await h.api("GET", "collections/plans/records/copysrcplan0001", { token: alice.token })).body

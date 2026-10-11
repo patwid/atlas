@@ -26,6 +26,7 @@ fn row(id: String, day: Int, position: Int, title: String) -> workout_form.Row {
       Some(2700),
     ),
     "3 x 10 min",
+    None,
     "T",
   )
 }
@@ -84,12 +85,13 @@ pub fn every_workout_is_copied_into_the_new_plan_test() {
       outbox.field_string("description", "3 x 10 min"),
       outbox.field_float("distance_m", 8000.0),
       outbox.field_int("duration_s", 2700),
+      outbox.field_null("steps"),
     ])
 }
 
 pub fn missing_targets_are_copied_as_zero_which_means_none_test() {
   let bare =
-    Row(Workout("w", "src", 0, 0, "Rest", plan.Rest, None, None), "", "T")
+    Row(Workout("w", "src", 0, 0, "Rest", plan.Rest, None, None), "", None, "T")
   let copy = plan_copy.build(source(), [bare], "me", fn() { "x" })
   let assert [#(_, fields)] = copy.workouts
   assert dict.get(fields, "distance_m") == Ok("0")
