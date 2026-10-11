@@ -1,6 +1,6 @@
 # 0023. Starting plans: assignments
 
-- Status: Accepted
+- Status: Accepted. Assignments that follow the plan's start date: [0108](0108-plan-start-date.md).
 - Date: 2026-10-06
 - Deciders: agent (product scope: following a plan from a start date, and coaches assigning plans, as the owner asked)
 

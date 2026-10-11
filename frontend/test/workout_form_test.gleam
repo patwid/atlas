@@ -22,6 +22,7 @@ fn form() -> workout_form.Form {
     "",
     NeitherTyped,
     NeitherTyped,
+    0,
     None,
   )
 }
@@ -145,6 +146,7 @@ pub fn the_week_is_checked_first_so_one_mistake_gives_one_message_test() {
       "",
       NeitherTyped,
       NeitherTyped,
+      0,
       None,
     ))
     == Error("Enter the week as a number.")
@@ -177,6 +179,7 @@ pub fn editing_starts_from_the_stored_workout_test() {
       "",
       NeitherTyped,
       NeitherTyped,
+      0,
       None,
     )
   let no_targets =
@@ -203,6 +206,7 @@ pub fn editing_starts_from_the_stored_workout_test() {
       "",
       NeitherTyped,
       NeitherTyped,
+      0,
       None,
     )
 }
@@ -283,6 +287,7 @@ pub fn a_problem_names_its_field_test() {
       "",
       NeitherTyped,
       NeitherTyped,
+      0,
       None,
     ))
   assert workout_form.error_field(workout_form.Form(
@@ -300,6 +305,7 @@ pub fn a_problem_names_its_field_test() {
       "",
       NeitherTyped,
       NeitherTyped,
+      0,
       None,
     ))
     == "distance"
@@ -318,6 +324,7 @@ pub fn a_problem_names_its_field_test() {
       "",
       NeitherTyped,
       NeitherTyped,
+      0,
       None,
     ))
     == ""
@@ -568,4 +575,17 @@ pub fn interval_totals_add_up_the_reps_and_the_recoveries_between_them_test() {
     == #(Some(4800.0), Some(6 * 170))
   assert workout_form.interval_totals(Form(..intervals_form(), reps: "x"))
     == #(None, None)
+}
+
+pub fn a_day_before_the_plan_starts_cannot_be_chosen_test() {
+  // The plan starts on a Wednesday (day 2): Monday and Tuesday of week 1 are not part of it.
+  let starts_wednesday = Form(..form(), first_day: 2)
+  assert workout_form.validate_fields(Form(..starts_wednesday, day: "2"))
+    == Error(#("day", "The plan starts after this day."))
+  let assert Ok(valid) =
+    workout_form.validate(Form(..starts_wednesday, day: "3"))
+  assert valid.day_index == 2
+  let assert Ok(valid) =
+    workout_form.validate(Form(..starts_wednesday, week: "2", day: "1"))
+  assert valid.day_index == 7
 }

@@ -101,7 +101,7 @@ pub fn reads_an_assignment_test() {
   let text =
     "{\"id\":\"a1\",\"plan\":\"p1\",\"athlete\":\"u1\",\"assigned_by\":\"u2\",\"start_date\":\"2026-11-02\"}"
   assert records.assignment(parse(text))
-    == Ok(Assignment("a1", "p1", "u1", Date(2026, 11, 2)))
+    == Ok(Assignment("a1", "p1", "u1", Some(Date(2026, 11, 2))))
   assert records.assignment(parse(
       "{\"id\":\"a\",\"plan\":\"p\",\"athlete\":\"u\",\"start_date\":\"02.11.2026\"}",
     ))
@@ -210,7 +210,7 @@ pub fn an_assignment_row_carries_who_made_it_and_the_local_updated_test() {
   let assert Ok(row) = records.assignment_row(parse(text))
   assert row.assigned_by == "u2"
   assert row.updated == "T9"
-  assert row.assignment == Assignment("a1", "p1", "u1", Date(2026, 11, 2))
+  assert row.assignment == Assignment("a1", "p1", "u1", Some(Date(2026, 11, 2)))
   let assert Ok(offline) =
     records.assignment_row(parse(
       "{\"id\":\"a2\",\"plan\":\"p\",\"athlete\":\"u\",\"start_date\":\"2026-11-02\"}",

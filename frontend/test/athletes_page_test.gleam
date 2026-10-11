@@ -34,12 +34,12 @@ fn inputs() -> today.Inputs {
     today: Date(2026, 10, 7),
     assignments: [
       assignment_form.Row(
-        Assignment("a1", "p1", "ana", Date(2026, 9, 28)),
+        Assignment("a1", "p1", "ana", Some(Date(2026, 9, 28))),
         "me",
         "T",
       ),
       assignment_form.Row(
-        Assignment("a2", "hidden", "ana", Date(2026, 8, 3)),
+        Assignment("a2", "hidden", "ana", Some(Date(2026, 8, 3))),
         "other-coach",
         "T",
       ),

@@ -20,11 +20,30 @@ import lustre/element
 const today = Date(2026, 10, 6)
 
 fn context(athletes: List(grants.Person)) -> assignments_page.Context {
-  Context("p1", "me", athletes, today, True)
+  Context(
+    "p1",
+    "me",
+    athletes,
+    today,
+    True,
+    plan_start: None,
+    phases: plan.Phases(0, 0, 0),
+    own_plan: False,
+  )
+}
+
+/// The user's own plan, starting on Wednesday 4 Nov 2026.
+fn own_dated_plan() -> assignments_page.Context {
+  Context(
+    ..context([]),
+    plan_start: Some(Date(2026, 11, 4)),
+    phases: plan.Phases(2, 1, 1),
+    own_plan: True,
+  )
 }
 
 fn row(id: String, athlete: String, assigned_by: String, start: Date) -> Row {
-  Row(Assignment(id, "p1", athlete, start), assigned_by, "T-" <> id)
+  Row(Assignment(id, "p1", athlete, Some(start)), assigned_by, "T-" <> id)
 }
 
 fn with_rows(rows: List(Row)) -> assignments_page.Model {
@@ -77,7 +96,8 @@ pub fn starting_a_plan_for_oneself_creates_an_assignment_test() {
   let #(model, _) = update(assignments_page.new(), StartClicked, [])
   assert model.mode == Starting
   assert model.form.athlete_id == "me"
-  assert model.form.start_date == "2026-10-06"
+  // A plan without a start date: the coming Monday.
+  assert model.form.start_date == "2026-10-12"
   let #(model, _) = update(model, DateChanged("2026-11-02"), [])
   let #(model, actions) = update(model, Submitted, [])
   let assert [Create(id, fields)] = actions
@@ -258,7 +278,7 @@ pub fn the_start_form_offers_the_athletes_and_a_date_test() {
     Model(
       ..with_rows([]),
       mode: Starting,
-      form: assignment_form.empty_for("me", today),
+      form: assignment_form.empty_for("me", None, False, today),
     )
   let html = html_of(model, [Person("ana", "Ana")])
   assert string.contains(html, "for=\"assign-athlete\"")
@@ -277,7 +297,10 @@ pub fn changing_a_date_does_not_offer_another_athlete_test() {
     Model(
       ..with_rows([row("a", "me", "me", Date(2026, 11, 2))]),
       mode: ChangingDate("a"),
-      form: assignment_form.from_row(row("a", "me", "me", Date(2026, 11, 2))),
+      form: assignment_form.from_row(
+        row("a", "me", "me", Date(2026, 11, 2)),
+        None,
+      ),
     )
   let html = html_of(model, [Person("ana", "Ana")])
   assert string.contains(html, "Change start date")
@@ -285,7 +308,7 @@ pub fn changing_a_date_does_not_offer_another_athlete_test() {
 }
 
 pub fn a_plan_that_cannot_be_started_offers_no_way_to_start_it_test() {
-  let context = Context("p1", "me", [], today, False)
+  let context = Context(..context([]), can_start: False)
   let #(model, _, actions) =
     assignments_page.update(assignments_page.new(), StartClicked, context)
   assert model.mode == Browsing
@@ -300,4 +323,53 @@ pub fn a_plan_that_cannot_be_started_offers_no_way_to_start_it_test() {
   assert !string.contains(html, "Start this plan")
   assert string.contains(html, "Nobody is following this plan yet")
   assert !string.contains(html, "Pick a start date")
+}
+
+pub fn starting_ones_own_dated_plan_follows_its_date_test() {
+  let #(model, _, _) =
+    assignments_page.update(
+      assignments_page.new(),
+      StartClicked,
+      own_dated_plan(),
+    )
+  assert model.form.follows_plan
+  let html =
+    element.to_string(assignments_page.view(
+      model,
+      own_dated_plan(),
+      workouts(),
+      grants_list(),
+    ))
+  assert string.contains(
+      html,
+      "Starts on the plan&#39;s start date, Wed 4 Nov 2026",
+    )
+    || string.contains(html, "Starts on the plan's start date, Wed 4 Nov 2026")
+  assert !string.contains(html, "type=\"date\"")
+  let #(_, _, actions) =
+    assignments_page.update(model, Submitted, own_dated_plan())
+  let assert [Create(_, fields)] = actions
+  assert dict.get(fields, "start_date") == Ok("\"\"")
+}
+
+pub fn an_assignment_following_ones_own_plan_moves_with_it_test() {
+  let following = Row(Assignment("f", "p1", "me", None), "me", "T-f")
+  let html =
+    element.to_string(assignments_page.view(
+      with_rows([following]),
+      own_dated_plan(),
+      workouts(),
+      grants_list(),
+    ))
+  // Wednesday 4 Nov to the Sunday of the fourth week from Monday 2 Nov.
+  assert string.contains(html, "Starts Wed 4 Nov 2026 · ends Sun 29 Nov 2026")
+  assert !string.contains(html, "Change date")
+  assert string.contains(html, "Remove")
+  let #(model, _, _) =
+    assignments_page.update(
+      with_rows([following]),
+      ChangeDateClicked("f"),
+      own_dated_plan(),
+    )
+  assert model.mode == Browsing
 }

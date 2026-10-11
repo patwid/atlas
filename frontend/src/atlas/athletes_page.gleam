@@ -17,6 +17,7 @@ import gleam/float
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/order
 import gleam/string
 import lustre/attribute.{class}
 import lustre/element.{type Element}
@@ -169,8 +170,14 @@ fn following(inputs: Inputs) -> Element(msg) {
     list.filter(inputs.assignments, fn(row) {
       row.assignment.athlete_id == inputs.user_id
     })
+    |> list.map(fn(row) { #(row, plan.start_of(row.assignment, inputs.plans)) })
     |> list.sort(fn(a, b) {
-      date.compare(b.assignment.start_date, a.assignment.start_date)
+      case a.1, b.1 {
+        Ok(x), Ok(y) -> date.compare(y, x)
+        Ok(_), Error(Nil) -> order.Lt
+        Error(Nil), Ok(_) -> order.Gt
+        Error(Nil), Error(Nil) -> order.Eq
+      }
     })
   html.div([class("group")], [
     layout.subheader("Plans they follow"),
@@ -178,12 +185,17 @@ fn following(inputs: Inputs) -> Element(msg) {
       [] -> html.p([class("muted")], [html.text("Not following a plan.")])
       rows ->
         layout.list(
-          list.map(rows, fn(row) {
+          list.map(rows, fn(pair) {
+            let #(row, start) = pair
             html.li([], [
               html.strong([], [html.text(plan_title(inputs, row.assignment))]),
-              html.p([class("muted")], [
-                html.text("Starts " <> date.format(row.assignment.start_date)),
-              ]),
+              case start {
+                Ok(start) ->
+                  html.p([class("muted")], [
+                    html.text("Starts " <> date.format(start)),
+                  ])
+                Error(Nil) -> element.none()
+              },
             ])
           }),
         )

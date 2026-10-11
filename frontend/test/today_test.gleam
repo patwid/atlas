@@ -19,7 +19,11 @@ fn assignment_row(
   plan_id: String,
   start: date.Date,
 ) -> assignment_form.Row {
-  assignment_form.Row(Assignment(id, plan_id, athlete, start), athlete, "T")
+  assignment_form.Row(
+    Assignment(id, plan_id, athlete, Some(start)),
+    athlete,
+    "T",
+  )
 }
 
 fn workout(

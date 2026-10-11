@@ -57,6 +57,8 @@ pub type Form {
     target_typed: Typed,
     /// The same for the distance and time of a rep.
     rep_typed: Typed,
+    /// The plan's first day: days of week 1 before it cannot be chosen (ADR 0108).
+    first_day: Int,
     error: Option(String),
   )
 }
@@ -112,6 +114,7 @@ pub fn empty_for(week: Int, day: Int) -> Form {
     "",
     NeitherTyped,
     NeitherTyped,
+    0,
     None,
   )
 }
@@ -155,6 +158,7 @@ pub fn from_row(row: Row) -> Form {
     },
     target_typed: NeitherTyped,
     rep_typed: NeitherTyped,
+    first_day: 0,
     error: None,
   )
 }
@@ -302,6 +306,8 @@ pub fn validate_fields(form: Form) -> Result(Valid, #(String, String)) {
     _, Error(_), _ -> Error(#("day", "Choose the day of the week."))
     _, Ok(day), _ if day < 1 || day > 7 ->
       Error(#("day", "The day must be between 1 and 7."))
+    Ok(week), Ok(day), _ if { week - 1 } * 7 + day - 1 < form.first_day ->
+      Error(#("day", "The plan starts after this day."))
     _, _, 0 -> Error(#("title", "Give the workout a title."))
     _, _, n if n > max_title ->
       Error(#("title", "The title can have at most 200 characters."))

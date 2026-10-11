@@ -1,6 +1,6 @@
 # 0043. Plan phases, a weekly distance goal, week intensity and a calendar view
 
-- Status: Accepted. The open questions are answered in [0064](0064-intensity-scales-the-weekly-goal.md); the sidebar is replaced by dialogs in [0066](0066-plan-calendar-without-a-sidebar.md).
+- Status: Accepted. The open questions are answered in [0064](0064-intensity-scales-the-weekly-goal.md); the sidebar is replaced by dialogs in [0066](0066-plan-calendar-without-a-sidebar.md); the calendar's weekdays, dates and end are in [0108](0108-plan-start-date.md).
 - Date: 2026-10-08
 - Deciders: owner (asked for phases, a weekly distance goal, a per-week intensity and a calendar with a sidebar); agent (the details below)
 

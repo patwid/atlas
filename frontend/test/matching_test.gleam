@@ -25,7 +25,7 @@ fn workout(
 }
 
 fn schedule(workouts: List(Workout)) -> List(Scheduled) {
-  plan.schedule(Assignment("a1", "p1", "alice", start), workouts)
+  plan.schedule(Assignment("a1", "p1", "alice", Some(start)), start, workouts)
 }
 
 fn run(
@@ -215,8 +215,10 @@ pub fn existing_matches_are_kept_out_of_the_proposal_test() {
 
 pub fn the_same_plan_assigned_twice_is_matched_per_assignment_test() {
   let w = workout("w1", 1, plan.Easy, Some(8000.0), None)
-  let first = plan.schedule(Assignment("a1", "p1", "alice", start), [w])
-  let second = plan.schedule(Assignment("a2", "p1", "alice", start), [w])
+  let first =
+    plan.schedule(Assignment("a1", "p1", "alice", Some(start)), start, [w])
+  let second =
+    plan.schedule(Assignment("a2", "p1", "alice", Some(start)), start, [w])
   let acts = [
     run("x", "2026-10-06 06:00:00.000Z", 8000.0, 2500),
     run("y", "2026-10-06 18:00:00.000Z", 8000.0, 2500),
@@ -307,9 +309,13 @@ pub fn the_offset_that_applied_at_the_time_decides_the_day_test() {
   // 22:30 UTC on 29 March is 00:30 on the 30th once summer time has started.
   let plan_start = Date(2026, 3, 30)
   let scheduled =
-    plan.schedule(Assignment("a1", "p1", "alice", plan_start), [
-      workout("w1", 0, plan.Easy, Some(8000.0), None),
-    ])
+    plan.schedule(
+      Assignment("a1", "p1", "alice", Some(plan_start)),
+      plan_start,
+      [
+        workout("w1", 0, plan.Easy, Some(8000.0), None),
+      ],
+    )
   let acts = [run("late", "2026-03-29 22:30:00.000Z", 8000.0, 2500)]
   assert matching.propose(scheduled, acts, [], zurich)
     == [Match("late", "w1", "a1")]
@@ -319,11 +325,16 @@ pub fn the_offset_that_applied_at_the_time_decides_the_day_test() {
 
 pub fn runs_before_and_after_the_change_each_get_their_own_offset_test() {
   let scheduled =
-    plan.schedule(Assignment("a1", "p1", "alice", Date(2026, 3, 28)), [
-      workout("sat", 0, plan.Easy, Some(8000.0), None),
-      workout("sun", 1, plan.Easy, Some(8000.0), None),
-      workout("mon", 2, plan.Easy, Some(8000.0), None),
-    ])
+    plan.schedule(
+      Assignment("a1", "p1", "alice", Some(Date(2026, 3, 28))),
+      Date(2026, 3, 28),
+      [
+        // Counted from Monday 23 March.
+        workout("sat", 5, plan.Easy, Some(8000.0), None),
+        workout("sun", 6, plan.Easy, Some(8000.0), None),
+        workout("mon", 7, plan.Easy, Some(8000.0), None),
+      ],
+    )
   let acts = [
     // 23:30 UTC on the 27th: 00:30 on the 28th (winter time).
     run("a", "2026-03-27 23:30:00.000Z", 8000.0, 2500),

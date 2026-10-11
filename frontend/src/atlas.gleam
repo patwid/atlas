@@ -10,6 +10,7 @@ import atlas/auth.{type Session}
 import atlas/clock
 import atlas/coaches_page
 import atlas/collection
+import atlas/date
 import atlas/grants
 import atlas/home_page
 import atlas/http
@@ -391,7 +392,12 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       case model.auth {
         SignedIn(session) -> {
           let #(page_model, page_effect, actions) =
-            plans_page.update(model.plans, inner, session.user_id)
+            plans_page.update(
+              model.plans,
+              inner,
+              session.user_id,
+              clock.today(),
+            )
           let #(state, action_effects, page_model) =
             perform(model, session, model.syncing, page_model, actions)
           #(
@@ -658,13 +664,32 @@ fn assignments_context(
             },
             today,
             can_start,
+            plan_start: found.start_date,
+            phases: found.phases,
+            own_plan: found.owner_id == session.user_id,
           )
         }
-        Error(Nil) ->
-          assignments_page.Context(id, session.user_id, [], today, False)
+        Error(Nil) -> no_plan_context(id, session.user_id, today)
       }
-    _ -> assignments_page.Context("", session.user_id, [], today, False)
+    _ -> no_plan_context("", session.user_id, today)
   }
+}
+
+fn no_plan_context(
+  id: String,
+  user_id: String,
+  today: date.Date,
+) -> assignments_page.Context {
+  assignments_page.Context(
+    id,
+    user_id,
+    [],
+    today,
+    False,
+    None,
+    plan.Phases(0, 0, 0),
+    False,
+  )
 }
 
 /// Everything the Home screen works from, read from what the other screens already hold.
@@ -921,7 +946,8 @@ fn copy_plan(
   source_id: String,
 ) -> #(syncing.State, List(Effect(syncing.Msg)), plans_page.Model) {
   let report = fn(message) {
-    let #(next, _, _) = plans_page.update(page, message, session.user_id)
+    let #(next, _, _) =
+      plans_page.update(page, message, session.user_id, clock.today())
     next
   }
   case

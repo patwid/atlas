@@ -54,7 +54,7 @@ fn inputs(matches: List(matching.Stored)) -> today.Inputs {
     user_id: "me",
     today: wednesday,
     assignments: [
-      assignment_form.Row(Assignment("a1", "p1", "me", monday), "me", "T"),
+      assignment_form.Row(Assignment("a1", "p1", "me", Some(monday)), "me", "T"),
     ],
     workouts: [
       Workout("w1", "p1", 1, 0, "Tuesday easy", plan.Easy, Some(8000.0), None),
@@ -274,8 +274,8 @@ pub fn the_week_ahead_lists_the_furthest_day_first_test() {
 pub fn the_plan_is_named_when_more_than_one_is_followed_test() {
   let two =
     Inputs(..inputs([]), assignments: [
-      assignment_form.Row(Assignment("a1", "p1", "me", monday), "me", "T"),
-      assignment_form.Row(Assignment("a2", "p2", "me", monday), "me", "T"),
+      assignment_form.Row(Assignment("a1", "p1", "me", Some(monday)), "me", "T"),
+      assignment_form.Row(Assignment("a2", "p2", "me", Some(monday)), "me", "T"),
     ])
   assert string.contains(html_of(home_page.new(), two), "10k plan")
 }

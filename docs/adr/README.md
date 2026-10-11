@@ -12,7 +12,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0006 | [Monorepo layout and pinned toolchain](0006-repository-layout-and-toolchain.md) | Accepted |
 | 0007 | [Declare the dev sandbox's network access as a committed sbx kit](0007-sandbox-network-policy-as-kit.md) | Accepted |
 | 0008 | [Start the dev sandbox from a committed `sbxenv.yaml`](0008-sandbox-environment-file.md) | Accepted |
-| 0009 | [Data model and API rules](0009-data-model-and-api-rules.md) | Accepted |
+| 0009 | [Data model and API rules](0009-data-model-and-api-rules.md) | Accepted (plan start dates and day numbering: 0108) |
 | 0010 | [Select users by exact e-mail lookup](0010-user-lookup-by-email.md) | Accepted |
 | 0011 | [Refuse stale updates with a server-side `base_updated` guard](0011-sync-conflict-guard.md) | Accepted |
 | 0012 | [Strava integration as PocketBase hooks](0012-strava-integration-hooks.md) | Accepted |
@@ -26,7 +26,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0020 | [The sync runner in the app, local writes and conflicted copies](0020-sync-runner-and-conflicted-copies.md) | Accepted |
 | 0021 | [The plans screens](0021-plans-screens.md) | Accepted |
 | 0022 | [Workouts in a plan](0022-workouts-in-a-plan.md) | Superseded by 0043 (layout and form; interval repetitions: 0104) |
-| 0023 | [Starting plans: assignments](0023-assignments.md) | Accepted |
+| 0023 | [Starting plans: assignments](0023-assignments.md) | Accepted (assignments that follow the plan's date: 0108) |
 | 0024 | [Coach access: grants with names, and the Coaches screen](0024-coach-grants-screen.md) | Accepted |
 | 0025 | [Entering activities by hand](0025-manual-activities.md) | Accepted |
 | 0026 | [The Today screen and stored matches](0026-today-screen.md) | Accepted |
@@ -46,7 +46,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0040 | [Drop Web Awesome; roll our own styling with Bootstrap's palette](0040-drop-web-awesome.md) | Accepted (palette superseded by 0044) |
 | 0041 | [Run CI on GitHub Actions through the Nix flake](0041-github-actions-ci.md) | Superseded by 0042 |
 | 0042 | [Run the test suites as flake checks](0042-ci-through-flake-checks.md) | Accepted |
-| 0043 | [Plan phases, a weekly distance goal, week intensity and a calendar view](0043-plan-phases-goal-and-calendar.md) | Accepted (sidebar replaced by 0066) |
+| 0043 | [Plan phases, a weekly distance goal, week intensity and a calendar view](0043-plan-phases-goal-and-calendar.md) | Accepted (sidebar replaced by 0066; weekdays and dates: 0108) |
 | 0044 | [Style the app after Material Design 3, by hand](0044-material-design-3-styling.md) | Accepted (colors superseded by 0045) |
 | 0045 | [Use Material Design 3's baseline colors only](0045-material-baseline-colors.md) | Accepted (intensity changed by 0061, phase bands by 0063) |
 | 0046 | [Name buttons after Material Design 3 and drop the danger button](0046-material-button-names.md) | Accepted |
@@ -111,3 +111,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0105 | [A target zone for each workout](0105-workout-target-zone.md) | Accepted |
 | 0106 | [Work distances and times out from the target zone's pace](0106-targets-from-the-zone-pace.md) | Accepted |
 | 0107 | [On a phone, a day's add button at the trailing edge](0107-phone-calendar-add-button-at-the-trailing-edge.md) | Accepted |
+| 0108 | [A plan has a start date; its calendar shows real days from a Monday](0108-plan-start-date.md) | Accepted |

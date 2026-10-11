@@ -1,8 +1,9 @@
 //// Copying a plan, with its workouts, into the user's own plans (ADR 0028). Pure: it only decides which
 //// records to create. The copy is private, remembers what it was copied from, and starts with the same
-//// workouts on the same days, and the same phases, goal and week intensities (ADR 0043). It has no
+//// workouts on the same days, the same start date, phases, goal and week intensities (ADR 0043, 0108). It has no
 //// assignments: whoever copies it decides when to start it.
 
+import atlas/date
 import atlas/outbox
 import atlas/plan.{type Plan}
 import atlas/plan_form
@@ -42,6 +43,11 @@ pub fn build(
       outbox.field_string("description", source.description),
       outbox.field_string("visibility", "private"),
       outbox.field_string("source_plan", source.id),
+      // The copy starts on the same day; its owner can move it (ADR 0108).
+      outbox.field_string("start_date", case source.start_date {
+        option.Some(start) -> date.to_string(start)
+        option.None -> ""
+      }),
       outbox.field_int("base_weeks", source.phases.base_weeks),
       outbox.field_int(
         "pre_competition_weeks",

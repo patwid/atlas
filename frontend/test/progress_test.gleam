@@ -45,8 +45,16 @@ fn inputs() -> today.Inputs {
     user_id: "ana",
     today: today,
     assignments: [
-      assignment_form.Row(Assignment("a1", "p1", "ana", monday), "coach", "T"),
-      assignment_form.Row(Assignment("a2", "p1", "ben", monday), "coach", "T"),
+      assignment_form.Row(
+        Assignment("a1", "p1", "ana", Some(monday)),
+        "coach",
+        "T",
+      ),
+      assignment_form.Row(
+        Assignment("a2", "p1", "ben", Some(monday)),
+        "coach",
+        "T",
+      ),
     ],
     workouts: [
       workout("mon1", 0, plan.Easy, 5000.0),

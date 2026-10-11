@@ -42,6 +42,7 @@ pub fn the_copy_is_private_owned_by_the_copier_and_remembers_its_source_test() {
       outbox.field_string("description", "Build up slowly"),
       outbox.field_string("visibility", "private"),
       outbox.field_string("source_plan", "src"),
+      outbox.field_string("start_date", ""),
       outbox.field_int("base_weeks", 0),
       outbox.field_int("pre_competition_weeks", 0),
       outbox.field_int("competition_weeks", 0),

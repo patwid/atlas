@@ -101,4 +101,6 @@ export const setup = async (request) => {
 
 export const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 export const daysFromNow = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d }
+/** Monday 0 to Sunday 6: the day index of a date in the week a plan starts in, counted from that Monday (ADR 0108). */
+export const weekdayOf = (d) => (d.getDay() + 6) % 7
 export const utcOf = (day, hour, minute) => new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, minute).toISOString().replace("T", " ")

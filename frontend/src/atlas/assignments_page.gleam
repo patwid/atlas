@@ -26,6 +26,7 @@ import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/order
 import lustre/attribute.{class}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -64,6 +65,12 @@ pub type Context {
     today: Date,
     /// Whether the user may start this plan at all: it must be their own or public (the server's rule, 0009).
     can_start: Bool,
+    /// The plan's own start date, which assignments without one follow (ADR 0108).
+    plan_start: Option(Date),
+    /// The plan's phases, for when an assignment ends.
+    phases: plan.Phases,
+    /// Whether the plan is the user's own: starting it then follows its date, and the date is changed on the plan.
+    own_plan: Bool,
   )
 }
 
@@ -96,7 +103,7 @@ pub fn new() -> Model {
     [],
     False,
     Browsing,
-    assignment_form.empty_for("", date.Date(2026, 1, 1)),
+    assignment_form.empty_for("", None, False, date.Date(2026, 1, 1)),
     undo.new(),
     date_picker.new(),
   )
@@ -110,13 +117,25 @@ pub fn refresh() -> Effect(Msg) {
   })
 }
 
-/// The assignments of the plan that are on the device, soonest start first.
+/// The assignments of the plan that are on the device: those that follow the plan first, then by their own start.
 pub fn rows_of(model: Model, plan_id: String) -> List(Row) {
   model.rows
   |> list.filter(fn(row) { row.assignment.plan_id == plan_id })
   |> list.sort(fn(a, b) {
-    date.compare(a.assignment.start_date, b.assignment.start_date)
+    case a.assignment.start_date, b.assignment.start_date {
+      None, None -> order.Eq
+      None, Some(_) -> order.Lt
+      Some(_), None -> order.Gt
+      Some(x), Some(y) -> date.compare(x, y)
+    }
   })
+}
+
+/// Whether the user may give an assignment a date of its own. One that follows the user's own plan moves with
+/// the plan's date instead (ADR 0108).
+fn may_change_date(row: Row, context: Context) -> Bool {
+  may_change(row, context.user_id)
+  && !{ context.own_plan && row.assignment.start_date == None }
 }
 
 /// Whether the user may change or remove an assignment (the server's rule, 0009).
@@ -153,7 +172,12 @@ pub fn update(
           Model(
             ..model,
             mode: Starting,
-            form: assignment_form.empty_for(context.user_id, context.today),
+            form: assignment_form.empty_for(
+              context.user_id,
+              context.plan_start,
+              context.own_plan,
+              context.today,
+            ),
           ),
           effect.none(),
           [],
@@ -163,12 +187,12 @@ pub fn update(
     ChangeDateClicked(id) ->
       case find(rows_of(model, context.plan_id), id) {
         Ok(row) ->
-          case may_change(row, context.user_id) {
+          case may_change_date(row, context) {
             True -> #(
               Model(
                 ..model,
                 mode: ChangingDate(id),
-                form: assignment_form.from_row(row),
+                form: assignment_form.from_row(row, context.plan_start),
               ),
               effect.none(),
               [],
@@ -376,14 +400,16 @@ fn row_view(
         html.text(who(a.athlete_id, context.user_id, all_grants)),
       ]),
       html.p([class("muted")], [
-        html.text(
-          "Starts "
-          <> date.format(a.start_date)
-          <> case plan.end_date(a, workouts) {
-            Ok(end) -> " · ends " <> date.format(end)
-            Error(Nil) -> ""
-          },
-        ),
+        html.text(case option.or(a.start_date, context.plan_start) {
+          Some(start) ->
+            "Starts "
+            <> date.format(start)
+            <> case plan.end_date(start, context.phases, workouts) {
+              Ok(end) -> " · ends " <> date.format(end)
+              Error(Nil) -> ""
+            }
+          None -> "No start date"
+        }),
       ]),
       case row.assigned_by != a.athlete_id && row.assigned_by != "" {
         True ->
@@ -397,7 +423,7 @@ fn row_view(
       },
       case may_change(row, context.user_id) {
         False -> element.none()
-        True -> actions(row)
+        True -> actions(row, may_change_date(row, context))
       },
     ]),
   ])
@@ -417,12 +443,19 @@ fn removal_of(model: Model, context: Context, id: String) -> List(Action) {
 }
 
 /// An assignment's actions are in a menu at the end of its row (ADR 0056).
-fn actions(row: Row) -> Element(Msg) {
+fn actions(row: Row, change_date: Bool) -> Element(Msg) {
   let id = row.assignment.id
-  menu.view("assignment-menu-" <> id, "More for this schedule entry", [
-    menu.Item(icon.CalendarToday, "Change date", ChangeDateClicked(id)),
-    menu.Item(icon.Delete, "Remove", RemoveClicked(id)),
-  ])
+  menu.view(
+    "assignment-menu-" <> id,
+    "More for this schedule entry",
+    case change_date {
+      True -> [
+        menu.Item(icon.CalendarToday, "Change date", ChangeDateClicked(id)),
+        menu.Item(icon.Delete, "Remove", RemoveClicked(id)),
+      ]
+      False -> [menu.Item(icon.Delete, "Remove", RemoveClicked(id))]
+    },
+  )
 }
 
 fn who(user_id: String, me: String, all_grants: List(Grant)) -> String {
@@ -503,21 +536,33 @@ fn form_fields(
             ],
           )
       },
-      field.with_trigger(
-        field.text(
-          "assign-start",
-          "First day of the plan",
-          on(field.plain, "start"),
-          [
-            attribute.type_("date"),
-            attribute.name("start_date"),
-            attribute.value(form.start_date),
-            attribute.required(True),
-            event.on_input(DateChanged),
-          ],
-        ),
-        date_picker.trigger(date_picker_id, DatePickerOpened),
-      ),
+      case form.follows_plan, context.plan_start {
+        // Moving the plan moves this start too (ADR 0108).
+        True, Some(start) ->
+          html.p([class("muted")], [
+            html.text(
+              "Starts on the plan's start date, "
+              <> date.format(start)
+              <> ". Changing the plan's date moves it too.",
+            ),
+          ])
+        _, _ ->
+          field.with_trigger(
+            field.text(
+              "assign-start",
+              "First day of the plan",
+              on(field.plain, "start"),
+              [
+                attribute.type_("date"),
+                attribute.name("start_date"),
+                attribute.value(form.start_date),
+                attribute.required(True),
+                event.on_input(DateChanged),
+              ],
+            ),
+            date_picker.trigger(date_picker_id, DatePickerOpened),
+          )
+      },
       case form.error, wrong {
         Some(message), "" -> error.message(message)
         _, _ -> element.none()

@@ -262,6 +262,8 @@ pub fn saving_a_new_plan_queues_it_for_upload_test() {
           "Half marathon",
           "",
           plan.Public,
+          "2026-11-02",
+          True,
           plan_form.default_settings(),
           None,
         ),
@@ -278,6 +280,7 @@ pub fn saving_a_new_plan_queues_it_for_upload_test() {
       outbox.field_string("title", "Half marathon"),
       outbox.field_string("description", ""),
       outbox.field_string("visibility", "public"),
+      outbox.field_string("start_date", "2026-11-02"),
       outbox.field_int("base_weeks", 4),
       outbox.field_int("pre_competition_weeks", 4),
       outbox.field_int("competition_weeks", 4),
@@ -440,6 +443,7 @@ fn plan_screen(owner: String) -> atlas.Model {
         "",
         workout_form.NeitherTyped,
         workout_form.NeitherTyped,
+        0,
         None,
       ),
     ),
@@ -509,7 +513,7 @@ fn schedule_screen(owner: String, visibility: plan.Visibility) -> atlas.Model {
     assignments: assignments_page.Model(
       ..assignments_page.new(),
       mode: assignments_page.Starting,
-      form: assignment_form.Form("u1", "2026-11-02", None),
+      form: assignment_form.Form("u1", "2026-11-02", False, None),
     ),
   )
 }
@@ -536,7 +540,7 @@ pub fn a_coach_can_start_the_plan_for_an_athlete_who_granted_access_test() {
       ..model,
       assignments: assignments_page.Model(
         ..model.assignments,
-        form: assignment_form.Form("ana", "2026-11-02", None),
+        form: assignment_form.Form("ana", "2026-11-02", False, None),
       ),
     )
   let #(next, _) =
@@ -690,7 +694,7 @@ fn today_screen() -> atlas.Model {
       loaded: True,
       rows: [
         assignment_form.Row(
-          plan.Assignment("a1", "p1", "u1", date.Date(2020, 1, 6)),
+          plan.Assignment("a1", "p1", "u1", Some(date.Date(2020, 1, 6))),
           "u1",
           "T",
         ),

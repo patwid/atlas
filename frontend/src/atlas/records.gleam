@@ -54,6 +54,12 @@ pub fn plan(record: Dynamic) -> Result(Plan, Nil) {
       dict.new(),
       week_intensity_decoder(),
     )
+    // Plans made before ADR 0108 have none; a date that cannot be read counts as none too.
+    use start <- decode.optional_field(
+      "start_date",
+      None,
+      decode.one_of(decode.map(date_decoder(), Some), [decode.success(None)]),
+    )
     decode.success(Plan(
       id: id,
       owner_id: owner,
@@ -70,6 +76,7 @@ pub fn plan(record: Dynamic) -> Result(Plan, Nil) {
         False -> None
       },
       week_intensity: intensities,
+      start_date: start,
     ))
   })
 }
@@ -188,7 +195,20 @@ pub fn assignment(record: Dynamic) -> Result(Assignment, Nil) {
     use id <- decode.field("id", decode.string)
     use plan_id <- decode.field("plan", decode.string)
     use athlete <- decode.field("athlete", decode.string)
-    use start <- decode.field("start_date", date_decoder())
+    // Empty: the assignment follows its plan's start date (ADR 0108).
+    use start <- decode.optional_field(
+      "start_date",
+      None,
+      decode.one_of(decode.map(date_decoder(), Some), [
+        decode.string
+        |> decode.then(fn(text) {
+          case text {
+            "" -> decode.success(None)
+            _ -> decode.failure(None, "Date")
+          }
+        }),
+      ]),
+    )
     decode.success(Assignment(id, plan_id, athlete, start))
   })
 }

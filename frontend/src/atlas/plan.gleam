@@ -1,5 +1,6 @@
-//// Training plans as templates: a workout sits on a day of the plan (day 0 is the first day), and an
-//// assignment gives the plan a start date for one athlete (ADR 0009). Pure functions only.
+//// Training plans: a workout sits on a day of the plan, counted from the Monday of the week the plan starts in, and
+//// the plan's start date puts those days on the calendar. An assignment follows the plan's date or has its own
+//// (ADR 0009, 0108). Pure functions only.
 
 import atlas/date.{type Date}
 import gleam/dict.{type Dict}
@@ -39,6 +40,8 @@ pub type Plan {
     weekly_distance_m: Option(Float),
     /// By week number, from 1: 0.0 (easiest) to 1.0 (hardest). Weeks without an entry have no intensity set.
     week_intensity: Dict(Int, Float),
+    /// The plan's first day (ADR 0108). None for a plan made before plans had one.
+    start_date: Option(Date),
   )
 }
 
@@ -74,7 +77,13 @@ pub type Intervals {
 }
 
 pub type Assignment {
-  Assignment(id: String, plan_id: String, athlete_id: String, start_date: Date)
+  /// `start_date` None: the assignment follows its plan's start date (ADR 0108).
+  Assignment(
+    id: String,
+    plan_id: String,
+    athlete_id: String,
+    start_date: Option(Date),
+  )
 }
 
 /// A workout placed on a calendar day by an assignment.
@@ -108,6 +117,7 @@ pub fn new(
     Phases(0, 0, 0),
     option.None,
     dict.new(),
+    option.None,
   )
 }
 
@@ -183,19 +193,61 @@ pub fn kind_to_string(kind: Kind) -> String {
   }
 }
 
-pub fn workout_date(assignment: Assignment, workout: Workout) -> Date {
-  date.add_days(assignment.start_date, workout.day_index)
+/// The first day of an assignment: its own start date, else its plan's (ADR 0108). An error when neither has one,
+/// or the plan is not on the device.
+pub fn start_of(
+  assignment: Assignment,
+  plans: List(Plan),
+) -> Result(Date, Nil) {
+  case assignment.start_date {
+    option.Some(start) -> Ok(start)
+    option.None ->
+      case list.find(plans, fn(p) { p.id == assignment.plan_id }) {
+        Ok(Plan(start_date: option.Some(start), ..)) -> Ok(start)
+        _ -> Error(Nil)
+      }
+  }
 }
 
-/// The workouts of the assignment's plan on their calendar days, in date, position and ID order.
-/// Workouts of other plans are ignored.
+/// Today if it is a Monday, else the next Monday: the first day a plan is offered (ADR 0108).
+pub fn coming_monday(today: Date) -> Date {
+  case date.start_of_week(today) == today {
+    True -> today
+    False -> date.add_days(date.start_of_week(today), 7)
+  }
+}
+
+/// Day 0 of a plan that starts on `start`: the Monday of that week (ADR 0108).
+pub fn first_monday(start: Date) -> Date {
+  date.start_of_week(start)
+}
+
+/// The day index of the start date itself, 0 (Monday) to 6 (Sunday). The days before it are not part of the plan.
+pub fn first_day(start: Date) -> Int {
+  date.diff_days(from: first_monday(start), to: start)
+}
+
+/// The date of a day of a plan that starts on `start`.
+pub fn day_date(start: Date, day_index: Int) -> Date {
+  date.add_days(first_monday(start), day_index)
+}
+
+pub fn workout_date(start: Date, workout: Workout) -> Date {
+  day_date(start, workout.day_index)
+}
+
+/// The workouts of the assignment's plan on their calendar days, from the assignment's first day `start` on, in
+/// date, position and ID order. Workouts of other plans, and those before the start, are left out.
 pub fn schedule(
   assignment: Assignment,
+  start: Date,
   workouts: List(Workout),
 ) -> List(Scheduled) {
   workouts
-  |> list.filter(fn(w) { w.plan_id == assignment.plan_id })
-  |> list.map(fn(w) { Scheduled(assignment.id, workout_date(assignment, w), w) })
+  |> list.filter(fn(w) {
+    w.plan_id == assignment.plan_id && w.day_index >= first_day(start)
+  })
+  |> list.map(fn(w) { Scheduled(assignment.id, workout_date(start, w), w) })
   |> list.sort(fn(a, b) {
     order.lazy_break_tie(date.compare(a.date, b.date), fn() {
       order.lazy_break_tie(
@@ -206,7 +258,7 @@ pub fn schedule(
   })
 }
 
-/// The number of days the plan spans (the last workout's day plus one); 0 for an empty plan.
+/// The number of days the plan's workouts span from day 0 (the last workout's day plus one); 0 for an empty plan.
 pub fn length_days(workouts: List(Workout)) -> Int {
   list.fold(workouts, 0, fn(longest, w) {
     case w.day_index + 1 > longest {
@@ -216,17 +268,21 @@ pub fn length_days(workouts: List(Workout)) -> Int {
   })
 }
 
-/// The date of the last workout of an assignment.
+/// The number of calendar weeks of a plan: its phase weeks, or up to the last week with a workout if that is later.
+pub fn week_count(phases: Phases, workouts: List(Workout)) -> Int {
+  int.max(phase_weeks(phases), { length_days(workouts) + 6 } / 7)
+}
+
+/// The last day of a plan that starts on `start`: the Sunday of its last week (ADR 0108). An error for a plan
+/// without phases or workouts. Only the plan's own workouts are passed.
 pub fn end_date(
-  assignment: Assignment,
+  start: Date,
+  phases: Phases,
   workouts: List(Workout),
 ) -> Result(Date, Nil) {
-  case
-    list.filter(workouts, fn(w) { w.plan_id == assignment.plan_id })
-    |> length_days
-  {
+  case week_count(phases, workouts) {
     0 -> Error(Nil)
-    days -> Ok(date.add_days(assignment.start_date, days - 1))
+    weeks -> Ok(day_date(start, weeks * 7 - 1))
   }
 }
 

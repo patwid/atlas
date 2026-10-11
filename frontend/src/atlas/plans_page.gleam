@@ -3,6 +3,7 @@
 //// are returned as `Action`s for the app to carry out through the sync runner (ADR 0020, 0021).
 
 import atlas/collection
+import atlas/date.{type Date}
 import atlas/outbox
 import atlas/plan.{type Plan}
 import atlas/plan_form
@@ -13,6 +14,7 @@ import atlas/store
 import atlas/ui/button
 import atlas/ui/chip
 import atlas/ui/choice
+import atlas/ui/date_picker
 import atlas/ui/empty
 import atlas/ui/error
 import atlas/ui/field
@@ -72,6 +74,10 @@ pub type Model {
     /// The plan just created here, which opens at once: until the device database has it, its page shows
     /// it loading rather than missing.
     created: Option(String),
+    /// The start date's picker (ADR 0054, 0108).
+    date_picker: date_picker.State,
+    /// The day of the last update: a new plan starts on the Monday after it, and the picker marks it.
+    today: Date,
   )
 }
 
@@ -85,6 +91,10 @@ pub type Msg {
   TitleChanged(String)
   DescriptionChanged(String)
   VisibilityChanged(String)
+  StartChanged(String)
+  /// The picker's button was pressed; it opens on what the field holds now (ADR 0054).
+  StartPickerOpened
+  StartPicker(date_picker.Msg)
   BaseWeeksChanged(String)
   PreCompetitionWeeksChanged(String)
   CompetitionWeeksChanged(String)
@@ -120,12 +130,14 @@ pub fn new() -> Model {
     [],
     False,
     Browsing,
-    plan_form.empty(),
+    plan_form.empty(date.Date(2026, 1, 1)),
     undo.new(),
     NoCopy,
     "calendar",
     False,
     None,
+    date_picker.new(),
+    date.Date(2026, 1, 1),
   )
 }
 
@@ -139,7 +151,9 @@ pub fn update(
   model: Model,
   msg: Msg,
   user_id: String,
+  today: Date,
 ) -> #(Model, Effect(Msg), List(Action)) {
+  let model = Model(..model, today: today)
   case msg {
     Refresh -> #(model, refresh(), [])
 
@@ -172,7 +186,7 @@ pub fn update(
     PlansRead(Error(Nil)) -> #(model, effect.none(), [])
 
     NewClicked -> #(
-      Model(..model, mode: Creating, form: plan_form.empty()),
+      Model(..model, mode: Creating, form: plan_form.empty(today)),
       // The form opens in a dialog (ADR 0057); its first field takes the focus.
       focus.soon("plan-title"),
       [],
@@ -189,7 +203,7 @@ pub fn update(
       }
 
     CancelClicked -> #(
-      Model(..model, mode: Browsing, form: plan_form.empty()),
+      Model(..model, mode: Browsing, form: plan_form.empty(today)),
       effect.none(),
       [],
     )
@@ -213,6 +227,33 @@ pub fn update(
           error: None,
         ),
       )
+
+    StartChanged(text) ->
+      change_form(
+        model,
+        plan_form.Form(..model.form, start_date: text, error: None),
+      )
+    StartPickerOpened ->
+      update(
+        model,
+        StartPicker(date_picker.Opened(model.form.start_date, today)),
+        user_id,
+        today,
+      )
+    StartPicker(inner) -> {
+      let #(state, picker_effect, picked) =
+        date_picker.update(start_picker_id, model.date_picker, inner)
+      let model = Model(..model, date_picker: state)
+      let model = case picked {
+        Some(text) ->
+          Model(
+            ..model,
+            form: plan_form.Form(..model.form, start_date: text, error: None),
+          )
+        None -> model
+      }
+      #(model, effect.map(picker_effect, StartPicker), [])
+    }
 
     BaseWeeksChanged(value) ->
       change_settings(model, fn(s) {
@@ -245,7 +286,7 @@ pub fn update(
             Model(
               ..model,
               mode: Browsing,
-              form: plan_form.empty(),
+              form: plan_form.empty(today),
               created: Some(id),
             ),
             modem.push(route.to_path(route.Plan(id)), None, None),
@@ -257,7 +298,7 @@ pub fn update(
             Ok(found) if found.owner_id == user_id -> {
               let fields = plan_form.changed_fields(found, valid)
               #(
-                Model(..model, mode: Browsing, form: plan_form.empty()),
+                Model(..model, mode: Browsing, form: plan_form.empty(today)),
                 effect.none(),
                 case dict.is_empty(fields) {
                   True -> []
@@ -640,6 +681,8 @@ pub fn snippet(text: String) -> String {
 
 const form_id = "plan-form"
 
+const start_picker_id = "plan-start-picker"
+
 /// Creating and editing a plan happen in a full-screen dialog (ADR 0057).
 fn form_view(model: Model, open: Bool, title: String) -> Element(Msg) {
   form_dialog.view(
@@ -649,7 +692,16 @@ fn form_view(model: Model, open: Bool, title: String) -> Element(Msg) {
     form_id,
     "Save",
     CancelClicked,
-    [form_fields(model.form)],
+    // The picker's dialog holds a form of its own, so it sits beside this form, not in it.
+    [
+      form_fields(model.form),
+      date_picker.view(
+        start_picker_id,
+        model.date_picker,
+        model.today,
+        StartPicker,
+      ),
+    ],
   )
 }
 
@@ -698,8 +750,28 @@ fn form_fields(form: plan_form.Form) -> Element(Msg) {
           plan.Public -> "Everyone who is signed in."
         }),
       ]),
-      // The phases and the goal are a group of their own (ADR 0085).
+      // The start date, the phases and the goal are a group of their own (ADR 0085, 0108).
       layout.subheader("Schedule"),
+      field.with_trigger(
+        field.text(
+          "plan-start",
+          "First day",
+          on(
+            field.help(
+              "Weeks run from Monday; moving the plan keeps workouts on their weekday.",
+            ),
+            "start",
+          ),
+          [
+            attribute.type_("date"),
+            attribute.name("start_date"),
+            attribute.value(form.start_date),
+            attribute.required(form.start_required),
+            event.on_input(StartChanged),
+          ],
+        ),
+        date_picker.trigger(start_picker_id, StartPickerOpened),
+      ),
       plan_settings.inputs(
         "plan",
         form.settings,
@@ -721,11 +793,13 @@ fn form_fields(form: plan_form.Form) -> Element(Msg) {
 
 /// The plan's phases and weekly goal in a line (ADR 0066): "12 weeks: 4 base, 4 pre-competition, 4 competition ·
 /// 40.00 km a week". Empty for a plan with neither. They are changed with the plan's Edit.
-/// The plan in a line for the app bar's subtitle (ADR 0097): its length and weekly goal.
+/// The plan in a line for the app bar's subtitle (ADR 0097): its length, start date and weekly goal.
 pub fn subtitle(p: Plan) -> String {
-  let weeks = case plan.phase_weeks(p.phases) {
-    0 -> ""
-    n -> plural(n, "week")
+  let weeks = case plan.phase_weeks(p.phases), p.start_date {
+    0, Some(start) -> "From " <> date.format(start)
+    0, None -> ""
+    n, Some(start) -> plural(n, "week") <> " from " <> date.format(start)
+    n, None -> plural(n, "week")
   }
   let goal = case p.weekly_distance_m {
     Some(m) if m >. 0.0 -> units.format_planned_km(m) <> " a week"

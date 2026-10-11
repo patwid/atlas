@@ -74,7 +74,10 @@ pub fn items_between(inputs: Inputs, from: Date, to: Date) -> List(Item) {
     })
   let every_scheduled =
     list.flat_map(mine, fn(row) {
-      plan.schedule(row.assignment, inputs.workouts)
+      case plan.start_of(row.assignment, inputs.plans) {
+        Ok(start) -> plan.schedule(row.assignment, start, inputs.workouts)
+        Error(Nil) -> []
+      }
     })
   let near =
     list.filter(every_scheduled, fn(s) {

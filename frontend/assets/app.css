@@ -702,6 +702,11 @@ label {
 }
 .calendar-day:has(> .add-here) { grid-template-columns: 3.5rem 1fr auto; }
 .day-name { color: var(--md-sys-color-on-surface-variant); font-size: 0.8125rem; line-height: 1.3; padding-top: 0.375rem; }
+.day-name > span { display: block; }
+.day-date, .week-dates { color: var(--md-sys-color-on-surface-variant); font-size: 0.75rem; font-weight: 400; }
+/* A day of week 1 before the plan starts (ADR 0108): dimmed, with nothing to add. */
+.calendar-day.before-start { background: var(--md-sys-color-surface-container); }
+.calendar-day.before-start .day-name, .calendar-day.before-start .workout { opacity: 0.6; }
 .day-body { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
 /* A workout is a small filled card (ADR 0051), its kind a bar along the leading edge. */
 .workout {
@@ -811,7 +816,10 @@ label {
   }
   .calendar-week .week-label { flex-direction: column; gap: 0.125rem; }
   .calendar-day { display: block; min-height: 4.5rem; }
+  /* The column heads name the weekdays; a dated plan's day keeps its date in the corner. */
   .calendar-day .day-name { display: none; }
+  .calendar-day .day-name:has(.day-date) { display: block; padding: 0 0 0.25rem; text-align: right; }
+  .calendar-day .day-weekday { display: none; }
   .add-here { width: 2rem; height: 2rem; }
   .day-body:not(:empty) + .add-here { margin-top: 0.25rem; }
 }

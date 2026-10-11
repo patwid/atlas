@@ -1,3 +1,4 @@
+import atlas/date.{Date}
 import atlas/outbox
 import atlas/pace_zones
 import atlas/plan.{Workout}
@@ -294,7 +295,9 @@ pub fn weeks_days_and_totals_are_shown_test() {
   assert string.contains(html, "Easy run")
   assert string.contains(html, "Long one")
   assert string.contains(html, "8 km · 45:00")
-  assert string.contains(html, "Day 7")
+  // Without a start date the days have their weekdays only.
+  assert string.contains(html, ">Sun<")
+  assert !string.contains(html, "Day 7")
 }
 
 pub fn the_owner_can_add_edit_and_delete_test() {
@@ -311,7 +314,7 @@ pub fn the_owner_can_add_edit_and_delete_test() {
   )
   assert string.contains(html, "Edit workout")
   assert string.contains(html, "aria-label=\"Delete workout\"")
-  assert string.contains(html, "Add a workout to week 1, day 1")
+  assert string.contains(html, "Add a workout to week 1, Mon")
   assert string.contains(html, "id=\"week-intensity\"")
 }
 
@@ -423,7 +426,7 @@ pub fn a_workout_says_its_kind_week_and_day_test() {
   assert string.contains(html, "<span class=\"workout-kind\">Easy run</span>")
   assert string.contains(
     html,
-    "aria-label=\"Shake-out, Easy run, week 2, day 2, 8 km · 45:00\"",
+    "aria-label=\"Shake-out, Easy run, week 2, Tue, 8 km · 45:00\"",
   )
 }
 
@@ -453,6 +456,7 @@ pub fn the_form_is_labelled_and_shows_errors_test() {
         "",
         workout_form.NeitherTyped,
         workout_form.NeitherTyped,
+        0,
         Some("Give the workout a title."),
       ),
     )
@@ -540,4 +544,52 @@ pub fn the_owner_opens_a_workout_in_its_form_with_delete_test() {
   // Cancelling goes back to the calendar.
   let #(back, _) = update(editing, workouts_page.CancelClicked)
   assert back.mode == Browsing
+}
+
+/// The plan, starting on Wednesday 4 Nov 2026.
+fn dated_plan() -> plan.Plan {
+  plan.Plan(..the_plan(), start_date: Some(Date(2026, 11, 4)))
+}
+
+fn update_dated(model: workouts_page.Model, msg: workouts_page.Msg) {
+  let #(next, _, actions) =
+    workouts_page.update(model, msg, Some(dated_plan()), True, zones())
+  #(next, actions)
+}
+
+pub fn a_dated_plan_shows_its_days_and_weeks_with_dates_test() {
+  let html =
+    element.to_string(workouts_page.view(
+      with_rows([row("a", "p1", 9, 0, "Shake-out")]),
+      dated_plan(),
+      True,
+    ))
+  assert string.contains(html, "2–8 Nov")
+  assert string.contains(html, "9–15 Nov")
+  assert string.contains(html, "4 Nov")
+  assert string.contains(html, "week 2, Wed 11 Nov")
+  // Monday and Tuesday of week 1 come before the start: dimmed, and nothing can be added there.
+  assert string.contains(html, "calendar-day before-start")
+  assert !string.contains(html, "Add a workout to week 1, Mon 2 Nov")
+  assert !string.contains(html, "Add a workout to week 1, Tue 3 Nov")
+  assert string.contains(html, "Add a workout to week 1, Wed 4 Nov")
+}
+
+pub fn a_workout_cannot_be_put_before_the_plan_starts_test() {
+  let #(model, _) = update_dated(with_rows([]), AddClicked(1, 3))
+  let #(model, _) = update_dated(model, TitleChanged("Easy"))
+  let #(model, _) = update_dated(model, DayChanged("1"))
+  let #(model, actions) = update_dated(model, Submitted)
+  assert actions == []
+  assert model.form.error == Some("The plan starts after this day.")
+  let #(model, _) = update_dated(model, DayChanged("3"))
+  let #(_, actions) = update_dated(model, Submitted)
+  let assert [Create(_, fields)] = actions
+  assert dict.get(fields, "day_index") == Ok("2")
+}
+
+pub fn add_workout_starts_on_the_plans_first_day_test() {
+  let assert Some(main) =
+    workouts_page.main_action(with_rows([]), dated_plan(), True)
+  assert main.msg == AddClicked(1, 3)
 }

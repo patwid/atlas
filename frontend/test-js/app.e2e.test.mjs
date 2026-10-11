@@ -7,7 +7,7 @@ import * as store from "../build/dev/javascript/atlas/atlas/store.ffi.mjs"
 import { startPocketBase } from "../../backend/tests/harness.mjs"
 import {
   appRunner, built, button, byLabel, call, location, choose, click, daysFromNow, dialogButton, openDialog, pick, pub, setup, sleep, submit, typeInto,
-  utcOf, waitFor, ymd,
+  utcOf, waitFor, weekdayOf, ymd,
 } from "./support.mjs"
 
 
@@ -140,6 +140,7 @@ test("a user creates, edits and deletes a plan on the plans screens and the serv
   assert.equal(created.description, "Eight weeks, three runs a week")
   assert.equal(created.visibility, "private")
   assert.deepEqual([created.base_weeks, created.pre_competition_weeks, created.competition_weeks, created.weekly_distance_m], [4, 4, 2, 35000])
+  assert.equal(weekdayOf(new Date(`${created.start_date}T12:00:00`)), 0, "it starts on the coming Monday (ADR 0108)")
   assert.equal(w.location.pathname, `/plans/${created.id}`)
 
   // Back in the list, and in again
@@ -224,7 +225,7 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
   await waitFor("the week total", () => d.querySelector(".week-distance")?.textContent.includes("8.5 km"))
 
   // A second workout on the same day, from that day's own "+ Add".
-  click(w, byLabel(w, "Add a workout to week 1, day 2"))
+  click(w, byLabel(w, "Add a workout to week 1, Tue"))
   await waitFor("the form for day 2", () => d.querySelector("#workout-title") && d.querySelector("#workout-day").value === "2")
   typeInto(w, d.querySelector("#workout-title"), "Core session")
   pick(w, "kind", "strength")
@@ -235,7 +236,7 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
   assert.equal(second.position, 1, "it goes after the first one on that day")
 
   // An interval workout with its repetitions, kept in steps (ADR 0104).
-  click(w, byLabel(w, "Add a workout to week 1, day 5"))
+  click(w, byLabel(w, "Add a workout to week 1, Fri"))
   await waitFor("the form for day 5", () => d.querySelector("#workout-title") && d.querySelector("#workout-day").value === "5")
   assert.equal(d.querySelector("#workout-reps"), null, "no repetitions for an easy run")
   typeInto(w, d.querySelector("#workout-title"), "Track")
@@ -345,12 +346,12 @@ test("someone else's plan shows its workouts but offers no way to change them", 
   const d = w.document
   await waitFor("the shared workout", () => d.body.textContent.includes("Hill repeats") && d.body.textContent.includes("6 km · 40:00"))
   assert.equal(button(w, "Add workout"), undefined)
-  assert.equal(byLabel(w, "Add a workout to week 1, day 1"), undefined)
+  assert.equal(byLabel(w, "Add a workout to week 1, Mon"), undefined)
   assert.equal(byLabel(w, "Edit plan"), undefined)
   assert.equal(button(w, "Delete"), undefined)
   // A workout opens read-only in its dialog.
   click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Hill repeats")))
-  await waitFor("the workout in its dialog", () => d.querySelector("#workout-dialog[open]")?.textContent.includes("Week 1 · day 1"))
+  await waitFor("the workout in its dialog", () => d.querySelector("#workout-dialog[open]")?.textContent.includes("Week 1 · Mon"))
   assert.equal(d.querySelector("#workout-title"), null)
   assert.equal(byLabel(w, "Delete workout"), undefined)
   w.close()
@@ -399,6 +400,57 @@ test("a user starts a plan on a date, moves the date and removes it, and the ser
   click(w, byLabel(w, "Close"))
   await waitFor("deleted on the server", async () => (await assignments())[0]?.deleted === true)
   await waitFor("an empty schedule again", () => d.body.textContent.includes("Nobody is following this plan yet"))
+  w.close()
+})
+
+test("a plan made with a start date is followed from that date, and moving the plan moves the schedule (ADR 0108)", { skip: !built && "frontend not built" }, async () => {
+  await h.world()
+  const alice = h.people.alice
+  const w = startApp("/plans", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
+  const d = w.document
+  const plans = async () => (await h.api("GET", "collections/plans/records?perPage=50", { token: alice.token })).body.items
+  const assignments = async () => (await h.api("GET", "collections/assignments/records?perPage=50", { token: alice.token })).body.items
+
+  await waitFor("the empty list", () => d.body.textContent.includes("You have no plans yet"))
+  click(w, button(w, "New plan"))
+  await waitFor("the form", () => d.querySelector("#plan-start"))
+  typeInto(w, d.querySelector("#plan-title"), "Spring 10k")
+  typeInto(w, d.querySelector("#plan-start"), "")
+  submit(w, d.querySelector(".plan-form"))
+  await waitFor("a start date error", () => d.querySelector("[role=alert]")?.textContent === "Pick the plan's first day.")
+  // Wednesday 4 Nov 2026: the calendar starts on Monday 2 Nov, whose first two days are not part of the plan.
+  typeInto(w, d.querySelector("#plan-start"), "2026-11-04")
+  submit(w, d.querySelector(".plan-form"))
+  const created = await waitFor("the plan on the server", async () => (await plans()).find((p) => p.title === "Spring 10k"))
+  assert.equal(created.start_date, "2026-11-04")
+  await waitFor("the calendar with dates", () => d.querySelector(".calendar")?.textContent.includes("2–8 Nov"))
+  assert.equal(d.querySelectorAll(".calendar-day.before-start").length, 2)
+  assert.equal(byLabel(w, "Add a workout to week 1, Mon 2 Nov"), undefined, "nothing can be added before the start")
+  click(w, byLabel(w, "Add a workout to week 1, Wed 4 Nov"))
+  await waitFor("the workout form on Wednesday", () => d.querySelector("#workout-day")?.value === "3")
+  typeInto(w, d.querySelector("#workout-title"), "Easy run")
+  submit(w, d.querySelector(".workout-form"))
+  await waitFor("the workout on the calendar", () => d.querySelector(".calendar").textContent.includes("Easy run"))
+
+  // Starting one's own plan follows its date: there is no date to pick.
+  click(w, button(w, "Start this plan"))
+  await waitFor("the start form", () => d.body.textContent.includes("Starts on the plan's start date, Wed 4 Nov 2026"))
+  assert.equal(d.querySelector("#assign-start"), null)
+  submit(w, d.querySelector(".schedule-form"))
+  const following = await waitFor("the assignment on the server", async () => (await assignments())[0])
+  assert.equal(following.start_date, "", "it follows the plan")
+  await waitFor("its dates on screen", () => d.body.textContent.includes("Starts Wed 4 Nov 2026"))
+  assert.equal(button(w, "Change date"), undefined, "the plan's date is changed on the plan")
+
+  // Moving the plan a week later moves the schedule with it.
+  click(w, byLabel(w, "Edit plan"))
+  await waitFor("the edit form", () => d.querySelector("#plan-start")?.value === "2026-11-04")
+  typeInto(w, d.querySelector("#plan-start"), "2026-11-11")
+  submit(w, d.querySelector(".plan-form"))
+  await waitFor("the new date on the server", async () => (await plans()).find((p) => p.id === created.id)?.start_date === "2026-11-11")
+  await waitFor("the schedule moved", () => d.body.textContent.includes("Starts Wed 11 Nov 2026"))
+  await waitFor("and the calendar", () => d.querySelector(".calendar")?.textContent.includes("9–15 Nov"))
+  assert.equal((await assignments())[0].start_date, "", "the assignment itself is unchanged")
   w.close()
 })
 
@@ -747,10 +799,12 @@ test("Home shows missed, looks-done and rest days; the user confirms, unlinks, r
   const yesterday = daysFromNow(-1)
   const today = daysFromNow(0)
   await setup(h.create("alice", "plans", { id: "todayplan000001", owner: alice.id, title: "Tempo block", visibility: "private" }))
-  await setup(h.create("alice", "workouts", { id: "todaywork000001", plan: "todayplan000001", day_index: 0, position: 0, title: "Easy shake-out", kind: "easy", distance_m: 5000 }))
-  await setup(h.create("alice", "workouts", { id: "todaywork000002", plan: "todayplan000001", day_index: 1, position: 0, title: "Tempo intervals", kind: "tempo", distance_m: 8000, duration_s: 2700 }))
-  await setup(h.create("alice", "workouts", { id: "todaywork000003", plan: "todayplan000001", day_index: 2, position: 0, title: "Recovery day", kind: "rest" }))
-  // The plan started yesterday: day 0 is yesterday (missed), day 1 today, day 2 tomorrow.
+  // Days count from the Monday of the week the plan starts in (ADR 0108).
+  const firstDay = weekdayOf(yesterday)
+  await setup(h.create("alice", "workouts", { id: "todaywork000001", plan: "todayplan000001", day_index: firstDay, position: 0, title: "Easy shake-out", kind: "easy", distance_m: 5000 }))
+  await setup(h.create("alice", "workouts", { id: "todaywork000002", plan: "todayplan000001", day_index: firstDay + 1, position: 0, title: "Tempo intervals", kind: "tempo", distance_m: 8000, duration_s: 2700 }))
+  await setup(h.create("alice", "workouts", { id: "todaywork000003", plan: "todayplan000001", day_index: firstDay + 2, position: 0, title: "Recovery day", kind: "rest" }))
+  // The plan started yesterday: its first day is yesterday (missed), then today, then tomorrow.
   await setup(h.create("alice", "assignments", { id: "todayasg0000001", plan: "todayplan000001", athlete: alice.id, assigned_by: alice.id, start_date: ymd(yesterday) }))
   const activity = (id, day, hour, name) => setup(h.create("alice", "activities", {
     id, owner: alice.id, source: "manual", started_at: utcOf(day, hour, 0), sport: "run", name, distance_m: 8000, moving_time_s: 2700,
@@ -1057,9 +1111,10 @@ test("a coach sees an athlete's weeks, plans and activities read-only, and loses
   const start = daysFromNow(-10)
   await setup(h.create("alice", "coach_grants", { id: "cvgrant00000001", athlete: alice.id, coach: bob.id, athlete_name: "alice", coach_name: "bob" }))
   await setup(h.create("bob", "plans", { id: "coachview000001", owner: bob.id, title: "Spring base", visibility: "private" }))
-  // Day 0 is ten days ago (missed), day 5 five days ago (done), day 10 is today (still to do).
+  // The first day is ten days ago (missed), the sixth five days ago (done), the eleventh today (still to do). Days
+  // count from the Monday of the week the plan starts in (ADR 0108).
   const workout = (id, day, title, kind, distance) =>
-    setup(h.create("bob", "workouts", { id, plan: "coachview000001", day_index: day, position: 0, title, kind, distance_m: distance }))
+    setup(h.create("bob", "workouts", { id, plan: "coachview000001", day_index: weekdayOf(start) + day, position: 0, title, kind, distance_m: distance }))
   await workout("cvworkout000001", 0, "Missed easy run", "easy", 5000)
   await workout("cvworkout000002", 5, "Tempo they did", "tempo", 8000)
   await workout("cvworkout000003", 10, "Today's long run", "long", 10000)

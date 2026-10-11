@@ -1,8 +1,10 @@
-//// The workouts of one plan as a calendar: a row per week, a column per day, grouped by the plan's phases. A week's
-//// row shows its distance against its goal; a week and a workout open in a dialog (ADR 0022, 0043, 0066).
+//// The workouts of one plan as a calendar: a row per week from Monday to Sunday, a column per day, grouped by the
+//// plan's phases, with dates from the plan's start date. A week's row shows its distance against its goal; a week and
+//// a workout open in a dialog (ADR 0022, 0043, 0066, 0108).
 //// Own state and messages, embedded by the app; writes come back as `Action`s (ADR 0020).
 
 import atlas/collection
+import atlas/date
 import atlas/outbox
 import atlas/pace_zones.{type PaceZones}
 import atlas/plan.{type Kind, type Plan, type Workout}
@@ -153,6 +155,10 @@ pub fn update(
     None -> ""
   }
   let can_edit = can_edit && option.is_some(on_screen)
+  let first_day = case on_screen {
+    Some(p) -> first_day_of(p)
+    None -> 0
+  }
   case msg {
     Refresh -> #(model, refresh(), [])
 
@@ -215,7 +221,10 @@ pub fn update(
           Model(
             ..model,
             mode: Adding,
-            form: workout_form.empty_for(week, day),
+            form: workout_form.Form(
+              ..workout_form.empty_for(week, day),
+              first_day: first_day,
+            ),
             selected_week: week,
           ),
           focus.soon(form_title_id),
@@ -230,7 +239,10 @@ pub fn update(
           Model(
             ..model,
             mode: Editing(id),
-            form: workout_form.from_row(row),
+            form: workout_form.Form(
+              ..workout_form.from_row(row),
+              first_day: first_day,
+            ),
             selected_week: week_of(row.workout),
           ),
           focus.soon(form_title_id),
@@ -412,6 +424,19 @@ fn week_of(workout: Workout) -> Int {
   workout.day_index / 7 + 1
 }
 
+/// The day index of the plan's start date; 0 for a plan without one (ADR 0108).
+fn first_day_of(p: Plan) -> Int {
+  case p.start_date {
+    Some(start) -> plan.first_day(start)
+    None -> 0
+  }
+}
+
+/// The first day of a week (from 1) that is part of the plan, 1 (Monday) to 7: where adding to the week starts.
+fn first_day_in_week(p: Plan, week: Int) -> Int {
+  int.clamp(first_day_of(p) - { week - 1 } * 7 + 1, 1, 7)
+}
+
 fn typed(
   model: Model,
   change: fn(workout_form.Form) -> workout_form.Form,
@@ -456,6 +481,7 @@ pub fn view(model: Model, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
   let weeks =
     plan_schedule.weeks(
       on_screen.phases,
+      on_screen.start_date,
       list.map(rows, fn(row) { row.workout }),
     )
   html.section([class("workouts plan-calendar")], [
@@ -506,7 +532,7 @@ fn calendar_head() -> Element(Msg) {
     [
       html.span([], []),
       ..list.map([1, 2, 3, 4, 5, 6, 7], fn(n) {
-        html.span([], [html.text("Day " <> int.to_string(n))])
+        html.span([], [html.text(plan_schedule.weekday_name(n))])
       })
     ],
   )
@@ -576,6 +602,10 @@ fn week_row(
         ],
         [
           html.strong([], [html.text("Week " <> int.to_string(week.number))]),
+          case plan_schedule.week_dates(week) {
+            Ok(dates) -> html.span([class("week-dates")], [html.text(dates)])
+            Error(Nil) -> element.none()
+          },
           case intensity {
             Ok(level) -> intensity_chip(level)
             Error(Nil) -> element.none()
@@ -662,40 +692,58 @@ fn day_cell(
   model: Model,
   can_edit: Bool,
 ) -> Element(Msg) {
-  html.div([class("calendar-day")], [
-    html.span([class("day-name")], [
-      html.text("Day " <> int.to_string(day.number)),
-    ]),
-    html.div(
-      [class("day-body")],
-      list.filter_map(day.workouts, fn(w) {
-        case list.find(rows, fn(row) { row.workout.id == w.id }) {
-          Ok(row) -> Ok(workout_chip(row, week, day, model.mode))
-          Error(Nil) -> Error(Nil)
-        }
-      }),
-    ),
-    // Beside the day's workouts rather than under them, so on a phone it keeps the row's trailing edge (ADR 0107).
-    case can_edit {
-      True ->
-        html.button(
-          [
-            attribute.type_("button"),
-            class("add-here"),
-            attribute.attribute(
-              "aria-label",
-              "Add a workout to week "
-                <> int.to_string(week.number)
-                <> ", day "
-                <> int.to_string(day.number),
-            ),
-            event.on_click(AddClicked(week.number, day.number)),
-          ],
-          [icon.view(icon.Add)],
-        )
-      False -> element.none()
-    },
-  ])
+  // A day of week 1 before the plan starts is dimmed and cannot be added to (ADR 0108).
+  html.div(
+    [
+      class("calendar-day"),
+      attribute.classes([#("before-start", day.before_start)]),
+    ],
+    [
+      html.span([class("day-name")], [
+        html.span([class("day-weekday")], [
+          html.text(plan_schedule.weekday_name(day.number)),
+        ]),
+        case day.date {
+          Some(on) ->
+            html.span([class("day-date")], [
+              html.text(
+                int.to_string(on.day) <> " " <> date.month_short(on.month),
+              ),
+            ])
+          None -> element.none()
+        },
+      ]),
+      html.div(
+        [class("day-body")],
+        list.filter_map(day.workouts, fn(w) {
+          case list.find(rows, fn(row) { row.workout.id == w.id }) {
+            Ok(row) -> Ok(workout_chip(row, week, day, model.mode))
+            Error(Nil) -> Error(Nil)
+          }
+        }),
+      ),
+      // Beside the day's workouts rather than under them, so on a phone it keeps the row's trailing edge (ADR 0107).
+      case can_edit && !day.before_start {
+        True ->
+          html.button(
+            [
+              attribute.type_("button"),
+              class("add-here"),
+              attribute.attribute(
+                "aria-label",
+                "Add a workout to week "
+                  <> int.to_string(week.number)
+                  <> ", "
+                  <> plan_schedule.day_name(day),
+              ),
+              event.on_click(AddClicked(week.number, day.number)),
+            ],
+            [icon.view(icon.Add)],
+          )
+        False -> element.none()
+      },
+    ],
+  )
 }
 
 /// A workout in the calendar. Its kind is written out as well as shown by the colour of its bar, which some kinds
@@ -724,8 +772,12 @@ fn workout_chip(
           kind,
           "week "
             <> int.to_string(week.number)
-            <> ", day "
-            <> int.to_string(day.number),
+            <> ", "
+            <> plan_schedule.day_name(day),
+          case day.before_start {
+            True -> "before the plan starts"
+            False -> ""
+          },
           targets(row),
         ]
         |> list.filter(fn(part) { part != "" })
@@ -769,8 +821,8 @@ fn workout_dialog(
           html.p([class("muted")], [
             html.text(
               plan_schedule.week_label(on_screen.phases, week_of(w))
-              <> " · day "
-              <> int.to_string(w.day_index % 7 + 1),
+              <> " · "
+              <> day_text(on_screen, w.day_index),
             ),
           ]),
           html.p([], [chip.label(workout_form.kind_label(w.kind))]),
@@ -1003,6 +1055,14 @@ fn targets(row: Row) -> String {
   |> string.join(" · ")
 }
 
+/// "Wed" or, for a plan with a start date, "Wed 18 Nov 2026".
+fn day_text(on_screen: Plan, day_index: Int) -> String {
+  case on_screen.start_date {
+    Some(start) -> date.format(plan.day_date(start, day_index))
+    None -> plan_schedule.weekday_name(day_index % 7 + 1)
+  }
+}
+
 /// The weeks a workout can be put in: those of the plan and the one in the form. A plan grows by its phases,
 /// not by a workout past them.
 fn week_options(
@@ -1017,7 +1077,15 @@ fn week_options(
     _ -> one_to(last)
   }
   list.map(numbers, fn(n) {
-    #(int.to_string(n), plan_schedule.week_label(on_screen.phases, n))
+    let label = plan_schedule.week_label(on_screen.phases, n)
+    #(int.to_string(n), case list.find(weeks, fn(w) { w.number == n }) {
+      Ok(week) ->
+        case plan_schedule.week_dates(week) {
+          Ok(dates) -> label <> " · " <> dates
+          Error(Nil) -> label
+        }
+      Error(Nil) -> label
+    })
   })
 }
 
@@ -1102,7 +1170,7 @@ fn form_fields(
           [attribute.name("day"), event.on_change(DayChanged)],
           form.day,
           list.map([1, 2, 3, 4, 5, 6, 7], fn(n) {
-            #(int.to_string(n), "Day " <> int.to_string(n))
+            #(int.to_string(n), plan_schedule.weekday_name(n))
           }),
         ),
       ]),
@@ -1287,11 +1355,16 @@ pub fn main_action(
   case can_edit, model.mode {
     True, Browsing | True, Viewing(_) -> {
       let weeks =
-        plan_schedule.weeks(on_screen.phases, workouts_of(model, on_screen.id))
+        plan_schedule.weeks(
+          on_screen.phases,
+          on_screen.start_date,
+          workouts_of(model, on_screen.id),
+        )
+      let week = clamp_week(model.selected_week, weeks)
       Some(button.Main(
         icon.Add,
         "Add workout",
-        AddClicked(clamp_week(model.selected_week, weeks), 1),
+        AddClicked(week, first_day_in_week(on_screen, week)),
       ))
     }
     _, _ -> None

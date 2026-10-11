@@ -1,3 +1,4 @@
+import atlas/date
 import atlas/outbox
 import atlas/plan.{type Plan}
 import atlas/plan_form.{Form}
@@ -15,6 +16,9 @@ import gleam/list
 import gleam/option.{None, Some}
 import gleam/string
 import lustre/element
+
+/// A Sunday: a new plan starts the next day.
+const today = date.Date(2026, 10, 11)
 
 fn dynamic_of(text: String) -> Dynamic {
   let assert Ok(value) = json.parse(text, decode.dynamic)
@@ -37,7 +41,7 @@ fn with_plans(plans: List(Plan)) -> plans_page.Model {
 }
 
 fn update(model: plans_page.Model, msg: plans_page.Msg) {
-  let #(next, _, actions) = plans_page.update(model, msg, "u1")
+  let #(next, _, actions) = plans_page.update(model, msg, "u1", today)
   #(next, actions)
 }
 
@@ -64,7 +68,7 @@ pub fn equal_titles_keep_a_stable_order_test() {
 }
 
 pub fn a_failed_read_keeps_what_is_on_screen_test() {
-  let before = with_plans([mine("a", "A")])
+  let before = plans_page.Model(..with_plans([mine("a", "A")]), today: today)
   let #(model, actions) = update(before, PlansRead(Error(Nil)))
   assert model == before
   assert actions == []
@@ -106,9 +110,11 @@ pub fn creating_a_plan_asks_the_app_to_save_it_test() {
   assert id != ""
   assert dict.get(fields, "title") == Ok("\"10k plan\"")
   assert dict.get(fields, "owner") == Ok("\"u1\"")
+  // Starting on the coming Monday unless another day is chosen (ADR 0108).
+  assert dict.get(fields, "start_date") == Ok("\"2026-10-12\"")
   assert model.created == Some(id)
   assert model.mode == Browsing
-  assert model.form == plan_form.empty()
+  assert model.form == plan_form.empty(today)
 }
 
 pub fn an_empty_title_shows_an_error_and_saves_nothing_test() {
@@ -143,8 +149,8 @@ pub fn editing_sends_only_the_changed_fields_with_the_local_base_test() {
 pub fn editing_a_plan_without_phases_gives_it_the_default_ones_test() {
   let old = plan.new("o", "u1", "Old", "", plan.Private, "T-o")
   let model = with_plans([old])
-  let #(model, _, _) = plans_page.update(model, EditClicked("o"), "u1")
-  let #(_, _, actions) = plans_page.update(model, Submitted, "u1")
+  let #(model, _, _) = plans_page.update(model, EditClicked("o"), "u1", today)
+  let #(_, _, actions) = plans_page.update(model, Submitted, "u1", today)
   assert actions
     == [
       Edit(
@@ -256,6 +262,8 @@ pub fn the_form_is_accessible_and_shows_errors_test() {
         "",
         "",
         plan.Private,
+        "2026-10-12",
+        True,
         plan_form.default_settings(),
         Some("Give the plan a title."),
       ),
@@ -419,7 +427,7 @@ pub fn a_long_description_shows_three_lines_until_more_test() {
   assert string.contains(closed, "description clamped")
   assert string.contains(closed, ">More<")
   let #(model, _, _) =
-    plans_page.update(with_plans([long]), DescriptionToggled, "u1")
+    plans_page.update(with_plans([long]), DescriptionToggled, "u1", today)
   let open = html_of(plans_page.view_detail(model, "l", "u1"))
   assert !string.contains(open, "clamped")
   assert string.contains(open, ">Less<")
