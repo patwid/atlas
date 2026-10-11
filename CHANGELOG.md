@@ -53,6 +53,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - The workout form fills in the duration from a typed distance, or the distance from a typed duration, at the pace of the target zone in your pace zones; for intervals, the time or distance of a rep. Interval workouts show a read-only total distance and time of their repetitions (ADR 0106).
 
 ### Changed
+- On a phone, a day's add button in the plan calendar sits at the row's trailing edge beside its workouts instead of on a line under them, and the day's name lines up with its first workout, or with the button on an empty day (ADR 0107).
 - The Hetzner VPS (204.168.179.170) is configured here instead of in nixos-config: its hardware, disk, GRUB and network settings are in `nix/hosts/atlas`, it serves `http://204.168.179.170`, and root logs in with the owner's keys; the Deploy workflow is skipped until `DEPLOY_HOST` is set (ADR 0094).
 - Nix files other than `flake.nix` and `flake.lock` moved under `nix/`: the module and VM test to `nix/nixos/`, the server configuration to `nix/hosts/atlas/` (ADR 0093).
 - The server can run on plain HTTP at its IP address until there is a domain: `hosts/atlas` takes a full `publicUrl`, and Caddy serves an `http://` address without TLS or HSTS (ADR 0092).

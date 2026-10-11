@@ -668,36 +668,33 @@ fn day_cell(
     ]),
     html.div(
       [class("day-body")],
-      list.append(
-        list.filter_map(day.workouts, fn(w) {
-          case list.find(rows, fn(row) { row.workout.id == w.id }) {
-            Ok(row) -> Ok(workout_chip(row, week, day, model.mode))
-            Error(Nil) -> Error(Nil)
-          }
-        }),
-        [
-          case can_edit {
-            True ->
-              html.button(
-                [
-                  attribute.type_("button"),
-                  class("add-here"),
-                  attribute.attribute(
-                    "aria-label",
-                    "Add a workout to week "
-                      <> int.to_string(week.number)
-                      <> ", day "
-                      <> int.to_string(day.number),
-                  ),
-                  event.on_click(AddClicked(week.number, day.number)),
-                ],
-                [icon.view(icon.Add)],
-              )
-            False -> element.none()
-          },
-        ],
-      ),
+      list.filter_map(day.workouts, fn(w) {
+        case list.find(rows, fn(row) { row.workout.id == w.id }) {
+          Ok(row) -> Ok(workout_chip(row, week, day, model.mode))
+          Error(Nil) -> Error(Nil)
+        }
+      }),
     ),
+    // Beside the day's workouts rather than under them, so on a phone it keeps the row's trailing edge (ADR 0107).
+    case can_edit {
+      True ->
+        html.button(
+          [
+            attribute.type_("button"),
+            class("add-here"),
+            attribute.attribute(
+              "aria-label",
+              "Add a workout to week "
+                <> int.to_string(week.number)
+                <> ", day "
+                <> int.to_string(day.number),
+            ),
+            event.on_click(AddClicked(week.number, day.number)),
+          ],
+          [icon.view(icon.Add)],
+        )
+      False -> element.none()
+    },
   ])
 }
 

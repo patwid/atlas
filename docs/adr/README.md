@@ -110,3 +110,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0104 | [Repetitions of an interval workout, kept in its steps](0104-interval-repetitions.md) | Accepted |
 | 0105 | [A target zone for each workout](0105-workout-target-zone.md) | Accepted |
 | 0106 | [Work distances and times out from the target zone's pace](0106-targets-from-the-zone-pace.md) | Accepted |
+| 0107 | [On a phone, a day's add button at the trailing edge](0107-phone-calendar-add-button-at-the-trailing-edge.md) | Accepted |
