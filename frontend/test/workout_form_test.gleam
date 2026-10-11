@@ -1,12 +1,29 @@
 import atlas/outbox
+import atlas/pace_zones
 import atlas/plan.{Workout}
-import atlas/workout_form.{Form, Row, Valid}
+import atlas/workout_form.{Form, NeitherTyped, Row, Valid}
 import gleam/dict
 import gleam/option.{None, Some}
 import gleam/string
 
 fn form() -> workout_form.Form {
-  Form("1", "1", "Easy run", plan.Easy, "", "", "", "", "", "", "", "", None)
+  Form(
+    "1",
+    "1",
+    "Easy run",
+    plan.Easy,
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    NeitherTyped,
+    NeitherTyped,
+    None,
+  )
 }
 
 pub fn decimals_accept_a_point_or_a_comma_test() {
@@ -126,6 +143,8 @@ pub fn the_week_is_checked_first_so_one_mistake_gives_one_message_test() {
       "",
       "",
       "",
+      NeitherTyped,
+      NeitherTyped,
       None,
     ))
     == Error("Enter the week as a number.")
@@ -156,6 +175,8 @@ pub fn editing_starts_from_the_stored_workout_test() {
       "",
       "",
       "",
+      NeitherTyped,
+      NeitherTyped,
       None,
     )
   let no_targets =
@@ -167,7 +188,23 @@ pub fn editing_starts_from_the_stored_workout_test() {
       "T",
     )
   assert workout_form.from_row(no_targets)
-    == Form("1", "1", "Rest", plan.Rest, "", "", "", "", "", "", "", "", None)
+    == Form(
+      "1",
+      "1",
+      "Rest",
+      plan.Rest,
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      NeitherTyped,
+      NeitherTyped,
+      None,
+    )
 }
 
 pub fn a_new_workout_carries_its_plan_position_and_values_test() {
@@ -244,6 +281,8 @@ pub fn a_problem_names_its_field_test() {
       "",
       "",
       "",
+      NeitherTyped,
+      NeitherTyped,
       None,
     ))
   assert workout_form.error_field(workout_form.Form(
@@ -259,6 +298,8 @@ pub fn a_problem_names_its_field_test() {
       "",
       "",
       "",
+      NeitherTyped,
+      NeitherTyped,
       None,
     ))
     == "distance"
@@ -275,6 +316,8 @@ pub fn a_problem_names_its_field_test() {
       "",
       "",
       "",
+      NeitherTyped,
+      NeitherTyped,
       None,
     ))
     == ""
@@ -433,4 +476,96 @@ pub fn a_rest_day_has_no_zone_and_a_zone_must_be_1_to_5_test() {
     == Error(#("zone", "Choose a zone from 1 to 5."))
   assert workout_form.zone_label(4) == "Zone 4"
   assert workout_form.zone_label(0) == ""
+}
+
+// WORKED OUT FROM THE ZONE (ADR 0106) --------------------------------------------------------------
+
+/// Threshold 5:00 /km: zone 2 from 6:27 to 5:43 (planned at 6:05), zone 4 from 5:18 to 4:58 (5:08), zone 5 from 4:57.
+fn zones() -> pace_zones.PaceZones {
+  pace_zones.defaults(300)
+}
+
+pub fn a_zone_is_planned_at_its_middle_and_zone_5_at_its_start_test() {
+  assert pace_zones.planning_pace(zones(), 2) == Ok(365)
+  assert pace_zones.planning_pace(zones(), 4) == Ok(308)
+  assert pace_zones.planning_pace(zones(), 5) == Ok(297)
+  assert pace_zones.planning_pace(zones(), 6) == Error(Nil)
+}
+
+pub fn a_typed_distance_gives_the_duration_at_the_zone_pace_test() {
+  let f =
+    Form(..form(), zone: "2")
+    |> workout_form.type_distance("10", zones())
+  // 10 km at 6:05 is 60:50, to the nearest minute.
+  assert f.duration == "1:01"
+  assert f.distance_km == "10"
+}
+
+pub fn a_typed_duration_gives_the_distance_to_100_m_test() {
+  let f =
+    Form(..form(), zone: "2")
+    |> workout_form.type_duration("45", zones())
+  // 2700 s at 365 s/km is 7.397 km.
+  assert f.distance_km == "7.4"
+}
+
+pub fn another_zone_works_out_again_from_what_was_typed_test() {
+  let f =
+    Form(..form(), zone: "2")
+    |> workout_form.type_duration("45", zones())
+    |> workout_form.choose_zone("4", zones())
+  assert f.duration == "45"
+  // 2700 s at 308 s/km is 8.766 km.
+  assert f.distance_km == "8.8"
+}
+
+pub fn clearing_the_typed_value_clears_the_worked_out_one_test() {
+  let f =
+    Form(..form(), zone: "2")
+    |> workout_form.type_distance("10", zones())
+    |> workout_form.type_distance("", zones())
+  assert f.duration == ""
+}
+
+pub fn nothing_is_worked_out_without_a_zone_or_before_anything_is_typed_test() {
+  let f = workout_form.type_distance(form(), "10", zones())
+  assert f.duration == ""
+  let stored =
+    workout_form.choose_zone(workout_form.from_row(row()), "4", zones())
+  assert stored.distance_km == "8"
+  assert stored.duration == "45"
+  let rest =
+    Form(..form(), kind: plan.Rest, zone: "2")
+    |> workout_form.type_distance("10", zones())
+  assert rest.duration == ""
+}
+
+pub fn a_rep_is_worked_out_in_seconds_and_tens_of_metres_test() {
+  let f =
+    Form(..form(), kind: plan.Interval, zone: "4")
+    |> workout_form.type_rep_distance("800", zones())
+  // 800 m at 308 s/km is 246.4 s.
+  assert f.rep_time == "4:06"
+  let f = workout_form.type_rep_time(f, "90", zones())
+  // 90 s at 308 s/km is 292 m.
+  assert f.rep_distance == "290"
+  assert f.rep_time == "90"
+}
+
+pub fn the_reps_zone_leaves_the_workouts_own_targets_as_typed_test() {
+  let f =
+    Form(..form(), kind: plan.Interval, zone: "4")
+    |> workout_form.type_distance("10", zones())
+  assert f.duration == ""
+}
+
+pub fn interval_totals_add_up_the_reps_and_the_recoveries_between_them_test() {
+  assert workout_form.interval_totals(intervals_form())
+    == #(Some(4800.0), Some(6 * 170 + 5 * 90))
+  assert workout_form.interval_totals(Form(..intervals_form(), rep_time: ""))
+    == #(Some(4800.0), None)
+  assert workout_form.interval_totals(Form(..intervals_form(), recovery: ""))
+    == #(Some(4800.0), Some(6 * 170))
+  assert workout_form.interval_totals(Form(..intervals_form(), reps: "x"))
+    == #(None, None)
 }

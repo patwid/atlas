@@ -67,6 +67,19 @@ pub fn zone_of(settings: PaceZones, pace_s: Int) -> Result(Int, Nil) {
   |> result.map(fn(zone) { zone.number })
 }
 
+/// The pace to plan a workout in zone `number` with (ADR 0106): the middle of the zone, or its start for zone 5,
+/// which has no faster end. `Error` for a number that is not a zone.
+pub fn planning_pace(settings: PaceZones, number: Int) -> Result(Int, Nil) {
+  zones(settings)
+  |> list.find(fn(zone) { zone.number == number })
+  |> result.map(fn(zone) {
+    case zone.fastest {
+      Some(fastest) -> { zone.slowest + fastest } / 2
+      None -> zone.slowest
+    }
+  })
+}
+
 /// `5:00`
 pub fn format(pace_s: Int) -> String {
   units.format_duration(pace_s)

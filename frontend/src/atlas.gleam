@@ -410,7 +410,13 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         SignedIn(session) -> {
           let #(on_screen, can_edit) = plan_on_screen(model, session)
           let #(page_model, page_effect, actions) =
-            workouts_page.update(model.workouts, inner, on_screen, can_edit)
+            workouts_page.update(
+              model.workouts,
+              inner,
+              on_screen,
+              can_edit,
+              zones_page.current(model.zones, session.user_id).pace,
+            )
           let #(state, action_effects) =
             perform_workouts(model.syncing, actions)
           #(

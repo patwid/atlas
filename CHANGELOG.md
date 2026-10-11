@@ -50,6 +50,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Import an activity from a `.fit` file: "Import a .fit file" in the New activity dialog fills the form in from the file, read in the browser by a FIT decoder written in Gleam. Saving keeps the file's exact start, distance and times, its laps, elapsed time and maximum heart rate. A file already imported is refused, and one deleted since comes back (ADR 0100).
 - Interval workouts have repetitions: the form asks for the number of reps, the distance and/or time of each rep and the recovery when the kind is Intervals. They are stored in the workout's `steps`, shown on the calendar as "6 × 800 m, 1:30 recovery", and copied with a plan (ADR 0104).
 - Workouts have a target zone: the workout form has an optional Zone (1 to 5) for every kind but a rest day. It is shown on the calendar as "Zone 4" before the other targets, and copied with a plan (ADR 0105).
+- The workout form fills in the duration from a typed distance, or the distance from a typed duration, at the pace of the target zone in your pace zones; for intervals, the time or distance of a rep. Interval workouts show a read-only total distance and time of their repetitions (ADR 0106).
 
 ### Changed
 - The Hetzner VPS (204.168.179.170) is configured here instead of in nixos-config: its hardware, disk, GRUB and network settings are in `nix/hosts/atlas`, it serves `http://204.168.179.170`, and root logs in with the owner's keys; the Deploy workflow is skipped until `DEPLOY_HOST` is set (ADR 0094).

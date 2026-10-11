@@ -1,4 +1,5 @@
 import atlas/outbox
+import atlas/pace_zones
 import atlas/plan.{Workout}
 import atlas/workout_form.{type Row, Form, Row}
 import atlas/workouts_page.{
@@ -6,7 +7,7 @@ import atlas/workouts_page.{
   DeleteExpired, Edit, EditClicked, EditPlan, Editing, IntensityChanged,
   IntensityCleared, IntensityInput, KindChanged, Model, RecoveryChanged,
   RepDistanceChanged, RepsChanged, Submitted, TitleChanged, Viewing, WeekChanged,
-  WeekSelected, WorkoutSelected, WorkoutsRead,
+  WeekSelected, WorkoutSelected, WorkoutsRead, ZoneChanged,
 }
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -52,6 +53,11 @@ fn with_rows(rows: List(Row)) -> workouts_page.Model {
 }
 
 /// Base 2 weeks, pre-competition 1, competition 1, a 40 km goal and week 2 hard.
+/// The default pace zones: threshold 5:00 /km, zone 4 from 5:18 to 4:58, planned at 5:08.
+fn zones() -> pace_zones.PaceZones {
+  pace_zones.defaults(pace_zones.default_threshold_s)
+}
+
 fn the_plan() -> plan.Plan {
   plan.Plan(
     ..plan.new("p1", "u1", "10k", "", plan.Private, "T-p1"),
@@ -63,7 +69,7 @@ fn the_plan() -> plan.Plan {
 
 fn update(model: workouts_page.Model, msg: workouts_page.Msg) {
   let #(next, _, actions) =
-    workouts_page.update(model, msg, Some(the_plan()), True)
+    workouts_page.update(model, msg, Some(the_plan()), True, zones())
   #(next, actions)
 }
 
@@ -126,6 +132,24 @@ pub fn an_interval_workout_asks_for_its_repetitions_test() {
     == Ok(
       "{\"v\":1,\"reps\":6,\"work\":{\"distance_m\":800},\"recovery\":{\"duration_s\":90}}",
     )
+}
+
+pub fn a_rep_time_and_the_totals_are_worked_out_from_the_zone_test() {
+  let #(model, _) = update(workouts_page.new(), AddClicked(1, 1))
+  let #(model, _) = update(model, TitleChanged("Track"))
+  let #(model, _) = update(model, KindChanged("interval"))
+  assert !string.contains(html_of(model, True), "Total distance")
+  let #(model, _) = update(model, RepsChanged("6"))
+  let #(model, _) = update(model, RepDistanceChanged("800"))
+  let #(model, _) = update(model, RecoveryChanged("1:30"))
+  let #(model, _) = update(model, ZoneChanged("4"))
+  // 800 m at 5:08 /km, the middle of the default zone 4.
+  assert model.form.rep_time == "4:06"
+  let html = html_of(model, True)
+  assert string.contains(html, "Total distance")
+  assert string.contains(html, "value=\"4.8\"")
+  // 6 × 4:06 and 5 × 1:30.
+  assert string.contains(html, "value=\"32:06\"")
 }
 
 pub fn the_calendar_shows_the_repetitions_test() {
@@ -224,7 +248,7 @@ pub fn nothing_can_be_changed_without_permission_test() {
   let model = with_rows([row("a", "p1", 0, 0, "Easy")])
   let attempt = fn(msg) {
     let #(next, _, actions) =
-      workouts_page.update(model, msg, Some(the_plan()), False)
+      workouts_page.update(model, msg, Some(the_plan()), False, zones())
     #(next == model, actions)
   }
   assert attempt(AddClicked(1, 1)) == #(True, [])
@@ -341,7 +365,13 @@ pub fn selecting_a_week_or_a_workout_opens_its_dialog_test() {
   let #(model, _) = update(model, workouts_page.WeekClosed)
   assert !model.week_open
   let #(model, _, actions) =
-    workouts_page.update(model, WorkoutSelected("a"), Some(the_plan()), False)
+    workouts_page.update(
+      model,
+      WorkoutSelected("a"),
+      Some(the_plan()),
+      False,
+      zones(),
+    )
   assert model.mode == Viewing("a")
   assert model.selected_week == 3
   assert actions == []
@@ -421,6 +451,8 @@ pub fn the_form_is_labelled_and_shows_errors_test() {
         "",
         "",
         "",
+        workout_form.NeitherTyped,
+        workout_form.NeitherTyped,
         Some("Give the workout a title."),
       ),
     )
@@ -476,7 +508,13 @@ pub fn a_weeks_row_shows_its_distance_against_its_goal_test() {
 pub fn a_workouts_dialog_closes_only_its_own_viewing_test() {
   let model = with_rows([row("a", "p1", 0, 0, "Easy run")])
   let #(viewing, _, _) =
-    workouts_page.update(model, WorkoutSelected("a"), Some(the_plan()), False)
+    workouts_page.update(
+      model,
+      WorkoutSelected("a"),
+      Some(the_plan()),
+      False,
+      zones(),
+    )
   assert string.contains(
     html_of(viewing, False),
     "id=\"workout-dialog-headline\"",

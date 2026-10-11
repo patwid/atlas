@@ -4,6 +4,7 @@
 
 import atlas/collection
 import atlas/outbox
+import atlas/pace_zones.{type PaceZones}
 import atlas/plan.{type Kind, type Plan, type Workout}
 import atlas/plan_form
 import atlas/plan_schedule
@@ -145,6 +146,7 @@ pub fn update(
   msg: Msg,
   on_screen: Option(Plan),
   can_edit: Bool,
+  zones: PaceZones,
 ) -> #(Model, Effect(Msg), List(Action)) {
   let plan_id = case on_screen {
     Some(p) -> p.id
@@ -197,7 +199,8 @@ pub fn update(
     // (ADR 0080).
     WorkoutSelected(id) ->
       case can_edit, find(rows_of(model, plan_id), id) {
-        True, Ok(_) -> update(model, EditClicked(id), on_screen, can_edit)
+        True, Ok(_) ->
+          update(model, EditClicked(id), on_screen, can_edit, zones)
         False, Ok(row) -> #(
           Model(..model, mode: Viewing(id), selected_week: week_of(row.workout)),
           effect.none(),
@@ -246,24 +249,24 @@ pub fn update(
       typed(model, fn(f) { workout_form.Form(..f, title: value) })
     KindChanged(value) ->
       typed(model, fn(f) {
-        workout_form.Form(..f, kind: kind_from_value(value, f.kind))
+        workout_form.choose_kind(f, kind_from_value(value, f.kind), zones)
       })
     DistanceChanged(value) ->
-      typed(model, fn(f) { workout_form.Form(..f, distance_km: value) })
+      typed(model, workout_form.type_distance(_, value, zones))
     DurationChanged(value) ->
-      typed(model, fn(f) { workout_form.Form(..f, duration: value) })
+      typed(model, workout_form.type_duration(_, value, zones))
     DescriptionChanged(value) ->
       typed(model, fn(f) { workout_form.Form(..f, description: value) })
     RepsChanged(value) ->
       typed(model, fn(f) { workout_form.Form(..f, reps: value) })
     RepDistanceChanged(value) ->
-      typed(model, fn(f) { workout_form.Form(..f, rep_distance: value) })
+      typed(model, workout_form.type_rep_distance(_, value, zones))
     RepTimeChanged(value) ->
-      typed(model, fn(f) { workout_form.Form(..f, rep_time: value) })
+      typed(model, workout_form.type_rep_time(_, value, zones))
     RecoveryChanged(value) ->
       typed(model, fn(f) { workout_form.Form(..f, recovery: value) })
     ZoneChanged(value) ->
-      typed(model, fn(f) { workout_form.Form(..f, zone: value) })
+      typed(model, workout_form.choose_zone(_, value, zones))
 
     Submitted ->
       case can_edit, workout_form.validate(model.form) {
@@ -381,6 +384,7 @@ pub fn update(
   }
 }
 
+/// The signed-in user's pace zones, which the form works distances and times out from (ADR 0106).
 fn set_intensity(
   model: Model,
   on_screen: Option(Plan),
@@ -1235,7 +1239,45 @@ fn interval_fields(
         event.on_input(RepTimeChanged),
       ]),
     ]),
+    interval_totals(form),
   ])
+}
+
+/// All the repetitions together, worked out and read-only, once their number is given (ADR 0106). The fields have
+/// no name, so they are not part of what is saved.
+fn interval_totals(form: workout_form.Form) -> Element(Msg) {
+  case form.reps != "", workout_form.interval_totals(form) {
+    False, _ -> element.none()
+    True, #(distance, time) ->
+      html.div([class("row")], [
+        field.text(
+          "workout-total-distance",
+          "Total distance",
+          field.Help("Reps only", "km", None),
+          [
+            attribute.type_("text"),
+            attribute.readonly(True),
+            attribute.value(case distance {
+              Some(m) -> workout_form.format_km(m)
+              None -> ""
+            }),
+          ],
+        ),
+        field.text(
+          "workout-total-time",
+          "Total time",
+          field.help("Reps and recoveries between them"),
+          [
+            attribute.type_("text"),
+            attribute.readonly(True),
+            attribute.value(case time {
+              Some(s) -> workout_form.format_rep_time(s)
+              None -> ""
+            }),
+          ],
+        ),
+      ])
+  }
 }
 
 /// The calendar's main action (ADR 0068), for the plan's owner: a FAB on a phone, a button in the app bar on wider

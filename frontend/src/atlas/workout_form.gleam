@@ -2,6 +2,7 @@
 //// which fields to write. Pure. Limits follow the server (ADR 0009).
 
 import atlas/outbox
+import atlas/pace_zones.{type PaceZones}
 import atlas/plan.{type Intervals, type Kind, type Workout, Intervals}
 import gleam/dict
 import gleam/float
@@ -52,8 +53,20 @@ pub type Form {
     recovery: String,
     /// The target zone, `""` for none (ADR 0105).
     zone: String,
+    /// Which of distance and duration was typed last: the other is worked out from the zone (ADR 0106).
+    target_typed: Typed,
+    /// The same for the distance and time of a rep.
+    rep_typed: Typed,
     error: Option(String),
   )
+}
+
+/// Which of a distance and a time the user typed last (ADR 0106).
+pub type Typed {
+  /// Neither since the form opened: nothing is worked out, so a stored workout keeps its values.
+  NeitherTyped
+  DistanceTyped
+  TimeTyped
 }
 
 /// What a form says after validation. A distance or duration of 0 means "no target".
@@ -97,6 +110,8 @@ pub fn empty_for(week: Int, day: Int) -> Form {
     "",
     "",
     "",
+    NeitherTyped,
+    NeitherTyped,
     None,
   )
 }
@@ -138,8 +153,137 @@ pub fn from_row(row: Row) -> Form {
       0 -> ""
       n -> int.to_string(n)
     },
+    target_typed: NeitherTyped,
+    rep_typed: NeitherTyped,
     error: None,
   )
+}
+
+// WORKED OUT FROM THE ZONE (ADR 0106) --------------------------------------------------------------
+
+/// The workout's distance was typed: its duration is worked out from the zone.
+pub fn type_distance(form: Form, text: String, zones: PaceZones) -> Form {
+  fill(Form(..form, distance_km: text, target_typed: DistanceTyped), zones)
+}
+
+pub fn type_duration(form: Form, text: String, zones: PaceZones) -> Form {
+  fill(Form(..form, duration: text, target_typed: TimeTyped), zones)
+}
+
+pub fn type_rep_distance(form: Form, text: String, zones: PaceZones) -> Form {
+  fill(Form(..form, rep_distance: text, rep_typed: DistanceTyped), zones)
+}
+
+pub fn type_rep_time(form: Form, text: String, zones: PaceZones) -> Form {
+  fill(Form(..form, rep_time: text, rep_typed: TimeTyped), zones)
+}
+
+/// Another zone works out again whatever was worked out from the one before.
+pub fn choose_zone(form: Form, text: String, zones: PaceZones) -> Form {
+  fill(Form(..form, zone: text), zones)
+}
+
+pub fn choose_kind(form: Form, kind: Kind, zones: PaceZones) -> Form {
+  fill(Form(..form, kind: kind), zones)
+}
+
+/// Works out the field the user did not type last from the one they did, at the zone's pace in the athlete's
+/// pace zones. For an interval workout the zone is that of the reps (ADR 0105), so only a rep's distance and time
+/// are worked out; the workout's own distance and duration are left as typed. Nothing changes without a zone, or
+/// while the typed value is not usable; clearing the typed value clears the worked-out one.
+fn fill(form: Form, zones: PaceZones) -> Form {
+  let pace = case form.kind, int.parse(string.trim(form.zone)) {
+    plan.Rest, _ -> Error(Nil)
+    _, Ok(zone) -> pace_zones.planning_pace(zones, zone)
+    _, Error(_) -> Error(Nil)
+  }
+  case pace, form.kind {
+    Error(Nil), _ -> form
+    Ok(pace), plan.Interval -> fill_rep(form, pace)
+    Ok(pace), _ -> fill_target(form, pace)
+  }
+}
+
+fn fill_target(form: Form, pace: Int) -> Form {
+  case form.target_typed {
+    NeitherTyped -> form
+    DistanceTyped ->
+      case string.trim(form.distance_km), target_distance(form.distance_km) {
+        "", _ -> Form(..form, duration: "")
+        _, Ok(m) if m >. 0.0 -> {
+          // To the nearest minute, as durations are typed.
+          let seconds = float.round(m *. int.to_float(pace) /. 1000.0)
+          let minutes = int.max({ seconds + 30 } / 60, 1)
+          Form(..form, duration: format_duration(minutes * 60))
+        }
+        _, _ -> form
+      }
+    TimeTyped ->
+      case string.trim(form.duration), target_duration(form.duration) {
+        "", _ -> Form(..form, distance_km: "")
+        _, Ok(s) if s > 0 -> {
+          // To the nearest 100 m.
+          let m = int.to_float(s) *. 1000.0 /. int.to_float(pace)
+          let hundreds = int.max(float.round(m /. 100.0), 1)
+          Form(..form, distance_km: format_km(int.to_float(hundreds * 100)))
+        }
+        _, _ -> form
+      }
+  }
+}
+
+fn fill_rep(form: Form, pace: Int) -> Form {
+  case form.rep_typed {
+    NeitherTyped -> form
+    DistanceTyped ->
+      case string.trim(form.rep_distance), rep_distance(form.rep_distance) {
+        "", _ -> Form(..form, rep_time: "")
+        _, Ok(m) if m >. 0.0 ->
+          case float.round(m *. int.to_float(pace) /. 1000.0) {
+            s if s <= max_rep_seconds ->
+              Form(..form, rep_time: format_rep_time(int.max(s, 1)))
+            _ -> form
+          }
+        _, _ -> form
+      }
+    TimeTyped ->
+      case
+        string.trim(form.rep_time),
+        rep_time(form.rep_time, "time of a rep")
+      {
+        "", _ -> Form(..form, rep_distance: "")
+        _, Ok(s) if s > 0 -> {
+          // To the nearest 10 m.
+          let m = int.to_float(s) *. 1000.0 /. int.to_float(pace)
+          let tens = int.max(float.round(m /. 10.0), 1)
+          Form(..form, rep_distance: int.to_string(tens * 10))
+        }
+        _, _ -> form
+      }
+  }
+}
+
+/// All the repetitions of an interval workout as typed so far (ADR 0106): the distance of the reps in metres,
+/// and the time of the reps with the recoveries between them in seconds. `None` for what is not known yet;
+/// both `None` without a usable number of repetitions. Recoveries have no distance.
+pub fn interval_totals(form: Form) -> #(Option(Float), Option(Int)) {
+  case int.parse(string.trim(form.reps)) {
+    Ok(reps) if reps >= 1 && reps <= max_reps -> {
+      let distance = case rep_distance(form.rep_distance) {
+        Ok(m) if m >. 0.0 -> Some(int.to_float(reps) *. m)
+        _ -> None
+      }
+      let time = case
+        rep_time(form.rep_time, "time of a rep"),
+        rep_time(form.recovery, "recovery")
+      {
+        Ok(s), Ok(recovery) if s > 0 -> Some(reps * s + { reps - 1 } * recovery)
+        _, _ -> None
+      }
+      #(distance, time)
+    }
+    _ -> #(None, None)
+  }
 }
 
 /// Checks the form; a problem names the field it is about: `week`, `day`, `title`, `description`, `distance`,
