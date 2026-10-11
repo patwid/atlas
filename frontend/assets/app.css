@@ -190,6 +190,12 @@ html, body {
   font: 400 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
   -webkit-font-smoothing: antialiased;
 }
+/* The frame fills the window through the page's own height, not a viewport unit: an installed app on a phone has
+   no browser bar, and there 100dvh can come out taller than the window, so a page that fits still scrolls. */
+html { height: 100%; }
+body, #app { display: flex; flex-direction: column; }
+body { min-height: 100%; }
+#app { flex: 1; }
 h1, h2, h3 { font-weight: 400; letter-spacing: 0; }
 
 a { color: var(--md-sys-color-primary); text-underline-offset: 0.15em; }
@@ -403,7 +409,7 @@ dialog[open] { animation: dialog-in var(--md-sys-motion-spring-default-spatial-d
 @media (prefers-reduced-motion: reduce) { dialog[open] { animation: none; } }
 
 /* The frame: a small top app bar, the page, and a navigation bar (a navigation rail on wide screens). */
-.shell { min-height: 100dvh; display: flex; flex-direction: column; }
+.shell { flex: 1; display: flex; flex-direction: column; }
 .bar {
   --bar-background: var(--md-sys-color-surface);
   background: var(--bar-background); position: sticky; top: 0; z-index: 2;
@@ -519,7 +525,7 @@ main { flex: 1; padding: 0 1rem 1.5rem; max-width: var(--content-max); width: 10
 .empty-compact h2 { font: 500 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.009375rem; }
 a.md-button { text-decoration: none; }
 .signin {
-  max-width: 24rem; min-height: 100dvh; margin: 0 auto; padding: 4rem 1.5rem;
+  flex: 1; width: 100%; max-width: 24rem; margin: 0 auto; padding: 4rem 1.5rem;
   display: flex; flex-direction: column;
 }
 /* Optically centred: 2/5 of the free space above the block, 3/5 below, as the title makes it top-heavy. */
