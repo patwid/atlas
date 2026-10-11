@@ -1,7 +1,7 @@
 import atlas.{
-  ActivitiesPage, AssignmentsPage, EmailChanged, Model, NoticeClosed,
-  NoticeExpired, OfflineInfoClicked, OnlineChanged, PasswordChanged, PlansPage,
-  RefreshResponded, RouteChanged, SharingPage, SignInResponded, SignInSubmitted,
+  ActivitiesPage, EmailChanged, Model, NoticeClosed, NoticeExpired,
+  OfflineInfoClicked, OnlineChanged, PasswordChanged, PlansPage,
+  RefreshResponded, RouteChanged, SignInResponded, SignInSubmitted,
   SignOutClicked, SignedIn, SignedOut, StravaPage, WorkoutsPage,
 }
 import atlas/activities_page
@@ -9,7 +9,7 @@ import atlas/activity
 import atlas/activity_form
 import atlas/api
 import atlas/assignment_form
-import atlas/assignments_page
+import atlas/assignments
 import atlas/athlete_settings
 import atlas/auth.{Session}
 import atlas/coaches_page
@@ -22,13 +22,10 @@ import atlas/http.{Response}
 import atlas/matching
 import atlas/outbox
 import atlas/pace_zones
-import atlas/person_finder
 import atlas/plan
 import atlas/plan_form
 import atlas/plans_page.{Creating}
 import atlas/route
-import atlas/shares
-import atlas/sharing_page
 import atlas/signin.{Form}
 import atlas/strava_page
 import atlas/sync
@@ -58,12 +55,11 @@ fn signed_out(form: signin.Form) -> atlas.Model {
     syncing.new(),
     plans_page.new(),
     workouts_page.new(),
-    assignments_page.new(),
+    assignments.new(),
     coaches_page.new(),
     activities_page.new(),
     home_page.new(),
     strava_page.new(),
-    sharing_page.new(),
     zones_page.new(),
     None,
     0,
@@ -78,12 +74,11 @@ fn signed_in() -> atlas.Model {
     syncing.new(),
     plans_page.new(),
     workouts_page.new(),
-    assignments_page.new(),
+    assignments.new(),
     coaches_page.new(),
     activities_page.new(),
     home_page.new(),
     strava_page.new(),
-    sharing_page.new(),
     zones_page.new(),
     None,
     0,
@@ -261,7 +256,7 @@ pub fn saving_a_new_plan_queues_it_for_upload_test() {
         form: plan_form.Form(
           "Half marathon",
           "",
-          plan.Public,
+          "u1",
           "2026-11-02",
           True,
           plan_form.default_settings(),
@@ -271,15 +266,18 @@ pub fn saving_a_new_plan_queues_it_for_upload_test() {
     )
   let #(model, _) = atlas.update(typing, PlansPage(plans_page.Submitted))
   let assert option.Some(engine) = model.syncing.sync
-  let assert [entry] = sync.outbox(engine).entries
+  // The plan first, then whom it is for (ADR 0110).
+  let assert [entry, assignment] = sync.outbox(engine).entries
   assert entry.kind == outbox.Create
   assert entry.id != ""
+  assert assignment.collection == collection.Assignments
+  assert assignment.fields
+    == assignment_form.create_fields(entry.id, "u1", "u1")
   assert entry.fields
     == dict.from_list([
       outbox.field_string("owner", "u1"),
       outbox.field_string("title", "Half marathon"),
       outbox.field_string("description", ""),
-      outbox.field_string("visibility", "public"),
       outbox.field_string("start_date", "2026-11-02"),
       outbox.field_int("base_weeks", 4),
       outbox.field_int("pre_competition_weeks", 4),
@@ -307,7 +305,7 @@ pub fn signing_out_clears_the_plans_on_screen_test() {
     Model(
       ..signed_in(),
       plans: plans_page.Model(..plans_page.new(), plans: [
-        plan.new("p1", "u1", "Private plan", "", plan.Private, "T"),
+        plan.new("p1", "u1", "Private plan", "", "T"),
       ]),
     )
   let #(model, _) = atlas.update(showing, SignOutClicked)
@@ -342,33 +340,14 @@ pub fn going_offline_shows_a_snackbar_that_the_app_bar_icon_brings_back_test() {
   assert string.contains(back, "Back online")
 }
 
-pub fn a_plan_page_has_tabs_and_only_its_owner_sees_sharing_test() {
+pub fn a_plan_page_shows_its_calendar_without_tabs_test() {
   let own = element.to_string(atlas.view(plan_screen("u1")))
-  assert string.contains(own, "role=\"tablist\"")
-  assert string.contains(own, ">Calendar<")
-  assert string.contains(own, ">Schedule<")
-  assert string.contains(own, ">Sharing<")
+  assert !string.contains(own, "role=\"tablist\"")
+  assert !string.contains(own, ">Schedule<")
+  assert !string.contains(own, ">Sharing<")
   assert string.contains(own, "aria-label=\"Edit plan\"")
   let theirs = element.to_string(atlas.view(plan_screen("someone-else")))
-  assert !string.contains(theirs, ">Sharing<")
   assert string.contains(theirs, "aria-label=\"Copy to my plans\"")
-}
-
-pub fn a_chosen_tab_shows_and_another_plan_opens_on_its_calendar_test() {
-  let #(model, _) =
-    atlas.update(
-      plan_screen("u1"),
-      PlansPage(plans_page.TabSelected("schedule")),
-    )
-  assert model.plans.tab == "schedule"
-  let html = element.to_string(atlas.view(model))
-  let assert [_, after] = string.split(html, "id=\"plan-tab-schedule\"")
-  let assert [tab, ..] = string.split(after, ">")
-  // The selected tab is the one reachable with Tab.
-  assert string.contains(tab, "tabindex=\"0\"")
-  let assert Ok(other) = uri.parse("/plans/p2")
-  let #(moved, _) = atlas.update(model, RouteChanged(other))
-  assert moved.plans.tab == "calendar"
 }
 
 fn main_action_of(model: atlas.Model) -> String {
@@ -393,7 +372,7 @@ pub fn the_screens_main_action_is_also_in_the_app_bar_test() {
     "Add activity",
   )
   assert main_action_of(Model(..signed_in(), route: route.Home)) == ""
-  // On a plan's page it is the open tab's: Add workout for the owner on the calendar, Start on the schedule.
+  // On a plan's page it is Add workout, for its owner.
   let owner = plan_screen("u1")
   let calendar =
     Model(
@@ -404,15 +383,6 @@ pub fn the_screens_main_action_is_also_in_the_app_bar_test() {
       ),
     )
   assert string.contains(main_action_of(calendar), "Add workout")
-  let schedule =
-    Model(
-      ..calendar,
-      plans: plans_page.Model(..calendar.plans, tab: "schedule"),
-    )
-  assert string.contains(main_action_of(schedule), "Start")
-  let sharing =
-    Model(..calendar, plans: plans_page.Model(..calendar.plans, tab: "sharing"))
-  assert main_action_of(sharing) == ""
 }
 
 fn plan_screen(owner: String) -> atlas.Model {
@@ -422,7 +392,7 @@ fn plan_screen(owner: String) -> atlas.Model {
     syncing: ready_syncing(),
     plans: plans_page.Model(
       ..plans_page.new(),
-      plans: [plan.new("p1", owner, "10k plan", "", plan.Private, "T")],
+      plans: [plan.new("p1", owner, "10k plan", "", "T")],
       loaded: True,
     ),
     workouts: workouts_page.Model(
@@ -495,99 +465,86 @@ pub fn signing_out_clears_the_workouts_on_screen_too_test() {
   assert model.workouts == workouts_page.new()
 }
 
-fn schedule_screen(owner: String, visibility: plan.Visibility) -> atlas.Model {
+/// A coach of Ana, typing a new plan (ADR 0110).
+fn coach_creating(athlete_id: String) -> atlas.Model {
   Model(
     ..signed_in(),
-    route: route.Plan("p1"),
+    route: route.Plans,
     syncing: ready_syncing(),
-    plans: plans_page.Model(
-      ..plans_page.new(),
-      plans: [plan.new("p1", owner, "10k plan", "", visibility, "T")],
-      loaded: True,
-    ),
     coaches: coaches_page.Model(
       ..coaches_page.new(),
       grants: [grants.Grant("g1", "ana", "u1", "Ana", "Alice", "T")],
       loaded: True,
     ),
-    assignments: assignments_page.Model(
-      ..assignments_page.new(),
-      mode: assignments_page.Starting,
-      form: assignment_form.Form("u1", "2026-11-02", False, None),
+    plans: plans_page.Model(
+      ..plans_page.new(),
+      mode: Creating,
+      form: plan_form.Form(
+        ..plan_form.empty(date.Date(2026, 10, 11), "u1"),
+        title: "Ana's 10k",
+        athlete_id: athlete_id,
+      ),
     ),
   )
 }
 
-pub fn starting_your_own_plan_queues_an_assignment_test() {
+pub fn a_coach_makes_a_plan_for_an_athlete_who_granted_access_test() {
   let #(model, _) =
-    atlas.update(
-      schedule_screen("u1", plan.Private),
-      AssignmentsPage(assignments_page.Submitted),
-    )
+    atlas.update(coach_creating("ana"), PlansPage(plans_page.Submitted))
   let assert option.Some(engine) = model.syncing.sync
-  let assert [entry] = sync.outbox(engine).entries
+  let assert [plan_entry, entry] = sync.outbox(engine).entries
   assert entry.collection == collection.Assignments
-  assert dict.get(entry.fields, "plan") == Ok("\"p1\"")
-  assert dict.get(entry.fields, "athlete") == Ok("\"u1\"")
-  assert dict.get(entry.fields, "assigned_by") == Ok("\"u1\"")
-  assert dict.get(entry.fields, "start_date") == Ok("\"2026-11-02\"")
-}
-
-pub fn a_coach_can_start_the_plan_for_an_athlete_who_granted_access_test() {
-  let model = schedule_screen("u1", plan.Private)
-  let for_ana =
-    Model(
-      ..model,
-      assignments: assignments_page.Model(
-        ..model.assignments,
-        form: assignment_form.Form("ana", "2026-11-02", False, None),
-      ),
-    )
-  let #(next, _) =
-    atlas.update(for_ana, AssignmentsPage(assignments_page.Submitted))
-  let assert option.Some(engine) = next.syncing.sync
-  let assert [entry] = sync.outbox(engine).entries
+  assert dict.get(entry.fields, "plan") == Ok("\"" <> plan_entry.id <> "\"")
   assert dict.get(entry.fields, "athlete") == Ok("\"ana\"")
   assert dict.get(entry.fields, "assigned_by") == Ok("\"u1\"")
 }
 
-pub fn a_private_plan_of_someone_else_cannot_be_started_test() {
-  // The server would refuse it (ADR 0009), so the app does not even offer it (ADR 0023).
-  let #(next, _) =
-    atlas.update(
-      Model(
-        ..schedule_screen("u2", plan.Private),
-        assignments: assignments_page.new(),
-      ),
-      AssignmentsPage(assignments_page.StartClicked),
-    )
-  assert next.assignments.mode == assignments_page.Browsing
-}
-
-pub fn a_public_plan_of_someone_else_can_be_started_test() {
-  let #(next, _) =
-    atlas.update(
-      Model(
-        ..schedule_screen("u2", plan.Public),
-        assignments: assignments_page.new(),
-      ),
-      AssignmentsPage(assignments_page.StartClicked),
-    )
-  assert next.assignments.mode == assignments_page.Starting
-}
-
-pub fn nothing_is_queued_without_a_plan_on_screen_test() {
-  let model = Model(..schedule_screen("u1", plan.Private), route: route.Plans)
-  let #(next, _) =
-    atlas.update(model, AssignmentsPage(assignments_page.Submitted))
-  let assert option.Some(engine) = next.syncing.sync
+pub fn a_plan_for_someone_who_gave_no_access_is_not_queued_test() {
+  let #(model, _) =
+    atlas.update(coach_creating("stranger"), PlansPage(plans_page.Submitted))
+  let assert option.Some(engine) = model.syncing.sync
   assert outbox.is_empty(sync.outbox(engine))
 }
 
-pub fn signing_out_clears_the_schedule_and_the_coach_list_test() {
-  let #(model, _) =
-    atlas.update(schedule_screen("u1", plan.Private), SignOutClicked)
-  assert model.assignments == assignments_page.new()
+pub fn a_plan_says_who_it_is_for_and_who_it_is_from_test() {
+  let assigned = fn(owner, athlete) {
+    Model(
+      ..coach_creating("u1"),
+      plans: plans_page.Model(
+        ..plans_page.new(),
+        plans: [plan.new("p1", owner, "10k plan", "", "T")],
+        loaded: True,
+      ),
+      assignments: assignments.Model(
+        rows: [
+          assignment_form.Row(
+            plan.Assignment("a1", "p1", athlete, None),
+            owner,
+            "T",
+          ),
+        ],
+        loaded: True,
+      ),
+    )
+  }
+  let list_html = element.to_string(atlas.view(assigned("u1", "ana")))
+  assert string.contains(list_html, "For Ana")
+  let page = fn(model) {
+    element.to_string(atlas.view(Model(..model, route: route.Plan("p1"))))
+  }
+  assert string.contains(page(assigned("u1", "ana")), "For Ana.")
+  assert string.contains(page(assigned("ana", "u1")), "From Ana.")
+  assert !string.contains(page(assigned("u1", "u1")), "For ")
+}
+
+pub fn signing_out_clears_the_assignments_and_the_coach_list_test() {
+  let showing =
+    Model(
+      ..coach_creating("u1"),
+      assignments: assignments.Model(rows: [], loaded: True),
+    )
+  let #(model, _) = atlas.update(showing, SignOutClicked)
+  assert model.assignments == assignments.new()
   assert model.coaches == coaches_page.new()
 }
 
@@ -689,17 +646,13 @@ fn today_screen() -> atlas.Model {
     ..signed_in(),
     route: route.Home,
     syncing: ready_syncing(),
-    assignments: assignments_page.Model(
-      ..assignments_page.new(),
-      loaded: True,
-      rows: [
-        assignment_form.Row(
-          plan.Assignment("a1", "p1", "u1", Some(date.Date(2020, 1, 6))),
-          "u1",
-          "T",
-        ),
-      ],
-    ),
+    assignments: assignments.Model(loaded: True, rows: [
+      assignment_form.Row(
+        plan.Assignment("a1", "p1", "u1", Some(date.Date(2020, 1, 6))),
+        "u1",
+        "T",
+      ),
+    ]),
     workouts: workouts_page.Model(..workouts_page.new(), rows: [
       workout_form.Row(
         plan.Workout("w1", "p1", 0, 0, "Easy", plan.Easy, None, None),
@@ -739,7 +692,7 @@ pub fn the_today_screen_shows_old_schedules_as_outside_its_window_test() {
 pub fn the_today_screen_waits_for_the_plans_followed_test() {
   let html =
     element.to_string(atlas.view(
-      Model(..today_screen(), assignments: assignments_page.new()),
+      Model(..today_screen(), assignments: assignments.new()),
     ))
   assert string.contains(html, "Loading…")
   assert !string.contains(html, "You are not following a plan yet")
@@ -852,7 +805,7 @@ fn copy_screen(workouts_loaded: Bool) -> atlas.Model {
     plans: plans_page.Model(
       ..plans_page.new(),
       plans: [
-        plan.new("src", "coach", "10k plan", "Build up", plan.Public, "T"),
+        plan.new("src", "coach", "10k plan", "Build up", "T"),
       ],
       loaded: True,
     ),
@@ -910,12 +863,19 @@ pub fn copying_a_plan_queues_the_plan_first_and_then_its_workouts_in_order_test(
   let assert option.Some(engine) = model.syncing.sync
   let entries = sync.outbox(engine).entries
   assert list.map(entries, fn(e) { e.collection })
-    == [collection.Plans, collection.Workouts, collection.Workouts]
-  let assert [plan_entry, first, second] = entries
+    == [
+      collection.Plans,
+      collection.Assignments,
+      collection.Workouts,
+      collection.Workouts,
+    ]
+  let assert [plan_entry, assignment, first, second] = entries
   assert dict.get(plan_entry.fields, "title") == Ok("\"Copy of 10k plan\"")
   assert dict.get(plan_entry.fields, "owner") == Ok("\"u1\"")
-  assert dict.get(plan_entry.fields, "visibility") == Ok("\"private\"")
   assert dict.get(plan_entry.fields, "source_plan") == Ok("\"src\"")
+  // Without athletes, the copy is for the user (ADR 0110).
+  assert assignment.fields
+    == assignment_form.create_fields(plan_entry.id, "u1", "u1")
   // Both workouts belong to the new plan, in day order, and the other plan's workout is left out.
   assert dict.get(first.fields, "plan") == Ok("\"" <> plan_entry.id <> "\"")
   assert dict.get(second.fields, "plan") == Ok("\"" <> plan_entry.id <> "\"")
@@ -933,116 +893,6 @@ pub fn a_copy_waits_until_the_workouts_have_been_read_test() {
   assert outbox.is_empty(sync.outbox(engine))
   let assert plans_page.CopyProblem("src", message) = model.plans.copy
   assert string.contains(message, "still loading")
-}
-
-fn sharing_screen(owner: String) -> atlas.Model {
-  Model(
-    ..signed_in(),
-    route: route.Plan("p1"),
-    syncing: ready_syncing(),
-    plans: plans_page.Model(
-      ..plans_page.new(),
-      plans: [plan.new("p1", owner, "10k plan", "", plan.Private, "T")],
-      loaded: True,
-    ),
-    sharing: sharing_page.Model(
-      ..sharing_page.new(),
-      finder: person_finder.Model(
-        "bob@example.com",
-        person_finder.Found(grants.Person("bob", "Bob")),
-      ),
-    ),
-  )
-}
-
-pub fn sharing_your_own_plan_queues_a_share_with_names_test() {
-  let #(model, _) =
-    atlas.update(sharing_screen("u1"), SharingPage(sharing_page.ShareClicked))
-  let assert option.Some(engine) = model.syncing.sync
-  let assert [entry] = sync.outbox(engine).entries
-  assert entry.collection == collection.PlanShares
-  assert dict.get(entry.fields, "plan") == Ok("\"p1\"")
-  assert dict.get(entry.fields, "user") == Ok("\"bob\"")
-  assert dict.get(entry.fields, "user_name") == Ok("\"Bob\"")
-  assert dict.get(entry.fields, "shared_by_name") == Ok("\"Alice\"")
-}
-
-pub fn a_plan_that_is_not_yours_cannot_be_shared_test() {
-  let #(model, _) =
-    atlas.update(
-      sharing_screen("someone-else"),
-      SharingPage(sharing_page.ShareClicked),
-    )
-  let assert option.Some(engine) = model.syncing.sync
-  assert outbox.is_empty(sync.outbox(engine))
-}
-
-pub fn a_private_plan_shared_with_you_can_be_started_test() {
-  let model =
-    Model(
-      ..schedule_screen("u2", plan.Private),
-      assignments: assignments_page.new(),
-      sharing: sharing_page.Model(..sharing_page.new(), shares: [
-        shares.Share("s1", "p1", "u1", "Alice", "Zed", False, "T"),
-      ]),
-    )
-  let #(next, _) =
-    atlas.update(model, AssignmentsPage(assignments_page.StartClicked))
-  assert next.assignments.mode == assignments_page.Starting
-}
-
-pub fn a_removed_share_no_longer_allows_starting_test() {
-  let model =
-    Model(
-      ..schedule_screen("u2", plan.Private),
-      assignments: assignments_page.new(),
-      sharing: sharing_page.Model(..sharing_page.new(), shares: [
-        shares.Share("s1", "p1", "u1", "Alice", "Zed", True, "T"),
-      ]),
-    )
-  let #(next, _) =
-    atlas.update(model, AssignmentsPage(assignments_page.StartClicked))
-  assert next.assignments.mode == assignments_page.Browsing
-}
-
-pub fn the_plan_list_says_who_shared_a_plan_test() {
-  let model =
-    Model(
-      ..signed_in(),
-      route: route.Plans,
-      plans: plans_page.Model(
-        ..plans_page.new(),
-        plans: [plan.new("p1", "zed", "Zed's plan", "", plan.Private, "T")],
-        loaded: True,
-      ),
-      sharing: sharing_page.Model(..sharing_page.new(), shares: [
-        shares.Share("s1", "p1", "u1", "Alice", "Zed", False, "T"),
-      ]),
-    )
-  let html = element.to_string(atlas.view(model))
-  assert string.contains(html, "Shared by Zed")
-  let opened =
-    element.to_string(atlas.view(Model(..model, route: route.Plan("p1"))))
-  assert string.contains(opened, "Shared with you by Zed.")
-}
-
-pub fn only_the_owner_sees_the_sharing_section_test() {
-  let owner = element.to_string(atlas.view(sharing_screen("u1")))
-  assert string.contains(owner, "Who to share this plan with")
-  let other = element.to_string(atlas.view(sharing_screen("someone-else")))
-  assert !string.contains(other, "Who to share this plan with")
-}
-
-pub fn signing_out_clears_the_shares_on_screen_test() {
-  let showing =
-    Model(
-      ..signed_in(),
-      sharing: sharing_page.Model(..sharing_page.new(), shares: [
-        shares.Share("s1", "p1", "u1", "Alice", "Zed", False, "T"),
-      ]),
-    )
-  let #(model, _) = atlas.update(showing, SignOutClicked)
-  assert model.sharing == sharing_page.new()
 }
 
 fn coaching_model(route_to: route.Route) -> atlas.Model {

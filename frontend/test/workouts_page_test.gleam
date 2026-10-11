@@ -61,7 +61,7 @@ fn zones() -> pace_zones.PaceZones {
 
 fn the_plan() -> plan.Plan {
   plan.Plan(
-    ..plan.new("p1", "u1", "10k", "", plan.Private, "T-p1"),
+    ..plan.new("p1", "u1", "10k", "", "T-p1"),
     phases: plan.Phases(2, 1, 1),
     weekly_distance_m: Some(40_000.0),
     week_intensity: dict.from_list([#(2, 0.8)]),

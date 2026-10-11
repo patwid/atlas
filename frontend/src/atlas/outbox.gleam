@@ -13,6 +13,7 @@ import gleam/int
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/result
 import gleam/string
 
 pub type Fields =
@@ -319,12 +320,14 @@ fn entry_to_json(e: Entry) -> json.Json {
 fn outbox_decoder() -> decode.Decoder(Outbox) {
   use next_seq <- decode.field("next_seq", decode.int)
   use entries <- decode.field("entries", decode.list(entry_decoder()))
-  decode.success(Outbox(entries, next_seq))
+  decode.success(Outbox(result.values(entries), next_seq))
 }
 
-fn entry_decoder() -> decode.Decoder(Entry) {
+/// An entry for a collection this version no longer has (plan shares, ADR 0110) is an `Error`, to be dropped
+/// rather than failing the whole outbox.
+fn entry_decoder() -> decode.Decoder(Result(Entry, Nil)) {
   use seq <- decode.field("seq", decode.int)
-  use collection <- decode.field("collection", collection_decoder())
+  use collection <- decode.field("collection", decode.string)
   use id <- decode.field("id", decode.string)
   use kind <- decode.field("kind", kind_decoder())
   use fields <- decode.field(
@@ -337,24 +340,19 @@ fn entry_decoder() -> decode.Decoder(Entry) {
   )
   use in_flight <- decode.field("in_flight", decode.bool)
   use attempts <- decode.field("attempts", decode.int)
-  decode.success(Entry(
-    seq,
-    collection,
-    id,
-    kind,
-    fields,
-    base_updated,
-    in_flight,
-    attempts,
-  ))
-}
-
-fn collection_decoder() -> decode.Decoder(Collection) {
-  use text <- decode.then(decode.string)
-  case collection.from_string(text) {
-    Ok(c) -> decode.success(c)
-    Error(Nil) -> decode.failure(collection.Plans, "Collection")
-  }
+  decode.success(
+    collection.from_string(collection)
+    |> result.map(Entry(
+      seq,
+      _,
+      id,
+      kind,
+      fields,
+      base_updated,
+      in_flight,
+      attempts,
+    )),
+  )
 }
 
 fn kind_decoder() -> decode.Decoder(Kind) {

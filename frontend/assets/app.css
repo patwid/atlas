@@ -1105,30 +1105,6 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
   .form-dialog-body > form .row { grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
 }
 
-/* Primary tabs (ADR 0058): under the app bar, the selected tab's label in primary with a 3px indicator under it
-   that is as wide as the label, with rounded top corners. */
-.md-tab-bar {
-  position: sticky; top: var(--app-bar-height); z-index: 1; display: flex; margin: 0.5rem -1rem 1rem; padding: 0 1rem;
-  background: var(--md-sys-color-surface); border-bottom: 1px solid var(--md-sys-color-surface-container-highest);
-}
-html[data-scrolled] .md-tab-bar { background: var(--md-sys-color-surface-container); }
-.md-tab {
-  position: relative; flex: 1; display: flex; justify-content: center; height: 3rem; padding: 0 1rem; border: 0;
-  background: none; cursor: pointer; isolation: isolate; overflow: hidden;
-  color: var(--md-sys-color-on-surface-variant); font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem;
-  -webkit-tap-highlight-color: transparent;
-}
-.md-tab::before { content: ""; position: absolute; inset: 0; z-index: -1; background: currentColor; opacity: 0; }
-.md-tab:hover::before { opacity: var(--md-sys-state-hover); }
-.md-tab:focus-visible { outline: var(--focus-ring); outline-offset: -3px; }
-.md-tab-label { position: relative; display: flex; align-items: center; height: 100%; }
-.md-tab[aria-selected="true"] { color: var(--md-sys-color-primary); }
-.md-tab[aria-selected="true"] .md-tab-label::after {
-  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
-  border-radius: 3px 3px 0 0; background: var(--md-sys-color-primary);
-}
-@media (min-width: 37.5rem) { .md-tab { flex: none; min-width: 6rem; } }
-
 /* Outlined text fields with a floating label (ADR 0059): the label sits in the field and moves onto its outline
    when the field has focus or a value; date, time and select fields always show something, so their label always
    sits on the outline. The label's background hides the outline behind it: --field-container is the colour of

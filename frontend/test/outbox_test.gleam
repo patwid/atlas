@@ -333,10 +333,20 @@ pub fn damaged_persisted_data_is_an_error_test() {
   assert outbox.from_json_string("{}") == Error(Nil)
   assert outbox.from_json_string("{\"next_seq\":1,\"entries\":[{\"seq\":1}]}")
     == Error(Nil)
-  assert outbox.from_json_string(
-      "{\"next_seq\":2,\"entries\":[{\"seq\":1,\"collection\":\"nope\",\"id\":\"a\",\"kind\":\"create\",\"fields\":{},\"base_updated\":null,\"in_flight\":false,\"attempts\":0}]}",
+}
+
+/// Plan shares are gone (ADR 0110): an unsent one is dropped, and the rest of the outbox is kept.
+pub fn an_entry_for_a_collection_that_is_gone_is_dropped_test() {
+  let kept =
+    "{\"seq\":2,\"collection\":\"plans\",\"id\":\"p\",\"kind\":\"create\",\"fields\":{},\"base_updated\":null,\"in_flight\":false,\"attempts\":0}"
+  let gone =
+    "{\"seq\":1,\"collection\":\"plan_shares\",\"id\":\"a\",\"kind\":\"create\",\"fields\":{},\"base_updated\":null,\"in_flight\":false,\"attempts\":0}"
+  let assert Ok(ob) =
+    outbox.from_json_string(
+      "{\"next_seq\":3,\"entries\":[" <> gone <> "," <> kept <> "]}",
     )
-    == Error(Nil)
+  assert list.map(ob.entries, fn(e) { e.id }) == ["p"]
+  assert ob.next_seq == 3
 }
 
 pub fn sequence_numbers_keep_growing_after_entries_leave_test() {

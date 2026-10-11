@@ -80,7 +80,7 @@ fn inputs() -> today.Inputs {
       workout("w3", "p1", 3, 0, plan.Easy),
       workout("w20", "p1", 20, 0, plan.Long),
     ],
-    plans: [plan.new("p1", "me", "10k plan", "", plan.Private, "T")],
+    plans: [plan.new("p1", "me", "10k plan", "", "T")],
     activities: [],
     matches: [],
     offset_at: fn(_) { 0 },
@@ -201,8 +201,8 @@ pub fn two_plans_on_the_same_day_are_both_shown_test() {
         workout("v2", "p2", 2, 0, plan.Strength),
       ],
       plans: [
-        plan.new("p1", "me", "Running", "", plan.Private, "T"),
-        plan.new("p2", "me", "Gym", "", plan.Private, "T"),
+        plan.new("p1", "me", "Running", "", "T"),
+        plan.new("p2", "me", "Gym", "", "T"),
       ],
     )
   let found = today.items(two)

@@ -53,6 +53,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - The workout form fills in the duration from a typed distance, or the distance from a typed duration, at the pace of the target zone in your pace zones; for intervals, the time or distance of a rep. Interval workouts show a read-only total distance and time of their repetitions (ADR 0106).
 
 ### Changed
+- Every plan is for one person, chosen when it is made: yourself, or, when you coach someone, one of your athletes ("For"). It cannot be changed later; copying a plan asks whom the copy is for. The plan page has no tabs any more, only its calendar, and says whom the plan is for or from; the plan list groups your plans, your athletes' plans and plans from your coaches. Only the plan's owner removes it, by deleting it. Plans that several people followed were split into a copy for each of them, with their linked activities (ADR 0110).
 - A plan has a start date, asked for when it is made (the coming Monday by default) and changed with Edit. The plan calendar runs its weeks from Monday to Sunday with each day's and week's dates; the days before the start are dimmed and cannot be added to. Starting one's own plan follows its date, so moving the plan moves the schedule; someone else's plan is started on a date of one's own. Existing plans and schedules keep their dates (ADR 0108).
 - A dated plan's weeks are named by their ISO week of the year ("Week 46 · 9–15 Nov") instead of 1, 2, 3; a plan without a start date still counts from 1 (ADR 0109).
 - On a phone, a day's add button in the plan calendar sits at the row's trailing edge beside its workouts instead of on a line under them, and the day's name lines up with its first workout, or with the button on an empty day (ADR 0107).
@@ -124,6 +125,9 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - The sign-in form is centred vertically on the screen.
 - The e-mail field on the sign-in page has the focus when the page opens.
 - A workout's week choice offers only the plan's weeks, no longer one more after its last phase.
+
+### Removed
+- Sharing a plan with named people, public plans and starting someone else's plan: a plan is for one person, and reusing one means copying it (ADR 0110). The Schedule and Sharing tabs are gone.
 
 ### Fixed
 - Installed apps never updated after a deploy: PocketBase answered every check for a new `sw.js` with 304, because files in the Nix store are all dated 1970. Caddy now serves the app shell without dates and with `Cache-Control: no-cache` (ADR 0101).

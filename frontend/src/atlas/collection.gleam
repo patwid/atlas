@@ -3,7 +3,6 @@
 pub type Collection {
   CoachGrants
   Plans
-  PlanShares
   Workouts
   Assignments
   Activities
@@ -14,7 +13,6 @@ pub type Collection {
 pub const all = [
   CoachGrants,
   Plans,
-  PlanShares,
   Workouts,
   Assignments,
   Activities,
@@ -26,7 +24,6 @@ pub fn to_string(collection: Collection) -> String {
   case collection {
     CoachGrants -> "coach_grants"
     Plans -> "plans"
-    PlanShares -> "plan_shares"
     Workouts -> "workouts"
     Assignments -> "assignments"
     Activities -> "activities"
@@ -39,7 +36,6 @@ pub fn from_string(text: String) -> Result(Collection, Nil) {
   case text {
     "coach_grants" -> Ok(CoachGrants)
     "plans" -> Ok(Plans)
-    "plan_shares" -> Ok(PlanShares)
     "workouts" -> Ok(Workouts)
     "assignments" -> Ok(Assignments)
     "activities" -> Ok(Activities)
@@ -54,7 +50,6 @@ pub fn label(collection: Collection) -> String {
   case collection {
     CoachGrants -> "coach grant"
     Plans -> "plan"
-    PlanShares -> "plan share"
     Workouts -> "workout"
     Assignments -> "assignment"
     Activities -> "activity"

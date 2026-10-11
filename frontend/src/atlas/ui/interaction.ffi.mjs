@@ -1,7 +1,7 @@
 // Page-wide interaction that needs the DOM: touch feedback and the app bar's scrolled state (ADR 0051), placing
-// and moving through menus (ADR 0056), opening and closing dialogs with data-open (ADR 0057, 0066), and moving
-// between tabs (ADR 0058). It only sets attributes, CSS variables and focus and calls the dialogs' own methods; it
-// never adds or removes nodes, so Lustre's view of the DOM stays right.
+// and moving through menus (ADR 0056), and opening and closing dialogs with data-open (ADR 0057, 0066). It only
+// sets attributes, CSS variables and focus and calls the dialogs' own methods; it never adds or removes nodes, so
+// Lustre's view of the DOM stays right.
 
 const rippling = ".md-button, .md-fab, .md-icon-button, .choice-label, .link-list a, .tabs a .nav-indicator"
 
@@ -49,22 +49,6 @@ export function install() {
     if (next === undefined) return
     event.preventDefault()
     items[(next + items.length) % items.length]?.focus()
-  })
-
-  // Tabs (ADR 0058): the arrow keys, Home and End choose the next, previous, first or last tab, as ARIA's tabs pattern
-  // with automatic activation does.
-  document.addEventListener("keydown", (event) => {
-    const tab = event.target instanceof Element ? event.target.closest('[role="tab"]') : null
-    const list = tab?.closest('[role="tablist"]')
-    if (!list) return
-    const tabs = [...list.querySelectorAll('[role="tab"]')]
-    const at = tabs.indexOf(tab)
-    const next = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: tabs.length - 1 }[event.key]
-    if (next === undefined) return
-    event.preventDefault()
-    const target = tabs[(next + tabs.length) % tabs.length]
-    target.focus()
-    target.click()
   })
 
   // Form dialogs (ADR 0057) say with data-open whether they should show; this keeps the native modal in step.

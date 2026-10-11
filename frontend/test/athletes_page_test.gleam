@@ -48,7 +48,7 @@ fn inputs() -> today.Inputs {
       Workout("w0", "p1", 0, 0, "Easy", plan.Easy, Some(5000.0), None),
       Workout("w2", "p1", 2, 0, "Tempo", plan.Tempo, Some(8000.0), None),
     ],
-    plans: [plan.new("p1", "me", "Base block", "", plan.Private, "T")],
+    plans: [plan.new("p1", "me", "Base block", "", "T")],
     activities: [
       run("x1", "ana", "2026-09-28 06:00:00.000Z", 5000.0, "Morning shake-out"),
       run("x2", "ana", "2026-10-03 06:00:00.000Z", 3000.0, ""),

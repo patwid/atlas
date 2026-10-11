@@ -1,7 +1,8 @@
 //// The plan form: what the user typed, whether it is acceptable, and which fields to write.
 //// Pure. The limits are those of the server (ADR 0009): a title of 1-200 characters and a description of up to 5000.
 //// The phases and the weekly distance goal (ADR 0043) are a part of their own, `Settings`, which the plan's
-//// sidebar edits on its own too. A new plan needs a start date, which can be changed but not removed (ADR 0108).
+//// sidebar edits on its own too. A new plan needs a start date, which can be changed but not removed (ADR 0108), and
+//// is for one athlete, chosen when it is made (ADR 0110).
 
 import atlas/date.{type Date}
 import atlas/outbox
@@ -28,7 +29,8 @@ pub type Form {
   Form(
     title: String,
     description: String,
-    visibility: plan.Visibility,
+    /// Who a new plan is for: the user, or an athlete who granted them access (ADR 0110). Fixed once it is made.
+    athlete_id: String,
     /// As typed or picked: `YYYY-MM-DD`.
     start_date: String,
     /// False only for a plan that has no start date yet (made before ADR 0108): it may stay without one.
@@ -58,18 +60,17 @@ pub type Valid {
   Valid(
     title: String,
     description: String,
-    visibility: plan.Visibility,
     start_date: Option(Date),
     settings: ValidSettings,
   )
 }
 
-/// A new plan starts on the coming Monday unless another day is chosen.
-pub fn empty(today: Date) -> Form {
+/// A new plan is for the user and starts on the coming Monday unless chosen otherwise.
+pub fn empty(today: Date, user_id: String) -> Form {
   Form(
     "",
     "",
-    plan.Private,
+    user_id,
     date.to_string(plan.coming_monday(today)),
     True,
     default_settings(),
@@ -82,11 +83,12 @@ pub fn default_settings() -> Settings {
   settings_of(plan.default_phases, None)
 }
 
+/// Editing a plan; its athlete is not changed.
 pub fn from_plan(plan: Plan) -> Form {
   Form(
     plan.title,
     plan.description,
-    plan.visibility,
+    "",
     case plan.start_date {
       Some(start) -> date.to_string(start)
       None -> ""
@@ -168,13 +170,6 @@ pub fn validate_settings_fields(
   }
 }
 
-pub fn visibility_from_string(text: String) -> plan.Visibility {
-  case text {
-    "public" -> plan.Public
-    _ -> plan.Private
-  }
-}
-
 /// The start date as typed: none only where it may be left out; years outside 2000-2100 are typing mistakes.
 fn validate_start(form: Form) -> Result(Option(Date), #(String, String)) {
   case string.trim(form.start_date), form.start_required {
@@ -210,7 +205,7 @@ pub fn validate_fields(form: Form) -> Result(Valid, #(String, String)) {
       case validate_start(form), validate_settings_fields(form.settings) {
         Error(problem), _ | _, Error(problem) -> Error(problem)
         Ok(start), Ok(settings) ->
-          Ok(Valid(title, description, form.visibility, start, settings))
+          Ok(Valid(title, description, start, settings))
       }
   }
 }
@@ -221,10 +216,6 @@ pub fn create_fields(owner_id: String, valid: Valid) -> outbox.Fields {
     outbox.field_string("owner", owner_id),
     outbox.field_string("title", valid.title),
     outbox.field_string("description", valid.description),
-    outbox.field_string(
-      "visibility",
-      plan.visibility_to_string(valid.visibility),
-    ),
     outbox.field_string("start_date", start_text(valid.start_date)),
     ..all_settings_fields(valid.settings)
   ])
@@ -323,13 +314,6 @@ pub fn changed_fields(original: Plan, valid: Valid) -> outbox.Fields {
     #(
       valid.description != original.description,
       outbox.field_string("description", valid.description),
-    ),
-    #(
-      valid.visibility != original.visibility,
-      outbox.field_string(
-        "visibility",
-        plan.visibility_to_string(valid.visibility),
-      ),
     ),
     #(
       valid.start_date != original.start_date,

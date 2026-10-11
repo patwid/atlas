@@ -1,6 +1,6 @@
 # Atlas
 
-An offline-capable PWA for running training: create and share training plans, and match them against
+An offline-capable PWA for running training: plan training for yourself or the athletes you coach, and match it against
 watch data (Strava, FIT files). Backend: PocketBase. Frontend: Gleam + Lustre (TEA), JavaScript target.
 
 ## Decision records: mandatory and automatic

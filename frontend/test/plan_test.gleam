@@ -66,10 +66,10 @@ pub fn moving_the_start_within_its_week_keeps_every_date_test() {
 pub fn an_assignment_starts_on_its_own_date_or_its_plans_test() {
   let dated =
     plan.Plan(
-      ..plan.new("p1", "me", "10k", "", plan.Private, "T"),
+      ..plan.new("p1", "me", "10k", "", "T"),
       start_date: Some(Date(2026, 11, 2)),
     )
-  let undated = plan.new("p2", "me", "Old", "", plan.Private, "T")
+  let undated = plan.new("p2", "me", "Old", "", "T")
   let following = Assignment("a1", "p1", "me", None)
   assert plan.start_of(following, [undated, dated]) == Ok(Date(2026, 11, 2))
   assert plan.start_of(Assignment("a1", "p1", "me", Some(Date(2026, 12, 7))), [

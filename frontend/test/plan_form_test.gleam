@@ -10,7 +10,7 @@ fn form(title: String, description: String) -> plan_form.Form {
   Form(
     title,
     description,
-    plan.Private,
+    "u1",
     "2026-11-02",
     True,
     plan_form.default_settings(),
@@ -26,18 +26,12 @@ pub fn a_title_is_required_test() {
 
 pub fn input_is_trimmed_test() {
   assert plan_form.validate(form("  10k plan  ", "  Build up\n"))
-    == Ok(Valid(
-      "10k plan",
-      "Build up",
-      plan.Private,
-      Some(Date(2026, 11, 2)),
-      defaults(),
-    ))
+    == Ok(Valid("10k plan", "Build up", Some(Date(2026, 11, 2)), defaults()))
 }
 
 pub fn the_description_may_be_empty_test() {
   assert plan_form.validate(form("Plan", ""))
-    == Ok(Valid("Plan", "", plan.Private, Some(Date(2026, 11, 2)), defaults()))
+    == Ok(Valid("Plan", "", Some(Date(2026, 11, 2)), defaults()))
 }
 
 pub fn the_server_limits_are_enforced_before_sending_test() {
@@ -45,7 +39,6 @@ pub fn the_server_limits_are_enforced_before_sending_test() {
     == Ok(Valid(
       string.repeat("a", 200),
       "",
-      plan.Private,
       Some(Date(2026, 11, 2)),
       defaults(),
     ))
@@ -55,7 +48,6 @@ pub fn the_server_limits_are_enforced_before_sending_test() {
     == Ok(Valid(
       "T",
       string.repeat("b", 5000),
-      plan.Private,
       Some(Date(2026, 11, 2)),
       defaults(),
     ))
@@ -63,21 +55,13 @@ pub fn the_server_limits_are_enforced_before_sending_test() {
     == Error("The description can have at most 5000 characters.")
 }
 
-pub fn visibility_comes_from_the_select_value_test() {
-  assert plan_form.visibility_from_string("public") == plan.Public
-  assert plan_form.visibility_from_string("private") == plan.Private
-  assert plan_form.visibility_from_string("anything else") == plan.Private
-}
-
 pub fn a_new_plan_carries_its_owner_and_every_field_test() {
-  let valid =
-    Valid("10k", "Build up", plan.Public, Some(Date(2026, 11, 2)), defaults())
+  let valid = Valid("10k", "Build up", Some(Date(2026, 11, 2)), defaults())
   assert plan_form.create_fields("u1", valid)
     == dict.from_list([
       outbox.field_string("owner", "u1"),
       outbox.field_string("title", "10k"),
       outbox.field_string("description", "Build up"),
-      outbox.field_string("visibility", "public"),
       outbox.field_string("start_date", "2026-11-02"),
       outbox.field_int("base_weeks", 4),
       outbox.field_int("pre_competition_weeks", 4),
@@ -88,7 +72,7 @@ pub fn a_new_plan_carries_its_owner_and_every_field_test() {
 
 fn existing() -> plan.Plan {
   plan.Plan(
-    ..plan.new("p1", "u1", "10k", "Build up", plan.Private, "T1"),
+    ..plan.new("p1", "u1", "10k", "Build up", "T1"),
     phases: Phases(4, 4, 4),
     start_date: Some(Date(2026, 11, 2)),
   )
@@ -123,7 +107,7 @@ pub fn phases_and_goal_are_validated_test() {
 }
 
 pub fn a_plan_without_phases_is_offered_the_default_ones_test() {
-  let old = plan.new("p", "u", "Old", "", plan.Private, "T")
+  let old = plan.new("p", "u", "Old", "", "T")
   assert plan_form.settings_from(old) == Settings("4", "4", "4", "")
   let with_goal =
     plan.Plan(..old, phases: Phases(8, 2, 1), weekly_distance_m: Some(40_000.0))
@@ -169,41 +153,23 @@ pub fn an_intensity_stays_within_0_and_1_in_whole_percent_test() {
 pub fn an_edit_sends_only_what_changed_test() {
   assert plan_form.changed_fields(
       existing(),
-      Valid(
-        "Half marathon",
-        "Build up",
-        plan.Private,
-        Some(Date(2026, 11, 2)),
-        defaults(),
-      ),
+      Valid("Half marathon", "Build up", Some(Date(2026, 11, 2)), defaults()),
     )
     == dict.from_list([outbox.field_string("title", "Half marathon")])
   assert plan_form.changed_fields(
       existing(),
-      Valid("10k", "Build up", plan.Public, Some(Date(2026, 11, 2)), defaults()),
-    )
-    == dict.from_list([outbox.field_string("visibility", "public")])
-  assert plan_form.changed_fields(
-      existing(),
-      Valid("New", "Other", plan.Public, Some(Date(2026, 11, 2)), defaults()),
+      Valid("New", "Other", Some(Date(2026, 11, 2)), defaults()),
     )
     == dict.from_list([
       outbox.field_string("title", "New"),
       outbox.field_string("description", "Other"),
-      outbox.field_string("visibility", "public"),
     ])
 }
 
 pub fn an_unchanged_edit_sends_nothing_test() {
   assert plan_form.changed_fields(
       existing(),
-      Valid(
-        "10k",
-        "Build up",
-        plan.Private,
-        Some(Date(2026, 11, 2)),
-        defaults(),
-      ),
+      Valid("10k", "Build up", Some(Date(2026, 11, 2)), defaults()),
     )
     == dict.new()
 }
@@ -213,23 +179,15 @@ pub fn editing_starts_from_the_plan_test() {
     == Form(
       "10k",
       "Build up",
-      plan.Private,
+      "",
       "2026-11-02",
       True,
       Settings("4", "4", "4", ""),
       None,
     )
   // A new plan starts on the coming Monday: Sunday 11 Oct gives Monday 12 Oct.
-  assert plan_form.empty(Date(2026, 10, 11))
-    == Form(
-      "",
-      "",
-      plan.Private,
-      "2026-10-12",
-      True,
-      Settings("4", "4", "4", ""),
-      None,
-    )
+  assert plan_form.empty(Date(2026, 10, 11), "u1")
+    == Form("", "", "u1", "2026-10-12", True, Settings("4", "4", "4", ""), None)
 }
 
 pub fn a_problem_names_its_field_test() {
@@ -254,10 +212,7 @@ pub fn a_new_plan_needs_a_start_date_an_old_one_may_go_without_test() {
       "The start date must be between the years 2000 and 2100.",
     ))
   let undated =
-    plan.Plan(
-      ..plan.new("p2", "u1", "Old", "", plan.Private, "T1"),
-      phases: Phases(4, 4, 4),
-    )
+    plan.Plan(..plan.new("p2", "u1", "Old", "", "T1"), phases: Phases(4, 4, 4))
   let assert Ok(valid) = plan_form.validate(plan_form.from_plan(undated))
   assert valid.start_date == None
   assert plan_form.changed_fields(undated, valid) == dict.new()

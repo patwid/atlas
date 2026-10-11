@@ -9,7 +9,6 @@ const dom = new JSDOM(`<!doctype html><body>
   <button class="md-button" disabled>Off</button>
   <nav class="tabs"><a href="/"><span class="nav-indicator"></span>Home</a></nav>
   <p class="plain">text</p>
-  <div role="tablist"><button role="tab">A</button><button role="tab">B</button><button role="tab">C</button></div>
   <div class="md-menu" id="m">
     <button role="menuitem">Edit</button><button role="menuitem">Delete</button><button role="menuitem">Share</button>
   </div>
@@ -83,19 +82,6 @@ test("a form dialog opens and closes with its data-open attribute", async () => 
   dialog.dataset.open = "true"
   await new Promise((resolve) => setTimeout(resolve, 0))
   assert.ok(dialog.hasAttribute("open"), "opened again")
-})
-
-test("the arrow keys choose the next or previous tab, wrapping around", () => {
-  const tabs = [...d.querySelectorAll('[role="tab"]')]
-  const chosen = []
-  for (const tab of tabs) tab.addEventListener("click", () => chosen.push(tab.textContent))
-  const key = (el, k) => el.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: k, bubbles: true }))
-  key(tabs[0], "ArrowRight")
-  key(tabs[1], "End")
-  key(tabs[2], "ArrowRight")
-  key(tabs[0], "ArrowLeft")
-  assert.deepEqual(chosen, ["B", "C", "A", "C"])
-  assert.equal(d.activeElement, tabs[2])
 })
 
 test("a basic dialog closes on a click outside it; a form dialog does not", async () => {

@@ -4,7 +4,6 @@ import atlas/grants
 import atlas/matching
 import atlas/plan.{Assignment, Workout}
 import atlas/records
-import atlas/shares
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
@@ -18,7 +17,7 @@ fn parse(text: String) -> Dynamic {
 
 // What PocketBase sends (shapes pinned by backend/tests/contract.test.mjs).
 const plan_json =
-  "{\"collectionId\":\"pbc_1\",\"deleted\":false,\"description\":\"Build up\",\"id\":\"p1\",\"owner\":\"u1\",\"source_plan\":\"\",\"title\":\"10k plan\",\"updated\":\"2026-10-06 08:30:35.585Z\",\"visibility\":\"public\"}"
+  "{\"collectionId\":\"pbc_1\",\"deleted\":false,\"description\":\"Build up\",\"id\":\"p1\",\"owner\":\"u1\",\"source_plan\":\"\",\"title\":\"10k plan\",\"updated\":\"2026-10-06 08:30:35.585Z\"}"
 
 pub fn reads_a_plan_test() {
   assert records.plan(parse(plan_json))
@@ -27,7 +26,6 @@ pub fn reads_a_plan_test() {
       "u1",
       "10k plan",
       "Build up",
-      plan.Public,
       "2026-10-06 08:30:35.585Z",
     ))
 }
@@ -53,7 +51,7 @@ pub fn an_empty_week_intensity_is_read_as_none_set_test() {
 
 pub fn a_plan_made_offline_has_fewer_fields_test() {
   assert records.plan(parse("{\"id\":\"p2\",\"title\":\"New\"}"))
-    == Ok(plan.new("p2", "", "New", "", plan.Private, ""))
+    == Ok(plan.new("p2", "", "New", "", ""))
 }
 
 pub fn a_plan_without_a_title_is_skipped_test() {
@@ -270,17 +268,6 @@ pub fn a_stored_match_keeps_its_deleted_flag_test() {
   assert row.deleted
   assert row.updated == ""
   assert records.stored_match(parse("{\"id\":\"m3\"}")) == Error(Nil)
-}
-
-pub fn a_share_keeps_names_and_the_deleted_flag_test() {
-  let text =
-    "{\"id\":\"s1\",\"plan\":\"p1\",\"user\":\"bob\",\"user_name\":\"Bob\",\"shared_by_name\":\"Ana\",\"deleted\":true,\"updated\":\"T1\"}"
-  assert records.share(parse(text))
-    == Ok(shares.Share("s1", "p1", "bob", "Bob", "Ana", True, "T1"))
-  // A share made before names existed still reads.
-  assert records.share(parse("{\"id\":\"s2\",\"plan\":\"p\",\"user\":\"u\"}"))
-    == Ok(shares.Share("s2", "p", "u", "", "", False, ""))
-  assert records.share(parse("{\"id\":\"s3\"}")) == Error(Nil)
 }
 
 pub fn an_activity_row_carries_the_providers_id_test() {

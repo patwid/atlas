@@ -1,9 +1,10 @@
 //// Copying a plan, with its workouts, into the user's own plans (ADR 0028). Pure: it only decides which
-//// records to create. The copy is private, remembers what it was copied from, and starts with the same
-//// workouts on the same days, the same start date, phases, goal and week intensities (ADR 0043, 0108). It has no
-//// assignments: whoever copies it decides when to start it.
+//// records to create. The copy remembers what it was copied from, and starts with the same workouts on the same
+//// days, the same start date, phases, goal and week intensities (ADR 0043, 0108). It is for the user or one of their
+//// athletes, and its assignment is made with it (ADR 0110).
 
-import atlas/date
+import atlas/assignment_form
+import atlas/date.{type Date}
 import atlas/outbox
 import atlas/plan.{type Plan}
 import atlas/plan_form
@@ -23,15 +24,20 @@ pub type Copy {
   Copy(
     plan_id: String,
     plan_fields: outbox.Fields,
+    /// The copy's athlete: the assignment's ID and fields.
+    assignment: #(String, outbox.Fields),
     workouts: List(#(String, outbox.Fields)),
   )
 }
 
-/// `new_id` supplies a fresh record ID each time it is called.
+/// `new_id` supplies a fresh record ID each time it is called. A plan without a start date gets the Monday after
+/// `today`: its assignment follows the plan's date, so it needs one.
 pub fn build(
   source: Plan,
   workouts: List(Row),
   owner_id: String,
+  athlete_id: String,
+  today: Date,
   new_id: fn() -> String,
 ) -> Copy {
   let plan_id = new_id()
@@ -41,13 +47,15 @@ pub fn build(
       outbox.field_string("owner", owner_id),
       outbox.field_string("title", title(source.title)),
       outbox.field_string("description", source.description),
-      outbox.field_string("visibility", "private"),
       outbox.field_string("source_plan", source.id),
       // The copy starts on the same day; its owner can move it (ADR 0108).
-      outbox.field_string("start_date", case source.start_date {
-        option.Some(start) -> date.to_string(start)
-        option.None -> ""
-      }),
+      outbox.field_string(
+        "start_date",
+        date.to_string(option.unwrap(
+          source.start_date,
+          plan.coming_monday(today),
+        )),
+      ),
       outbox.field_int("base_weeks", source.phases.base_weeks),
       outbox.field_int(
         "pre_competition_weeks",
@@ -60,6 +68,10 @@ pub fn build(
       ),
       #("week_intensity", plan_form.encode_intensities(source.week_intensity)),
     ]),
+    assignment: #(
+      new_id(),
+      assignment_form.create_fields(plan_id, owner_id, athlete_id),
+    ),
     workouts: workouts
       |> list.sort(fn(a, b) {
         case a.workout.day_index == b.workout.day_index {

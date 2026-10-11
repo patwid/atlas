@@ -15,7 +15,6 @@ import atlas/pace_zones
 import atlas/plan.{
   type Assignment, type Plan, type Workout, Assignment, Plan, Workout,
 }
-import atlas/shares.{type Share, Share}
 import atlas/workout_form.{type Row, Row}
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
@@ -31,11 +30,6 @@ pub fn plan(record: Dynamic) -> Result(Plan, Nil) {
     use owner <- decode.optional_field("owner", "", decode.string)
     use title <- decode.field("title", decode.string)
     use description <- decode.optional_field("description", "", decode.string)
-    use visibility <- decode.optional_field(
-      "visibility",
-      "private",
-      decode.string,
-    )
     use updated <- decode.optional_field("updated", "", decode.string)
     use base_weeks <- decode.optional_field("base_weeks", 0, whole_number())
     use pre_weeks <- decode.optional_field(
@@ -65,10 +59,6 @@ pub fn plan(record: Dynamic) -> Result(Plan, Nil) {
       owner_id: owner,
       title: title,
       description: description,
-      visibility: case visibility {
-        "public" -> plan.Public
-        _ -> plan.Private
-      },
       updated: updated,
       phases: plan.Phases(base_weeks, pre_weeks, competition_weeks),
       weekly_distance_m: case goal >. 0.0 {
@@ -277,32 +267,6 @@ pub fn stored_match(record: Dynamic) -> Result(Stored, Nil) {
       id,
       owner,
       Match(activity_id, workout_id, assignment_id),
-      deleted,
-      updated,
-    ))
-  })
-}
-
-/// A plan share, removed ones included (the row is reused when the plan is shared again).
-pub fn share(record: Dynamic) -> Result(Share, Nil) {
-  run(record, {
-    use id <- decode.field("id", decode.string)
-    use plan_id <- decode.field("plan", decode.string)
-    use user_id <- decode.field("user", decode.string)
-    use user_name <- decode.optional_field("user_name", "", decode.string)
-    use shared_by_name <- decode.optional_field(
-      "shared_by_name",
-      "",
-      decode.string,
-    )
-    use deleted <- decode.optional_field("deleted", False, decode.bool)
-    use updated <- decode.optional_field("updated", "", decode.string)
-    decode.success(Share(
-      id,
-      plan_id,
-      user_id,
-      user_name,
-      shared_by_name,
       deleted,
       updated,
     ))

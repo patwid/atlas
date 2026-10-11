@@ -22,18 +22,12 @@ pub type Kind {
   Strength
 }
 
-pub type Visibility {
-  Private
-  Public
-}
-
 pub type Plan {
   Plan(
     id: String,
     owner_id: String,
     title: String,
     description: String,
-    visibility: Visibility,
     /// The `updated` value of the local copy: the base for edits (ADR 0011). Empty until first synced.
     updated: String,
     phases: Phases,
@@ -104,7 +98,6 @@ pub fn new(
   owner_id: String,
   title: String,
   description: String,
-  visibility: Visibility,
   updated: String,
 ) -> Plan {
   Plan(
@@ -112,7 +105,6 @@ pub fn new(
     owner_id,
     title,
     description,
-    visibility,
     updated,
     Phases(0, 0, 0),
     option.None,
@@ -157,13 +149,6 @@ pub fn intensity(value: Float) -> Float {
 /// `70%`
 pub fn intensity_percent(value: Float) -> String {
   int.to_string(float.round(value *. 100.0)) <> "%"
-}
-
-pub fn visibility_to_string(visibility: Visibility) -> String {
-  case visibility {
-    Private -> "private"
-    Public -> "public"
-  }
 }
 
 pub fn kind_from_string(text: String) -> Result(Kind, Nil) {

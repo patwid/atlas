@@ -3,14 +3,13 @@
 
 import atlas/activities_page
 import atlas/api
-import atlas/assignments_page
+import atlas/assignments
 import atlas/athlete_settings
 import atlas/athletes_page
 import atlas/auth.{type Session}
 import atlas/clock
 import atlas/coaches_page
 import atlas/collection
-import atlas/date
 import atlas/grants
 import atlas/home_page
 import atlas/http
@@ -23,8 +22,6 @@ import atlas/plans_page
 import atlas/pwa
 import atlas/random
 import atlas/route.{type Route}
-import atlas/shares
-import atlas/sharing_page
 import atlas/shell
 import atlas/signin
 import atlas/storage
@@ -40,7 +37,6 @@ import atlas/ui/interaction
 import atlas/ui/layout
 import atlas/ui/progress
 import atlas/ui/snackbar
-import atlas/ui/tabs
 import atlas/workouts_page
 import atlas/zones_page
 import gleam/int
@@ -71,12 +67,11 @@ pub type Model {
     syncing: syncing.State,
     plans: plans_page.Model,
     workouts: workouts_page.Model,
-    assignments: assignments_page.Model,
+    assignments: assignments.Model,
     coaches: coaches_page.Model,
     activities: activities_page.Model,
     daily: home_page.Model,
     strava: strava_page.Model,
-    sharing: sharing_page.Model,
     zones: zones_page.Model,
     /// The app's own snackbar, about the connection (ADR 0055): its number and text.
     notice: Option(#(Int, String)),
@@ -100,12 +95,11 @@ pub type Msg {
   Syncing(syncing.Msg)
   PlansPage(plans_page.Msg)
   WorkoutsPage(workouts_page.Msg)
-  AssignmentsPage(assignments_page.Msg)
+  Assignments(assignments.Msg)
   CoachesPage(coaches_page.Msg)
   ActivitiesPage(activities_page.Msg)
   HomePage(home_page.Msg)
   StravaPage(strava_page.Msg)
-  SharingPage(sharing_page.Msg)
   ZonesPage(zones_page.Msg)
   ProblemsDismissed
 }
@@ -160,12 +154,11 @@ fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
       syncing: syncing_state,
       plans: plans_page.new(),
       workouts: workouts_page.new(),
-      assignments: assignments_page.new(),
+      assignments: assignments.new(),
       coaches: coaches_page.new(),
       activities: activities_page.new(),
       daily: home_page.new(),
       strava: strava_page.new(),
-      sharing: sharing_page.new(),
       zones: zones_page.new(),
       notice: None,
       notices_shown: 0,
@@ -189,13 +182,8 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
     RouteChanged(uri) -> {
       let next = route.parse(uri)
-      // Another plan opens on its calendar (ADR 0058).
-      let plans = case next == model.route {
-        True -> model.plans
-        False -> plans_page.Model(..model.plans, tab: "calendar")
-      }
       #(
-        Model(..model, route: next, plans: plans),
+        Model(..model, route: next),
         // The Strava state is looked up when its Settings page is opened.
         case next, model.auth {
           route.SettingsPage(route.Strava), SignedIn(_) ->
@@ -284,12 +272,11 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               syncing: syncing_state,
               plans: plans_page.new(),
               workouts: workouts_page.new(),
-              assignments: assignments_page.new(),
+              assignments: assignments.new(),
               coaches: coaches_page.new(),
               activities: activities_page.new(),
               daily: home_page.new(),
               strava: strava_page.new(),
-              sharing: sharing_page.new(),
               zones: zones_page.new(),
             ),
             effect.batch([remember(session), load]),
@@ -329,12 +316,11 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         syncing: syncing.reset(model.syncing),
         plans: plans_page.new(),
         workouts: workouts_page.new(),
-        assignments: assignments_page.new(),
+        assignments: assignments.new(),
         coaches: coaches_page.new(),
         activities: activities_page.new(),
         daily: home_page.new(),
         strava: strava_page.new(),
-        sharing: sharing_page.new(),
         zones: zones_page.new(),
       ),
       forget(),
@@ -367,11 +353,10 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               effect.batch([
                 effect.map(plans_page.refresh(), PlansPage),
                 effect.map(workouts_page.refresh(), WorkoutsPage),
-                effect.map(assignments_page.refresh(), AssignmentsPage),
+                effect.map(assignments.refresh(), Assignments),
                 effect.map(coaches_page.refresh(), CoachesPage),
                 effect.map(activities_page.refresh(), ActivitiesPage),
                 effect.map(home_page.refresh(), HomePage),
-                effect.map(sharing_page.refresh(), SharingPage),
                 effect.map(zones_page.refresh(), ZonesPage),
               ])
             False -> effect.none()
@@ -396,6 +381,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               model.plans,
               inner,
               session.user_id,
+              athletes(model, session),
               clock.today(),
             )
           let #(state, action_effects, page_model) =
@@ -479,29 +465,14 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         SignedOut(_) -> #(model, effect.none())
       }
 
-    AssignmentsPage(inner) ->
-      case model.auth {
-        SignedIn(session) -> {
-          let context = assignments_context(model, session)
-          let #(page_model, page_effect, actions) =
-            assignments_page.update(model.assignments, inner, context)
-          // Nothing is written without a plan on screen.
-          let actions = case context.plan_id {
-            "" -> []
-            _ -> actions
-          }
-          let #(state, action_effects) =
-            perform_assignments(model.syncing, actions)
-          #(
-            Model(..model, assignments: page_model, syncing: state),
-            effect.batch([
-              effect.map(page_effect, AssignmentsPage),
-              effect.map(effect.batch(action_effects), Syncing),
-            ]),
-          )
-        }
-        SignedOut(_) -> #(model, effect.none())
-      }
+    Assignments(inner) -> {
+      let #(loaded, loaded_effect) =
+        assignments.update(model.assignments, inner)
+      #(
+        Model(..model, assignments: loaded),
+        effect.map(loaded_effect, Assignments),
+      )
+    }
 
     ActivitiesPage(inner) ->
       case model.auth {
@@ -575,48 +546,6 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         SignedOut(_) -> #(model, effect.none())
       }
 
-    SharingPage(inner) ->
-      case model.auth {
-        SignedIn(session) -> {
-          let #(page_model, page_effect, actions) =
-            sharing_page.update(
-              model.sharing,
-              inner,
-              sharing_context(model, session),
-            )
-          let #(state, action_effects) = perform_shares(model.syncing, actions)
-          // The lookup is a request, not a record: it is sent here and answered in a message.
-          let lookups =
-            list.filter_map(actions, fn(action) {
-              case action {
-                sharing_page.LookUp(email) ->
-                  Ok(effect.map(
-                    http.send(
-                      api.lookup_user(email),
-                      Some(session.token),
-                      fn(response) {
-                        sharing_page.Finder(person_finder.LookupAnswered(
-                          response,
-                        ))
-                      },
-                    ),
-                    SharingPage,
-                  ))
-                _ -> Error(Nil)
-              }
-            })
-          #(
-            Model(..model, sharing: page_model, syncing: state),
-            effect.batch([
-              effect.map(page_effect, SharingPage),
-              effect.map(effect.batch(action_effects), Syncing),
-              ..lookups
-            ]),
-          )
-        }
-        SignedOut(_) -> #(model, effect.none())
-      }
-
     ProblemsDismissed -> #(
       Model(..model, syncing: syncing.dismiss_problems(model.syncing)),
       effect.none(),
@@ -640,56 +569,24 @@ fn plan_on_screen(
   }
 }
 
-/// What the schedule of the open plan needs to know. A plan can be started when it is the user's own
-/// or public (the server's rule); only then can athletes be chosen too.
-fn assignments_context(
-  model: Model,
-  session: Session,
-) -> assignments_page.Context {
-  let today = clock.today()
-  case model.route {
-    route.Plan(id) ->
-      case list.find(model.plans.plans, fn(p) { p.id == id }) {
-        Ok(found) -> {
-          let can_start =
-            found.owner_id == session.user_id
-            || found.visibility == plan.Public
-            || shares.is_shared_with(model.sharing.shares, id, session.user_id)
-          assignments_page.Context(
-            id,
-            session.user_id,
-            case can_start {
-              True -> grants.athletes_of(model.coaches.grants, session.user_id)
-              False -> []
-            },
-            today,
-            can_start,
-            plan_start: found.start_date,
-            phases: found.phases,
-            own_plan: found.owner_id == session.user_id,
-          )
-        }
-        Error(Nil) -> no_plan_context(id, session.user_id, today)
-      }
-    _ -> no_plan_context("", session.user_id, today)
-  }
+/// The athletes who granted the user access: whom a plan can be made or copied for (ADR 0110).
+fn athletes(model: Model, session: Session) -> List(grants.Person) {
+  grants.athletes_of(model.coaches.grants, session.user_id)
 }
 
-fn no_plan_context(
-  id: String,
-  user_id: String,
-  today: date.Date,
-) -> assignments_page.Context {
-  assignments_page.Context(
-    id,
-    user_id,
-    [],
-    today,
-    False,
-    None,
-    plan.Phases(0, 0, 0),
-    False,
-  )
+/// Who a plan is for, or from (ADR 0110).
+fn relation(
+  model: Model,
+  session: Session,
+) -> fn(plan.Plan) -> plans_page.Relation {
+  fn(p) {
+    plans_page.relation(
+      p,
+      session.user_id,
+      model.assignments.rows,
+      model.coaches.grants,
+    )
+  }
 }
 
 /// Everything the Home screen works from, read from what the other screens already hold.
@@ -704,52 +601,6 @@ fn home_inputs(model: Model, session: Session) -> today.Inputs {
     matches: model.daily.matches,
     offset_at: clock.utc_offset_at_utc,
   )
-}
-
-/// The plan whose screen is open, for sharing: only its owner may share it.
-fn sharing_context(model: Model, session: Session) -> sharing_page.Context {
-  let me =
-    grants.Person(session.user_id, case session.name {
-      "" -> session.email
-      name -> name
-    })
-  case model.route {
-    route.Plan(id) ->
-      case list.find(model.plans.plans, fn(p) { p.id == id }) {
-        Ok(found) ->
-          sharing_page.Context(id, me, found.owner_id == session.user_id)
-        Error(Nil) -> sharing_page.Context(id, me, False)
-      }
-    _ -> sharing_page.Context("", me, False)
-  }
-}
-
-/// Carries out what the user did with who a plan is shared with.
-fn perform_shares(
-  state: syncing.State,
-  actions: List(sharing_page.Action),
-) -> #(syncing.State, List(Effect(syncing.Msg))) {
-  list.fold(actions, #(state, []), fn(acc, action) {
-    let #(current, effects) = acc
-    case action {
-      sharing_page.Share(id, fields) -> {
-        let #(next, effect) =
-          syncing.create(current, collection.PlanShares, id, fields)
-        #(next, list.append(effects, [effect]))
-      }
-      sharing_page.ShareAgain(id, fields, base) -> {
-        let #(next, effect) =
-          syncing.edit(current, collection.PlanShares, id, fields, base)
-        #(next, list.append(effects, [effect]))
-      }
-      sharing_page.Stop(id, base) -> {
-        let #(next, effect) =
-          syncing.delete(current, collection.PlanShares, id, base)
-        #(next, list.append(effects, [effect]))
-      }
-      sharing_page.LookUp(_) -> acc
-    }
-  })
 }
 
 /// Carries out what the Strava section asked for: a request, a move to Strava's page, or a sync.
@@ -862,25 +713,6 @@ fn perform_zones(
   })
 }
 
-/// Carries out what the user did with the schedule of a plan.
-fn perform_assignments(
-  state: syncing.State,
-  actions: List(assignments_page.Action),
-) -> #(syncing.State, List(Effect(syncing.Msg))) {
-  list.fold(actions, #(state, []), fn(acc, action) {
-    let #(current, effects) = acc
-    let #(next, effect) = case action {
-      assignments_page.Create(id, fields) ->
-        syncing.create(current, collection.Assignments, id, fields)
-      assignments_page.Edit(id, fields, base) ->
-        syncing.edit(current, collection.Assignments, id, fields, base)
-      assignments_page.Delete(id, base) ->
-        syncing.delete(current, collection.Assignments, id, base)
-    }
-    #(next, list.append(effects, [effect]))
-  })
-}
-
 /// Carries out what the user did on the workouts of a plan.
 fn perform_workouts(
   state: syncing.State,
@@ -924,19 +756,25 @@ fn perform(
           syncing.edit(current, collection.Plans, id, fields, base)
         #(next, list.append(effects, [effect]), page)
       }
+      plans_page.Assign(id, fields) -> {
+        let #(next, effect) =
+          syncing.create(current, collection.Assignments, id, fields)
+        #(next, list.append(effects, [effect]), page)
+      }
       plans_page.Delete(id, base) -> {
         let #(next, effect) =
           syncing.delete(current, collection.Plans, id, base)
         #(next, list.append(effects, [effect]), page)
       }
-      plans_page.Copy(source_id) ->
-        copy_plan(model, session, current, effects, page, source_id)
+      plans_page.Copy(source_id, athlete_id) ->
+        copy_plan(model, session, current, effects, page, source_id, athlete_id)
     }
   })
 }
 
-/// Makes a private copy of a plan with all its workouts. The plan is created first and its workouts after
-/// it, in order, so the server has the plan before it is asked to attach workouts to it.
+/// Makes a copy of a plan with all its workouts, for the user or one of their athletes (ADR 0110). The plan is created
+/// first and its assignment and workouts after it, in order, so the server has the plan before it is asked to attach
+/// anything to it.
 fn copy_plan(
   model: Model,
   session: Session,
@@ -944,10 +782,11 @@ fn copy_plan(
   effects: List(Effect(syncing.Msg)),
   page: plans_page.Model,
   source_id: String,
+  athlete_id: String,
 ) -> #(syncing.State, List(Effect(syncing.Msg)), plans_page.Model) {
   let report = fn(message) {
     let #(next, _, _) =
-      plans_page.update(page, message, session.user_id, clock.today())
+      plans_page.update(page, message, session.user_id, [], clock.today())
     next
   }
   case
@@ -960,12 +799,21 @@ fn copy_plan(
           source,
           workouts_page.rows_of(model.workouts, source_id),
           session.user_id,
+          athlete_id,
+          clock.today(),
           random.new_id,
         )
       let #(with_plan, plan_effect) =
         syncing.create(state, collection.Plans, copy.plan_id, copy.plan_fields)
+      let #(with_assignment, assignment_effect) =
+        syncing.create(
+          with_plan,
+          collection.Assignments,
+          copy.assignment.0,
+          copy.assignment.1,
+        )
       let #(finished, workout_effects) =
-        list.fold(copy.workouts, #(with_plan, []), fn(inner, item) {
+        list.fold(copy.workouts, #(with_assignment, []), fn(inner, item) {
           let #(current, made) = inner
           let #(next, effect) =
             syncing.create(current, collection.Workouts, item.0, item.1)
@@ -973,7 +821,7 @@ fn copy_plan(
         })
       #(
         finished,
-        list.append(effects, [plan_effect, ..workout_effects]),
+        list.append(effects, [plan_effect, assignment_effect, ..workout_effects]),
         report(plans_page.CopyMade(source_id, copy.plan_id)),
       )
     }
@@ -1032,12 +880,11 @@ fn session_ended(model: Model) -> #(Model, Effect(Msg)) {
         syncing: syncing.reset(model.syncing),
         plans: plans_page.new(),
         workouts: workouts_page.new(),
-        assignments: assignments_page.new(),
+        assignments: assignments.new(),
         coaches: coaches_page.new(),
         activities: activities_page.new(),
         daily: home_page.new(),
         strava: strava_page.new(),
-        sharing: sharing_page.new(),
         zones: zones_page.new(),
       ),
       forget(),
@@ -1171,8 +1018,8 @@ fn main_action(model: Model, session: Session) -> Element(Msg) {
         ActivitiesPage,
       )
     route.Plan(id) ->
-      case list.find(model.plans.plans, fn(p) { p.id == id }), model.plans.tab {
-        Ok(found), "calendar" ->
+      case list.find(model.plans.plans, fn(p) { p.id == id }) {
+        Ok(found) ->
           element.map(
             button.app_bar_for(workouts_page.main_action(
               model.workouts,
@@ -1181,15 +1028,7 @@ fn main_action(model: Model, session: Session) -> Element(Msg) {
             )),
             WorkoutsPage,
           )
-        Ok(_), "schedule" ->
-          element.map(
-            button.app_bar_for(assignments_page.main_action(
-              model.assignments,
-              assignments_context(model, session),
-            )),
-            AssignmentsPage,
-          )
-        _, _ -> element.none()
+        Error(Nil) -> element.none()
       }
     _ -> element.none()
   }
@@ -1231,71 +1070,40 @@ fn page(model: Model, session: Session) -> Element(Msg) {
       }
     route.Plans ->
       element.map(
-        plans_page.view_list_with(model.plans, session.user_id, fn(p) {
-          shares.shared_by(model.sharing.shares, p.id, session.user_id)
-        }),
+        plans_page.view_list(
+          model.plans,
+          session.user_id,
+          athletes(model, session),
+          relation(model, session),
+        ),
         PlansPage,
       )
     route.Plan(id) -> {
       let detail =
         element.map(
-          plans_page.view_detail_with(model.plans, id, session.user_id, fn(p) {
-            shares.shared_by(model.sharing.shares, p.id, session.user_id)
-          }),
+          plans_page.view_detail(
+            model.plans,
+            id,
+            session.user_id,
+            athletes(model, session),
+            relation(model, session),
+          ),
           PlansPage,
         )
+      // No tabs: the plan and its calendar (ADR 0110).
       case list.find(model.plans.plans, fn(p) { p.id == id }) {
-        Ok(found) -> {
-          let owner = found.owner_id == session.user_id
-          let calendar =
-            element.map(
-              workouts_page.view(model.workouts, found, owner),
-              WorkoutsPage,
-            )
-          let schedule =
-            element.map(
-              assignments_page.view(
-                model.assignments,
-                assignments_context(model, session),
-                list.map(workouts_page.rows_of(model.workouts, id), fn(row) {
-                  row.workout
-                }),
-                model.coaches.grants,
-              ),
-              AssignmentsPage,
-            )
-          // The plan's sections are tabs (ADR 0058); only the owner shares a plan.
+        Ok(found) ->
           html.div([], [
             detail,
-            tabs.view(
-              "plan",
-              model.plans.tab,
-              list.flatten([
-                [
-                  tabs.Tab("calendar", "Calendar", calendar),
-                  tabs.Tab("schedule", "Schedule", schedule),
-                ],
-                case owner {
-                  True -> [
-                    tabs.Tab(
-                      "sharing",
-                      "Sharing",
-                      element.map(
-                        sharing_page.view(
-                          model.sharing,
-                          sharing_context(model, session),
-                        ),
-                        SharingPage,
-                      ),
-                    ),
-                  ]
-                  False -> []
-                },
-              ]),
-              fn(tab) { PlansPage(plans_page.TabSelected(tab)) },
+            element.map(
+              workouts_page.view(
+                model.workouts,
+                found,
+                found.owner_id == session.user_id,
+              ),
+              WorkoutsPage,
             ),
           ])
-        }
         Error(Nil) -> detail
       }
     }

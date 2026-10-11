@@ -1,12 +1,14 @@
+import atlas/assignment_form
 import atlas/date
+import atlas/grants.{Grant, Person}
 import atlas/outbox
 import atlas/plan.{type Plan}
 import atlas/plan_form.{Form}
 import atlas/plans_page.{
-  BaseWeeksChanged, Browsing, CompetitionWeeksChanged, Create, Creating, Delete,
-  DeleteClicked, DeleteExpired, DescriptionToggled, Edit, EditClicked, Editing,
-  GoalChanged, Model, NewClicked, PlansRead, PreCompetitionWeeksChanged,
-  Submitted, TitleChanged,
+  Assign, AthleteChanged, BaseWeeksChanged, Browsing, CompetitionWeeksChanged,
+  Create, Creating, Delete, DeleteClicked, DeleteExpired, DescriptionToggled,
+  Edit, EditClicked, Editing, ForAthlete, ForMe, FromCoach, GoalChanged, Model,
+  NewClicked, PlansRead, PreCompetitionWeeksChanged, Submitted, TitleChanged,
 }
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -27,13 +29,14 @@ fn dynamic_of(text: String) -> Dynamic {
 
 fn mine(id: String, title: String) -> Plan {
   plan.Plan(
-    ..plan.new(id, "u1", title, "", plan.Private, "T-" <> id),
+    ..plan.new(id, "u1", title, "", "T-" <> id),
     phases: plan.default_phases,
   )
 }
 
+/// A plan of the user's coach, for the user.
 fn others(id: String, title: String) -> Plan {
-  plan.new(id, "u2", title, "", plan.Public, "T-" <> id)
+  plan.new(id, "u2", title, "", "T-" <> id)
 }
 
 fn with_plans(plans: List(Plan)) -> plans_page.Model {
@@ -41,8 +44,31 @@ fn with_plans(plans: List(Plan)) -> plans_page.Model {
 }
 
 fn update(model: plans_page.Model, msg: plans_page.Msg) {
-  let #(next, _, actions) = plans_page.update(model, msg, "u1", today)
+  let #(next, _, actions) = plans_page.update(model, msg, "u1", [], today)
   #(next, actions)
+}
+
+/// As a coach of Ana (ADR 0110).
+fn update_coaching(model: plans_page.Model, msg: plans_page.Msg) {
+  let #(next, _, actions) =
+    plans_page.update(model, msg, "u1", [Person("ana", "Ana")], today)
+  #(next, actions)
+}
+
+/// The user's own plans are for themselves, everyone else's are from their coach.
+fn relation(p: Plan) -> plans_page.Relation {
+  case p.owner_id {
+    "u1" -> ForMe
+    _ -> FromCoach("Coach Zed")
+  }
+}
+
+fn list_view(model: plans_page.Model) {
+  plans_page.view_list(model, "u1", [], relation)
+}
+
+fn detail(model: plans_page.Model, id: String) {
+  plans_page.view_detail(model, id, "u1", [], relation)
 }
 
 pub fn the_stored_records_become_a_sorted_list_without_deleted_ones_test() {
@@ -82,7 +108,7 @@ pub fn a_new_plan_carries_its_phases_and_goal_test() {
   let #(model, _) = update(model, CompetitionWeeksChanged("3"))
   let #(model, _) = update(model, GoalChanged("55"))
   let #(_, actions) = update(model, Submitted)
-  let assert [Create(_, fields)] = actions
+  let assert [Create(_, fields), Assign(_, _)] = actions
   assert dict.get(fields, "base_weeks") == Ok("8")
   assert dict.get(fields, "pre_competition_weeks") == Ok("0")
   assert dict.get(fields, "competition_weeks") == Ok("3")
@@ -106,15 +132,47 @@ pub fn creating_a_plan_asks_the_app_to_save_it_test() {
   assert model.mode == Creating
   let #(model, _) = update(model, TitleChanged("  10k plan "))
   let #(model, actions) = update(model, Submitted)
-  let assert [Create(id, fields)] = actions
+  let assert [Create(id, fields), Assign(assignment_id, assignment)] = actions
   assert id != ""
   assert dict.get(fields, "title") == Ok("\"10k plan\"")
   assert dict.get(fields, "owner") == Ok("\"u1\"")
   // Starting on the coming Monday unless another day is chosen (ADR 0108).
   assert dict.get(fields, "start_date") == Ok("\"2026-10-12\"")
+  // For the user, unless someone else is chosen (ADR 0110).
+  assert assignment_id != "" && assignment_id != id
+  assert assignment == assignment_form.create_fields(id, "u1", "u1")
   assert model.created == Some(id)
   assert model.mode == Browsing
-  assert model.form == plan_form.empty(today)
+  assert model.form == plan_form.empty(today, "u1")
+}
+
+pub fn a_coach_makes_a_plan_for_an_athlete_test() {
+  let #(model, _) = update_coaching(plans_page.new(), NewClicked)
+  assert model.form.athlete_id == "u1"
+  let html =
+    html_of(plans_page.view_list(model, "u1", [Person("ana", "Ana")], relation))
+  assert string.contains(html, ">Myself<")
+  assert string.contains(html, ">Ana<")
+  let #(model, _) = update_coaching(model, TitleChanged("Ana's 10k"))
+  let #(model, _) = update_coaching(model, AthleteChanged("ana"))
+  let #(_, actions) = update_coaching(model, Submitted)
+  let assert [Create(id, _), Assign(_, assignment)] = actions
+  assert assignment == assignment_form.create_fields(id, "u1", "ana")
+}
+
+pub fn a_plan_cannot_be_made_for_someone_who_gave_no_access_test() {
+  let #(model, _) = update_coaching(plans_page.new(), NewClicked)
+  let #(model, _) = update_coaching(model, TitleChanged("10k"))
+  let #(model, _) = update_coaching(model, AthleteChanged("stranger"))
+  let #(model, actions) = update_coaching(model, Submitted)
+  assert actions == []
+  assert model.mode == Creating
+  assert model.form.error == Some("You cannot make a plan for that person.")
+}
+
+pub fn without_athletes_the_form_does_not_ask_who_it_is_for_test() {
+  let #(model, _) = update(plans_page.new(), NewClicked)
+  assert !string.contains(html_of(list_view(model)), ">Myself<")
 }
 
 pub fn an_empty_title_shows_an_error_and_saves_nothing_test() {
@@ -147,10 +205,11 @@ pub fn editing_sends_only_the_changed_fields_with_the_local_base_test() {
 }
 
 pub fn editing_a_plan_without_phases_gives_it_the_default_ones_test() {
-  let old = plan.new("o", "u1", "Old", "", plan.Private, "T-o")
+  let old = plan.new("o", "u1", "Old", "", "T-o")
   let model = with_plans([old])
-  let #(model, _, _) = plans_page.update(model, EditClicked("o"), "u1", today)
-  let #(_, _, actions) = plans_page.update(model, Submitted, "u1", today)
+  let #(model, _, _) =
+    plans_page.update(model, EditClicked("o"), "u1", [], today)
+  let #(_, _, actions) = plans_page.update(model, Submitted, "u1", [], today)
   assert actions
     == [
       Edit(
@@ -186,12 +245,12 @@ pub fn deleting_a_plan_waits_for_undo_on_the_list_test() {
   let model = with_plans([mine("a", "A"), mine("b", "B")])
   let #(waiting, actions) = update(model, DeleteClicked("a"))
   assert actions == []
-  let list = html_of(plans_page.view_list(waiting, "u1"))
+  let list = html_of(list_view(waiting))
   assert string.contains(list, "Plan deleted")
   assert !string.contains(list, ">A<")
   assert string.contains(list, ">B<")
   let #(undone, _) = update(waiting, plans_page.UndoClicked)
-  assert string.contains(html_of(plans_page.view_list(undone, "u1")), ">A<")
+  assert string.contains(html_of(list_view(undone)), ">A<")
   let #(_, actions) = update(waiting, DeleteExpired(1))
   assert actions == [Delete("a", "T-a")]
 }
@@ -221,35 +280,66 @@ fn html_of(view: element.Element(plans_page.Msg)) -> String {
   element.to_string(view)
 }
 
-pub fn the_list_shows_own_plans_and_shared_ones_apart_test() {
+pub fn the_list_groups_plans_by_who_they_are_for_test() {
+  let for_ana = mine("b", "Ana's plan")
   let html =
-    html_of(plans_page.view_list(
-      with_plans([mine("a", "My plan"), others("o", "Coach plan")]),
-      "u1",
-    ))
+    html_of(
+      plans_page.view_list(
+        with_plans([mine("a", "My plan"), for_ana, others("o", "Coach plan")]),
+        "u1",
+        [],
+        fn(p) {
+          case p.id {
+            "b" -> ForAthlete("Ana")
+            _ -> relation(p)
+          }
+        },
+      ),
+    )
   assert string.contains(html, "href=\"/plans/a\"")
   assert string.contains(html, "My plan")
-  assert string.contains(html, "Shared with you")
-  assert string.contains(html, "Coach plan")
-  assert string.contains(html, "Public")
+  assert string.contains(html, "Your athletes&#39; plans")
+  assert string.contains(html, "For Ana")
+  assert string.contains(html, "From your coaches")
+  assert string.contains(html, "From Coach Zed")
   assert string.contains(html, "New plan")
 }
 
+pub fn a_plan_is_for_its_assignments_athlete_or_from_its_owner_test() {
+  let grants = [Grant("g", "ana", "u1", "Ana", "Me", "T")]
+  let row = fn(plan_id, athlete) {
+    assignment_form.Row(
+      plan.Assignment("a-" <> plan_id, plan_id, athlete, None),
+      "u1",
+      "T",
+    )
+  }
+  let rows = [row("a", "u1"), row("b", "ana"), row("c", "gone")]
+  let relation_of = fn(p) { plans_page.relation(p, "u1", rows, grants) }
+  assert relation_of(mine("a", "A")) == ForMe
+  assert relation_of(mine("b", "B")) == ForAthlete("Ana")
+  // An athlete who took back access has no name on the device any more.
+  assert relation_of(mine("c", "C")) == ForAthlete("someone")
+  // A plan whose assignment has not arrived yet is the user's own.
+  assert relation_of(mine("d", "D")) == ForMe
+  assert relation_of(plan.new("e", "ana", "E", "", "T")) == FromCoach("Ana")
+}
+
 pub fn an_empty_list_says_what_to_do_test() {
-  let html = html_of(plans_page.view_list(with_plans([]), "u1"))
+  let html = html_of(list_view(with_plans([])))
   assert string.contains(html, "You have no plans yet")
-  assert !string.contains(html, "Shared with you")
+  assert !string.contains(html, "From your coaches")
 }
 
 pub fn the_list_says_loading_before_the_first_read_test() {
-  let html = html_of(plans_page.view_list(plans_page.new(), "u1"))
+  let html = html_of(list_view(plans_page.new()))
   assert string.contains(html, "Loading")
   assert !string.contains(html, "You have no plans yet")
 }
 
 pub fn an_unsynced_plan_is_marked_test() {
-  let unsynced = plan.new("n", "u1", "New one", "", plan.Private, "")
-  let html = html_of(plans_page.view_list(with_plans([unsynced]), "u1"))
+  let unsynced = plan.new("n", "u1", "New one", "", "")
+  let html = html_of(list_view(with_plans([unsynced])))
   assert string.contains(html, "Not synced yet")
 }
 
@@ -261,14 +351,14 @@ pub fn the_form_is_accessible_and_shows_errors_test() {
       form: Form(
         "",
         "",
-        plan.Private,
+        "u1",
         "2026-10-12",
         True,
         plan_form.default_settings(),
         Some("Give the plan a title."),
       ),
     )
-  let html = html_of(plans_page.view_list(model, "u1"))
+  let html = html_of(list_view(model))
   assert string.contains(html, "for=\"plan-title\"")
   assert string.contains(html, "id=\"plan-title\"")
   assert string.contains(html, "maxlength=\"200\"")
@@ -287,21 +377,16 @@ pub fn an_own_plan_offers_edit_copy_and_delete_in_the_app_bar_test() {
   assert string.contains(html, ">Delete<")
 }
 
-pub fn the_detail_of_a_shared_plan_is_read_only_test() {
-  let html =
-    html_of(plans_page.view_detail(
-      with_plans([others("o", "Coach plan")]),
-      "o",
-      "u1",
-    ))
+pub fn the_detail_of_a_coachs_plan_is_read_only_and_says_who_it_is_from_test() {
+  let html = html_of(detail(with_plans([others("o", "Coach plan")]), "o"))
   // The plan's name is the app bar's title now (ADR 0055), see atlas_test.
-  assert string.contains(html, "Only its owner can change it")
+  assert string.contains(html, "From Coach Zed. Only they can change it.")
   assert !string.contains(html, ">Edit<")
   assert !string.contains(html, ">Delete<")
 }
 
 pub fn a_missing_plan_is_explained_test() {
-  let html = html_of(plans_page.view_detail(with_plans([]), "nope", "u1"))
+  let html = html_of(detail(with_plans([]), "nope"))
   assert string.contains(html, "not on this device")
 }
 
@@ -310,7 +395,7 @@ pub fn a_missing_plan_is_explained_test() {
 pub fn copying_asks_the_app_and_blocks_a_second_click_test() {
   let model = with_plans([others("o", "Coach plan")])
   let #(copying, actions) = update(model, plans_page.CopyClicked("o"))
-  assert actions == [plans_page.Copy("o")]
+  assert actions == [plans_page.Copy("o", "u1")]
   assert copying.copy == plans_page.Copying("o")
   // A double click does not start a second copy.
   let #(still, actions) = update(copying, plans_page.CopyClicked("o"))
@@ -333,8 +418,38 @@ pub fn a_finished_copy_offers_the_new_plan_and_blocks_another_click_test() {
   let #(again, _) = update(done, plans_page.CopyAgainClicked)
   assert again.copy == plans_page.NoCopy
   let #(second, actions) = update(again, plans_page.CopyClicked("o"))
-  assert actions == [plans_page.Copy("o")]
+  assert actions == [plans_page.Copy("o", "u1")]
   assert second.copy == plans_page.Copying("o")
+}
+
+pub fn a_coach_chooses_who_a_copy_is_for_test() {
+  let model = with_plans([mine("a", "Base")])
+  let #(choosing, actions) = update_coaching(model, plans_page.CopyClicked("a"))
+  assert actions == []
+  assert choosing.copy == plans_page.ChoosingCopy("a", "u1")
+  let html =
+    html_of(plans_page.view_detail(
+      choosing,
+      "a",
+      "u1",
+      [Person("ana", "Ana")],
+      relation,
+    ))
+  assert string.contains(html, "Make a copy")
+  assert string.contains(html, ">Ana<")
+  let #(choosing, _) =
+    update_coaching(choosing, plans_page.CopyForChanged("ana"))
+  let #(copying, actions) = update_coaching(choosing, plans_page.CopyConfirmed)
+  assert actions == [plans_page.Copy("a", "ana")]
+  assert copying.copy == plans_page.Copying("a")
+  // Cancelling makes nothing, and a stranger is never a choice.
+  let #(cancelled, actions) =
+    update_coaching(choosing, plans_page.CopyCancelled)
+  assert actions == []
+  assert cancelled.copy == plans_page.NoCopy
+  let #(stranger, _) = update_coaching(choosing, plans_page.CopyForChanged("x"))
+  let #(_, actions) = update_coaching(stranger, plans_page.CopyConfirmed)
+  assert actions == []
 }
 
 pub fn a_plan_not_on_the_device_cannot_be_copied_test() {
@@ -349,7 +464,7 @@ pub fn a_failed_copy_says_why_and_can_be_retried_test() {
   let #(failed, _) =
     update(copying, plans_page.CopyFailed("a", "Try again in a moment."))
   assert failed.copy == plans_page.CopyProblem("a", "Try again in a moment.")
-  let html = html_of(plans_page.view_detail(failed, "a", "u1"))
+  let html = html_of(detail(failed, "a"))
   assert string.contains(html, "Try again in a moment.")
   assert string.contains(html, "role=\"alert\"")
   let #(retry, _) = update(failed, plans_page.CopyAgainClicked)
@@ -367,7 +482,7 @@ pub fn every_plan_on_screen_offers_a_copy_test() {
   assert !string.contains(actions, "Edit plan")
   assert !string.contains(actions, ">Delete<")
   assert string.contains(
-    html_of(plans_page.view_detail(theirs, "o", "u1")),
+    html_of(detail(theirs, "o")),
     "Copy it to make a version of your own",
   )
 }
@@ -378,13 +493,13 @@ pub fn a_copy_links_to_the_new_plan_only_on_the_plan_it_came_from_test() {
       ..with_plans([mine("a", "A"), mine("b", "B")]),
       copy: plans_page.Copied("a", "new1"),
     )
-  let on_source = html_of(plans_page.view_detail(model, "a", "u1"))
+  let on_source = html_of(detail(model, "a"))
   assert string.contains(on_source, "Copied to your plans.")
   assert string.contains(on_source, "href=\"/plans/new1\"")
   // Closing the snackbar brings the Copy button back (ADR 0047).
   assert string.contains(on_source, "class=\"snackbar\"")
   assert string.contains(on_source, "aria-label=\"Close\"")
-  let elsewhere = html_of(plans_page.view_detail(model, "b", "u1"))
+  let elsewhere = html_of(detail(model, "b"))
   assert !string.contains(elsewhere, "Copied to your plans.")
   assert string.contains(actions_of(model, "b"), "Make a copy")
   // The plan just copied does not offer another copy until the snackbar goes.
@@ -394,16 +509,13 @@ pub fn a_copy_links_to_the_new_plan_only_on_the_plan_it_came_from_test() {
 pub fn the_copying_state_is_shown_test() {
   let model =
     Model(..with_plans([mine("a", "A")]), copy: plans_page.Copying("a"))
-  assert string.contains(
-    html_of(plans_page.view_detail(model, "a", "u1")),
-    "Copying…",
-  )
+  assert string.contains(html_of(detail(model, "a")), "Copying…")
 }
 
 pub fn the_plans_phases_and_goal_are_summed_up_in_a_line_test() {
   let p =
     plan.Plan(
-      ..plan.new("p", "u1", "10k", "", plan.Private, "T"),
+      ..plan.new("p", "u1", "10k", "", "T"),
       phases: plan.Phases(4, 4, 2),
       weekly_distance_m: Some(40_000.0),
     )
@@ -420,24 +532,21 @@ pub fn the_plans_phases_and_goal_are_summed_up_in_a_line_test() {
 pub fn a_long_description_shows_three_lines_until_more_test() {
   let long =
     plan.Plan(
-      ..plan.new("l", "u1", "Long", "", plan.Private, "T-l"),
+      ..plan.new("l", "u1", "Long", "", "T-l"),
       description: "one\ntwo\nthree\nfour",
     )
-  let closed = html_of(plans_page.view_detail(with_plans([long]), "l", "u1"))
+  let closed = html_of(detail(with_plans([long]), "l"))
   assert string.contains(closed, "description clamped")
   assert string.contains(closed, ">More<")
   let #(model, _, _) =
-    plans_page.update(with_plans([long]), DescriptionToggled, "u1", today)
-  let open = html_of(plans_page.view_detail(model, "l", "u1"))
+    plans_page.update(with_plans([long]), DescriptionToggled, "u1", [], today)
+  let open = html_of(detail(model, "l"))
   assert !string.contains(open, "clamped")
   assert string.contains(open, ">Less<")
   let short =
     plan.Plan(
-      ..plan.new("s", "u1", "Short", "", plan.Private, "T-s"),
+      ..plan.new("s", "u1", "Short", "", "T-s"),
       description: "one line",
     )
-  assert !string.contains(
-    html_of(plans_page.view_detail(with_plans([short]), "s", "u1")),
-    ">More<",
-  )
+  assert !string.contains(html_of(detail(with_plans([short]), "s")), ">More<")
 }

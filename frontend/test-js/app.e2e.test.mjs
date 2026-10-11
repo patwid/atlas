@@ -22,7 +22,7 @@ test("signed in with unsent offline work: pushes it, pulls the rest, keeps a con
   const me = h.people.alice.id
   const token = h.people.alice.token
   const server = (method, path, body) => h.api(method, path, { token, body })
-  const plan = (id, title) => server("POST", "collections/plans/records", { id, owner: me, title, visibility: "private" })
+  const plan = (id, title) => server("POST", "collections/plans/records", { id, owner: me, title })
 
   await plan("serverplan00001", "Made on another device")
   const v1 = (await plan("conflictplan001", "Server title v1")).body
@@ -32,14 +32,14 @@ test("signed in with unsent offline work: pushes it, pulls the rest, keeps a con
   // What the app would have left on this device after working offline.
   await call(store.open, "atlas")
   await call(store.putMeta, "owner", me)
-  await call(store.mergeJson, "plans", "offlineplan0001", JSON.stringify({ title: "Made offline", owner: me, visibility: "private" }))
+  await call(store.mergeJson, "plans", "offlineplan0001", JSON.stringify({ title: "Made offline", owner: me }))
   await call(store.putRecords, "plans", toList([{ ...v1 }]))
   await call(store.mergeJson, "plans", "conflictplan001", JSON.stringify({ title: "My offline edit" }))
   const entry = (seq, id, kind, fields, base) => ({ seq, collection: "plans", id, kind, fields, base_updated: base, in_flight: false, attempts: 0 })
   await call(store.putMeta, "outbox", JSON.stringify({
     next_seq: 3,
     entries: [
-      entry(1, "offlineplan0001", "create", { title: '"Made offline"', owner: JSON.stringify(me), visibility: '"private"' }, null),
+      entry(1, "offlineplan0001", "create", { title: '"Made offline"', owner: JSON.stringify(me) }, null),
       entry(2, "conflictplan001", "update", { title: '"My offline edit"' }, v1.updated),
     ],
   }))
@@ -73,7 +73,7 @@ test("a different user on the same device starts with an empty database and cann
   await call(store.mergeJson, "plans", "leftoverplan001", JSON.stringify({ title: "Previous user's plan" }))
   await call(store.putMeta, "outbox", JSON.stringify({
     next_seq: 2,
-    entries: [{ seq: 1, collection: "plans", id: "leftoverplan001", kind: "create", fields: { title: '"Previous user\'s plan"', owner: '"someone-else"', visibility: '"private"' }, base_updated: null, in_flight: false, attempts: 0 }],
+    entries: [{ seq: 1, collection: "plans", id: "leftoverplan001", kind: "create", fields: { title: '"Previous user\'s plan"', owner: '"someone-else"' }, base_updated: null, in_flight: false, attempts: 0 }],
   }))
   const w = startApp("/settings", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
   await sleep(2500)
@@ -89,10 +89,10 @@ test("an expired session on the server signs the user out and keeps the device d
   const carol = h.people.carol
   await call(store.open, "atlas")
   await call(store.putMeta, "owner", carol.id)
-  await call(store.mergeJson, "plans", "carolplan00001", JSON.stringify({ title: "Unsent plan", owner: carol.id, visibility: "private" }))
+  await call(store.mergeJson, "plans", "carolplan00001", JSON.stringify({ title: "Unsent plan", owner: carol.id }))
   await call(store.putMeta, "outbox", JSON.stringify({
     next_seq: 2,
-    entries: [{ seq: 1, collection: "plans", id: "carolplan00001", kind: "create", fields: { title: '"Unsent plan"', owner: JSON.stringify(carol.id), visibility: '"private"' }, base_updated: null, in_flight: false, attempts: 0 }],
+    entries: [{ seq: 1, collection: "plans", id: "carolplan00001", kind: "create", fields: { title: '"Unsent plan"', owner: JSON.stringify(carol.id) }, base_updated: null, in_flight: false, attempts: 0 }],
   }))
   // A token the server does not accept (it is anonymous to PocketBase) but that has not expired by its own clock.
   const forged = carol.token.split(".").slice(0, 2).join(".") + ".invalidsignature"
@@ -138,7 +138,10 @@ test("a user creates, edits and deletes a plan on the plans screens and the serv
   const created = await waitFor("the plan on the server", async () => (await onServer()).find((p) => p.title === "Autumn 10k"))
   assert.equal(created.owner, alice.id)
   assert.equal(created.description, "Eight weeks, three runs a week")
-  assert.equal(created.visibility, "private")
+  // It is for her: its assignment is made with it (ADR 0110).
+  const assigned = await waitFor("the plan's assignment on the server", async () =>
+    (await h.api("GET", "collections/assignments/records?perPage=50", { token: alice.token })).body.items[0])
+  assert.deepEqual([assigned.plan, assigned.athlete, assigned.assigned_by, assigned.start_date], [created.id, alice.id, alice.id, ""])
   assert.deepEqual([created.base_weeks, created.pre_competition_weeks, created.competition_weeks, created.weekly_distance_m], [4, 4, 2, 35000])
   assert.equal(weekdayOf(new Date(`${created.start_date}T12:00:00`)), 0, "it starts on the coming Monday (ADR 0108)")
   assert.equal(w.location.pathname, `/plans/${created.id}`)
@@ -170,22 +173,25 @@ test("a user creates, edits and deletes a plan on the plans screens and the serv
   w.close()
 })
 
-test("plans shared with the user show up read-only, and a pulled new plan appears without a reload", { skip: !built && "frontend not built" }, async () => {
+test("a coach's plan for the user shows up read-only under From your coaches, and appears without a reload", { skip: !built && "frontend not built" }, async () => {
   await h.world()
   const alice = h.people.alice
   const bob = h.people.bob
+  await h.create("bob", "coach_grants", { id: "bobgrant0000001", athlete: bob.id, coach: alice.id, athlete_name: "bob", coach_name: "alice" })
   const w = startApp("/plans", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
   const d = w.document
   await waitFor("the empty list", () => d.body.textContent.includes("You have no plans yet"))
-  // Alice publishes a plan while Bob has the app open; Bob's next sync brings it in.
-  await h.create("alice", "plans", { id: "alicepublic0001", owner: alice.id, title: "Alice's public plan", visibility: "public" })
+  // His coach makes a plan for him while Bob has the app open; Bob's next sync brings it in (ADR 0110).
+  await h.create("alice", "plans", { id: "aliceforbob0001", owner: alice.id, title: "Alice's plan for Bob", start_date: "2026-11-02" })
+  await h.create("alice", "assignments", { id: "aliceforbobasg1", plan: "aliceforbob0001", athlete: bob.id, assigned_by: alice.id })
   w.dispatchEvent(new w.Event("offline"))
   w.dispatchEvent(new w.Event("online"))
-  await waitFor("the shared plan", () => d.body.textContent.includes("Shared with you") && d.body.textContent.includes("Alice's public plan"))
-  click(w, [...d.querySelectorAll(".list a")].find((a) => a.textContent === "Alice's public plan"))
-  await waitFor("the shared plan's screen", () => d.body.textContent.includes("Only its owner can change it"))
+  await waitFor("the coach's plan", () => d.body.textContent.includes("From your coaches") && d.body.textContent.includes("From alice"))
+  click(w, [...d.querySelectorAll(".list a")].find((a) => a.textContent === "Alice's plan for Bob"))
+  await waitFor("the plan's screen", () => d.body.textContent.includes("From alice. Only they can change it."))
   assert.equal(byLabel(w, "Edit plan"), undefined)
   assert.equal(button(w, "Delete"), undefined)
+  assert.equal(button(w, "Remove"), undefined, "only the coach takes the plan away, by deleting it")
   w.close()
 })
 
@@ -195,7 +201,7 @@ test("plans shared with the user show up read-only, and a pulled new plan appear
 test("the owner builds a plan's workouts: add, add to the same day, move, delete, and the server follows", { skip: !built && "frontend not built" }, async () => {
   await h.world()
   const alice = h.people.alice
-  await h.create("alice", "plans", { id: "baseplan0000001", owner: alice.id, title: "Base building", visibility: "private" })
+  await h.create("alice", "plans", { id: "baseplan0000001", owner: alice.id, title: "Base building" })
   const w = startApp("/plans/baseplan0000001", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
   const d = w.document
   const workouts = async () => (await h.api("GET", "collections/workouts/records?perPage=50&sort=day_index,position", { token: alice.token })).body.items
@@ -299,7 +305,7 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
 test("the owner sets a week's intensity in its dialog and the plan's phases and goal with Edit (ADR 0043, 0066)", { skip: !built && "frontend not built" }, async () => {
   await h.world()
   const alice = h.people.alice
-  await h.create("alice", "plans", { id: "phaseplan000001", owner: alice.id, title: "Season", visibility: "private", base_weeks: 2, pre_competition_weeks: 1, competition_weeks: 1 })
+  await h.create("alice", "plans", { id: "phaseplan000001", owner: alice.id, title: "Season", base_weeks: 2, pre_competition_weeks: 1, competition_weeks: 1 })
   await h.create("alice", "workouts", { id: "phasework000001", plan: "phaseplan000001", day_index: 7, position: 0, title: "Long run", kind: "long", distance_m: 20000 })
   const w = startApp("/plans/phaseplan000001", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
   const d = w.document
@@ -340,7 +346,9 @@ test("someone else's plan shows its workouts but offers no way to change them", 
   await h.world()
   const alice = h.people.alice
   const bob = h.people.bob
-  await h.create("alice", "plans", { id: "sharedplan00001", owner: alice.id, title: "Coach's plan", visibility: "public" })
+  await h.create("bob", "coach_grants", { id: "sharedgrant0001", athlete: bob.id, coach: alice.id })
+  await h.create("alice", "plans", { id: "sharedplan00001", owner: alice.id, title: "Coach's plan" })
+  await h.create("alice", "assignments", { id: "sharedasg000001", plan: "sharedplan00001", athlete: bob.id, assigned_by: alice.id })
   await h.create("alice", "workouts", { id: "sharedwork00001", plan: "sharedplan00001", day_index: 0, position: 0, title: "Hill repeats", kind: "interval", distance_m: 6000, duration_s: 2400 })
   const w = startApp("/plans/sharedplan00001", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
   const d = w.document
@@ -357,53 +365,9 @@ test("someone else's plan shows its workouts but offers no way to change them", 
   w.close()
 })
 
-// Starting a plan -------------------------------------------------------------------------------------
+// A plan and its athlete --------------------------------------------------------------------------------
 
-test("a user starts a plan on a date, moves the date and removes it, and the server follows", { skip: !built && "frontend not built" }, async () => {
-  await h.world()
-  const alice = h.people.alice
-  await h.create("alice", "plans", { id: "sched0plan00001", owner: alice.id, title: "Base building", visibility: "private" })
-  await h.create("alice", "workouts", { id: "sched0work00001", plan: "sched0plan00001", day_index: 27, position: 0, title: "Long run", kind: "long" })
-  const w = startApp("/plans/sched0plan00001", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
-  const d = w.document
-  const assignments = async () => (await h.api("GET", "collections/assignments/records?perPage=50", { token: alice.token })).body.items
-
-  await waitFor("the empty schedule", () => d.body.textContent.includes("Use Start this plan to begin."))
-  click(w, button(w, "Start this plan"))
-  await waitFor("the form", () => d.querySelector("#assign-start"))
-  assert.equal(d.querySelector("#assign-athlete"), null, "with no coaching relationships there is nobody else to choose")
-  typeInto(w, d.querySelector("#assign-start"), "")
-  submit(w, d.querySelector(".schedule-form"))
-  await waitFor("a date error", () => d.querySelector("[role=alert]")?.textContent === "Pick a start date.")
-  assert.deepEqual(await assignments(), [])
-  typeInto(w, d.querySelector("#assign-start"), "2026-11-02")
-  submit(w, d.querySelector(".schedule-form"))
-  const created = await waitFor("the assignment on the server", async () => (await assignments())[0])
-  assert.equal(created.plan, "sched0plan00001")
-  assert.equal(created.athlete, alice.id)
-  assert.equal(created.assigned_by, alice.id)
-  assert.equal(created.start_date, "2026-11-02")
-  await waitFor("start and end with weekdays", () => d.body.textContent.includes("Starts Mon 2 Nov 2026") && d.body.textContent.includes("ends Sun 29 Nov 2026"))
-
-  // Move it a week later.
-  click(w, button(w, "Change date"))
-  await waitFor("the date form", () => d.querySelector("#assign-start")?.value === "2026-11-02")
-  typeInto(w, d.querySelector("#assign-start"), "2026-11-09")
-  submit(w, d.querySelector(".schedule-form"))
-  await waitFor("the new date on the server", async () => (await assignments())[0]?.start_date === "2026-11-09")
-  await waitFor("the new dates on screen", () => d.body.textContent.includes("Starts Mon 9 Nov 2026") && d.body.textContent.includes("ends Sun 6 Dec 2026"))
-
-  // Remove it, from its menu; it is written when the Undo snackbar is closed.
-  click(w, button(w, "Remove"))
-  await waitFor("the Undo snackbar", () => d.body.textContent.includes("Removed from the schedule"))
-  assert.equal((await assignments())[0].deleted, false)
-  click(w, byLabel(w, "Close"))
-  await waitFor("deleted on the server", async () => (await assignments())[0]?.deleted === true)
-  await waitFor("an empty schedule again", () => d.body.textContent.includes("Nobody is following this plan yet"))
-  w.close()
-})
-
-test("a plan made with a start date is followed from that date, and moving the plan moves the schedule (ADR 0108)", { skip: !built && "frontend not built" }, async () => {
+test("a plan made with a start date is followed from that date, and moving the plan moves the schedule (ADR 0108, 0110)", { skip: !built && "frontend not built" }, async () => {
   await h.world()
   const alice = h.people.alice
   const w = startApp("/plans", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
@@ -433,15 +397,12 @@ test("a plan made with a start date is followed from that date, and moving the p
   submit(w, d.querySelector(".workout-form"))
   await waitFor("the workout on the calendar", () => d.querySelector(".calendar").textContent.includes("Easy run"))
 
-  // Starting one's own plan follows its date: there is no date to pick.
-  click(w, button(w, "Start this plan"))
-  await waitFor("the start form", () => d.body.textContent.includes("Starts on the plan's start date, Wed 4 Nov 2026"))
-  assert.equal(d.querySelector("#assign-start"), null)
-  submit(w, d.querySelector(".schedule-form"))
+  // The plan is hers from the start, following its date: there is nothing to start, and no tabs (ADR 0110).
   const following = await waitFor("the assignment on the server", async () => (await assignments())[0])
+  assert.equal(following.plan, created.id)
   assert.equal(following.start_date, "", "it follows the plan")
-  await waitFor("its dates on screen", () => d.body.textContent.includes("Starts Wed 4 Nov 2026"))
-  assert.equal(button(w, "Change date"), undefined, "the plan's date is changed on the plan")
+  assert.equal(button(w, "Start this plan"), undefined)
+  assert.equal(d.querySelector('[role="tablist"]'), null)
 
   // Moving the plan a week later moves the schedule with it.
   click(w, byLabel(w, "Edit plan"))
@@ -449,43 +410,8 @@ test("a plan made with a start date is followed from that date, and moving the p
   typeInto(w, d.querySelector("#plan-start"), "2026-11-11")
   submit(w, d.querySelector(".plan-form"))
   await waitFor("the new date on the server", async () => (await plans()).find((p) => p.id === created.id)?.start_date === "2026-11-11")
-  await waitFor("the schedule moved", () => d.body.textContent.includes("Starts Wed 11 Nov 2026"))
-  await waitFor("and the calendar", () => d.querySelector(".calendar")?.textContent.includes("9–15 Nov"))
+  await waitFor("the calendar moved", () => d.querySelector(".calendar")?.textContent.includes("9–15 Nov"))
   assert.equal((await assignments())[0].start_date, "", "the assignment itself is unchanged")
-  w.close()
-})
-
-test("a public plan of someone else can be started, and so can a private one that is shared with you", { skip: !built && "frontend not built" }, async () => {
-  await h.world()
-  const alice = h.people.alice
-  const bob = h.people.bob
-  await h.create("alice", "plans", { id: "publicplan00001", owner: alice.id, title: "Public plan", visibility: "public" })
-  await h.create("alice", "plans", { id: "privateplan0001", owner: alice.id, title: "Private plan", visibility: "private" })
-  await h.create("alice", "plan_shares", { id: "share0000000001", plan: "privateplan0001", user: bob.id })
-
-  const w = startApp("/plans/publicplan00001", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
-  const d = w.document
-  await waitFor("the public plan", () => d.querySelector(".bar h1")?.textContent === "Public plan" && button(w, "Start this plan"))
-  click(w, button(w, "Start this plan"))
-  await waitFor("the form", () => d.querySelector("#assign-start"))
-  typeInto(w, d.querySelector("#assign-start"), "2026-12-07")
-  submit(w, d.querySelector(".schedule-form"))
-  const started = await waitFor("the assignment on the server", async () =>
-    (await h.api("GET", "collections/assignments/records?perPage=50", { token: bob.token })).body.items[0])
-  assert.equal(started.athlete, bob.id)
-  assert.equal(started.plan, "publicplan00001")
-
-  // The private plan that is shared with Bob can be started too (ADR 0029): a share is enough.
-  click(w, d.querySelector('a[aria-label="All plans"]'))
-  const privateLink = await waitFor("the private plan in the list", () => [...d.querySelectorAll(".list a")].find((a) => a.textContent === "Private plan"))
-  click(w, privateLink)
-  await waitFor("the private plan's screen", () => d.querySelector(".bar h1")?.textContent === "Private plan")
-  click(w, await waitFor("the start button", () => button(w, "Start this plan")))
-  await waitFor("the start form", () => d.querySelector("#assign-start"))
-  typeInto(w, d.querySelector("#assign-start"), "2026-12-14")
-  submit(w, d.querySelector(".schedule-form"))
-  await waitFor("the second assignment on the server", async () =>
-    (await h.api("GET", "collections/assignments/records?perPage=50", { token: bob.token })).body.items.some((a) => a.plan === "privateplan0001"))
   w.close()
 })
 
@@ -577,36 +503,36 @@ test("an athlete adds a coach by e-mail, the coach assigns a plan, and the athle
   await waitFor("bob in her list", () => d.querySelector(".coaches .list")?.textContent.includes("bob"))
   w.close()
 
-  // 2. Bob, who owns a plan, starts it for Alice.
-  await setup(h.create("bob", "plans", { id: "coachplan000001", owner: bob.id, title: "Coach's base plan", visibility: "private" }))
-  await setup(h.create("bob", "workouts", { id: "coachwork000001", plan: "coachplan000001", day_index: 0, position: 0, title: "Easy run", kind: "easy", distance_m: 5000 }))
-  w = startApp("/plans/coachplan000001", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
+  // 2. Bob makes a plan for Alice: who it is for is chosen when it is made (ADR 0110).
+  w = startApp("/plans", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
   d = w.document
-  await waitFor("the assign button, which needs the grant on his device", () => button(w, "Start or assign"))
-  click(w, button(w, "Start or assign"))
-  await waitFor("the form with athletes", () => d.querySelector("#assign-athlete"))
-  const options = [...d.querySelectorAll("#assign-athlete option")].map((o) => o.textContent)
+  await waitFor("the plans screen", () => d.body.textContent.includes("You have no plans yet"))
+  click(w, button(w, "New plan"))
+  await waitFor("the form with athletes, which needs the grant on his device", () => d.querySelector("#plan-athlete"))
+  const options = [...d.querySelectorAll("#plan-athlete option")].map((o) => o.textContent)
   assert.deepEqual(options, ["Myself", "alice"])
-  choose(w, d.querySelector("#assign-athlete"), alice.id)
-  typeInto(w, d.querySelector("#assign-start"), "2026-11-02")
-  submit(w, d.querySelector(".schedule-form"))
+  typeInto(w, d.querySelector("#plan-title"), "Coach's base plan")
+  typeInto(w, d.querySelector("#plan-start"), "2026-11-02")
+  choose(w, d.querySelector("#plan-athlete"), alice.id)
+  submit(w, d.querySelector(".plan-form"))
   const assignment = await waitFor("the assignment on the server", async () =>
     (await h.api("GET", "collections/assignments/records?perPage=50", { token: bob.token })).body.items[0])
   assert.equal(assignment.athlete, alice.id)
   assert.equal(assignment.assigned_by, bob.id)
-  await waitFor("alice by name on his schedule", () => d.body.textContent.includes("alice") && d.body.textContent.includes("Starts Mon 2 Nov 2026"))
+  await waitFor("the plan's screen says who it is for", () => d.querySelector(".bar h1")?.textContent === "Coach's base plan" && d.body.textContent.includes("For alice."))
+  await setup(h.create("bob", "workouts", { id: "coachwork000001", plan: assignment.plan, day_index: 0, position: 0, title: "Easy run", kind: "easy", distance_m: 5000 }))
   w.close()
 
-  // 3. Alice opens the app and finds the plan on her schedule.
+  // 3. Alice opens the app and finds the plan from her coach, read-only.
   w = startApp("/plans", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
   d = w.document
   const link = await waitFor("the coach's plan in her list", () => [...d.querySelectorAll(".list a")].find((a) => a.textContent === "Coach's base plan"))
+  assert.ok(d.body.textContent.includes("From your coaches") && d.body.textContent.includes("From bob"))
   click(w, link)
-  await waitFor("the plan screen with its schedule", () => d.body.textContent.includes("Assigned by bob") && d.body.textContent.includes("Starts Mon 2 Nov 2026"))
-  assert.ok(d.body.textContent.includes("Easy run"), "the coach's workouts are readable through the assignment")
-  assert.equal(button(w, "Start this plan"), undefined, "a private plan of someone else cannot be started")
-  assert.equal(byLabel(w, "Edit plan"), undefined, "and its workouts cannot be changed")
-  assert.ok(button(w, "Change date"), "but the athlete can move her own start date")
+  await waitFor("the plan screen", () => d.body.textContent.includes("From bob.") && d.body.textContent.includes("Easy run"))
+  assert.equal(byLabel(w, "Edit plan"), undefined, "its workouts cannot be changed")
+  assert.equal(button(w, "Change date"), undefined, "and nor can its date")
+  assert.equal(button(w, "Remove"), undefined, "only the coach removes it, by deleting the plan")
   w.close()
 
   // 4. Taking access back removes it for the coach.
@@ -799,14 +725,14 @@ test("Home shows missed, looks-done and rest days; the user confirms, unlinks, r
   const alice = h.people.alice
   const yesterday = daysFromNow(-1)
   const today = daysFromNow(0)
-  await setup(h.create("alice", "plans", { id: "todayplan000001", owner: alice.id, title: "Tempo block", visibility: "private" }))
+  await setup(h.create("alice", "plans", { id: "todayplan000001", owner: alice.id, title: "Tempo block", start_date: ymd(yesterday) }))
   // Days count from the Monday of the week the plan starts in (ADR 0108).
   const firstDay = weekdayOf(yesterday)
   await setup(h.create("alice", "workouts", { id: "todaywork000001", plan: "todayplan000001", day_index: firstDay, position: 0, title: "Easy shake-out", kind: "easy", distance_m: 5000 }))
   await setup(h.create("alice", "workouts", { id: "todaywork000002", plan: "todayplan000001", day_index: firstDay + 1, position: 0, title: "Tempo intervals", kind: "tempo", distance_m: 8000, duration_s: 2700 }))
   await setup(h.create("alice", "workouts", { id: "todaywork000003", plan: "todayplan000001", day_index: firstDay + 2, position: 0, title: "Recovery day", kind: "rest" }))
   // The plan started yesterday: its first day is yesterday (missed), then today, then tomorrow.
-  await setup(h.create("alice", "assignments", { id: "todayasg0000001", plan: "todayplan000001", athlete: alice.id, assigned_by: alice.id, start_date: ymd(yesterday) }))
+  await setup(h.create("alice", "assignments", { id: "todayasg0000001", plan: "todayplan000001", athlete: alice.id, assigned_by: alice.id }))
   const activity = (id, day, hour, name) => setup(h.create("alice", "activities", {
     id, owner: alice.id, source: "manual", started_at: utcOf(day, hour, 0), sport: "run", name, distance_m: 8000, moving_time_s: 2700,
   }))
@@ -867,11 +793,13 @@ test("Home without a plan points to the plans", { skip: !built && "frontend not 
 
 // Copying a plan --------------------------------------------------------------------------------------
 
-test("a user copies someone else's public plan with its workouts, then edits the copy; the original is untouched", { skip: !built && "frontend not built" }, async () => {
+test("an athlete copies a coach's plan with its workouts, for herself, then edits the copy; the original is untouched", { skip: !built && "frontend not built" }, async () => {
   await h.world()
   const alice = h.people.alice
   const bob = h.people.bob
-  await setup(h.create("alice", "plans", { id: "copysrcplan0001", owner: alice.id, title: "Autumn 10k", description: "Eight weeks", visibility: "public" }))
+  await setup(h.create("bob", "coach_grants", { id: "copygrant000001", athlete: bob.id, coach: alice.id }))
+  await setup(h.create("alice", "plans", { id: "copysrcplan0001", owner: alice.id, title: "Autumn 10k", description: "Eight weeks", start_date: "2026-11-02" }))
+  await setup(h.create("alice", "assignments", { id: "copysrcasg00001", plan: "copysrcplan0001", athlete: bob.id, assigned_by: alice.id }))
   await setup(h.create("alice", "workouts", { id: "copysrcwork0001", plan: "copysrcplan0001", day_index: 3, position: 0, title: "Tempo", kind: "tempo", description: "3 x 10 min", distance_m: 8000, duration_s: 2700, steps: { v: 1, reps: 3, work: { duration_s: 600 } }, zone: 3 }))
   await setup(h.create("alice", "workouts", { id: "copysrcwork0002", plan: "copysrcplan0001", day_index: 0, position: 0, title: "Easy run", kind: "easy", distance_m: 5000 }))
 
@@ -890,8 +818,11 @@ test("a user copies someone else's public plan with its workouts, then edits the
   const copy = await waitFor("the copy on the server", async () => (await mine())[0])
   assert.equal(copy.title, "Copy of Autumn 10k")
   assert.equal(copy.description, "Eight weeks")
-  assert.equal(copy.visibility, "private", "a copy of a public plan starts private")
   assert.equal(copy.source_plan, "copysrcplan0001")
+  assert.equal(copy.start_date, "2026-11-02")
+  const copyAssignment = await waitFor("the copy's assignment", async () =>
+    (await h.api("GET", "collections/assignments/records?perPage=50", { token: bob.token })).body.items.find((a) => a.plan === copy.id))
+  assert.deepEqual([copyAssignment.athlete, copyAssignment.assigned_by], [bob.id, bob.id], "the copy is for him")
   const copied = await waitFor("both workouts on the server", async () => { const ws = await workoutsOf(copy.id); return ws.length === 2 && ws })
   assert.deepEqual(copied.map((x) => [x.title, x.day_index, x.kind]), [["Easy run", 0, "easy"], ["Tempo", 3, "tempo"]])
   assert.equal(copied[1].description, "3 x 10 min")
@@ -918,94 +849,6 @@ test("a user copies someone else's public plan with its workouts, then edits the
   w.close()
 })
 
-// Sharing a plan with named people -------------------------------------------------------------------------
-
-test("an owner shares a private plan by e-mail, the recipient reads and starts it, and stopping and sharing again reuses the row", { skip: !built && "frontend not built" }, async () => {
-  await h.world()
-  const alice = h.people.alice
-  const bob = h.people.bob
-  const carol = h.people.carol
-  await setup(h.create("alice", "plans", { id: "winterplan00001", owner: alice.id, title: "Winter base", visibility: "private" }))
-  await setup(h.create("alice", "workouts", { id: "winterwork00001", plan: "winterplan00001", day_index: 0, position: 0, title: "Easy hour", kind: "easy", duration_s: 3600 }))
-  const shares = async () => (await h.api("GET", "collections/plan_shares/records?perPage=50", { token: alice.token })).body.items
-  const seesPlan = async (who) => (await h.api("GET", "collections/plans/records/winterplan00001", { token: who.token })).status === 200
-
-  // Alice shares with Bob. Finding him gives him nothing until she confirms.
-  let w = startApp("/plans/winterplan00001", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
-  let d = w.document
-  await waitFor("the sharing section", () => d.body.textContent.includes("Not shared with anyone"))
-  assert.equal(await seesPlan(bob), false, "private to start with")
-  typeInto(w, d.querySelector("#share-email"), bob.email)
-  submit(w, d.querySelector(".share-form"))
-  await waitFor("the person found", () => d.body.textContent.includes("Found bob. Share this plan with them?"))
-  assert.deepEqual(await shares(), [], "finding someone shares nothing")
-  click(w, button(w, "Share plan"))
-  const bobShare = await waitFor("the share on the server", async () => (await shares())[0])
-  assert.equal(bobShare.plan, "winterplan00001")
-  assert.equal(bobShare.user, bob.id)
-  assert.equal(bobShare.user_name, "bob")
-  assert.equal(bobShare.shared_by_name, "alice")
-  await waitFor("bob in the list", () => d.querySelector(".sharing .list")?.textContent.includes("bob"))
-  assert.equal(await seesPlan(bob), true)
-  // Sharing with someone who already has it is refused before anything is sent.
-  typeInto(w, d.querySelector("#share-email"), bob.email)
-  submit(w, d.querySelector(".share-form"))
-  await waitFor("the refusal", () => d.body.textContent.includes("bob already has this plan."))
-  w.close()
-
-  // Bob finds it under "Shared with you", read-only, can start it and cannot share it on.
-  w = startApp("/plans", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
-  d = w.document
-  const link = await waitFor("the plan in his list", () => [...d.querySelectorAll(".list a")].find((a) => a.textContent === "Winter base"))
-  // Plans arrive one step before the shares that say who shared them, so the label follows a moment later.
-  await waitFor("who shared it", () => d.body.textContent.includes("Shared by alice"))
-  click(w, link)
-  await waitFor("the plan screen", () => d.body.textContent.includes("Shared with you by alice.") && d.body.textContent.includes("Easy hour"))
-  assert.equal(byLabel(w, "Edit plan"), undefined)
-  assert.equal(d.querySelector("#share-email"), null, "only the owner sees the sharing section")
-  click(w, await waitFor("the start button", () => button(w, "Start this plan")))
-  await waitFor("the start form", () => d.querySelector("#assign-start"))
-  typeInto(w, d.querySelector("#assign-start"), "2026-12-07")
-  submit(w, d.querySelector(".schedule-form"))
-  const started = await waitFor("the assignment on the server", async () =>
-    (await h.api("GET", "collections/assignments/records?perPage=50", { token: bob.token })).body.items[0])
-  assert.equal(started.athlete, bob.id)
-  assert.equal(started.plan, "winterplan00001", "a shared private plan can be started")
-  w.close()
-
-  // Carol: shared, then stopped, then shared again through the same row.
-  w = startApp("/plans/winterplan00001", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
-  d = w.document
-  await waitFor("bob still listed", () => d.querySelector(".sharing .list")?.textContent.includes("bob"))
-  typeInto(w, d.querySelector("#share-email"), carol.email)
-  submit(w, d.querySelector(".share-form"))
-  await waitFor("carol found", () => d.body.textContent.includes("Found carol. Share this plan with them?"))
-  click(w, button(w, "Share plan"))
-  const carolShare = await waitFor("carol's share", async () => (await shares()).find((s) => s.user === carol.id))
-  assert.equal(await seesPlan(carol), true)
-  const carolCard = () => [...d.querySelectorAll(".sharing .list li")].find((li) => li.textContent.includes("carol"))
-  await waitFor("carol listed", () => carolCard())
-  click(w, [...carolCard().querySelectorAll("button")].find((b) => b.textContent === "Stop sharing"))
-  await waitFor("the question", () => openDialog(w)?.textContent.includes("Stop sharing with carol?"))
-  assert.equal(await seesPlan(carol), true, "asking does not stop it")
-  click(w, dialogButton(w, "Stop sharing"))
-  await waitFor("the share removed on the server", async () => (await shares()).find((s) => s.id === carolShare.id)?.deleted === true)
-  assert.equal(await seesPlan(carol), false, "Carol no longer sees the plan")
-  assert.equal(await seesPlan(bob), true, "Bob still does")
-  await waitFor("carol gone from the list", () => !carolCard())
-
-  typeInto(w, d.querySelector("#share-email"), carol.email)
-  submit(w, d.querySelector(".share-form"))
-  await waitFor("carol found again", () => d.body.textContent.includes("Found carol. Share this plan with them?"))
-  click(w, button(w, "Share plan"))
-  await waitFor("the same row live again", async () => {
-    const all = (await shares()).filter((s) => s.user === carol.id)
-    return all.length === 1 && all[0].id === carolShare.id && all[0].deleted === false
-  })
-  assert.equal(await seesPlan(carol), true)
-  w.close()
-})
-
 // Access that is taken away reaches the other person's device (ADR 0030) -------------------------------------
 
 const flipOnline = (w) => { w.dispatchEvent(new w.Event("offline")); w.dispatchEvent(new w.Event("online")) }
@@ -1013,32 +856,6 @@ const onDevice = async (collection) => {
   await call(store.open, "atlas")
   return (await call(store.getAll, collection)).value.toArray().map((r) => r.id)
 }
-
-test("a plan whose share was removed disappears from the recipient's device at the next sync", { skip: !built && "frontend not built" }, async () => {
-  await h.world()
-  const alice = h.people.alice
-  const carol = h.people.carol
-  await setup(h.create("alice", "plans", { id: "sweepplan000001", owner: alice.id, title: "Shared for a while", visibility: "private" }))
-  await setup(h.create("alice", "plans", { id: "sweepplan000002", owner: alice.id, title: "Stays shared", visibility: "private" }))
-  const share1 = (await setup(h.create("alice", "plan_shares", { id: "sweepshare00001", plan: "sweepplan000001", user: carol.id }))).body
-  await setup(h.create("alice", "plan_shares", { id: "sweepshare00002", plan: "sweepplan000002", user: carol.id }))
-
-  const w = startApp("/plans", { token: carol.token, user_id: carol.id, name: "carol", email: carol.email })
-  const d = w.document
-  await waitFor("both plans", () => d.body.textContent.includes("Shared for a while") && d.body.textContent.includes("Stays shared"))
-
-  // The owner stops sharing the first one. The server hides it at once.
-  await setup(h.update("alice", "plan_shares", share1.id, { deleted: true, base_updated: share1.updated }))
-  assert.equal((await h.get("carol", "plans", "sweepplan000001")).status, 404)
-  assert.ok(d.body.textContent.includes("Shared for a while"), "until the device syncs it still shows it")
-
-  flipOnline(w)
-  await waitFor("the plan gone from the screen", () => !d.body.textContent.includes("Shared for a while"))
-  assert.ok(d.body.textContent.includes("Stays shared"), "what is still shared stays")
-  assert.ok(!(await onDevice("plans")).includes("sweepplan000001"), "and it is gone from the device database too")
-  assert.ok((await onDevice("plans")).includes("sweepplan000002"))
-  w.close()
-})
 
 test("the date and time pickers fill the activity form's fields", { skip: !built && "frontend not built" }, async () => {
   await h.world()
@@ -1111,7 +928,7 @@ test("a coach sees an athlete's weeks, plans and activities read-only, and loses
   const bob = h.people.bob
   const start = daysFromNow(-10)
   await setup(h.create("alice", "coach_grants", { id: "cvgrant00000001", athlete: alice.id, coach: bob.id, athlete_name: "alice", coach_name: "bob" }))
-  await setup(h.create("bob", "plans", { id: "coachview000001", owner: bob.id, title: "Spring base", visibility: "private" }))
+  await setup(h.create("bob", "plans", { id: "coachview000001", owner: bob.id, title: "Spring base", start_date: ymd(start) }))
   // The first day is ten days ago (missed), the sixth five days ago (done), the eleventh today (still to do). Days
   // count from the Monday of the week the plan starts in (ADR 0108).
   const workout = (id, day, title, kind, distance) =>
@@ -1119,7 +936,7 @@ test("a coach sees an athlete's weeks, plans and activities read-only, and loses
   await workout("cvworkout000001", 0, "Missed easy run", "easy", 5000)
   await workout("cvworkout000002", 5, "Tempo they did", "tempo", 8000)
   await workout("cvworkout000003", 10, "Today's long run", "long", 10000)
-  await setup(h.create("bob", "assignments", { id: "cvassign0000001", plan: "coachview000001", athlete: alice.id, assigned_by: bob.id, start_date: ymd(start) }))
+  await setup(h.create("bob", "assignments", { id: "cvassign0000001", plan: "coachview000001", athlete: alice.id, assigned_by: bob.id }))
   await setup(h.create("alice", "activities", {
     id: "cvactivity00001", owner: alice.id, source: "manual", started_at: utcOf(daysFromNow(-5), 7, 0),
     sport: "run", name: "Tempo morning", distance_m: 8000, moving_time_s: 2400,
