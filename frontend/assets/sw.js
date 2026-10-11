@@ -6,7 +6,9 @@ const CACHE = "atlas-shell-__BUILD__"
 const SHELL = ["/__PRECACHE__"]
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()))
+  // "reload" skips the HTTP cache, which may still hold old shell files that look fresh (ADR 0103).
+  const requests = SHELL.map((url) => new Request(url, { cache: "reload" }))
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(requests)).then(() => self.skipWaiting()))
 })
 
 self.addEventListener("activate", (event) => {

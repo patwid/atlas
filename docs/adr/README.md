@@ -106,3 +106,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0100 | [Import activities from FIT files with a decoder in Gleam](0100-fit-file-import.md) | Accepted |
 | 0101 | [Serve the app shell without dates, so deploys reach installed apps](0101-no-dates-on-the-app-shell.md) | Accepted |
 | 0102 | [Today first on the home screen](0102-today-first-on-home.md) | Accepted |
+| 0103 | [Check for updates when the app is resumed, and reload when a new version takes over](0103-update-installed-apps-on-resume.md) | Accepted |
