@@ -46,11 +46,27 @@ pub fn workouts_after_the_phases_add_weeks_without_a_phase_test() {
 
 pub fn weeks_are_named_by_their_phase_test() {
   let phases = plan.Phases(4, 4, 4)
-  assert plan_schedule.week_label(phases, 1) == "Week 1 · Base 1"
-  assert plan_schedule.week_label(phases, 6) == "Week 6 · Pre-competition 2"
-  assert plan_schedule.week_label(phases, 12) == "Week 12 · Competition 4"
-  assert plan_schedule.week_label(phases, 13) == "Week 13"
-  assert plan_schedule.week_label(no_phases, 2) == "Week 2"
+  assert plan_schedule.week_label(phases, None, 1) == "Week 1 · Base 1"
+  assert plan_schedule.week_label(phases, None, 6)
+    == "Week 6 · Pre-competition 2"
+  assert plan_schedule.week_label(phases, None, 12) == "Week 12 · Competition 4"
+  assert plan_schedule.week_label(phases, None, 13) == "Week 13"
+  assert plan_schedule.week_label(no_phases, None, 2) == "Week 2"
+}
+
+pub fn a_dated_plans_weeks_are_named_by_their_week_of_the_year_test() {
+  let phases = plan.Phases(4, 4, 4)
+  // 4 Nov 2026 is a Wednesday of ISO week 45.
+  let start = Some(Date(2026, 11, 4))
+  assert plan_schedule.week_label(phases, start, 1) == "Week 45 · Base 1"
+  assert plan_schedule.week_label(phases, start, 6)
+    == "Week 50 · Pre-competition 2"
+  // Across the new year: 28 Dec 2026 is in week 53, and the weeks start over in 2027.
+  assert plan_schedule.week_name(start, 8) == "Week 52"
+  assert plan_schedule.week_name(start, 9) == "Week 53"
+  assert plan_schedule.week_name(start, 10) == "Week 1"
+  let assert [first, ..] = plan_schedule.weeks(phases, start, [])
+  assert first.name == "Week 45"
 }
 
 pub fn a_week_is_measured_against_the_goal_test() {
@@ -85,7 +101,7 @@ pub fn weeks_run_from_the_first_to_the_last_workout_with_empty_days_test() {
 pub fn a_workout_on_day_seven_stays_in_the_first_week_test() {
   let weeks = plan_schedule.weeks(no_phases, None, [w("a", 6, 0, 1.0, 1)])
   assert list.length(weeks) == 1
-  let assert [Week(_, days, _, _, _)] = weeks
+  let assert [Week(_, _, days, _, _, _)] = weeks
   let assert Ok(Day(7, 6, None, False, [found])) = list.last(days)
   assert found.id == "a"
 }
@@ -104,7 +120,7 @@ pub fn workouts_on_a_day_are_in_position_order_test() {
       w("a", 0, 1, 1.0, 1),
       w("m", 0, 0, 1.0, 1),
     ])
-  let assert [Week(_, [Day(_, _, _, _, ids), ..], _, _, _)] = weeks
+  let assert [Week(_, _, [Day(_, _, _, _, ids), ..], _, _, _)] = weeks
   // Equal positions fall back to the ID, so the order is stable.
   assert list.map(ids, fn(x) { x.id }) == ["m", "z", "a"]
 }

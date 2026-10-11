@@ -87,6 +87,17 @@ pub fn start_of_week_test() {
   assert date.start_of_week(Date(2026, 1, 1)) == Date(2025, 12, 29)
 }
 
+pub fn iso_week_test() {
+  assert date.iso_week(Date(2026, 10, 11)) == 41
+  assert date.iso_week(Date(2026, 10, 12)) == 42
+  // A year's first days can belong to the last week of the year before, and its last days to week 1.
+  assert date.iso_week(Date(2025, 12, 29)) == 1
+  assert date.iso_week(Date(2026, 1, 1)) == 1
+  assert date.iso_week(Date(2027, 1, 1)) == 53
+  assert date.iso_week(Date(2027, 1, 4)) == 1
+  assert date.iso_week(Date(2021, 1, 3)) == 53
+}
+
 pub fn local_date_applies_the_utc_offset_test() {
   assert date.local_date("2026-10-01 07:00:00.000Z", 0) == Ok(Date(2026, 10, 1))
   // 23:30 UTC is already the next day in UTC+2 (Swiss summer time), and still the same in UTC-5.

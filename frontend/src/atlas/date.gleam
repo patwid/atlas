@@ -175,6 +175,13 @@ pub fn start_of_week(date: Date) -> Date {
   add_days(date, -modulo(to_epoch_days(date) + 3, 7))
 }
 
+/// The ISO 8601 week number (1 to 53) of `date`: weeks run from Monday, and week 1 is the one with the year's first
+/// Thursday, so 29 Dec 2025 is in week 1 and 1 Jan 2027 in week 53.
+pub fn iso_week(date: Date) -> Int {
+  let thursday = add_days(start_of_week(date), 3)
+  diff_days(from: Date(thursday.year, 1, 1), to: thursday) / 7 + 1
+}
+
 /// The local date of a UTC timestamp such as `2026-10-01 07:00:00.000Z` or `2026-10-01T07:00:00Z`,
 /// given the local offset from UTC in minutes (for example 120 for UTC+2).
 pub fn local_date(

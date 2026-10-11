@@ -112,3 +112,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0106 | [Work distances and times out from the target zone's pace](0106-targets-from-the-zone-pace.md) | Accepted |
 | 0107 | [On a phone, a day's add button at the trailing edge](0107-phone-calendar-add-button-at-the-trailing-edge.md) | Accepted |
 | 0108 | [A plan has a start date; its calendar shows real days from a Monday](0108-plan-start-date.md) | Accepted |
+| 0109 | [Name a dated plan's weeks by their week of the year](0109-plan-weeks-named-by-week-of-the-year.md) | Accepted |

@@ -601,7 +601,7 @@ fn week_row(
           event.on_click(WeekSelected(week.number)),
         ],
         [
-          html.strong([], [html.text("Week " <> int.to_string(week.number))]),
+          html.strong([], [html.text(week.name)]),
           case plan_schedule.week_dates(week) {
             Ok(dates) -> html.span([class("week-dates")], [html.text(dates)])
             Error(Nil) -> element.none()
@@ -731,8 +731,8 @@ fn day_cell(
               class("add-here"),
               attribute.attribute(
                 "aria-label",
-                "Add a workout to week "
-                  <> int.to_string(week.number)
+                "Add a workout to "
+                  <> string.lowercase(week.name)
                   <> ", "
                   <> plan_schedule.day_name(day),
               ),
@@ -770,10 +770,7 @@ fn workout_chip(
         [
           w.title,
           kind,
-          "week "
-            <> int.to_string(week.number)
-            <> ", "
-            <> plan_schedule.day_name(day),
+          string.lowercase(week.name) <> ", " <> plan_schedule.day_name(day),
           case day.before_start {
             True -> "before the plan starts"
             False -> ""
@@ -820,7 +817,11 @@ fn workout_dialog(
         [
           html.p([class("muted")], [
             html.text(
-              plan_schedule.week_label(on_screen.phases, week_of(w))
+              plan_schedule.week_label(
+                on_screen.phases,
+                on_screen.start_date,
+                week_of(w),
+              )
               <> " · "
               <> day_text(on_screen, w.day_index),
             ),
@@ -867,7 +868,11 @@ fn week_dialog(
       dialog.details(
         "week-dialog",
         True,
-        plan_schedule.week_label(on_screen.phases, week.number),
+        plan_schedule.week_label(
+          on_screen.phases,
+          on_screen.start_date,
+          week.number,
+        ),
         WeekClosed,
         [
           intensity_view(model, week.number, intensity, can_edit),
@@ -1077,7 +1082,8 @@ fn week_options(
     _ -> one_to(last)
   }
   list.map(numbers, fn(n) {
-    let label = plan_schedule.week_label(on_screen.phases, n)
+    let label =
+      plan_schedule.week_label(on_screen.phases, on_screen.start_date, n)
     #(int.to_string(n), case list.find(weeks, fn(w) { w.number == n }) {
       Ok(week) ->
         case plan_schedule.week_dates(week) {

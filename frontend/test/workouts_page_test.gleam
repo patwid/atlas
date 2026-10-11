@@ -567,12 +567,14 @@ pub fn a_dated_plan_shows_its_days_and_weeks_with_dates_test() {
   assert string.contains(html, "2–8 Nov")
   assert string.contains(html, "9–15 Nov")
   assert string.contains(html, "4 Nov")
-  assert string.contains(html, "week 2, Wed 11 Nov")
+  // The weeks are named by their week of the year (ADR 0109).
+  assert string.contains(html, "<strong>Week 45</strong>")
+  assert string.contains(html, "week 46, Wed 11 Nov")
   // Monday and Tuesday of week 1 come before the start: dimmed, and nothing can be added there.
   assert string.contains(html, "calendar-day before-start")
-  assert !string.contains(html, "Add a workout to week 1, Mon 2 Nov")
-  assert !string.contains(html, "Add a workout to week 1, Tue 3 Nov")
-  assert string.contains(html, "Add a workout to week 1, Wed 4 Nov")
+  assert !string.contains(html, "Add a workout to week 45, Mon 2 Nov")
+  assert !string.contains(html, "Add a workout to week 45, Tue 3 Nov")
+  assert string.contains(html, "Add a workout to week 45, Wed 4 Nov")
 }
 
 pub fn a_workout_cannot_be_put_before_the_plan_starts_test() {

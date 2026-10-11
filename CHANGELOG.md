@@ -54,6 +54,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 
 ### Changed
 - A plan has a start date, asked for when it is made (the coming Monday by default) and changed with Edit. The plan calendar runs its weeks from Monday to Sunday with each day's and week's dates; the days before the start are dimmed and cannot be added to. Starting one's own plan follows its date, so moving the plan moves the schedule; someone else's plan is started on a date of one's own. Existing plans and schedules keep their dates (ADR 0108).
+- A dated plan's weeks are named by their ISO week of the year ("Week 46 · 9–15 Nov") instead of 1, 2, 3; a plan without a start date still counts from 1 (ADR 0109).
 - On a phone, a day's add button in the plan calendar sits at the row's trailing edge beside its workouts instead of on a line under them, and the day's name lines up with its first workout, or with the button on an empty day (ADR 0107).
 - The Hetzner VPS (204.168.179.170) is configured here instead of in nixos-config: its hardware, disk, GRUB and network settings are in `nix/hosts/atlas`, it serves `http://204.168.179.170`, and root logs in with the owner's keys; the Deploy workflow is skipped until `DEPLOY_HOST` is set (ADR 0094).
 - Nix files other than `flake.nix` and `flake.lock` moved under `nix/`: the module and VM test to `nix/nixos/`, the server configuration to `nix/hosts/atlas/` (ADR 0093).
