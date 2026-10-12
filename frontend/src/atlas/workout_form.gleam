@@ -52,7 +52,8 @@ pub type Form {
     distance_km: String,
     duration: String,
     description: String,
-    /// The parts of an interval workout, as typed; only read when the kind is intervals (ADR 0104, 0116).
+    /// The parts of an interval workout, as typed; only read when the kind is intervals (ADR 0104, 0116). A race
+    /// reads only the warm-up and cool-down (ADR 0119).
     warmup: SegmentForm,
     /// At least one, so a new interval workout shows the fields of its first set.
     sets: List(SetForm),
@@ -131,7 +132,7 @@ pub type Valid {
     distance_m: Float,
     duration_s: Int,
     description: String,
-    /// `None` unless the workout is an interval workout with repetitions.
+    /// `None` unless the workout is an interval workout with parts, or a race with a warm-up or cool-down.
     intervals: Option(Intervals),
     /// 1-5, 0 for none (ADR 0105).
     zone: Int,
@@ -680,18 +681,20 @@ pub fn zone_label(zone: Int) -> String {
   }
 }
 
-/// The parts, for an interval workout only: none when every field of them is empty, as before they existed
-/// (ADR 0104). Sets left empty are left out.
+/// The parts, for an interval workout, and the warm-up and cool-down of a race (ADR 0119): none when every field
+/// of them is empty, as before they existed (ADR 0104). Sets left empty are left out.
 fn intervals(form: Form) -> Result(Option(Intervals), #(String, String)) {
   case form.kind {
-    plan.Interval -> {
+    plan.Interval | plan.Race -> {
       use warmup <- result.try(valid_segment(form.warmup, Warmup, form.goals))
-      use sets <- result.try(
-        form.sets
-        |> list.index_map(fn(set, i) { #(set, i) })
-        |> list.filter(fn(pair) { !is_blank_set(pair.0) })
-        |> list.try_map(fn(pair) { valid_set(pair.0, pair.1, form.goals) }),
-      )
+      use sets <- result.try(case form.kind {
+        plan.Interval ->
+          form.sets
+          |> list.index_map(fn(set, i) { #(set, i) })
+          |> list.filter(fn(pair) { !is_blank_set(pair.0) })
+          |> list.try_map(fn(pair) { valid_set(pair.0, pair.1, form.goals) })
+        _ -> Ok([])
+      })
       use cooldown <- result.try(valid_segment(
         form.cooldown,
         Cooldown,
@@ -931,6 +934,15 @@ pub fn format_rep_time(seconds: Int) -> String {
   }
 }
 
+/// `15:00 warm-up (Zone 1)`, `""` without one: the warm-up of an interval workout or a race (ADR 0116, 0119).
+pub fn warmup_summary(intervals: Intervals) -> String {
+  segment_summary(intervals.warmup, "warm-up")
+}
+
+pub fn cooldown_summary(intervals: Intervals) -> String {
+  segment_summary(intervals.cooldown, "cool-down")
+}
+
 /// `2 km warm-up (Zone 1) · 6 × 800 m in 2:50 (Zone 4), 1:30 recovery · 1 km cool-down`: the warm-up, each set
 /// and the cool-down (ADR 0116).
 pub fn intervals_summary(intervals: Intervals) -> String {
@@ -1103,7 +1115,11 @@ pub fn changed_fields(
         // written again with the zone in the reps (ADR 0117).
         "steps" ->
           valid.intervals != row.intervals
-          || { valid.zone != row.zone && option.is_some(valid.intervals) }
+          || {
+            valid.zone != row.zone
+            && valid.kind == plan.Interval
+            && option.is_some(valid.intervals)
+          }
         "zone" -> valid.zone != row.zone
         _ -> False
       }

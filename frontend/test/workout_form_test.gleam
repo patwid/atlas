@@ -404,6 +404,47 @@ pub fn the_parts_are_optional_and_only_for_intervals_test() {
   assert valid.zone == 0
 }
 
+pub fn a_race_has_a_warm_up_and_cool_down_but_no_sets_test() {
+  let race =
+    Form(
+      ..intervals_form(),
+      kind: plan.Race,
+      zone: "5",
+      distance_km: "10",
+      warmup: segment("1", "", "20"),
+      cooldown: segment("", "2", ""),
+    )
+  let assert Ok(valid) = workout_form.validate(race)
+  // The sets typed while it was an interval workout are not kept (ADR 0119).
+  assert valid.intervals
+    == Some(plan.Intervals(work(1, 0.0, 1200), [], work(0, 2000.0, 0)))
+  // A race keeps its own zone and distance.
+  assert valid.zone == 5
+  assert valid.distance_m == 10_000.0
+  assert workout_form.steps_field(valid.intervals)
+    == #(
+      "steps",
+      "{\"v\":2,\"warmup\":{\"zone\":1,\"duration_s\":1200},\"cooldown\":{\"distance_m\":2000}}",
+    )
+  // Without either there are no steps.
+  let assert Ok(valid) =
+    workout_form.validate(
+      Form(
+        ..race,
+        warmup: workout_form.blank_segment,
+        cooldown: workout_form.blank_segment,
+      ),
+    )
+  assert valid.intervals == None
+  assert workout_form.validate_fields(
+      Form(..race, warmup: segment("1", "", "")),
+    )
+    == Error(#(
+      "warmup_distance",
+      "Give the warm-up a distance, a time or both.",
+    ))
+}
+
 pub fn problems_with_the_parts_name_their_field_test() {
   let problem = fn(f) { workout_form.validate_fields(f) }
   let reps = fn(text) {

@@ -169,6 +169,34 @@ pub fn an_interval_workout_asks_for_its_parts_test() {
   assert dict.get(fields, "zone") == Ok("0")
 }
 
+pub fn a_race_asks_for_a_warm_up_and_cool_down_test() {
+  let #(model, _) = update(workouts_page.new(), AddClicked(1, 1))
+  let #(model, _) = update(model, TitleChanged("10 km"))
+  let #(model, _) = update(model, KindChanged("race"))
+  let html = html_of(model, True)
+  assert string.contains(html, "Warm-up")
+  assert string.contains(html, "Cool-down")
+  assert !string.contains(html, "Repetitions")
+  // The race keeps its own zone (ADR 0119).
+  assert string.contains(html, "id=\"workout-zone\"")
+  let #(model, _) =
+    update(
+      model,
+      SegmentChanged(workout_form.Warmup, workout_form.TimeField, "20"),
+    )
+  let #(model, _) =
+    update(
+      model,
+      SegmentChanged(workout_form.Cooldown, workout_form.DistanceField, "2"),
+    )
+  let #(_, actions) = update(model, Submitted)
+  let assert [Create(_, fields)] = actions
+  assert dict.get(fields, "steps")
+    == Ok(
+      "{\"v\":2,\"warmup\":{\"duration_s\":1200},\"cooldown\":{\"distance_m\":2000}}",
+    )
+}
+
 pub fn sets_are_added_and_removed_test() {
   let #(model, _) = update(workouts_page.new(), AddClicked(1, 1))
   let #(model, _) = update(model, KindChanged("interval"))
@@ -244,6 +272,29 @@ pub fn the_calendar_shows_the_parts_test() {
     "2 km warm-up (Zone 1) · 6 × 800 m (Zone 4), 1:30 recovery",
   )
   assert !string.contains(html, "Zone 4 · ")
+}
+
+pub fn the_calendar_shows_a_race_between_its_warm_up_and_cool_down_test() {
+  let base = row("a", "p1", 0, 0, "10 km")
+  let race =
+    Row(
+      ..base,
+      workout: Workout(
+        ..base.workout,
+        kind: plan.Race,
+        distance_m: Some(10_000.0),
+        duration_s: None,
+      ),
+      intervals: Some(plan.Intervals(
+        plan.Segment(1, 0.0, 1200, None),
+        [],
+        plan.Segment(0, 2000.0, 0, None),
+      )),
+      zone: 5,
+    )
+  let html = html_of(with_rows([race]), True)
+  assert string.contains(html, "20:00 warm-up (Zone 1) · Zone 5 · 10")
+  assert string.contains(html, "km · 2 km cool-down")
 }
 
 pub fn workouts_of_other_plans_do_not_affect_the_position_test() {

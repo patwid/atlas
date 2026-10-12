@@ -1042,18 +1042,26 @@ fn delete_of(model: Model, id: String) -> List(Action) {
 }
 
 /// The target zone (ADR 0105) or the parts of an interval workout (ADR 0104, 0116), then its distance and duration.
+/// A race's warm-up comes before its own targets and its cool-down after them (ADR 0119).
 fn targets(row: Row) -> String {
   let w = row.workout
+  let #(before, parts, after) = case w.kind, row.intervals {
+    plan.Race, Some(intervals) -> #(
+      workout_form.warmup_summary(intervals),
+      "",
+      workout_form.cooldown_summary(intervals),
+    )
+    _, Some(intervals) -> #("", workout_form.intervals_summary(intervals), "")
+    _, None -> #("", "", "")
+  }
   [
+    before,
     // Each part of an interval workout names its own zone (ADR 0116).
-    case row.intervals {
-      Some(_) -> ""
-      None -> workout_form.zone_label(row.zone)
+    case w.kind, row.intervals {
+      plan.Race, _ | _, None -> workout_form.zone_label(row.zone)
+      _, Some(_) -> ""
     },
-    case row.intervals {
-      Some(intervals) -> workout_form.intervals_summary(intervals)
-      None -> ""
-    },
+    parts,
     case w.distance_m {
       Some(d) -> units.format_planned_km(d)
       None -> ""
@@ -1062,6 +1070,7 @@ fn targets(row: Row) -> String {
       Some(t) -> units.format_duration(t)
       None -> ""
     },
+    after,
   ]
   |> list.filter(fn(part) { part != "" })
   |> string.join(" · ")
@@ -1196,6 +1205,11 @@ fn form_fields(
         }),
         KindChanged,
       ),
+      // A race is warmed up for before it (ADR 0119).
+      case form.kind {
+        plan.Race -> segment_group("Warm-up", form, workout_form.Warmup, on)
+        _ -> element.none()
+      },
       // A rest day has no zone (ADR 0105); each part of an interval workout has its own (ADR 0116).
       case form.kind {
         plan.Rest | plan.Interval -> element.none()
@@ -1246,6 +1260,10 @@ fn form_fields(
           ],
         ),
       ]),
+      case form.kind {
+        plan.Race -> segment_group("Cool-down", form, workout_form.Cooldown, on)
+        _ -> element.none()
+      },
       field.area(
         "workout-description",
         "Notes",
