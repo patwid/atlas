@@ -153,17 +153,6 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
         "A coach can see your plans, activities and progress, and can give you plans to follow.",
       ),
     ]),
-    layout.subheader("Your coaches"),
-    case model.loaded, given {
-      False, _ -> progress.loading("Loading…")
-      True, [] ->
-        empty.compact(
-          icon.Lock,
-          "Nobody can see your training",
-          "Give a coach access with their e-mail address below.",
-        )
-      True, _ -> layout.list(list.map(given, given_view))
-    },
     person_finder.view(
       model.finder,
       person_finder.Labels(
@@ -179,6 +168,17 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
       Finder,
       GiveAccessClicked,
     ),
+    layout.subheader("Your coaches"),
+    case model.loaded, given {
+      False, _ -> progress.loading("Loading…")
+      True, [] ->
+        empty.compact(
+          icon.Lock,
+          "Nobody can see your training",
+          "Give a coach access with their e-mail address above.",
+        )
+      True, _ -> layout.list(list.map(given, given_view))
+    },
     case athletes {
       [] -> element.none()
       people ->
