@@ -28,7 +28,7 @@ const mkPlan = async (owner, extra = {}) => {
   return r.body
 }
 const mkWorkout = async (owner, plan, extra = {}) => {
-  const r = await create(owner, "workouts", { id: id(), plan: plan.id, day_index: 0, title: "Easy", kind: "easy", ...extra })
+  const r = await create(owner, "workouts", { id: id(), plan: plan.id, day_index: 0, title: "Easy", kind: "run", ...extra })
   assert.equal(r.status, 200, JSON.stringify(r.body))
   return r.body
 }
@@ -108,7 +108,7 @@ test("plans: clients cannot hard-delete", async () => {
 
 test("workouts: only the plan owner can write", async () => {
   const plan = await mkPlan("alice")
-  const bad = await create("bob", "workouts", { id: id(), plan: plan.id, day_index: 0, title: "x", kind: "easy" })
+  const bad = await create("bob", "workouts", { id: id(), plan: plan.id, day_index: 0, title: "x", kind: "run" })
   assert.equal(bad.status, 400)
   const w = await mkWorkout("alice", plan)
   assert.equal((await update("bob", "workouts", w.id, { title: "x" })).status, 404)
@@ -119,7 +119,7 @@ test("workouts: a target zone from 1 to 5 is stored, none is 0, others are refus
   const plan = await mkPlan("alice")
   assert.equal((await mkWorkout("alice", plan, { zone: 2 })).zone, 2)
   assert.equal((await mkWorkout("alice", plan)).zone, 0, "workouts without a zone stay valid")
-  const tooHigh = await create("alice", "workouts", { id: id(), plan: plan.id, day_index: 0, title: "x", kind: "easy", zone: 6 })
+  const tooHigh = await create("alice", "workouts", { id: id(), plan: plan.id, day_index: 0, title: "x", kind: "run", zone: 6 })
   assert.equal(tooHigh.status, 400)
 })
 

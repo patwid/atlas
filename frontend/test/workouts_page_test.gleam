@@ -38,7 +38,7 @@ fn row(
       day,
       position,
       title,
-      plan.Easy,
+      plan.Run,
       Some(8000.0),
       Some(2700),
     ),
@@ -423,10 +423,10 @@ pub fn the_slider_shows_the_week_and_others_see_a_bar_test() {
 
 pub fn a_workout_says_its_kind_week_and_day_test() {
   let html = html_of(with_rows([row("a", "p1", 8, 0, "Shake-out")]), False)
-  assert string.contains(html, "<span class=\"workout-kind\">Easy run</span>")
+  assert string.contains(html, "<span class=\"workout-kind\">Run</span>")
   assert string.contains(
     html,
-    "aria-label=\"Shake-out, Easy run, week 2, Tue, 8 km · 45:00\"",
+    "aria-label=\"Shake-out, Run, week 2, Tue, 8 km · 45:00\"",
   )
 }
 
@@ -445,7 +445,7 @@ pub fn the_form_is_labelled_and_shows_errors_test() {
         "1",
         "1",
         "",
-        plan.Easy,
+        plan.Run,
         "",
         "",
         "",
@@ -471,8 +471,9 @@ pub fn the_form_is_labelled_and_shows_errors_test() {
     html,
     "class=\"md-field-supporting\" id=\"workout-title-help\" role=\"alert\">Give the workout a title.",
   )
-  assert string.contains(html, "Easy run")
+  assert string.contains(html, ">Run<")
   assert string.contains(html, "Rest day")
+  assert !string.contains(html, "Tempo run")
 }
 
 pub fn the_edit_form_opens_in_a_dialog_over_the_calendar_test() {

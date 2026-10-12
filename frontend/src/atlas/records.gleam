@@ -415,7 +415,7 @@ fn kind_decoder() -> Decoder(plan.Kind) {
   use text <- decode.then(decode.string)
   case plan.kind_from_string(text) {
     Ok(kind) -> decode.success(kind)
-    Error(Nil) -> decode.failure(plan.Easy, "Kind")
+    Error(Nil) -> decode.failure(plan.Run, "Kind")
   }
 }
 

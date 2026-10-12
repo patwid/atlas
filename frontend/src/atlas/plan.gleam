@@ -12,14 +12,10 @@ import gleam/order
 import gleam/string
 
 pub type Kind {
-  Easy
-  Long
-  Tempo
+  Run
   Interval
   Race
   Rest
-  Cross
-  Strength
 }
 
 pub type Plan {
@@ -151,30 +147,24 @@ pub fn intensity_percent(value: Float) -> String {
   int.to_string(float.round(value *. 100.0)) <> "%"
 }
 
+/// The kinds a workout had before there was one for every run are read as a run, as the server now stores them
+/// (ADR 0114): a copy on the device keeps its old kind until the workout is next changed.
 pub fn kind_from_string(text: String) -> Result(Kind, Nil) {
   case text {
-    "easy" -> Ok(Easy)
-    "long" -> Ok(Long)
-    "tempo" -> Ok(Tempo)
+    "run" | "easy" | "long" | "tempo" | "cross" | "strength" -> Ok(Run)
     "interval" -> Ok(Interval)
     "race" -> Ok(Race)
     "rest" -> Ok(Rest)
-    "cross" -> Ok(Cross)
-    "strength" -> Ok(Strength)
     _ -> Error(Nil)
   }
 }
 
 pub fn kind_to_string(kind: Kind) -> String {
   case kind {
-    Easy -> "easy"
-    Long -> "long"
-    Tempo -> "tempo"
+    Run -> "run"
     Interval -> "interval"
     Race -> "race"
     Rest -> "rest"
-    Cross -> "cross"
-    Strength -> "strength"
   }
 }
 

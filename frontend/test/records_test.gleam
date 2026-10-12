@@ -64,16 +64,7 @@ pub fn reads_a_workout_and_treats_zero_targets_as_none_test() {
   let full =
     "{\"id\":\"w1\",\"plan\":\"p1\",\"day_index\":3,\"position\":1,\"title\":\"Tempo\",\"kind\":\"tempo\",\"distance_m\":8000,\"duration_s\":2700}"
   assert records.workout(parse(full))
-    == Ok(Workout(
-      "w1",
-      "p1",
-      3,
-      1,
-      "Tempo",
-      plan.Tempo,
-      Some(8000.0),
-      Some(2700),
-    ))
+    == Ok(Workout("w1", "p1", 3, 1, "Tempo", plan.Run, Some(8000.0), Some(2700)))
   let empty =
     "{\"id\":\"w2\",\"plan\":\"p1\",\"day_index\":0,\"position\":0,\"title\":\"Rest\",\"kind\":\"rest\",\"distance_m\":0,\"duration_s\":0}"
   assert records.workout(parse(empty))

@@ -11,7 +11,7 @@ fn w(
   distance: Float,
   seconds: Int,
 ) -> Workout {
-  Workout(id, "p1", day, position, id, plan.Easy, Some(distance), Some(seconds))
+  Workout(id, "p1", day, position, id, plan.Run, Some(distance), Some(seconds))
 }
 
 const no_phases = plan.Phases(0, 0, 0)

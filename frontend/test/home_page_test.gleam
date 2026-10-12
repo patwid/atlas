@@ -57,14 +57,14 @@ fn inputs(matches: List(matching.Stored)) -> today.Inputs {
       assignment_form.Row(Assignment("a1", "p1", "me", Some(monday)), "me", "T"),
     ],
     workouts: [
-      Workout("w1", "p1", 1, 0, "Tuesday easy", plan.Easy, Some(8000.0), None),
+      Workout("w1", "p1", 1, 0, "Tuesday easy", plan.Run, Some(8000.0), None),
       Workout(
         "w2",
         "p1",
         2,
         0,
         "Wednesday tempo",
-        plan.Tempo,
+        plan.Run,
         Some(8000.0),
         Some(2700),
       ),
@@ -246,7 +246,7 @@ pub fn the_day_and_its_sections_are_shown_test() {
   assert string.contains(html, "Wed 7 Oct 2026")
   assert string.contains(html, "Today")
   assert string.contains(html, "Wednesday tempo")
-  assert string.contains(html, "Tempo run")
+  assert string.contains(html, ">Run<")
   // One plan followed: its name is left out.
   assert !string.contains(html, "10k plan")
   assert string.contains(html, "Planned: 8 km · 45:00")

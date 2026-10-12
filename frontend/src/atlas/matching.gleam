@@ -152,20 +152,8 @@ fn candidate(
 /// Which sports can fulfil which kind of workout.
 pub fn compatible(kind: plan.Kind, sport: activity.Sport) -> Bool {
   case kind {
-    plan.Easy | plan.Long | plan.Tempo | plan.Interval | plan.Race ->
+    plan.Run | plan.Interval | plan.Race ->
       sport == activity.Run || sport == activity.TrailRun
-    plan.Cross ->
-      list.contains(
-        [
-          activity.Ride,
-          activity.Swim,
-          activity.Hike,
-          activity.Walk,
-          activity.Other,
-        ],
-        sport,
-      )
-    plan.Strength -> sport == activity.Strength
     plan.Rest -> False
   }
 }

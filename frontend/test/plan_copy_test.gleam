@@ -20,16 +20,7 @@ fn source() -> plan.Plan {
 
 fn row(id: String, day: Int, position: Int, title: String) -> workout_form.Row {
   Row(
-    Workout(
-      id,
-      "src",
-      day,
-      position,
-      title,
-      plan.Tempo,
-      Some(8000.0),
-      Some(2700),
-    ),
+    Workout(id, "src", day, position, title, plan.Run, Some(8000.0), Some(2700)),
     "3 x 10 min",
     None,
     0,
@@ -100,7 +91,7 @@ pub fn every_workout_is_copied_into_the_new_plan_test() {
       outbox.field_int("day_index", 3),
       outbox.field_int("position", 1),
       outbox.field_string("title", "Tempo"),
-      outbox.field_string("kind", "tempo"),
+      outbox.field_string("kind", "run"),
       outbox.field_string("description", "3 x 10 min"),
       outbox.field_float("distance_m", 8000.0),
       outbox.field_int("duration_s", 2700),

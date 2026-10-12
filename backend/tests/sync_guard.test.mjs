@@ -65,7 +65,7 @@ test("guard: the rule layer still applies first for other users", async () => {
 test("guard: superusers can edit without base_updated; every synced collection is guarded", async () => {
   const plan = await mkPlan()
   assert.equal((await h.update("admin", "plans", plan.id, { title: "admin edit" })).status, 200)
-  const w = await h.create("alice", "workouts", { id: id(), plan: plan.id, title: "Easy", kind: "easy" })
+  const w = await h.create("alice", "workouts", { id: id(), plan: plan.id, title: "Easy", kind: "run" })
   assert.equal((await h.update("alice", "workouts", w.body.id, { title: "x" })).status, 400)
   assert.equal((await h.update("alice", "workouts", w.body.id, { title: "x", base_updated: w.body.updated })).status, 200)
 })

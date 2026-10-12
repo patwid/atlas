@@ -222,7 +222,7 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
   const first = await waitFor("the workout on the server", async () => (await workouts())[0])
   assert.equal(first.plan, "baseplan0000001")
   assert.equal(first.title, "Easy run")
-  assert.equal(first.kind, "easy")
+  assert.equal(first.kind, "run")
   assert.equal(first.day_index, 1)
   assert.equal(first.position, 0)
   assert.equal(first.distance_m, 8500)
@@ -233,11 +233,11 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
   // A second workout on the same day, from that day's own "+ Add".
   click(w, byLabel(w, "Add a workout to week 1, Tue"))
   await waitFor("the form for day 2", () => d.querySelector("#workout-title") && d.querySelector("#workout-day").value === "2")
-  typeInto(w, d.querySelector("#workout-title"), "Core session")
-  pick(w, "kind", "strength")
+  typeInto(w, d.querySelector("#workout-title"), "Parkrun")
+  pick(w, "kind", "race")
   submit(w, d.querySelector(".workout-form"))
-  const second = await waitFor("the second workout", async () => (await workouts()).find((x) => x.title === "Core session"))
-  assert.equal(second.kind, "strength")
+  const second = await waitFor("the second workout", async () => (await workouts()).find((x) => x.title === "Parkrun"))
+  assert.equal(second.kind, "race")
   assert.equal(second.day_index, 1)
   assert.equal(second.position, 1, "it goes after the first one on that day")
 
@@ -266,9 +266,9 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
   assert.equal(d.querySelector("#workout-rep-distance").value, "800")
   assert.equal(d.querySelector("#workout-recovery").value, "1:30")
   assert.equal(d.querySelector("#workout-zone").value, "4")
-  pick(w, "kind", "tempo")
+  pick(w, "kind", "run")
   submit(w, d.querySelector(".workout-form"))
-  await waitFor("the repetitions cleared with the kind", async () => (await workouts()).find((x) => x.id === track.id && x.kind === "tempo")?.steps === null)
+  await waitFor("the repetitions cleared with the kind", async () => (await workouts()).find((x) => x.id === track.id && x.kind === "run")?.steps === null)
 
   // Move the first workout to day 4 and rename it: the owner opens it straight in its form (ADR 0080).
   click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Easy run")))
@@ -286,19 +286,19 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
 
   // Delete the second one; Undo brings it back, and the next delete is written when its snackbar is closed.
   const deleteCore = async () => {
-    click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Core session")))
-    await waitFor("the second workout in its form", () => d.querySelector("#workout-title")?.value === "Core session")
+    click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Parkrun")))
+    await waitFor("the second workout in its form", () => d.querySelector("#workout-title")?.value === "Parkrun")
     click(w, byLabel(w, "Delete workout"))
-    await waitFor("the Undo snackbar", () => d.body.textContent.includes("Workout deleted") && !d.querySelector(".calendar").textContent.includes("Core session"))
+    await waitFor("the Undo snackbar", () => d.body.textContent.includes("Workout deleted") && !d.querySelector(".calendar").textContent.includes("Parkrun"))
   }
   await deleteCore()
   click(w, button(w, "Undo"))
-  await waitFor("back on the calendar", () => d.querySelector(".calendar").textContent.includes("Core session"))
+  await waitFor("back on the calendar", () => d.querySelector(".calendar").textContent.includes("Parkrun"))
   assert.equal((await workouts()).find((x) => x.id === second.id).deleted, false, "Undo wrote nothing")
   await deleteCore()
   click(w, byLabel(w, "Close"))
   await waitFor("the delete on the server", async () => (await workouts()).find((x) => x.id === second.id)?.deleted === true)
-  await waitFor("gone from the screen", () => !d.body.textContent.includes("Core session"))
+  await waitFor("gone from the screen", () => !d.body.textContent.includes("Parkrun"))
   w.close()
 })
 
@@ -306,7 +306,7 @@ test("the owner sets a week's intensity in its dialog and the plan's phases and 
   await h.world()
   const alice = h.people.alice
   await h.create("alice", "plans", { id: "phaseplan000001", owner: alice.id, title: "Season", base_weeks: 2, pre_competition_weeks: 1, competition_weeks: 1 })
-  await h.create("alice", "workouts", { id: "phasework000001", plan: "phaseplan000001", day_index: 7, position: 0, title: "Long run", kind: "long", distance_m: 20000 })
+  await h.create("alice", "workouts", { id: "phasework000001", plan: "phaseplan000001", day_index: 7, position: 0, title: "Long run", kind: "run", distance_m: 20000 })
   const w = startApp("/plans/phaseplan000001", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
   const d = w.document
   const onServer = async () => (await h.get("alice", "plans", "phaseplan000001")).body
@@ -520,7 +520,7 @@ test("an athlete adds a coach by e-mail, the coach assigns a plan, and the athle
   assert.equal(assignment.athlete, alice.id)
   assert.equal(assignment.assigned_by, bob.id)
   await waitFor("the plan's screen says who it is for", () => d.querySelector(".bar h1")?.textContent === "Coach's base plan" && d.querySelector(".plan-meta")?.textContent === "For alice")
-  await setup(h.create("bob", "workouts", { id: "coachwork000001", plan: assignment.plan, day_index: 0, position: 0, title: "Easy run", kind: "easy", distance_m: 5000 }))
+  await setup(h.create("bob", "workouts", { id: "coachwork000001", plan: assignment.plan, day_index: 0, position: 0, title: "Easy run", kind: "run", distance_m: 5000 }))
   w.close()
 
   // 3. Alice opens the app and finds the plan from her coach, read-only.
@@ -728,8 +728,8 @@ test("Home shows missed, looks-done and rest days; the user confirms, unlinks, r
   await setup(h.create("alice", "plans", { id: "todayplan000001", owner: alice.id, title: "Tempo block", start_date: ymd(yesterday) }))
   // Days count from the Monday of the week the plan starts in (ADR 0108).
   const firstDay = weekdayOf(yesterday)
-  await setup(h.create("alice", "workouts", { id: "todaywork000001", plan: "todayplan000001", day_index: firstDay, position: 0, title: "Easy shake-out", kind: "easy", distance_m: 5000 }))
-  await setup(h.create("alice", "workouts", { id: "todaywork000002", plan: "todayplan000001", day_index: firstDay + 1, position: 0, title: "Tempo intervals", kind: "tempo", distance_m: 8000, duration_s: 2700 }))
+  await setup(h.create("alice", "workouts", { id: "todaywork000001", plan: "todayplan000001", day_index: firstDay, position: 0, title: "Easy shake-out", kind: "run", distance_m: 5000 }))
+  await setup(h.create("alice", "workouts", { id: "todaywork000002", plan: "todayplan000001", day_index: firstDay + 1, position: 0, title: "Tempo intervals", kind: "run", distance_m: 8000, duration_s: 2700 }))
   await setup(h.create("alice", "workouts", { id: "todaywork000003", plan: "todayplan000001", day_index: firstDay + 2, position: 0, title: "Recovery day", kind: "rest" }))
   // The plan started yesterday: its first day is yesterday (missed), then today, then tomorrow.
   await setup(h.create("alice", "assignments", { id: "todayasg0000001", plan: "todayplan000001", athlete: alice.id, assigned_by: alice.id }))
@@ -800,8 +800,8 @@ test("an athlete copies a coach's plan with its workouts, for herself, then edit
   await setup(h.create("bob", "coach_grants", { id: "copygrant000001", athlete: bob.id, coach: alice.id }))
   await setup(h.create("alice", "plans", { id: "copysrcplan0001", owner: alice.id, title: "Autumn 10k", description: "Eight weeks", start_date: "2026-11-02" }))
   await setup(h.create("alice", "assignments", { id: "copysrcasg00001", plan: "copysrcplan0001", athlete: bob.id, assigned_by: alice.id }))
-  await setup(h.create("alice", "workouts", { id: "copysrcwork0001", plan: "copysrcplan0001", day_index: 3, position: 0, title: "Tempo", kind: "tempo", description: "3 x 10 min", distance_m: 8000, duration_s: 2700, steps: { v: 1, reps: 3, work: { duration_s: 600 } }, zone: 3 }))
-  await setup(h.create("alice", "workouts", { id: "copysrcwork0002", plan: "copysrcplan0001", day_index: 0, position: 0, title: "Easy run", kind: "easy", distance_m: 5000 }))
+  await setup(h.create("alice", "workouts", { id: "copysrcwork0001", plan: "copysrcplan0001", day_index: 3, position: 0, title: "Tempo", kind: "run", description: "3 x 10 min", distance_m: 8000, duration_s: 2700, steps: { v: 1, reps: 3, work: { duration_s: 600 } }, zone: 3 }))
+  await setup(h.create("alice", "workouts", { id: "copysrcwork0002", plan: "copysrcplan0001", day_index: 0, position: 0, title: "Easy run", kind: "run", distance_m: 5000 }))
 
   const w = startApp("/plans/copysrcplan0001", { token: bob.token, user_id: bob.id, name: "bob", email: bob.email })
   const d = w.document
@@ -824,7 +824,7 @@ test("an athlete copies a coach's plan with its workouts, for herself, then edit
     (await h.api("GET", "collections/assignments/records?perPage=50", { token: bob.token })).body.items.find((a) => a.plan === copy.id))
   assert.deepEqual([copyAssignment.athlete, copyAssignment.assigned_by], [bob.id, bob.id], "the copy is for him")
   const copied = await waitFor("both workouts on the server", async () => { const ws = await workoutsOf(copy.id); return ws.length === 2 && ws })
-  assert.deepEqual(copied.map((x) => [x.title, x.day_index, x.kind]), [["Easy run", 0, "easy"], ["Tempo", 3, "tempo"]])
+  assert.deepEqual(copied.map((x) => [x.title, x.day_index, x.kind]), [["Easy run", 0, "run"], ["Tempo", 3, "run"]])
   assert.equal(copied[1].description, "3 x 10 min")
   assert.equal(copied[1].distance_m, 8000)
   assert.equal(copied[1].duration_s, 2700)
@@ -933,9 +933,9 @@ test("a coach sees an athlete's weeks, plans and activities read-only, and loses
   // count from the Monday of the week the plan starts in (ADR 0108).
   const workout = (id, day, title, kind, distance) =>
     setup(h.create("bob", "workouts", { id, plan: "coachview000001", day_index: weekdayOf(start) + day, position: 0, title, kind, distance_m: distance }))
-  await workout("cvworkout000001", 0, "Missed easy run", "easy", 5000)
-  await workout("cvworkout000002", 5, "Tempo they did", "tempo", 8000)
-  await workout("cvworkout000003", 10, "Today's long run", "long", 10000)
+  await workout("cvworkout000001", 0, "Missed easy run", "run", 5000)
+  await workout("cvworkout000002", 5, "Tempo they did", "run", 8000)
+  await workout("cvworkout000003", 10, "Today's long run", "run", 10000)
   await setup(h.create("bob", "assignments", { id: "cvassign0000001", plan: "coachview000001", athlete: alice.id, assigned_by: bob.id }))
   await setup(h.create("alice", "activities", {
     id: "cvactivity00001", owner: alice.id, source: "manual", started_at: utcOf(daysFromNow(-5), 7, 0),

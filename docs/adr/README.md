@@ -25,7 +25,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0019 | [The device database: IndexedDB records, meta values and one owner](0019-device-database.md) | Accepted |
 | 0020 | [The sync runner in the app, local writes and conflicted copies](0020-sync-runner-and-conflicted-copies.md) | Accepted |
 | 0021 | [The plans screens](0021-plans-screens.md) | Accepted |
-| 0022 | [Workouts in a plan](0022-workouts-in-a-plan.md) | Superseded by 0043 (layout and form; interval repetitions: 0104) |
+| 0022 | [Workouts in a plan](0022-workouts-in-a-plan.md) | Superseded by 0043 (layout and form; interval repetitions: 0104; kinds: 0114) |
 | 0023 | [Starting plans: assignments](0023-assignments.md) | Accepted (assignments that follow the plan's date: 0108; one per plan: 0110) |
 | 0024 | [Coach access: grants with names, and the Coaches screen](0024-coach-grants-screen.md) | Accepted |
 | 0025 | [Entering activities by hand](0025-manual-activities.md) | Accepted |
@@ -116,3 +116,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0110 | [Every plan is for one athlete; sharing and public plans are gone](0110-one-athlete-per-plan.md) | Accepted |
 | 0111 | [Flat goal and intensity meters instead of the wave](0111-flat-goal-and-intensity-meters.md) | Accepted |
 | 0113 | [No sync row in Settings; unusable device storage as a banner on every page](0113-no-sync-row-in-settings.md) | Accepted |
+| 0114 | [One kind for every run; no tempo, cross-training or strength workouts](0114-one-kind-for-every-run.md) | Accepted |

@@ -28,9 +28,9 @@ test("existing plans keep their dates; the owner's assignments follow the plan f
   // Followed from Wednesday 4 Nov by alice herself and by bob (a public plan), on another day by a coach's athlete.
   const plan = await ok(h.create("alice", "plans", { id: id(), owner: alice.id, title: "10k", visibility: "public" }))
   const unused = await ok(h.create("alice", "plans", { id: id(), owner: alice.id, title: "Draft", visibility: "private" }))
-  const w0 = await ok(h.create("alice", "workouts", { id: id(), plan: plan.id, day_index: 0, title: "Easy", kind: "easy" }))
-  const w9 = await ok(h.create("alice", "workouts", { id: id(), plan: plan.id, day_index: 9, title: "Long", kind: "long" }))
-  const draftWorkout = await ok(h.create("alice", "workouts", { id: id(), plan: unused.id, day_index: 2, title: "Easy", kind: "easy" }))
+  const w0 = await ok(h.create("alice", "workouts", { id: id(), plan: plan.id, day_index: 0, title: "Easy", kind: "interval" }))
+  const w9 = await ok(h.create("alice", "workouts", { id: id(), plan: plan.id, day_index: 9, title: "Long", kind: "interval" }))
+  const draftWorkout = await ok(h.create("alice", "workouts", { id: id(), plan: unused.id, day_index: 2, title: "Easy", kind: "interval" }))
   const own = await ok(h.create("alice", "assignments", { id: id(), plan: plan.id, athlete: alice.id, assigned_by: alice.id, start_date: "2026-11-04" }))
   const older = await ok(h.create("alice", "assignments", { id: id(), plan: plan.id, athlete: alice.id, assigned_by: alice.id, start_date: "2026-09-02" }))
   const bobs = await ok(h.create("bob", "assignments", { id: id(), plan: plan.id, athlete: bob.id, assigned_by: bob.id, start_date: "2026-11-04" }))

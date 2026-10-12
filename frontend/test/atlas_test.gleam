@@ -402,7 +402,7 @@ fn plan_screen(owner: String) -> atlas.Model {
         "1",
         "2",
         "Easy run",
-        plan.Easy,
+        plan.Run,
         "8",
         "45",
         "",
@@ -453,7 +453,7 @@ pub fn signing_out_clears_the_workouts_on_screen_too_test() {
       ..plan_screen("u1"),
       workouts: workouts_page.Model(..workouts_page.new(), rows: [
         workout_form.Row(
-          plan.Workout("w1", "p1", 0, 0, "Secret", plan.Easy, None, None),
+          plan.Workout("w1", "p1", 0, 0, "Secret", plan.Run, None, None),
           "",
           None,
           0,
@@ -655,7 +655,7 @@ fn today_screen() -> atlas.Model {
     ]),
     workouts: workouts_page.Model(..workouts_page.new(), rows: [
       workout_form.Row(
-        plan.Workout("w1", "p1", 0, 0, "Easy", plan.Easy, None, None),
+        plan.Workout("w1", "p1", 0, 0, "Easy", plan.Run, None, None),
         "",
         None,
         0,
@@ -839,7 +839,7 @@ fn copy_screen(workouts_loaded: Bool) -> atlas.Model {
             3,
             0,
             "Tempo",
-            plan.Tempo,
+            plan.Run,
             option.Some(8000.0),
             None,
           ),
@@ -849,7 +849,7 @@ fn copy_screen(workouts_loaded: Bool) -> atlas.Model {
           "T",
         ),
         workout_form.Row(
-          plan.Workout("w1", "src", 0, 0, "Easy", plan.Easy, None, None),
+          plan.Workout("w1", "src", 0, 0, "Easy", plan.Run, None, None),
           "",
           None,
           0,
@@ -862,7 +862,7 @@ fn copy_screen(workouts_loaded: Bool) -> atlas.Model {
             0,
             0,
             "Not mine",
-            plan.Easy,
+            plan.Run,
             None,
             None,
           ),

@@ -45,7 +45,7 @@ test("purge: removes old soft-deleted rows, keeps recent tombstones and live row
 
 test("purge: children go with their purged parent and tombstones of every synced collection are removed", async () => {
   const plan = await mkPlan()
-  const w = (await h.create("alice", "workouts", { id: id(), plan: plan.id, title: "w", kind: "easy" })).body
+  const w = (await h.create("alice", "workouts", { id: id(), plan: plan.id, title: "w", kind: "run" })).body
   const asg = (await h.create("alice", "assignments", { id: id(), plan: plan.id, athlete: h.people.alice.id, assigned_by: h.people.alice.id })).body
   const act = (await h.create("alice", "activities", { id: id(), owner: h.people.alice.id, source: "manual", started_at: "2026-10-01 07:00:00.000Z", sport: "run" })).body
   const m = (await h.create("alice", "matches", { id: id(), owner: h.people.alice.id, activity: act.id, assignment: asg.id, workout: w.id })).body
@@ -64,8 +64,8 @@ test("purge: children go with their purged parent and tombstones of every synced
 test("purge: a live child of a purged plan is removed with it (cascade), other plans are untouched", async () => {
   const gone = await mkPlan()
   const kept = await mkPlan()
-  const child = (await h.create("alice", "workouts", { id: id(), plan: gone.id, title: "w", kind: "easy" })).body
-  const keptChild = (await h.create("alice", "workouts", { id: id(), plan: kept.id, title: "w", kind: "easy" })).body
+  const child = (await h.create("alice", "workouts", { id: id(), plan: gone.id, title: "w", kind: "run" })).body
+  const keptChild = (await h.create("alice", "workouts", { id: id(), plan: kept.id, title: "w", kind: "run" })).body
   await softDelete("plans", gone.id)
   await sleep(2500)
   await runPurge(["plans", gone.id])

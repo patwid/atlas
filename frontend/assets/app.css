@@ -725,8 +725,8 @@ label {
 }
 .workout:hover { background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, var(--md-sys-color-surface-container-high)); }
 .workout.open { background: var(--selected); color: var(--md-sys-color-on-secondary-container); }
-.workout.kind-easy, .workout.kind-long { --kind: var(--intensity-low); }
-.workout.kind-tempo, .workout.kind-interval { --kind: var(--intensity-medium); }
+.workout.kind-run { --kind: var(--intensity-low); }
+.workout.kind-interval { --kind: var(--intensity-medium); }
 .workout.kind-race { --kind: var(--intensity-high); }
 .workout.kind-rest { --kind: var(--md-sys-color-outline-variant); color: var(--md-sys-color-on-surface-variant); }
 /* A long title wraps between words, hyphenated, and stops after two lines; the dialog has all of it (ADR 0075). */

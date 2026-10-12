@@ -28,8 +28,8 @@ test("existing plans are split, one athlete each, and their matches move with th
 
   // Alice's public plan: her own, one for carol (as her coach), bob started it himself, and he assigned it to dave.
   const shared = await plan("alice", { visibility: "public", description: "Eight weeks", base_weeks: 2 })
-  const easy = await ok(h.create("alice", "workouts", { id: id(), plan: shared.id, day_index: 2, title: "Easy", kind: "easy" }))
-  const gone = await ok(h.create("alice", "workouts", { id: id(), plan: shared.id, day_index: 4, title: "Gone", kind: "easy" }))
+  const easy = await ok(h.create("alice", "workouts", { id: id(), plan: shared.id, day_index: 2, title: "Easy", kind: "interval" }))
+  const gone = await ok(h.create("alice", "workouts", { id: id(), plan: shared.id, day_index: 4, title: "Gone", kind: "interval" }))
   await ok(h.update("alice", "workouts", gone.id, { deleted: true, base_updated: gone.updated }))
   const own = await assignment("alice", shared, "alice")
   const forCarol = await assignment("alice", shared, "carol", { start_date: "2026-11-09" })

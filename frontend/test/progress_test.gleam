@@ -57,12 +57,12 @@ fn inputs() -> today.Inputs {
       ),
     ],
     workouts: [
-      workout("mon1", 0, plan.Easy, 5000.0),
-      workout("wed1", 2, plan.Tempo, 8000.0),
+      workout("mon1", 0, plan.Run, 5000.0),
+      workout("wed1", 2, plan.Run, 8000.0),
       workout("thu1", 3, plan.Rest, 0.0),
-      workout("mon2", 7, plan.Easy, 6000.0),
-      workout("wed2", 9, plan.Long, 10_000.0),
-      workout("sat2", 12, plan.Easy, 5000.0),
+      workout("mon2", 7, plan.Run, 6000.0),
+      workout("wed2", 9, plan.Run, 10_000.0),
+      workout("sat2", 12, plan.Run, 5000.0),
     ],
     plans: [plan.new("p1", "coach", "Base", "", "T")],
     activities: [

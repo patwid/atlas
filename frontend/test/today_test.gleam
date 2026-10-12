@@ -74,11 +74,11 @@ fn inputs() -> today.Inputs {
     today: wednesday,
     assignments: [assignment_row("a1", "me", "p1", monday)],
     workouts: [
-      workout("w0", "p1", 0, 0, plan.Easy),
+      workout("w0", "p1", 0, 0, plan.Run),
       workout("w1", "p1", 1, 0, plan.Rest),
-      workout("w2", "p1", 2, 0, plan.Tempo),
-      workout("w3", "p1", 3, 0, plan.Easy),
-      workout("w20", "p1", 20, 0, plan.Long),
+      workout("w2", "p1", 2, 0, plan.Run),
+      workout("w3", "p1", 3, 0, plan.Run),
+      workout("w20", "p1", 20, 0, plan.Run),
     ],
     plans: [plan.new("p1", "me", "10k plan", "", "T")],
     activities: [],
@@ -197,8 +197,8 @@ pub fn two_plans_on_the_same_day_are_both_shown_test() {
         assignment_row("a2", "me", "p2", monday),
       ],
       workouts: [
-        workout("w2", "p1", 2, 0, plan.Tempo),
-        workout("v2", "p2", 2, 0, plan.Strength),
+        workout("w2", "p1", 2, 0, plan.Run),
+        workout("v2", "p2", 2, 0, plan.Run),
       ],
       plans: [
         plan.new("p1", "me", "Running", "", "T"),
@@ -217,7 +217,7 @@ pub fn the_same_plan_followed_twice_is_two_items_test() {
         assignment_row("a1", "me", "p1", monday),
         assignment_row("a2", "me", "p1", monday),
       ],
-      workouts: [workout("w2", "p1", 2, 0, plan.Tempo)],
+      workouts: [workout("w2", "p1", 2, 0, plan.Run)],
     )
   assert list.length(today.items(twice)) == 2
 }
@@ -281,8 +281,8 @@ pub fn an_activity_linked_to_another_workout_is_not_offered_test() {
     == ["a", "b"]
   let two_workouts =
     Inputs(..with_link, workouts: [
-      workout("w2", "p1", 2, 0, plan.Tempo),
-      workout("w2b", "p1", 2, 1, plan.Strength),
+      workout("w2", "p1", 2, 0, plan.Run),
+      workout("w2b", "p1", 2, 1, plan.Run),
     ])
   let assert Ok(second) =
     list.find(today.items(two_workouts), fn(i) {

@@ -11,7 +11,7 @@ fn form() -> workout_form.Form {
     "1",
     "1",
     "Easy run",
-    plan.Easy,
+    plan.Run,
     "",
     "",
     "",
@@ -77,14 +77,14 @@ pub fn formatting_for_the_form_round_trips_test() {
 
 pub fn a_minimal_workout_is_valid_test() {
   assert workout_form.validate(form())
-    == Ok(Valid(0, "Easy run", plan.Easy, 0.0, 0, "", None, 0))
+    == Ok(Valid(0, "Easy run", plan.Run, 0.0, 0, "", None, 0))
 }
 
 pub fn week_and_day_become_the_day_index_test() {
   assert workout_form.validate(Form(..form(), week: "3", day: "2"))
-    == Ok(Valid(15, "Easy run", plan.Easy, 0.0, 0, "", None, 0))
+    == Ok(Valid(15, "Easy run", plan.Run, 0.0, 0, "", None, 0))
   assert workout_form.validate(Form(..form(), week: "1", day: "7"))
-    == Ok(Valid(6, "Easy run", plan.Easy, 0.0, 0, "", None, 0))
+    == Ok(Valid(6, "Easy run", plan.Run, 0.0, 0, "", None, 0))
 }
 
 pub fn targets_are_converted_to_metres_and_seconds_test() {
@@ -96,7 +96,7 @@ pub fn targets_are_converted_to_metres_and_seconds_test() {
       description: "  steady  ",
     )
   assert workout_form.validate(typed)
-    == Ok(Valid(0, "Easy run", plan.Easy, 8500.0, 4500, "steady", None, 0))
+    == Ok(Valid(0, "Easy run", plan.Run, 8500.0, 4500, "steady", None, 0))
 }
 
 pub fn every_field_has_its_own_error_test() {
@@ -135,7 +135,7 @@ pub fn the_week_is_checked_first_so_one_mistake_gives_one_message_test() {
       "",
       "",
       "",
-      plan.Easy,
+      plan.Run,
       "x",
       "y",
       "",
@@ -154,7 +154,7 @@ pub fn the_week_is_checked_first_so_one_mistake_gives_one_message_test() {
 
 fn row() -> workout_form.Row {
   Row(
-    Workout("w1", "p1", 9, 2, "Tempo", plan.Tempo, Some(8000.0), Some(2700)),
+    Workout("w1", "p1", 9, 2, "Tempo", plan.Run, Some(8000.0), Some(2700)),
     "3 x 10 min",
     None,
     0,
@@ -168,7 +168,7 @@ pub fn editing_starts_from_the_stored_workout_test() {
       "2",
       "3",
       "Tempo",
-      plan.Tempo,
+      plan.Run,
       "8",
       "45",
       "3 x 10 min",
@@ -212,14 +212,14 @@ pub fn editing_starts_from_the_stored_workout_test() {
 }
 
 pub fn a_new_workout_carries_its_plan_position_and_values_test() {
-  let valid = Valid(9, "Tempo", plan.Tempo, 8000.0, 2700, "3 x 10 min", None, 0)
+  let valid = Valid(9, "Tempo", plan.Run, 8000.0, 2700, "3 x 10 min", None, 0)
   assert workout_form.create_fields("p1", 2, valid)
     == dict.from_list([
       outbox.field_string("plan", "p1"),
       outbox.field_int("position", 2),
       outbox.field_int("day_index", 9),
       outbox.field_string("title", "Tempo"),
-      outbox.field_string("kind", "tempo"),
+      outbox.field_string("kind", "run"),
       outbox.field_string("description", "3 x 10 min"),
       outbox.field_float("distance_m", 8000.0),
       outbox.field_int("duration_s", 2700),
@@ -229,7 +229,7 @@ pub fn a_new_workout_carries_its_plan_position_and_values_test() {
 }
 
 pub fn an_edit_sends_only_what_changed_test() {
-  let same = Valid(9, "Tempo", plan.Tempo, 8000.0, 2700, "3 x 10 min", None, 0)
+  let same = Valid(9, "Tempo", plan.Run, 8000.0, 2700, "3 x 10 min", None, 0)
   assert workout_form.changed_fields(row(), same, 0) == dict.new()
   assert workout_form.changed_fields(
       row(),
@@ -255,8 +255,7 @@ pub fn an_edit_sends_only_what_changed_test() {
 }
 
 pub fn moving_to_another_day_puts_the_workout_at_the_end_of_it_test() {
-  let moved =
-    Valid(10, "Tempo", plan.Tempo, 8000.0, 2700, "3 x 10 min", None, 0)
+  let moved = Valid(10, "Tempo", plan.Run, 8000.0, 2700, "3 x 10 min", None, 0)
   assert workout_form.changed_fields(row(), moved, 4)
     == dict.from_list([
       outbox.field_int("day_index", 10),
@@ -265,9 +264,10 @@ pub fn moving_to_another_day_puts_the_workout_at_the_end_of_it_test() {
 }
 
 pub fn labels_for_every_kind_test() {
-  assert workout_form.kind_label(plan.Easy) == "Easy run"
+  assert workout_form.kind_label(plan.Run) == "Run"
+  assert workout_form.kind_label(plan.Interval) == "Intervals"
+  assert workout_form.kind_label(plan.Race) == "Race"
   assert workout_form.kind_label(plan.Rest) == "Rest day"
-  assert workout_form.kind_label(plan.Cross) == "Cross-training"
 }
 
 pub fn a_problem_names_its_field_test() {
@@ -276,7 +276,7 @@ pub fn a_problem_names_its_field_test() {
       "1",
       "1",
       "",
-      plan.Easy,
+      plan.Run,
       "",
       "",
       "",
@@ -294,7 +294,7 @@ pub fn a_problem_names_its_field_test() {
       "1",
       "1",
       "Run",
-      plan.Easy,
+      plan.Run,
       "x",
       "",
       "",
@@ -313,7 +313,7 @@ pub fn a_problem_names_its_field_test() {
       "1",
       "1",
       "Run",
-      plan.Easy,
+      plan.Run,
       "",
       "",
       "",
@@ -357,7 +357,7 @@ pub fn repetitions_are_optional_and_only_for_intervals_test() {
   assert valid.intervals == None
   // Typed, then the kind changed: they are not kept.
   let assert Ok(valid) =
-    workout_form.validate(Form(..intervals_form(), kind: plan.Tempo))
+    workout_form.validate(Form(..intervals_form(), kind: plan.Run))
   assert valid.intervals == None
 }
 
@@ -449,10 +449,10 @@ pub fn an_edit_sends_steps_only_when_the_repetitions_changed_test() {
     workout_form.validate(Form(..intervals_form(), reps: "5"))
   assert dict.keys(workout_form.changed_fields(stored, fewer, 0)) == ["steps"]
   let assert Ok(tempo) =
-    workout_form.validate(Form(..intervals_form(), kind: plan.Tempo))
+    workout_form.validate(Form(..intervals_form(), kind: plan.Run))
   assert workout_form.changed_fields(stored, tempo, 0)
     == dict.from_list([
-      outbox.field_string("kind", "tempo"),
+      outbox.field_string("kind", "run"),
       outbox.field_null("steps"),
     ])
 }
@@ -463,7 +463,7 @@ pub fn a_zone_is_chosen_stored_and_typed_back_test() {
   assert dict.get(workout_form.create_fields("p1", 0, valid), "zone") == Ok("2")
   let stored =
     Row(
-      Workout("w1", "p1", 0, 0, "Easy run", plan.Easy, None, None),
+      Workout("w1", "p1", 0, 0, "Easy run", plan.Run, None, None),
       "",
       None,
       2,

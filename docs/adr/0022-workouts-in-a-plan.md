@@ -1,6 +1,6 @@
 # 0022. Workouts in a plan
 
-- Status: Superseded by [0043](0043-plan-phases-goal-and-calendar.md) (the layout and the form; the rest still holds); interval repetitions: [0104](0104-interval-repetitions.md)
+- Status: Superseded by [0043](0043-plan-phases-goal-and-calendar.md) (the layout and the form; the rest still holds); interval repetitions: [0104](0104-interval-repetitions.md); kinds: [0114](0114-one-kind-for-every-run.md)
 - Date: 2026-10-06
 - Deciders: agent (product scope: plans are made of workouts; the owner asked for creating and sharing plans)
 

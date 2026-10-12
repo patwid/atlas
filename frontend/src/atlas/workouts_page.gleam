@@ -453,16 +453,7 @@ fn find(rows: List(Row), id: String) -> Result(Row, Nil) {
   list.find(rows, fn(row) { row.workout.id == id })
 }
 
-const kinds = [
-  plan.Easy,
-  plan.Long,
-  plan.Tempo,
-  plan.Interval,
-  plan.Race,
-  plan.Rest,
-  plan.Cross,
-  plan.Strength,
-]
+const kinds = [plan.Run, plan.Interval, plan.Race, plan.Rest]
 
 fn kind_from_value(value: String, fallback: Kind) -> Kind {
   case plan.kind_from_string(value) {

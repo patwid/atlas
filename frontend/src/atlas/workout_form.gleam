@@ -103,7 +103,7 @@ pub fn empty_for(week: Int, day: Int) -> Form {
     int.to_string(week),
     int.to_string(day),
     "",
-    plan.Easy,
+    plan.Run,
     "",
     "",
     "",
@@ -654,14 +654,10 @@ pub fn steps_field(intervals: Option(Intervals)) -> #(String, String) {
 
 pub fn kind_label(kind: Kind) -> String {
   case kind {
-    plan.Easy -> "Easy run"
-    plan.Long -> "Long run"
-    plan.Tempo -> "Tempo run"
+    plan.Run -> "Run"
     plan.Interval -> "Intervals"
     plan.Race -> "Race"
     plan.Rest -> "Rest day"
-    plan.Cross -> "Cross-training"
-    plan.Strength -> "Strength"
   }
 }
 

@@ -53,6 +53,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - The workout form fills in the duration from a typed distance, or the distance from a typed duration, at the pace of the target zone in your pace zones; for intervals, the time or distance of a rep. Interval workouts show a read-only total distance and time of their repetitions (ADR 0106).
 
 ### Changed
+- A workout is a run, intervals, a race or a rest day: easy and long runs are one kind, "Run", and tempo runs, cross-training and strength are gone. Existing workouts of those kinds are runs now; rides, swims and strength sessions no longer match a workout (ADR 0114).
 - A plan's header is one block in one type size with even gaps: whom the plan is for or from comes first with a person icon, then its phases as chips ("Base · 4 weeks", alike as the bands are, ADR 0063) and its description; a coach's plan ends with a lock line saying only they can change it.
 - When this browser cannot open its local storage, a banner on every page says so, instead of only the Sync row in Settings (ADR 0113).
 - The goal and intensity meters are flat bars again instead of waves, so their filled length is easier to read (ADR 0111).
@@ -130,6 +131,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - A workout's week choice offers only the plan's weeks, no longer one more after its last phase.
 
 ### Removed
+- The workout kinds tempo run, cross-training and strength (ADR 0114).
 - The Sync row in Settings: sync problems keep their badge and banner, and syncing shows the progress bar (ADR 0113).
 - Sharing a plan with named people, public plans and starting someone else's plan: a plan is for one person, and reusing one means copying it (ADR 0110). The Schedule and Sharing tabs are gone.
 
