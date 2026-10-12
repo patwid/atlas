@@ -1149,7 +1149,11 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
 .md-field.has-error .md-field-supporting, .intensity-setting.has-error .md-field-supporting, .phases-error { color: var(--md-sys-color-error); }
 @media (prefers-reduced-motion: reduce) { .md-field-label { transition: none; } }
 /* What fields sit on. */
-@media (min-width: 37.5rem) { dialog.form-dialog { --field-container: var(--md-sys-color-surface-container-high); } }
+@media (min-width: 37.5rem) {
+  dialog.form-dialog { --field-container: var(--md-sys-color-surface-container-high); }
+  /* The gap around a slider's handle is the colour of what it sits on, as in the details dialog. */
+  .form-dialog .intensity-control input[type="range"] { --gap-color: var(--md-sys-color-surface-container-high); }
+}
 
 /* A simple dialog of choices (ADR 0062): each row is a choice, taken at once. */
 .choice-dialog .choices { list-style: none; margin: 0 -1.5rem 1rem; padding: 0; }
