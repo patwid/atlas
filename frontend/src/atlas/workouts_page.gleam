@@ -15,7 +15,6 @@ import atlas/records
 import atlas/store
 import atlas/ui/button
 import atlas/ui/chip
-import atlas/ui/choice
 import atlas/ui/dialog
 import atlas/ui/empty
 import atlas/ui/error
@@ -26,6 +25,7 @@ import atlas/ui/icon
 import atlas/ui/progress
 import atlas/ui/undo.{type Undo}
 import atlas/units
+import atlas/workout_fields
 import atlas/workout_form.{type Row}
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -1196,85 +1196,13 @@ fn form_fields(
           }),
         ),
       ]),
-      choice.chips(
-        "kind",
-        "Kind",
+      workout_fields.kind_field(
         plan.kind_to_string(form.kind),
-        list.map(kinds, fn(kind) {
-          #(plan.kind_to_string(kind), workout_form.kind_label(kind))
-        }),
-        KindChanged,
+        workout_fields.kind_options(kinds),
+        events,
       ),
-      // A race is warmed up for before it (ADR 0119).
-      case form.kind {
-        plan.Race -> segment_group("Warm-up", form, workout_form.Warmup, on)
-        _ -> element.none()
-      },
-      // A rest day has no zone (ADR 0105); each part of an interval workout has its own (ADR 0116).
-      case form.kind {
-        plan.Rest | plan.Interval -> element.none()
-        _ ->
-          field.choose(
-            "workout-zone",
-            "Zone",
-            on(field.help("Optional"), "zone"),
-            [attribute.name("zone"), event.on_change(ZoneChanged)],
-            form.zone,
-            [
-              #("", "No zone"),
-              ..list.map(workout_form.zones, fn(n) {
-                #(int.to_string(n), workout_form.zone_label(n))
-              })
-            ],
-          )
-      },
-      case form.kind {
-        plan.Interval -> interval_fields(form, on)
-        _ -> element.none()
-      },
-      html.div([class("row")], [
-        field.text(
-          "workout-distance",
-          "Distance",
-          on(field.Help("Optional", "km", None), "distance"),
-          [
-            attribute.type_("text"),
-            attribute.attribute("inputmode", "decimal"),
-            attribute.name("distance"),
-            attribute.value(form.distance_km),
-            event.on_input(DistanceChanged),
-          ],
-        ),
-        field.text(
-          "workout-duration",
-          "Duration",
-          on(
-            field.help("Minutes, or hours and minutes: 45 or 1:30"),
-            "duration",
-          ),
-          [
-            attribute.type_("text"),
-            attribute.name("duration"),
-            attribute.value(form.duration),
-            event.on_input(DurationChanged),
-          ],
-        ),
-      ]),
-      case form.kind {
-        plan.Race -> segment_group("Cool-down", form, workout_form.Cooldown, on)
-        _ -> element.none()
-      },
-      field.area(
-        "workout-description",
-        "Notes",
-        on(field.help("Optional"), "description"),
-        [
-          attribute.name("description"),
-          attribute.rows(3),
-          event.on_input(DescriptionChanged),
-        ],
-        form.description,
-      ),
+      workout_fields.targets(form, "workout", "Optional", on, events),
+      workout_fields.notes(form, "workout", on, events),
       case form.error, wrong {
         Some(message), "" -> error.message(message)
         _, _ -> element.none()
@@ -1283,318 +1211,22 @@ fn form_fields(
   )
 }
 
-/// `set1_reps` as an element ID: `workout-set1-reps`.
 fn field_id(name: String) -> String {
-  "workout-" <> string.replace(name, "_", "-")
+  workout_fields.field_id("workout", name)
 }
 
-/// The parts of an interval workout, shown only for that kind (ADR 0104, 0116): a warm-up, its sets and a
-/// cool-down, each with a zone, a distance and a time.
-fn interval_fields(
-  form: workout_form.Form,
-  on: fn(field.Help, String) -> field.Help,
-) -> Element(Msg) {
-  let several = list.length(form.sets) > 1
-  element.fragment([
-    segment_group("Warm-up", form, workout_form.Warmup, on),
-    element.fragment(
-      list.index_map(form.sets, fn(set, index) {
-        set_group(set, index, several, form, on)
-      }),
-    ),
-    html.div([class("interval-add-set")], [
-      button.outlined([attribute.type_("button"), event.on_click(SetAdded)], [
-        icon.view(icon.Add),
-        html.text("Add set"),
-      ]),
-    ]),
-    segment_group("Cool-down", form, workout_form.Cooldown, on),
-    interval_totals(form),
-  ])
-}
-
-fn segment_group(
-  legend: String,
-  form: workout_form.Form,
-  part: workout_form.Part,
-  on: fn(field.Help, String) -> field.Help,
-) -> Element(Msg) {
-  html.fieldset([class("interval-part")], [
-    html.legend([], [html.text(legend)]),
-    segment_fields(form, part, "", on),
-  ])
-}
-
-fn set_group(
-  set: workout_form.SetForm,
-  index: Int,
-  several: Bool,
-  form: workout_form.Form,
-  on: fn(field.Help, String) -> field.Help,
-) -> Element(Msg) {
-  let number = int.to_string(index + 1)
-  let reps = workout_form.reps_field_name(index)
-  html.fieldset([class("interval-part")], [
-    html.legend([], [html.text("Set " <> number)]),
-    html.div([class("row")], [
-      field.text(
-        field_id(reps),
-        "Repetitions",
-        on(field.help("For example 6"), reps),
-        [
-          attribute.type_("text"),
-          attribute.attribute("inputmode", "numeric"),
-          attribute.name(reps),
-          attribute.value(set.reps),
-          event.on_input(RepsChanged(index, _)),
-        ],
-      ),
-    ]),
-    target_choice(form, workout_form.Work(index)),
-    segment_fields(form, workout_form.Work(index), "Rep ", on),
-    intensity_slider(form, workout_form.Work(index), on),
-    segment_fields(form, workout_form.Recovery(index), "Recovery ", on),
-    case several {
-      True ->
-        html.div([class("interval-remove-set")], [
-          button.text(
-            [attribute.type_("button"), event.on_click(SetRemoved(index))],
-            [html.text("Remove set " <> number)],
-          ),
-        ])
-      False -> element.none()
-    },
-  ])
-}
-
-/// A part's zone, distance and time. A warm-up and a cool-down are typed in kilometres and minutes, a rep and a
-/// recovery in metres and seconds (ADR 0116).
-fn segment_fields(
-  form: workout_form.Form,
-  part: workout_form.Part,
-  label: String,
-  on: fn(field.Help, String) -> field.Help,
-) -> Element(Msg) {
-  let segment = workout_form.segment(form, part)
-  let name = workout_form.segment_field_name(part, _)
-  let #(unit, time_help) = case part {
-    workout_form.Warmup | workout_form.Cooldown -> #(
-      "km",
-      "Minutes, or hours and minutes: 15 or 1:30",
-    )
-    _ -> #("m", "Seconds, or minutes and seconds: 90 or 1:30")
-  }
-  let distance_help = case part {
-    workout_form.Work(_) -> "Distance, time or both"
-    _ -> "Optional"
-  }
-  let capital = case label {
-    "" -> fn(text) { text }
-    _ -> fn(text) { label <> string.lowercase(text) }
-  }
-  html.div([class("row")], [
-    case workout_form.target(segment) {
-      "goal" -> goal_select(form, part, on)
-      _ ->
-        field.choose(
-          field_id(name(workout_form.ZoneField)),
-          capital("Zone"),
-          on(field.plain, name(workout_form.ZoneField)),
-          [
-            attribute.name(name(workout_form.ZoneField)),
-            event.on_change(SegmentChanged(part, workout_form.ZoneField, _)),
-          ],
-          segment.zone,
-          [
-            #("", "No zone"),
-            ..list.map(workout_form.zones, fn(n) {
-              #(int.to_string(n), workout_form.zone_label(n))
-            })
-          ],
-        )
-    },
-    field.text(
-      field_id(name(workout_form.DistanceField)),
-      capital("Distance"),
-      on(
-        field.Help(distance_help, unit, None),
-        name(workout_form.DistanceField),
-      ),
-      [
-        attribute.type_("text"),
-        attribute.attribute("inputmode", "decimal"),
-        attribute.name(name(workout_form.DistanceField)),
-        attribute.value(segment.distance),
-        event.on_input(SegmentChanged(part, workout_form.DistanceField, _)),
-      ],
-    ),
-    field.text(
-      field_id(name(workout_form.TimeField)),
-      capital("Time"),
-      on(field.help(time_help), name(workout_form.TimeField)),
-      [
-        attribute.type_("text"),
-        attribute.name(name(workout_form.TimeField)),
-        attribute.value(segment.time),
-        event.on_input(SegmentChanged(part, workout_form.TimeField, _)),
-      ],
-    ),
-  ])
-}
-
-/// Whether a rep is run at a zone or at a race goal (ADR 0118, 0120); a zone unless chosen otherwise. Only asked when
-/// the athlete has goals or the rep has one.
-fn target_choice(
-  form: workout_form.Form,
-  part: workout_form.Part,
-) -> Element(Msg) {
-  let segment = workout_form.segment(form, part)
-  case form.goals, segment.goal {
-    [], "" -> element.none()
-    _, _ ->
-      html.div([class("row")], [
-        choice.segmented(
-          workout_form.segment_field_name(part, workout_form.TargetField),
-          "Rep run at",
-          workout_form.target(segment),
-          [#("zone", "Zone"), #("goal", "Race goal")],
-          SegmentChanged(part, workout_form.TargetField, _),
-        ),
-      ])
-  }
-}
-
-/// The race goal a rep is run at (ADR 0118), in the place of its zone.
-fn goal_select(
-  form: workout_form.Form,
-  part: workout_form.Part,
-  on: fn(field.Help, String) -> field.Help,
-) -> Element(Msg) {
-  let name = workout_form.segment_field_name(part, workout_form.GoalField)
-  field.choose(
-    field_id(name),
-    "Rep race goal",
-    on(field.plain, name),
-    [
-      attribute.name(name),
-      event.on_change(SegmentChanged(part, workout_form.GoalField, _)),
-    ],
-    workout_form.segment(form, part).goal,
-    list.map(form.goals, fn(g) { #(g.id, workout_form.goal_label(g)) }),
+const events =
+  workout_fields.Events(
+    kind: KindChanged,
+    zone: ZoneChanged,
+    distance: DistanceChanged,
+    duration: DurationChanged,
+    description: DescriptionChanged,
+    segment: SegmentChanged,
+    reps: RepsChanged,
+    set_added: SetAdded,
+    set_removed: SetRemoved,
   )
-}
-
-/// The intensity of a rep run at a race goal, a slider from 1 to 100 % of the goal's speed (ADR 0118, 0120).
-fn intensity_slider(
-  form: workout_form.Form,
-  part: workout_form.Part,
-  on: fn(field.Help, String) -> field.Help,
-) -> Element(Msg) {
-  let segment = workout_form.segment(form, part)
-  let name = workout_form.segment_field_name(part, workout_form.IntensityField)
-  let id = field_id(name)
-  case workout_form.target(segment) {
-    "goal" -> {
-      let level = case int.parse(string.trim(segment.intensity)) {
-        Ok(n) -> int.clamp(n, 1, 100)
-        Error(_) -> 100
-      }
-      let text = int.to_string(level) <> " %"
-      let help = on(field.help("100 % is the goal's pace"), name)
-      html.div(
-        [
-          class("intensity-setting"),
-          attribute.classes([#("has-error", help.error != None)]),
-        ],
-        [
-          html.div([class("intensity-heading")], [
-            html.label([attribute.for(id)], [html.text("Rep intensity")]),
-            html.output([attribute.for(id), class("intensity-value")], [
-              html.text(text),
-            ]),
-          ]),
-          html.div([class("intensity-control")], [
-            html.input([
-              attribute.id(id),
-              attribute.type_("range"),
-              attribute.name(name),
-              attribute.attribute("min", "1"),
-              attribute.attribute("max", "100"),
-              attribute.attribute("step", "1"),
-              attribute.value(int.to_string(level)),
-              attribute.attribute("aria-valuetext", text),
-              attribute.attribute("aria-describedby", id <> "-help"),
-              // How far the active track reaches, for browsers that cannot draw it themselves (ADR 0051).
-              attribute.style(
-                "--fill",
-                int.to_string({ level - 1 } * 100 / 99) <> "%",
-              ),
-              event.on_input(SegmentChanged(
-                part,
-                workout_form.IntensityField,
-                _,
-              )),
-            ]),
-          ]),
-          html.p(
-            [
-              attribute.id(id <> "-help"),
-              class("md-field-supporting"),
-              ..case help.error {
-                Some(_) -> [attribute.role("alert")]
-                None -> []
-              }
-            ],
-            [
-              html.text(case help.error {
-                Some(message) -> message
-                None -> help.supporting
-              }),
-            ],
-          ),
-        ],
-      )
-    }
-    _ -> element.none()
-  }
-}
-
-/// All the parts together, worked out and read-only (ADR 0106, 0116). The fields have no name, so they are not
-/// part of what is saved.
-fn interval_totals(form: workout_form.Form) -> Element(Msg) {
-  case workout_form.interval_totals(form) {
-    #(None, None) -> element.none()
-    #(distance, time) ->
-      html.div([class("row")], [
-        field.text(
-          "workout-total-distance",
-          "Total distance",
-          field.Help("Parts with a distance", "km", None),
-          [
-            attribute.type_("text"),
-            attribute.readonly(True),
-            attribute.value(case distance {
-              Some(m) -> workout_form.format_km(m)
-              None -> ""
-            }),
-          ],
-        ),
-        field.text(
-          "workout-total-time",
-          "Total time",
-          field.help("Parts with a time"),
-          [
-            attribute.type_("text"),
-            attribute.readonly(True),
-            attribute.value(case time {
-              Some(s) -> workout_form.format_rep_time(s)
-              None -> ""
-            }),
-          ],
-        ),
-      ])
-  }
-}
 
 /// The calendar's main action (ADR 0068), for the plan's owner: a FAB on a phone, a button in the app bar on wider
 /// screens. A new workout goes in the week last chosen.

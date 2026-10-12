@@ -605,7 +605,6 @@ pub fn interval_totals(form: Form) -> #(Option(Float), Option(Int)) {
 /// `duration`, `zone`, or a field of an interval workout's parts (`segment_field_name`, `reps_field_name`).
 pub fn validate_fields(form: Form) -> Result(Valid, #(String, String)) {
   let title = string.trim(form.title)
-  let description = string.trim(form.description)
   case
     int.parse(string.trim(form.week)),
     int.parse(string.trim(form.day)),
@@ -622,33 +621,52 @@ pub fn validate_fields(form: Form) -> Result(Valid, #(String, String)) {
     _, _, 0 -> Error(#("title", "Give the workout a title."))
     _, _, n if n > max_title ->
       Error(#("title", "The title can have at most 200 characters."))
-    Ok(week), Ok(day), _ ->
-      case string.length(description) > max_description {
-        True ->
-          Error(#("description", "The notes can have at most 5000 characters."))
-        False ->
-          case
-            target_distance(form.distance_km),
-            target_duration(form.duration),
-            intervals(form),
-            target_zone(form)
-          {
-            Error(message), _, _, _ -> Error(#("distance", message))
-            _, Error(message), _, _ -> Error(#("duration", message))
-            _, _, Error(problem), _ -> Error(problem)
-            _, _, _, Error(message) -> Error(#("zone", message))
-            Ok(distance), Ok(duration), Ok(intervals), Ok(zone) ->
-              Ok(Valid(
-                day_index: { week - 1 } * 7 + { day - 1 },
-                title: title,
-                kind: form.kind,
-                distance_m: distance,
-                duration_s: duration,
-                description: description,
-                intervals: intervals,
-                zone: zone,
-              ))
-          }
+    Ok(week), Ok(day), _ -> {
+      use body <- result.map(validate_body(form))
+      Valid(
+        day_index: { week - 1 } * 7 + { day - 1 },
+        title: title,
+        kind: form.kind,
+        distance_m: body.distance_m,
+        duration_s: body.duration_s,
+        description: body.description,
+        intervals: body.intervals,
+        zone: body.zone,
+      )
+    }
+  }
+}
+
+/// What a workout and an activity have in common, checked (ADR 0121): all but the day and the title.
+pub type Body {
+  Body(
+    distance_m: Float,
+    duration_s: Int,
+    description: String,
+    intervals: Option(Intervals),
+    zone: Int,
+  )
+}
+
+/// Checks the fields after the title; a problem names its field as `validate_fields` does.
+pub fn validate_body(form: Form) -> Result(Body, #(String, String)) {
+  let description = string.trim(form.description)
+  case string.length(description) > max_description {
+    True ->
+      Error(#("description", "The notes can have at most 5000 characters."))
+    False ->
+      case
+        target_distance(form.distance_km),
+        target_duration(form.duration),
+        intervals(form),
+        target_zone(form)
+      {
+        Error(message), _, _, _ -> Error(#("distance", message))
+        _, Error(message), _, _ -> Error(#("duration", message))
+        _, _, Error(problem), _ -> Error(problem)
+        _, _, _, Error(message) -> Error(#("zone", message))
+        Ok(distance), Ok(duration), Ok(intervals), Ok(zone) ->
+          Ok(Body(distance, duration, description, intervals, zone))
       }
   }
 }
