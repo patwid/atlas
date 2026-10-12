@@ -55,6 +55,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - An interval workout has an optional warm-up and cool-down and any number of sets; each set's reps and recovery, the warm-up and the cool-down have their own zone, distance and time, worked out from one another at the zone's pace (ADR 0116).
 - An interval rep can be run at a race goal of the plan's athlete at an intensity from 1 to 100 % of its speed, instead of a zone; its distance or time is worked out from that pace (ADR 0118).
 - A race has an optional warm-up and cool-down, each with its own zone, distance and time, shown before and after the race in the calendar (ADR 0119).
+- Each interval rep is run at either a zone (the default) or a race goal, chosen with segmented buttons, and its race goal intensity is set with a slider (ADR 0120).
 
 ### Changed
 - A workout is a run, intervals, a race or a rest day: easy and long runs are one kind, "Run", and tempo runs, cross-training and strength are gone. Existing workouts of those kinds are runs now; rides, swims and strength sessions no longer match a workout (ADR 0114).

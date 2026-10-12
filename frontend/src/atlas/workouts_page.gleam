@@ -1350,8 +1350,9 @@ fn set_group(
         ],
       ),
     ]),
+    target_choice(form, workout_form.Work(index)),
     segment_fields(form, workout_form.Work(index), "Rep ", on),
-    goal_fields(form, workout_form.Work(index), on),
+    intensity_slider(form, workout_form.Work(index), on),
     segment_fields(form, workout_form.Recovery(index), "Recovery ", on),
     case several {
       True ->
@@ -1392,22 +1393,26 @@ fn segment_fields(
     _ -> fn(text) { label <> string.lowercase(text) }
   }
   html.div([class("row")], [
-    field.choose(
-      field_id(name(workout_form.ZoneField)),
-      capital("Zone"),
-      on(field.plain, name(workout_form.ZoneField)),
-      [
-        attribute.name(name(workout_form.ZoneField)),
-        event.on_change(SegmentChanged(part, workout_form.ZoneField, _)),
-      ],
-      segment.zone,
-      [
-        #("", "No zone"),
-        ..list.map(workout_form.zones, fn(n) {
-          #(int.to_string(n), workout_form.zone_label(n))
-        })
-      ],
-    ),
+    case workout_form.target(segment) {
+      "goal" -> goal_select(form, part, on)
+      _ ->
+        field.choose(
+          field_id(name(workout_form.ZoneField)),
+          capital("Zone"),
+          on(field.plain, name(workout_form.ZoneField)),
+          [
+            attribute.name(name(workout_form.ZoneField)),
+            event.on_change(SegmentChanged(part, workout_form.ZoneField, _)),
+          ],
+          segment.zone,
+          [
+            #("", "No zone"),
+            ..list.map(workout_form.zones, fn(n) {
+              #(int.to_string(n), workout_form.zone_label(n))
+            })
+          ],
+        )
+    },
     field.text(
       field_id(name(workout_form.DistanceField)),
       capital("Distance"),
@@ -1437,56 +1442,120 @@ fn segment_fields(
   ])
 }
 
-/// A rep's race goal and intensity, instead of a zone (ADR 0118); only when the athlete has goals or the rep has one.
-fn goal_fields(
+/// Whether a rep is run at a zone or at a race goal (ADR 0118, 0120); a zone unless chosen otherwise. Only asked when
+/// the athlete has goals or the rep has one.
+fn target_choice(
+  form: workout_form.Form,
+  part: workout_form.Part,
+) -> Element(Msg) {
+  let segment = workout_form.segment(form, part)
+  case form.goals, segment.goal {
+    [], "" -> element.none()
+    _, _ ->
+      html.div([class("row")], [
+        choice.segmented(
+          workout_form.segment_field_name(part, workout_form.TargetField),
+          "Rep run at",
+          workout_form.target(segment),
+          [#("zone", "Zone"), #("goal", "Race goal")],
+          SegmentChanged(part, workout_form.TargetField, _),
+        ),
+      ])
+  }
+}
+
+/// The race goal a rep is run at (ADR 0118), in the place of its zone.
+fn goal_select(
+  form: workout_form.Form,
+  part: workout_form.Part,
+  on: fn(field.Help, String) -> field.Help,
+) -> Element(Msg) {
+  let name = workout_form.segment_field_name(part, workout_form.GoalField)
+  field.choose(
+    field_id(name),
+    "Rep race goal",
+    on(field.plain, name),
+    [
+      attribute.name(name),
+      event.on_change(SegmentChanged(part, workout_form.GoalField, _)),
+    ],
+    workout_form.segment(form, part).goal,
+    list.map(form.goals, fn(g) { #(g.id, workout_form.goal_label(g)) }),
+  )
+}
+
+/// The intensity of a rep run at a race goal, a slider from 1 to 100 % of the goal's speed (ADR 0118, 0120).
+fn intensity_slider(
   form: workout_form.Form,
   part: workout_form.Part,
   on: fn(field.Help, String) -> field.Help,
 ) -> Element(Msg) {
   let segment = workout_form.segment(form, part)
-  let name = workout_form.segment_field_name(part, _)
-  case form.goals, segment.goal {
-    [], "" -> element.none()
-    goals, goal ->
-      html.div([class("row")], [
-        field.choose(
-          field_id(name(workout_form.GoalField)),
-          "Rep race goal",
-          on(field.help("Instead of a zone"), name(workout_form.GoalField)),
-          [
-            attribute.name(name(workout_form.GoalField)),
-            event.on_change(SegmentChanged(part, workout_form.GoalField, _)),
-          ],
-          goal,
-          [
-            #("", "No race goal"),
-            ..list.map(goals, fn(g) { #(g.id, workout_form.goal_label(g)) })
-          ],
-        ),
-        case goal {
-          "" -> element.none()
-          _ ->
-            field.text(
-              field_id(name(workout_form.IntensityField)),
-              "Rep intensity",
-              on(
-                field.Help("100 is the goal's pace", "%", None),
-                name(workout_form.IntensityField),
+  let name = workout_form.segment_field_name(part, workout_form.IntensityField)
+  let id = field_id(name)
+  case workout_form.target(segment) {
+    "goal" -> {
+      let level = case int.parse(string.trim(segment.intensity)) {
+        Ok(n) -> int.clamp(n, 1, 100)
+        Error(_) -> 100
+      }
+      let text = int.to_string(level) <> " %"
+      let help = on(field.help("100 % is the goal's pace"), name)
+      html.div(
+        [
+          class("intensity-setting"),
+          attribute.classes([#("has-error", help.error != None)]),
+        ],
+        [
+          html.div([class("intensity-heading")], [
+            html.label([attribute.for(id)], [html.text("Rep intensity")]),
+            html.output([attribute.for(id), class("intensity-value")], [
+              html.text(text),
+            ]),
+          ]),
+          html.div([class("intensity-control")], [
+            html.input([
+              attribute.id(id),
+              attribute.type_("range"),
+              attribute.name(name),
+              attribute.attribute("min", "1"),
+              attribute.attribute("max", "100"),
+              attribute.attribute("step", "1"),
+              attribute.value(int.to_string(level)),
+              attribute.attribute("aria-valuetext", text),
+              attribute.attribute("aria-describedby", id <> "-help"),
+              // How far the active track reaches, for browsers that cannot draw it themselves (ADR 0051).
+              attribute.style(
+                "--fill",
+                int.to_string({ level - 1 } * 100 / 99) <> "%",
               ),
-              [
-                attribute.type_("text"),
-                attribute.attribute("inputmode", "numeric"),
-                attribute.name(name(workout_form.IntensityField)),
-                attribute.value(segment.intensity),
-                event.on_input(SegmentChanged(
-                  part,
-                  workout_form.IntensityField,
-                  _,
-                )),
-              ],
-            )
-        },
-      ])
+              event.on_input(SegmentChanged(
+                part,
+                workout_form.IntensityField,
+                _,
+              )),
+            ]),
+          ]),
+          html.p(
+            [
+              attribute.id(id <> "-help"),
+              class("md-field-supporting"),
+              ..case help.error {
+                Some(_) -> [attribute.role("alert")]
+                None -> []
+              }
+            ],
+            [
+              html.text(case help.error {
+                Some(message) -> message
+                None -> help.supporting
+              }),
+            ],
+          ),
+        ],
+      )
+    }
+    _ -> element.none()
   }
 }
 

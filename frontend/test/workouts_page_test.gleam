@@ -742,14 +742,17 @@ pub fn a_rep_can_be_run_at_a_race_goal_of_the_athlete_test() {
       goals,
     )
   let #(model, _) = update(model, KindChanged("interval"))
+  // A rep is run at a zone unless chosen otherwise (ADR 0120).
   let html = html_of(model, True)
-  assert string.contains(html, "id=\"workout-set1-work-goal\"")
-  assert string.contains(html, "10 km in 40:00")
+  assert string.contains(html, "name=\"set1_work_target\"")
+  assert string.contains(html, ">Race goal<")
+  assert string.contains(html, "id=\"workout-set1-work-zone\"")
+  assert !string.contains(html, "id=\"workout-set1-work-goal\"")
   assert !string.contains(html, "id=\"workout-set1-work-intensity\"")
   let #(model, _) =
     update(
       model,
-      SegmentChanged(workout_form.Work(0), workout_form.GoalField, "g1"),
+      SegmentChanged(workout_form.Work(0), workout_form.TargetField, "goal"),
     )
   let #(model, _) =
     update(
@@ -757,11 +760,17 @@ pub fn a_rep_can_be_run_at_a_race_goal_of_the_athlete_test() {
       SegmentChanged(workout_form.Work(0), workout_form.DistanceField, "400"),
     )
   let html = html_of(model, True)
+  assert string.contains(html, "id=\"workout-set1-work-goal\"")
+  assert string.contains(html, "10 km in 40:00")
+  assert !string.contains(html, "id=\"workout-set1-work-zone\"")
+  // The intensity is a slider, at 100 % to start with.
   assert string.contains(html, "id=\"workout-set1-work-intensity\"")
+  assert string.contains(html, "type=\"range\"")
+  assert string.contains(html, "100 %")
   // 400 m at the goal's 4:00 /km.
   assert string.contains(html, "value=\"1:36\"")
-  // Without goals, a rep asks for none.
+  // Without goals, a rep is not asked what it is run at.
   let #(model, _) = update(workouts_page.new(), AddClicked(1, 1))
   let #(model, _) = update(model, KindChanged("interval"))
-  assert !string.contains(html_of(model, True), "workout-set1-work-goal")
+  assert !string.contains(html_of(model, True), "set1_work_target")
 }

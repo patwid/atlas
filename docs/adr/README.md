@@ -122,3 +122,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0117 | [An interval workout has no zone of its own](0117-no-zone-of-its-own-for-an-interval-workout.md) | Accepted |
 | 0118 | [A rep can be run at an intensity of a race goal](0118-reps-at-a-race-goal-intensity.md) | Accepted |
 | 0119 | [A race has a warm-up and a cool-down, kept in its steps](0119-race-warm-up-and-cool-down.md) | Accepted |
+| 0120 | [A rep is run at a zone or at a race goal, chosen first; its intensity is a slider](0120-rep-target-choice-and-intensity-slider.md) | Accepted |

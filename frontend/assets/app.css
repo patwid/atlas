@@ -1146,7 +1146,7 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
   margin: 0.25rem 1rem 0; color: var(--md-sys-color-on-surface-variant);
   font-size: 0.75rem; line-height: 1rem; letter-spacing: 0.025rem;
 }
-.md-field.has-error .md-field-supporting, .phases-error { color: var(--md-sys-color-error); }
+.md-field.has-error .md-field-supporting, .intensity-setting.has-error .md-field-supporting, .phases-error { color: var(--md-sys-color-error); }
 @media (prefers-reduced-motion: reduce) { .md-field-label { transition: none; } }
 /* What fields sit on. */
 @media (min-width: 37.5rem) { dialog.form-dialog { --field-container: var(--md-sys-color-surface-container-high); } }

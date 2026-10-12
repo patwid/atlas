@@ -901,6 +901,36 @@ pub fn a_rep_at_a_race_goal_is_worked_out_from_its_pace_test() {
   assert segment.distance == "290"
 }
 
+pub fn a_rep_is_run_at_a_zone_or_at_a_race_goal_test() {
+  let f =
+    with_goal(Form(..form(), kind: plan.Interval))
+    |> rep(workout_form.ZoneField, "4")
+  assert workout_form.target(workout_form.segment(f, workout_form.Work(0)))
+    == "zone"
+  // Choosing a race goal takes the first goal at 100 % and clears the zone (ADR 0120).
+  let f = rep(f, workout_form.TargetField, "goal")
+  let segment = workout_form.segment(f, workout_form.Work(0))
+  assert workout_form.target(segment) == "goal"
+  assert segment.goal == "g1"
+  assert segment.intensity == "100"
+  assert segment.zone == ""
+  // Choosing it again keeps the intensity.
+  let f =
+    rep(f, workout_form.IntensityField, "90")
+    |> rep(workout_form.TargetField, "goal")
+  assert workout_form.segment(f, workout_form.Work(0)).intensity == "90"
+  // Back to a zone drops the goal.
+  let f = rep(f, workout_form.TargetField, "zone")
+  let segment = workout_form.segment(f, workout_form.Work(0))
+  assert segment.goal == ""
+  assert segment.intensity == ""
+  // Without goals, a rep stays at a zone.
+  let f =
+    Form(..form(), kind: plan.Interval) |> rep(workout_form.TargetField, "goal")
+  assert workout_form.target(workout_form.segment(f, workout_form.Work(0)))
+    == "zone"
+}
+
 pub fn a_rep_at_a_race_goal_is_saved_with_the_goal_test() {
   let f =
     with_goal(intervals_form())

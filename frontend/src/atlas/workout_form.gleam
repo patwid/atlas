@@ -113,6 +113,17 @@ pub type SegmentField {
   TimeField
   GoalField
   IntensityField
+  /// Whether a rep is run at a zone (`"zone"`) or at a race goal (`"goal"`) (ADR 0120).
+  TargetField
+}
+
+/// What a rep is run at (ADR 0120): a zone, or an intensity of a race goal. A rep has a race goal exactly when it is
+/// run at one, so this is read from its `goal`.
+pub fn target(segment: SegmentForm) -> String {
+  case string.trim(segment.goal) {
+    "" -> "zone"
+    _ -> "goal"
+  }
 }
 
 /// Which of a distance and a time the user typed last (ADR 0106).
@@ -298,7 +309,8 @@ fn set_at(form: Form, index: Int) -> SetForm {
 
 /// A zone, race goal, intensity, distance or time of a part was typed: the other of its distance and time is worked
 /// out from its zone, or from its race goal at its intensity (ADR 0118). A zone and a race goal exclude each other:
-/// choosing one clears the other, and a race goal starts at 100 %.
+/// choosing one clears the other, and a race goal starts at 100 %. Choosing to run a rep at a race goal takes the
+/// first of the form's goals (ADR 0120).
 pub fn edit_segment(
   form: Form,
   part: Part,
@@ -325,6 +337,13 @@ pub fn edit_segment(
         },
       )
     IntensityField -> SegmentForm(..current, intensity: text)
+    TargetField ->
+      case text, target(current), form.goals {
+        "goal", "zone", [first, ..] ->
+          SegmentForm(..current, zone: "", goal: first.id, intensity: "100")
+        "zone", "goal", _ -> SegmentForm(..current, goal: "", intensity: "")
+        _, _, _ -> current
+      }
   }
   let filled =
     fill_segment(edited, is_long(part), segment_pace(edited, form.goals, zones))
@@ -906,6 +925,7 @@ pub fn segment_field_name(part: Part, field: SegmentField) -> String {
     TimeField -> "_time"
     GoalField -> "_goal"
     IntensityField -> "_intensity"
+    TargetField -> "_target"
   }
 }
 
