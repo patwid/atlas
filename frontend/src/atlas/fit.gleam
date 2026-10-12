@@ -1,7 +1,7 @@
-//// Reading a FIT activity file (Garmin's Flexible and Interoperable Data Transfer format,
-//// https://developer.garmin.com/fit/protocol/). Pure. Only what an activity summary needs is read: the
+//// Reading a FIT file (Garmin's Flexible and Interoperable Data Transfer format,
+//// https://developer.garmin.com/fit/protocol/). Pure. For an activity, only what its summary needs is read: the
 //// `file_id`, the first `session` and the `lap` messages. Every other message is skipped by the size its
-//// definition gives (ADR 0100).
+//// definition gives (ADR 0100). `read_messages` reads the integer fields of every message (ADR 0122).
 
 import atlas/activity.{type Sport}
 import gleam/dict.{type Dict}
@@ -72,7 +72,8 @@ const lap_message = 19
 /// The `file_id` type of an activity file.
 const activity_file = 4
 
-pub fn decode(bytes: BitArray) -> Result(Summary, Problem) {
+/// The records of a file: what follows its header, up to its CRC.
+fn records(bytes: BitArray) -> Result(BitArray, Problem) {
   case bytes {
     <<
       header_size,
@@ -87,15 +88,41 @@ pub fn decode(bytes: BitArray) -> Result(Summary, Problem) {
       // A 14-byte header ends with a CRC of its own.
       let extra = header_size - 12
       case rest {
-        <<_:bytes-size(extra), data:bytes-size(data_size), _:bytes>> ->
-          case messages(data, dict.new(), Found(None, None, [])) {
-            Ok(found) -> summary(found)
-            Error(problem) -> Error(problem)
-          }
+        <<_:bytes-size(extra), data:bytes-size(data_size), _:bytes>> -> Ok(data)
         _ -> Error(Damaged)
       }
     }
     _ -> Error(NotFit)
+  }
+}
+
+pub fn decode(bytes: BitArray) -> Result(Summary, Problem) {
+  case records(bytes) {
+    Ok(data) ->
+      case messages(data, dict.new(), Found(None, None, []), keep) {
+        Ok(found) -> summary(Found(..found, laps: list.reverse(found.laps)))
+        Error(problem) -> Error(problem)
+      }
+    Error(problem) -> Error(problem)
+  }
+}
+
+/// Every data message of a file, in order: its message number and its integer fields by number. For reading back
+/// a file Atlas wrote (ADR 0122).
+pub fn read_messages(
+  bytes: BitArray,
+) -> Result(List(#(Int, Dict(Int, Int))), Problem) {
+  case records(bytes) {
+    Ok(data) ->
+      case
+        messages(data, dict.new(), [], fn(found, def, content) {
+          [#(def.global, values(def, content)), ..found]
+        })
+      {
+        Ok(found) -> Ok(list.reverse(found))
+        Error(problem) -> Error(problem)
+      }
+    Error(problem) -> Error(problem)
   }
 }
 
@@ -128,13 +155,15 @@ type Found {
 fn messages(
   data: BitArray,
   definitions: Dict(Int, Definition),
-  found: Found,
-) -> Result(Found, Problem) {
+  found: found,
+  keep: fn(found, Definition, BitArray) -> found,
+) -> Result(found, Problem) {
   case data {
-    <<>> -> Ok(Found(..found, laps: list.reverse(found.laps)))
+    <<>> -> Ok(found)
     <<header, rest:bytes>> ->
-      case message(header, rest, definitions, found) {
-        Ok(#(rest, definitions, found)) -> messages(rest, definitions, found)
+      case message(header, rest, definitions, found, keep) {
+        Ok(#(rest, definitions, found)) ->
+          messages(rest, definitions, found, keep)
         Error(problem) -> Error(problem)
       }
     _ -> Error(Damaged)
@@ -146,8 +175,9 @@ fn message(
   header: Int,
   data: BitArray,
   definitions: Dict(Int, Definition),
-  found: Found,
-) -> Result(#(BitArray, Dict(Int, Definition), Found), Problem) {
+  found: found,
+  keep: fn(found, Definition, BitArray) -> found,
+) -> Result(#(BitArray, Dict(Int, Definition), found), Problem) {
   case int.bitwise_and(header, 0x80) != 0 {
     // A compressed timestamp header: a data message of local type 0-3.
     True ->
@@ -156,6 +186,7 @@ fn message(
         data,
         definitions,
         found,
+        keep,
       )
     False -> {
       let local = int.bitwise_and(header, 0x0F)
@@ -168,7 +199,7 @@ fn message(
             Error(problem) -> Error(problem)
           }
         }
-        False -> data_message(local, data, definitions, found)
+        False -> data_message(local, data, definitions, found, keep)
       }
     }
   }
@@ -238,8 +269,9 @@ fn data_message(
   local: Int,
   data: BitArray,
   definitions: Dict(Int, Definition),
-  found: Found,
-) -> Result(#(BitArray, Dict(Int, Definition), Found), Problem) {
+  found: found,
+  keep: fn(found, Definition, BitArray) -> found,
+) -> Result(#(BitArray, Dict(Int, Definition), found), Problem) {
   case dict.get(definitions, local) {
     Error(Nil) -> Error(Damaged)
     Ok(def) -> {

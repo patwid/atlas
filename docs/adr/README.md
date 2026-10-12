@@ -124,3 +124,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0119 | [A race has a warm-up and a cool-down, kept in its steps](0119-race-warm-up-and-cool-down.md) | Accepted |
 | 0120 | [A rep is run at a zone or at a race goal, chosen first; its intensity is a slider](0120-rep-target-choice-and-intensity-slider.md) | Accepted |
 | 0121 | [An activity has a workout's kind and fields](0121-activity-kind-and-fields-of-a-workout.md) | Accepted |
+| 0122 | [Export a workout to a watch as a FIT workout file, written in Gleam](0122-export-a-workout-as-a-fit-workout-file.md) | Accepted |
