@@ -34,7 +34,7 @@ Option 1.
 
 - **Where**: an **Export to watch** button in the workout's dialog (for those who see a plan) and in the bar of its
   form (for its owner), for every kind but a rest day. It exports the workout as last saved, not unsaved changes in
-  the form. The file is downloaded as `<title>.fit` through a thin FFI (`file.ffi.mjs`), and nothing is uploaded.
+  the form. The file is downloaded, named after the title (`long-run.fit`), through a thin FFI (`file.ffi.mjs`), and nothing is uploaded.
 - **Steps** (`atlas/watch_workout`, pure):
   - **Run**: one active step of its distance or time.
   - **Race**: its warm-up, the race as an active step, its cool-down ([0119](0119-race-warm-up-and-cool-down.md)).
