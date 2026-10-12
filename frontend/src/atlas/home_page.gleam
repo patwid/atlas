@@ -311,14 +311,20 @@ fn item_view(item: Item, model: Model, inputs: Inputs) -> Element(Msg) {
       html.strong([], [html.text(w.title)]),
       // In a chip row, which keeps it apart from the title as on the other lists.
       chip.row([chip.label(workout_form.kind_label(w.kind))]),
-      case details(item, inputs) {
-        "" -> element.none()
-        text -> html.span([class("muted")], [html.text(" · " <> text)])
-      },
     ]),
-    case targets(w) {
-      "" -> element.none()
-      text -> html.p([class("muted")], [html.text("Planned: " <> text)])
+    // The day and plan, then what is planned, as the item's supporting text under its headline (ADR 0124).
+    case
+      [
+        details(item, inputs),
+        case targets(w) {
+          "" -> ""
+          text -> "Planned: " <> text
+        },
+      ]
+      |> list.filter(fn(part) { part != "" })
+    {
+      [] -> element.none()
+      parts -> html.p([class("muted")], [html.text(string.join(parts, " · "))])
     },
     status_view(item, key, inputs),
     case model.choosing == Some(key) {
@@ -349,8 +355,8 @@ fn details(item: Item, inputs: Inputs) -> String {
   |> string.join(" · ")
 }
 
-/// The day's state as a chip in the color of its kind, then what was run, if anything (ADR 0048), then the action
-/// that belongs to it, on the same line (ADR 0081).
+/// The day's state as an icon and a word in the color of its kind, then what was run, if anything (ADR 0048), then
+/// the action that belongs to it, on the same line (ADR 0081). Not chip-shaped: a chip is for pressing (ADR 0124).
 fn status(
   kind: String,
   symbol: Option(icon.Icon),
@@ -376,7 +382,8 @@ fn status(
 
 fn status_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
   case item.status {
-    today.RestDay -> status("rest", None, "Rest day", "", element.none())
+    // The kind's chip in the headline already says it is a rest day (ADR 0124).
+    today.RestDay -> element.none()
     // Only activities of the workout's own day can be linked, so a workout still to come has nothing to offer.
     today.Planned ->
       status(

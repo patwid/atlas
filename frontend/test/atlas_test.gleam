@@ -749,6 +749,10 @@ pub fn settings_is_a_list_of_its_sections_test() {
   let html =
     element.to_string(atlas.view(Model(..signed_in(), route: route.Settings)))
   assert string.contains(html, "Sign out")
+  // The account: the name, and the e-mail address as its supporting text.
+  assert string.contains(html, ">Alice<")
+  assert string.contains(html, ">alice@example.com<")
+  assert !string.contains(html, "(alice@example.com)")
   assert !string.contains(html, ">Sync<")
   assert !string.contains(html, "href=\"/settings/account\"")
   assert string.contains(html, "href=\"/settings/zones\"")

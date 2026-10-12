@@ -1265,10 +1265,11 @@ fn page(model: Model, session: Session) -> Element(Msg) {
 fn settings_list(session: Session, model: Model) -> Element(Msg) {
   html.section([attribute.class("settings")], [
     html.ul([attribute.class("list link-list")], [
+      // The name as the headline and the e-mail address under it, as a list item's supporting text (ADR 0124).
       layout.info_item(
         icon.AccountCircle,
         account_name(session),
-        "Signed in",
+        session.email,
         button.text(
           [attribute.type_("button"), event.on_click(SignOutClicked)],
           [html.text("Sign out")],
@@ -1345,8 +1346,8 @@ fn strava_summary(model: Model) -> String {
 
 fn account_name(session: Session) -> String {
   case session.name {
-    "" -> session.email
-    name -> name <> " (" <> session.email <> ")"
+    "" -> "Signed in"
+    name -> name
   }
 }
 

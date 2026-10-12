@@ -171,7 +171,7 @@
   /* M3 Expressive's collapsed navigation rail is 96px wide (ADR 0095). */
   --nav-rail-width: 6rem;
   /* The small app bar's height, with the room it leaves for a phone's status bar in an installed app: what sticks
-     under it (a plan's tabs, the calendar's week labels) starts there (ADR 0079). */
+     under it (the calendar's week labels) starts there (ADR 0079). */
   --app-bar-height: calc(4rem + max(0px, env(safe-area-inset-top, 0px) - 0.5rem));
   /* The content column's widest; the app bar lines up with it. */
   --content-max: 48rem;
@@ -617,11 +617,10 @@ label {
   content: ""; position: absolute; inset: 0; background: var(--md-sys-color-on-surface);
   opacity: 0; transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
-.list .row-link:hover { text-decoration: none; }
 /* A row that opens a dialog has a button for its headline (ADR 0080), drawn like the link. */
 .list button.row-link {
   padding: 0; border: 0; background: none; cursor: pointer; text-align: left;
-  color: var(--md-sys-color-on-surface); font: 500 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
+  color: var(--md-sys-color-on-surface); font: 400 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
 }
 .list li:has(.row-link):hover .row-link::after { opacity: var(--md-sys-state-hover); }
 .list li:has(.row-link):active .row-link::after { opacity: var(--md-sys-state-pressed); }
@@ -641,19 +640,17 @@ label {
 }
 .label-chip .icon { width: 1rem; height: 1rem; margin-left: -0.125rem; }
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 1rem; }
-/* Today's state of a workout (ADR 0048): an assist-chip-shaped label in the color of its kind, then details. */
-.status { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; margin: 0.5rem 0; }
+/* Today's state of a workout (ADR 0048): an icon and a word in the color of its kind, then details. Not chip-shaped,
+   since a chip is something to press (ADR 0124); as high as the text button that may follow it. */
+.status { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; margin: 0.25rem 0 0; }
 .status-chip {
-  display: inline-flex; align-items: center; gap: 0.5rem; height: 2rem; padding: 0 1rem;
-  border-radius: var(--md-sys-shape-corner-small); font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem;
-  border: 1px solid transparent;
+  display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.5rem;
+  font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem; color: var(--md-sys-color-on-surface-variant);
 }
-.status-chip .icon { width: 1.125rem; height: 1.125rem; margin-left: -0.5rem; }
-.status-rest { background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface-variant); }
-.status-planned { border-color: var(--md-sys-color-outline-variant); color: var(--md-sys-color-on-surface-variant); }
-.status-missed { background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); }
-.status-suggested { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
-.status-done { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+.status-chip .icon { width: 1.25rem; height: 1.25rem; }
+.status-missed { color: var(--md-sys-color-error); }
+.status-suggested .icon { color: var(--md-sys-color-tertiary); }
+.status-done .icon { color: var(--md-sys-color-primary); }
 .status-details { color: var(--md-sys-color-on-surface-variant); font-size: 0.875rem; line-height: 1.25rem; }
 /* The status's action follows it on its line (ADR 0081); the text button's own padding lines its label up. */
 .status .status-action { margin-left: -0.25rem; }
@@ -677,7 +674,7 @@ label {
 .coach-form { margin-top: 1rem; }
 .found { padding: 0.75rem 1rem; margin-top: 0.75rem; }
 .found p { margin: 0.25rem 0; }
-.totals { color: var(--md-sys-color-on-surface-variant); font-weight: 400; margin-left: 0.5rem; font-size: 0.875rem; }
+.totals { color: var(--md-sys-color-on-surface-variant); font: 400 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.015625rem; margin-left: 0.5rem; }
 
 /* Plan calendar (ADR 0043, 0066): weeks as rows, days as columns, bands per phase, the full width at every size. On
    a phone the days of a week stack. A week and a workout open in dialogs. */
@@ -712,7 +709,8 @@ label {
   gap: 0.5rem; align-items: start; min-height: 2.25rem;
 }
 .calendar-day:has(> .add-here) { grid-template-columns: 3.5rem 1fr auto; }
-.day-name { color: var(--md-sys-color-on-surface-variant); font-size: 0.8125rem; line-height: 1.3; padding-top: 0.375rem; }
+/* The calendar's small text is M3's body-small, 12/16 (ADR 0124). */
+.day-name { color: var(--md-sys-color-on-surface-variant); font-size: 0.75rem; line-height: 1rem; letter-spacing: 0.025rem; padding-top: 0.375rem; }
 .day-name > span { display: block; }
 .day-date, .week-dates { color: var(--md-sys-color-on-surface-variant); font-size: 0.75rem; font-weight: 400; }
 /* A day of week 1 before the plan starts (ADR 0108): dimmed, with nothing to add. */
@@ -722,7 +720,7 @@ label {
 /* A workout is a small filled card (ADR 0051), its kind a bar along the leading edge. */
 .workout {
   --kind: var(--md-sys-color-outline);
-  font: inherit; font-size: 0.8125rem; line-height: 1.3; letter-spacing: 0.015625rem; text-align: left; cursor: pointer; width: 100%;
+  font: inherit; font-size: 0.75rem; line-height: 1rem; letter-spacing: 0.025rem; text-align: left; cursor: pointer; width: 100%;
   border: 0; border-radius: var(--md-sys-shape-corner-small); box-shadow: inset 0.25rem 0 0 var(--kind);
   padding: 0.375rem 0.5rem 0.375rem 0.75rem; background: var(--md-sys-color-surface-container-high); color: var(--md-sys-color-on-surface);
   display: flex; flex-direction: column; overflow-wrap: break-word; hyphens: auto;
@@ -798,7 +796,7 @@ label {
 .intensity-control input[type="range"].unset { opacity: 0.38; }
 .intensity-meter { margin-top: 0.25rem; }
 .facts { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 0.75rem; margin: 0.5rem 0 0; align-items: center; }
-.facts dt { color: var(--md-sys-color-on-surface-variant); font-size: 0.875rem; }
+.facts dt { color: var(--md-sys-color-on-surface-variant); font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; }
 .facts dt label { margin: 0; }
 .facts dd { margin: 0; }
 /* A determinate linear progress indicator as Material 3 draws it (ADR 0051): the indicator, a gap, the rest of the
@@ -833,7 +831,22 @@ label {
   .day-body:not(:empty) + .add-here { margin-top: 0.25rem; }
 }
 
-.summary { font-weight: 500; }
+/* An athlete's summary (ADR 0124): filled cards side by side, a label, the number in headline-medium and what it
+   counts, and for this week a meter of the workouts done. */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.5rem; margin: 1rem 0 1.5rem; }
+.stat {
+  padding: 1rem; border-radius: var(--md-sys-shape-corner-medium);
+  background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface);
+}
+.stat-label {
+  margin: 0; color: var(--md-sys-color-on-surface-variant);
+  font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem;
+}
+.stat-value { margin: 0.25rem 0 0; font: 400 1.75rem/2.25rem var(--md-ref-typeface); font-variant-numeric: tabular-nums; }
+.stat-supporting {
+  display: block; color: var(--md-sys-color-on-surface-variant);
+  font: 400 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.015625rem;
+}
 .table-wrap { overflow-x: auto; }
 table.progress { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 0.875rem; line-height: 1.25rem; }
 table.progress caption { text-align: left; color: var(--md-sys-color-on-surface-variant); font-size: 0.875rem; padding-bottom: 0.25rem; }

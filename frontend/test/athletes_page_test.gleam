@@ -122,10 +122,12 @@ pub fn the_weeks_table_is_accessible_and_complete_test() {
 pub fn the_summary_counts_this_week_and_the_missed_workouts_test() {
   let html =
     html_of(athletes_page.view_athlete(Some(Person("ana", "Ana")), inputs()))
-  assert string.contains(
-    html,
-    "This week: 0 of 0 workouts done. Missed in the last 6 weeks: 1.",
-  )
+  assert string.contains(html, ">This week<")
+  assert string.contains(html, ">0 of 0<")
+  assert string.contains(html, " workouts done<")
+  assert string.contains(html, ">Missed<")
+  assert string.contains(html, ">1<")
+  assert string.contains(html, " in the last 6 weeks<")
 }
 
 pub fn the_plans_they_follow_name_readable_plans_and_hide_the_others_test() {

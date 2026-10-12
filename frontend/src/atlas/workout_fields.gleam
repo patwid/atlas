@@ -265,7 +265,8 @@ fn set_group(
 }
 
 /// A part's zone, distance and time. A warm-up and a cool-down are typed in kilometres and minutes, a rep and a
-/// recovery in metres and seconds (ADR 0116).
+/// recovery in metres and seconds (ADR 0116). The zone has a line of its own and the distance and time share the next,
+/// so no label is cut short; the help is short, as it comes back in every part (ADR 0124).
 fn segment_fields(
   form: Form,
   part: Part,
@@ -277,11 +278,8 @@ fn segment_fields(
   let segment = workout_form.segment(form, part)
   let name = workout_form.segment_field_name(part, _)
   let #(unit, time_help) = case part {
-    workout_form.Warmup | workout_form.Cooldown -> #(
-      "km",
-      "Minutes, or hours and minutes: 15 or 1:30",
-    )
-    _ -> #("m", "Seconds, or minutes and seconds: 90 or 1:30")
+    workout_form.Warmup | workout_form.Cooldown -> #("km", "15 or 1:30 (h:mm)")
+    _ -> #("m", "90 or 1:30 (m:ss)")
   }
   let distance_help = case part {
     workout_form.Work(_) -> "Distance, time or both"
@@ -291,7 +289,7 @@ fn segment_fields(
     "" -> fn(text) { text }
     _ -> fn(text) { label <> string.lowercase(text) }
   }
-  html.div([class("row")], [
+  element.fragment([
     case workout_form.target(segment) {
       "goal" -> goal_select(form, part, prefix, on, events)
       _ ->
@@ -307,32 +305,34 @@ fn segment_fields(
           zone_options(),
         )
     },
-    field.text(
-      field_id(prefix, name(workout_form.DistanceField)),
-      capital("Distance"),
-      on(
-        field.Help(distance_help, unit, None),
-        name(workout_form.DistanceField),
+    html.div([class("row")], [
+      field.text(
+        field_id(prefix, name(workout_form.DistanceField)),
+        capital("Distance"),
+        on(
+          field.Help(distance_help, unit, None),
+          name(workout_form.DistanceField),
+        ),
+        [
+          attribute.type_("text"),
+          attribute.attribute("inputmode", "decimal"),
+          attribute.name(name(workout_form.DistanceField)),
+          attribute.value(segment.distance),
+          event.on_input(events.segment(part, workout_form.DistanceField, _)),
+        ],
       ),
-      [
-        attribute.type_("text"),
-        attribute.attribute("inputmode", "decimal"),
-        attribute.name(name(workout_form.DistanceField)),
-        attribute.value(segment.distance),
-        event.on_input(events.segment(part, workout_form.DistanceField, _)),
-      ],
-    ),
-    field.text(
-      field_id(prefix, name(workout_form.TimeField)),
-      capital("Time"),
-      on(field.help(time_help), name(workout_form.TimeField)),
-      [
-        attribute.type_("text"),
-        attribute.name(name(workout_form.TimeField)),
-        attribute.value(segment.time),
-        event.on_input(events.segment(part, workout_form.TimeField, _)),
-      ],
-    ),
+      field.text(
+        field_id(prefix, name(workout_form.TimeField)),
+        capital("Time"),
+        on(field.help(time_help), name(workout_form.TimeField)),
+        [
+          attribute.type_("text"),
+          attribute.name(name(workout_form.TimeField)),
+          attribute.value(segment.time),
+          event.on_input(events.segment(part, workout_form.TimeField, _)),
+        ],
+      ),
+    ]),
   ])
 }
 

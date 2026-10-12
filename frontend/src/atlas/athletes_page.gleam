@@ -85,6 +85,8 @@ pub fn view_athlete(athlete: Option(Person), inputs: Inputs) -> Element(msg) {
   }
 }
 
+/// This week's workouts done and the workouts missed lately, as two filled cards with the number large (ADR 0124):
+/// what a coach checks first, ahead of the table.
 fn summary(weeks: List(progress.Week)) -> Element(msg) {
   case weeks {
     [] -> element.none()
@@ -93,21 +95,61 @@ fn summary(weeks: List(progress.Week)) -> Element(msg) {
         list.fold(earlier, current.missed, fn(total, week) {
           total + week.missed
         })
-      html.p([class("summary")], [
-        html.text(
-          "This week: "
-          <> int.to_string(current.done)
-          <> " of "
-          <> int.to_string(current.planned)
-          <> " workouts done. Missed in the last "
-          <> int.to_string(weeks_shown)
-          <> " weeks: "
-          <> int.to_string(missed)
-          <> ".",
+      html.div([class("stats")], [
+        stat(
+          "This week",
+          int.to_string(current.done)
+            <> " of "
+            <> int.to_string(current.planned),
+          "workouts done",
+          case current.planned {
+            0 -> element.none()
+            planned -> done_meter(current.done, planned)
+          },
+        ),
+        stat(
+          "Missed",
+          int.to_string(missed),
+          "in the last " <> int.to_string(weeks_shown) <> " weeks",
+          element.none(),
         ),
       ])
     }
   }
+}
+
+fn stat(
+  label: String,
+  value: String,
+  supporting: String,
+  extra: Element(msg),
+) -> Element(msg) {
+  html.section([class("stat")], [
+    html.h2([class("stat-label")], [html.text(label)]),
+    html.p([class("stat-value")], [
+      html.text(value),
+      html.span([class("stat-supporting")], [html.text(" " <> supporting)]),
+    ]),
+    extra,
+  ])
+}
+
+fn done_meter(done: Int, planned: Int) -> Element(msg) {
+  let percent = int.min(done * 100 / planned, 100)
+  html.div(
+    [
+      class("goal-meter"),
+      attribute.role("meter"),
+      attribute.attribute("aria-label", "Workouts done this week"),
+      attribute.attribute("aria-valuenow", int.to_string(done)),
+      attribute.attribute("aria-valuemin", "0"),
+      attribute.attribute(
+        "aria-valuemax",
+        int.to_string(int.max(planned, done)),
+      ),
+    ],
+    [html.span([attribute.style("width", int.to_string(percent) <> "%")], [])],
+  )
 }
 
 fn weeks_table(weeks: List(progress.Week)) -> Element(msg) {

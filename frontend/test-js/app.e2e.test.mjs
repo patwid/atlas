@@ -1039,7 +1039,8 @@ test("a coach sees an athlete's weeks, plans and activities read-only, and loses
   assert.ok(d.body.textContent.includes("Recent activities") && d.body.textContent.includes("Tempo morning"))
   assert.ok(d.body.textContent.includes("You can see this because alice gave you access. It is read-only."))
   assert.equal(d.querySelectorAll(".athlete button").length, 0, "nothing can be changed here")
-  assert.match(d.body.textContent, /Missed in the last 6 weeks: 1\./)
+  const stats = [...d.querySelectorAll(".stat")].map((stat) => stat.textContent)
+  assert.ok(stats.includes("Missed1 in the last 6 weeks"), `the missed workouts: ${stats}`)
 
   // The athlete takes access away: the page, the tab and the data leave the coach's device.
   const grant = (await h.api("GET", "collections/coach_grants/records/cvgrant00000001", { token: alice.token })).body

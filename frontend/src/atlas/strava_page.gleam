@@ -7,6 +7,7 @@ import atlas/http
 import atlas/ui/banner
 import atlas/ui/button
 import atlas/ui/dialog
+import atlas/ui/empty
 import atlas/ui/icon
 import atlas/ui/layout
 import atlas/ui/progress
@@ -322,10 +323,14 @@ fn problem(text: String, action: Element(Msg)) -> Element(Msg) {
 
 fn status_view(model: Model, status: StravaStatus) -> Element(Msg) {
   case status.configured, status.connected {
+    // An empty state, as the other pages with nothing to show have (ADR 0124).
     False, _ ->
-      html.p([class("muted")], [
-        html.text("Strava is not set up on this server."),
-      ])
+      empty.view(
+        icon.Link,
+        "Strava is not available",
+        "Strava is not set up on this server.",
+        None,
+      )
     True, False ->
       html.div([], [
         html.p([], [
