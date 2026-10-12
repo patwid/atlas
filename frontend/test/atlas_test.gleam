@@ -15,6 +15,8 @@ import atlas/auth.{Session}
 import atlas/coaches_page
 import atlas/collection
 import atlas/date
+import atlas/goal
+import atlas/goals_page
 import atlas/grants
 import atlas/home_page
 import atlas/hr_zones
@@ -61,6 +63,7 @@ fn signed_out(form: signin.Form) -> atlas.Model {
     home_page.new(),
     strava_page.new(),
     zones_page.new(),
+    goals_page.new(),
     None,
     0,
   )
@@ -80,6 +83,7 @@ fn signed_in() -> atlas.Model {
     home_page.new(),
     strava_page.new(),
     zones_page.new(),
+    goals_page.new(),
     None,
     0,
   )
@@ -748,6 +752,7 @@ pub fn settings_is_a_list_of_its_sections_test() {
   assert !string.contains(html, ">Sync<")
   assert !string.contains(html, "href=\"/settings/account\"")
   assert string.contains(html, "href=\"/settings/zones\"")
+  assert string.contains(html, "href=\"/settings/goals\"")
   assert string.contains(html, "href=\"/settings/coaches\"")
   assert string.contains(html, "href=\"/settings/strava\"")
   assert !string.contains(html, "Checking")
@@ -772,6 +777,19 @@ pub fn no_storage_banner_while_the_device_database_works_test() {
   assert !string.contains(html, "could not open its local storage")
 }
 
+pub fn the_goals_page_has_add_goal_in_the_app_bar_test() {
+  let model =
+    Model(
+      ..signed_in(),
+      route: route.SettingsPage(route.Goals),
+      goals: goals_page.Model(..goals_page.new(), loaded: True),
+    )
+  let html = element.to_string(atlas.view(model))
+  assert string.contains(html, "bar-main-action")
+  assert string.contains(html, "Add goal")
+  assert string.contains(html, "No goals yet")
+}
+
 pub fn settings_rows_say_what_is_set_test() {
   let defaults = athlete_settings.defaults()
   let model =
@@ -787,12 +805,17 @@ pub fn settings_rows_say_what_is_set_test() {
           "T",
         ),
       ]),
+      goals: goals_page.Model(..goals_page.new(), loaded: True, goals: [
+        goal.Goal("x1", "u1", 10_000.0, 2700, "T"),
+        goal.Goal("x2", "c1", 42_195.0, 10_800, "T"),
+      ]),
       coaches: coaches_page.Model(..coaches_page.new(), loaded: True, grants: [
         grants.Grant("g1", "u1", "c1", "Alice", "Bob Coach", "T"),
       ]),
     )
   let html = element.to_string(atlas.view(model))
   assert string.contains(html, "Max 185 bpm · threshold 4:30 /km")
+  assert string.contains(html, "10 km in 45:00")
   assert string.contains(html, "Bob Coach can see your training")
   assert string.contains(html, "Import your activities")
 }

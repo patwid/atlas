@@ -41,6 +41,7 @@ pub type Icon {
   PersonAdd
   Search
   UploadFile
+  Flag
 }
 
 pub type Style {
@@ -250,5 +251,10 @@ fn paths(icon: Icon, style: Style) -> List(String) {
     UploadFile, Filled -> [
       "M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15.01l1.41 1.41L11 14.84V19h2v-4.16l1.59 1.59L16 15.01 12.01 11z",
     ]
+    // flag: race goals
+    Flag, Outlined -> [
+      "M12.36 6l.4 2H18v6h-3.36l-.4-2H7V6h5.36M14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6L14 4z",
+    ]
+    Flag, Filled -> ["M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6z"]
   }
 }

@@ -49,13 +49,14 @@ test("purge: children go with their purged parent and tombstones of every synced
   const asg = (await h.create("alice", "assignments", { id: id(), plan: plan.id, athlete: h.people.alice.id, assigned_by: h.people.alice.id })).body
   const act = (await h.create("alice", "activities", { id: id(), owner: h.people.alice.id, source: "manual", started_at: "2026-10-01 07:00:00.000Z", sport: "run" })).body
   const m = (await h.create("alice", "matches", { id: id(), owner: h.people.alice.id, activity: act.id, assignment: asg.id, workout: w.id })).body
+  const goal = (await h.create("alice", "goals", { id: id(), owner: h.people.alice.id, distance_m: 10000, time_s: 2700 })).body
   const grant = (await h.create("alice", "coach_grants", { id: id(), athlete: h.people.alice.id, coach: h.people.bob.id })).body
-  for (const [c, r] of [["matches", m], ["activities", act], ["assignments", asg], ["workouts", w], ["plans", plan], ["coach_grants", grant]]) {
+  for (const [c, r] of [["matches", m], ["activities", act], ["assignments", asg], ["workouts", w], ["plans", plan], ["goals", goal], ["coach_grants", grant]]) {
     await softDelete(c, r.id)
   }
   await sleep(2500)
   await runPurge(["coach_grants", grant.id]) // the last collection the job handles
-  for (const [c, r] of [["matches", m], ["activities", act], ["assignments", asg], ["workouts", w], ["plans", plan], ["coach_grants", grant]]) {
+  for (const [c, r] of [["matches", m], ["activities", act], ["assignments", asg], ["workouts", w], ["plans", plan], ["goals", goal], ["coach_grants", grant]]) {
     assert.equal(await exists(c, r.id), false, c)
   }
   assert.equal(await exists("users", h.people.alice.id), true)

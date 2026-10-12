@@ -51,6 +51,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Interval workouts have repetitions: the form asks for the number of reps, the distance and/or time of each rep and the recovery when the kind is Intervals. They are stored in the workout's `steps`, shown on the calendar as "6 × 800 m, 1:30 recovery", and copied with a plan (ADR 0104).
 - Workouts have a target zone: the workout form has an optional Zone (1 to 5) for every kind but a rest day. It is shown on the calendar as "Zone 4" before the other targets, and copied with a plan (ADR 0105).
 - The workout form fills in the duration from a typed distance, or the distance from a typed duration, at the pace of the target zone in your pace zones; for intervals, the time or distance of a rep. Interval workouts show a read-only total distance and time of their repetitions (ADR 0106).
+- Goals in Settings: any number of race goals, each a distance and the time to run it in, added, edited and deleted on their own page; synced as the new `goals` collection, readable by the athlete's coach (ADR 0115).
 
 ### Changed
 - A workout is a run, intervals, a race or a rest day: easy and long runs are one kind, "Run", and tempo runs, cross-training and strength are gone. Existing workouts of those kinds are runs now; rides, swims and strength sessions no longer match a workout (ADR 0114).

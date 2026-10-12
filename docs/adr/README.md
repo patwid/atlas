@@ -117,3 +117,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0111 | [Flat goal and intensity meters instead of the wave](0111-flat-goal-and-intensity-meters.md) | Accepted |
 | 0113 | [No sync row in Settings; unusable device storage as a banner on every page](0113-no-sync-row-in-settings.md) | Accepted |
 | 0114 | [One kind for every run; no tempo, cross-training or strength workouts](0114-one-kind-for-every-run.md) | Accepted |
+| 0115 | [Keep race goals as rows of their own, set in Settings](0115-race-goals.md) | Accepted |

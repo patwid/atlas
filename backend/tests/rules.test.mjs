@@ -374,3 +374,35 @@ test("athlete_settings: pace zones in seconds per km are optional, and checked w
   const hrOnly = await update("alice", "athlete_settings", me, { max_hr: 190 })
   assert.equal(hrOnly.body.threshold_pace_s, 270)
 })
+
+test("goals: any number per athlete, each with a checked distance and time, readable by their coach", async () => {
+  const me = people.alice.id
+  const goal = { owner: me, distance_m: 10000, time_s: 2700 }
+  // Only for oneself, and both values are required and checked.
+  assert.equal((await create("bob", "goals", { id: id(), ...goal })).status, 400)
+  assert.equal((await create("alice", "goals", { id: id(), owner: me, distance_m: 10000 })).status, 400)
+  assert.equal((await create("alice", "goals", { id: id(), owner: me, time_s: 2700 })).status, 400)
+  assert.equal((await create("alice", "goals", { id: id(), ...goal, distance_m: 0 })).status, 400)
+  assert.equal((await create("alice", "goals", { id: id(), ...goal, distance_m: 1000001 })).status, 400)
+  assert.equal((await create("alice", "goals", { id: id(), ...goal, time_s: 172801 })).status, 400)
+  assert.equal((await create("alice", "goals", { id: id(), ...goal, time_s: 2700.5 })).status, 400)
+  const ten = await create("alice", "goals", { id: id(), ...goal })
+  assert.equal(ten.status, 200, JSON.stringify(ten.body))
+  const marathon = await create("alice", "goals", { id: id(), owner: me, distance_m: 42195, time_s: 12600 })
+  assert.equal(marathon.status, 200, JSON.stringify(marathon.body))
+  assert.equal((await list("alice", "goals")).body.items.length, 2)
+  assert.equal((await update("alice", "goals", ten.body.id, { time_s: 2640 })).body.time_s, 2640)
+  // Coaches read, strangers do not; nobody else changes them, and the owner stays.
+  assert.equal((await get("bob", "goals", ten.body.id)).status, 404)
+  await grant("alice", "bob")
+  assert.equal((await list("bob", "goals")).body.items.length, 2)
+  assert.equal((await get("carol", "goals", ten.body.id)).status, 404)
+  assert.equal((await update("bob", "goals", ten.body.id, { time_s: 2500 })).status, 404)
+  assert.equal((await update("alice", "goals", ten.body.id, { owner: people.bob.id })).status, 404)
+  // Deleted by marking, which the coach no longer sees; never removed by a client.
+  assert.equal((await update("alice", "goals", marathon.body.id, { deleted: true })).status, 200)
+  assert.equal((await get("bob", "goals", marathon.body.id)).status, 404)
+  assert.equal((await api("DELETE", `collections/goals/records/${ten.body.id}`, { token: as("alice") })).status, 403)
+  // Updates need the guard's base like every synced collection (ADR 0011).
+  assert.equal((await h.update("alice", "goals", ten.body.id, { time_s: 2600 })).status, 400)
+})

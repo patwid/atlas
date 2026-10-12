@@ -19,15 +19,17 @@ pub type Route {
 
 pub type SettingsPage {
   Zones
+  Goals
   Coaches
   Strava
 }
 
-pub const settings_pages = [Zones, Coaches, Strava]
+pub const settings_pages = [Zones, Goals, Coaches, Strava]
 
 fn settings_slug(page: SettingsPage) -> String {
   case page {
     Zones -> "zones"
+    Goals -> "goals"
     Coaches -> "coaches"
     Strava -> "strava"
   }
@@ -36,6 +38,7 @@ fn settings_slug(page: SettingsPage) -> String {
 pub fn settings_title(page: SettingsPage) -> String {
   case page {
     Zones -> "Training zones"
+    Goals -> "Goals"
     Coaches -> "Coaches"
     Strava -> "Strava"
   }

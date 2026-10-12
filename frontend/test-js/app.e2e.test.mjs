@@ -475,6 +475,56 @@ test("training zones start as the defaults, are saved under the athlete's ID, an
   w.close()
 })
 
+test("an athlete adds two goals in Settings, edits one and deletes the other, and the server follows (ADR 0115)", { skip: !built && "frontend not built" }, async () => {
+  await h.world()
+  const alice = h.people.alice
+  const goals = async () => (await h.api("GET", "collections/goals/records?perPage=50&sort=distance_m&filter=" + encodeURIComponent("deleted = false"), { token: alice.token })).body.items
+  const w = startApp("/settings/goals", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
+  const d = w.document
+  await waitFor("no goals yet", () => d.body.textContent.includes("No goals yet"))
+
+  // A goal needs both values: without a time nothing is sent.
+  click(w, button(w, "Add goal"))
+  await waitFor("the form", () => d.querySelector("#distance"))
+  typeInto(w, d.querySelector("#distance"), "42.195")
+  submit(w, d.querySelector(".goal-form"))
+  await waitFor("a time error", () => d.querySelector("[role=alert]")?.textContent.startsWith("Enter the time"))
+  typeInto(w, d.querySelector("#time"), "3:30")
+  submit(w, d.querySelector(".goal-form"))
+  await waitFor("the marathon on the server", async () => (await goals()).length === 1)
+
+  click(w, button(w, "Add goal"))
+  await waitFor("an empty form", () => d.querySelector("#distance")?.value === "")
+  typeInto(w, d.querySelector("#distance"), "10")
+  typeInto(w, d.querySelector("#time"), "0:45:30")
+  submit(w, d.querySelector(".goal-form"))
+  let rows = await waitFor("both goals on the server", async () => { const r = await goals(); return r.length === 2 && r })
+  assert.deepEqual(rows.map((g) => [g.owner, g.distance_m, g.time_s]), [[alice.id, 10000, 2730], [alice.id, 42195, 12600]])
+  await waitFor("both on screen, shortest first", () => {
+    const items = [...d.querySelectorAll(".goals .list li")].map((li) => li.textContent)
+    return items.length === 2 && items[0].includes("45:30") && items[1].includes("3:30:00")
+  })
+
+  // Edit the marathon's time from its row (ADR 0080).
+  const row = (text) => [...d.querySelectorAll(".goals .list li")].find((li) => li.textContent.includes(text))
+  click(w, row("42.195 km").querySelector(".row-link"))
+  await waitFor("the edit form", () => d.querySelector("#time")?.value === "3:30")
+  typeInto(w, d.querySelector("#time"), "3:15")
+  submit(w, d.querySelector(".goal-form"))
+  await waitFor("the new time on the server", async () => (await goals()).find((g) => g.distance_m === 42195)?.time_s === 11700)
+
+  // Delete the 10 km from its form; the delete is written when the Undo snackbar goes (ADR 0056).
+  click(w, row("10 km").querySelector(".row-link"))
+  await waitFor("the edit form", () => d.querySelector("#distance")?.value === "10")
+  click(w, d.querySelector("[aria-label='Delete goal']"))
+  await waitFor("Undo", () => d.body.textContent.includes("Goal deleted"))
+  click(w, byLabel(w, "Close"))
+  rows = await waitFor("one goal left on the server", async () => { const r = await goals(); return r.length === 1 && r })
+  assert.equal(rows[0].distance_m, 42195)
+  await waitFor("gone from the list", () => d.querySelectorAll(".goals .list li").length === 1)
+  w.close()
+})
+
 // Coaching -------------------------------------------------------------------------------------------
 
 test("an athlete adds a coach by e-mail, the coach assigns a plan, and the athlete finds it on her schedule", { skip: !built && "frontend not built" }, async () => {

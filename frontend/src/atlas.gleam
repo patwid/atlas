@@ -10,6 +10,8 @@ import atlas/auth.{type Session}
 import atlas/clock
 import atlas/coaches_page
 import atlas/collection
+import atlas/goal
+import atlas/goals_page
 import atlas/grants
 import atlas/home_page
 import atlas/http
@@ -73,6 +75,7 @@ pub type Model {
     daily: home_page.Model,
     strava: strava_page.Model,
     zones: zones_page.Model,
+    goals: goals_page.Model,
     /// The app's own snackbar, about the connection (ADR 0055): its number and text.
     notice: Option(#(Int, String)),
     /// How many such messages have been shown, so that a timer only closes the one it was started for.
@@ -101,6 +104,7 @@ pub type Msg {
   HomePage(home_page.Msg)
   StravaPage(strava_page.Msg)
   ZonesPage(zones_page.Msg)
+  GoalsPage(goals_page.Msg)
   ProblemsDismissed
 }
 
@@ -160,6 +164,7 @@ fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
       daily: home_page.new(),
       strava: strava_page.new(),
       zones: zones_page.new(),
+      goals: goals_page.new(),
       notice: None,
       notices_shown: 0,
     ),
@@ -278,6 +283,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               daily: home_page.new(),
               strava: strava_page.new(),
               zones: zones_page.new(),
+              goals: goals_page.new(),
             ),
             effect.batch([remember(session), load]),
           )
@@ -322,6 +328,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         daily: home_page.new(),
         strava: strava_page.new(),
         zones: zones_page.new(),
+        goals: goals_page.new(),
       ),
       forget(),
     )
@@ -358,6 +365,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
                 effect.map(activities_page.refresh(), ActivitiesPage),
                 effect.map(home_page.refresh(), HomePage),
                 effect.map(zones_page.refresh(), ZonesPage),
+                effect.map(goals_page.refresh(), GoalsPage),
               ])
             False -> effect.none()
           }
@@ -546,6 +554,23 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         SignedOut(_) -> #(model, effect.none())
       }
 
+    GoalsPage(inner) ->
+      case model.auth {
+        SignedIn(session) -> {
+          let #(page_model, page_effect, actions) =
+            goals_page.update(model.goals, inner, session.user_id)
+          let #(state, action_effects) = perform_goals(model.syncing, actions)
+          #(
+            Model(..model, goals: page_model, syncing: state),
+            effect.batch([
+              effect.map(page_effect, GoalsPage),
+              effect.map(effect.batch(action_effects), Syncing),
+            ]),
+          )
+        }
+        SignedOut(_) -> #(model, effect.none())
+      }
+
     ProblemsDismissed -> #(
       Model(..model, syncing: syncing.dismiss_problems(model.syncing)),
       effect.none(),
@@ -708,6 +733,25 @@ fn perform_zones(
         syncing.create(current, collection.AthleteSettings, id, fields)
       zones_page.Edit(id, fields, base) ->
         syncing.edit(current, collection.AthleteSettings, id, fields, base)
+    }
+    #(next, list.append(effects, [effect]))
+  })
+}
+
+/// Carries out what the user did with their goals.
+fn perform_goals(
+  state: syncing.State,
+  actions: List(goals_page.Action),
+) -> #(syncing.State, List(Effect(syncing.Msg))) {
+  list.fold(actions, #(state, []), fn(acc, action) {
+    let #(current, effects) = acc
+    let #(next, effect) = case action {
+      goals_page.Create(id, fields) ->
+        syncing.create(current, collection.Goals, id, fields)
+      goals_page.Edit(id, fields, base) ->
+        syncing.edit(current, collection.Goals, id, fields, base)
+      goals_page.Delete(id, base) ->
+        syncing.delete(current, collection.Goals, id, base)
     }
     #(next, list.append(effects, [effect]))
   })
@@ -886,6 +930,7 @@ fn session_ended(model: Model) -> #(Model, Effect(Msg)) {
         daily: home_page.new(),
         strava: strava_page.new(),
         zones: zones_page.new(),
+        goals: goals_page.new(),
       ),
       forget(),
     )
@@ -1018,6 +1063,11 @@ fn main_action(model: Model, session: Session) -> Element(Msg) {
         button.app_bar_for(activities_page.main_action(model.activities)),
         ActivitiesPage,
       )
+    route.SettingsPage(route.Goals) ->
+      element.map(
+        button.app_bar_for(goals_page.main_action(model.goals)),
+        GoalsPage,
+      )
     route.Plan(id) ->
       case list.find(model.plans.plans, fn(p) { p.id == id }) {
         Ok(found) ->
@@ -1128,6 +1178,11 @@ fn page(model: Model, session: Session) -> Element(Msg) {
               zones_page.view(model.zones, session.user_id),
               ZonesPage,
             )
+          route.Goals ->
+            element.map(
+              goals_page.view(model.goals, session.user_id),
+              GoalsPage,
+            )
           route.Coaches ->
             element.map(
               coaches_page.view(model.coaches, session.user_id),
@@ -1177,6 +1232,7 @@ fn settings_list(session: Session, model: Model) -> Element(Msg) {
       ..list.map(route.settings_pages, fn(page) {
         let #(symbol, supporting) = case page {
           route.Zones -> #(icon.Favorite, zones_summary(model, session))
+          route.Goals -> #(icon.Flag, goals_summary(model, session))
           route.Coaches -> #(icon.Group, coaches_summary(model, session))
           route.Strava -> #(icon.Link, strava_summary(model))
         }
@@ -1208,6 +1264,15 @@ fn zones_summary(model: Model, session: Session) -> String {
     }
     True, None -> "Default zones: set yours"
     False, _ -> "Heart rate, lactate and pace"
+  }
+}
+
+fn goals_summary(model: Model, session: Session) -> String {
+  case model.goals.loaded, goals_page.mine(model.goals, session.user_id) {
+    False, _ -> "Races you are training for"
+    True, [] -> "No goals yet"
+    True, [one] -> goal.summary(one)
+    True, many -> int.to_string(list.length(many)) <> " goals"
   }
 }
 

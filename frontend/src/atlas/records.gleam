@@ -7,6 +7,7 @@ import atlas/activity_form
 import atlas/assignment_form
 import atlas/athlete_settings
 import atlas/date
+import atlas/goal.{type Goal, Goal}
 import atlas/grants.{type Grant, Grant}
 import atlas/hr_zones
 import atlas/lactate_zones
@@ -270,6 +271,21 @@ pub fn stored_match(record: Dynamic) -> Result(Stored, Nil) {
       deleted,
       updated,
     ))
+  })
+}
+
+/// A race goal (ADR 0115). One without a distance or a time is skipped.
+pub fn goal(record: Dynamic) -> Result(Goal, Nil) {
+  run(record, {
+    use id <- decode.field("id", decode.string)
+    use owner <- decode.field("owner", decode.string)
+    use distance_m <- decode.field("distance_m", number())
+    use time_s <- decode.field("time_s", whole_number())
+    use updated <- decode.optional_field("updated", "", decode.string)
+    case distance_m >. 0.0 && time_s > 0 {
+      True -> decode.success(Goal(id, owner, distance_m, time_s, updated))
+      False -> decode.failure(Goal(id, owner, 0.0, 0, updated), "Goal")
+    }
   })
 }
 
