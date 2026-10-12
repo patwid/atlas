@@ -127,7 +127,7 @@ pub fn update(
               unlinks: n,
               choosing: None,
             ),
-            timer.after(undo.seconds, UnlinkNoticeExpired(n)),
+            timer.after_unheld(undo.seconds, UnlinkNoticeExpired(n)),
             [Delete(row.id, row.updated)],
           )
         }

@@ -204,7 +204,10 @@ pub fn messages_are_announced_test() {
         message: Some(Info("Imported 3 activities from the last 30 days.")),
       ),
     )
-  assert string.contains(info, "role=\"status\"")
+  assert string.contains(
+    info,
+    "data-announce=\"Imported 3 activities from the last 30 days.\"",
+  )
   let problem =
     html_of(
       Model(

@@ -104,3 +104,33 @@ test("a basic dialog closes on a click outside it, not on its own padding; a for
   assert.ok(form.hasAttribute("open"), "the form dialog stays")
 })
 
+test("Tab closes a menu", () => {
+  const menu = d.getElementById("m")
+  let hidden = false
+  menu.hidePopover = () => { hidden = true }
+  const item = menu.querySelector('[role="menuitem"]')
+  item.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Tab", bubbles: true }))
+  assert.ok(hidden)
+})
+
+test("a message is put into the page's one live region, and read again when it comes again", async () => {
+  const region = d.querySelector('body > [role="status"][aria-live="polite"]')
+  assert.ok(region, "the live region is there from the start")
+  assert.equal(region.textContent, "")
+  const snackbar = d.createElement("div")
+  snackbar.dataset.announce = "Workout deleted"
+  d.body.append(snackbar)
+  await new Promise((resolve) => setTimeout(resolve, 100))
+  assert.equal(region.textContent, "Workout deleted")
+  snackbar.dataset.announce = "Plan deleted"
+  await new Promise((resolve) => setTimeout(resolve, 100))
+  assert.equal(region.textContent, "Plan deleted")
+  snackbar.remove()
+  const again = d.createElement("div")
+  again.dataset.announce = "Plan deleted"
+  d.body.append(again)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  assert.equal(region.textContent, "", "emptied before the same words are put in again")
+  await new Promise((resolve) => setTimeout(resolve, 100))
+  assert.equal(region.textContent, "Plan deleted")
+})

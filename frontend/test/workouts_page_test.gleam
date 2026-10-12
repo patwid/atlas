@@ -13,6 +13,7 @@ import atlas/workouts_page.{
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
+import gleam/int
 import gleam/json
 import gleam/list
 import gleam/option.{None, Some}
@@ -506,6 +507,18 @@ pub fn the_week_dialog_shows_the_week_against_its_goal_test() {
   assert string.contains(html, "16 km of 32 km (50%)")
   assert string.contains(html, ">80%<")
   assert string.contains(html, "aria-valuenow=\"50\"")
+}
+
+pub fn a_week_over_its_goal_keeps_its_meter_in_range_test() {
+  let rows =
+    list.map([7, 8, 9, 10, 11], fn(day) {
+      row("w" <> int.to_string(day), "p1", day, 0, "Easy")
+    })
+  let model = Model(..with_rows(rows), selected_week: 2, week_open: True)
+  let html = html_of(model, False)
+  assert string.contains(html, "40 km of 32 km (125%)")
+  assert string.contains(html, "aria-valuenow=\"125\"")
+  assert string.contains(html, "aria-valuemax=\"125\"")
 }
 
 pub fn selecting_a_week_or_a_workout_opens_its_dialog_test() {

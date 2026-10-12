@@ -98,6 +98,7 @@ pub fn the_grid_marks_the_chosen_day_and_today_with_one_tab_stop_test() {
   assert string.contains(html, "Tue, 20 Oct")
   assert list.length(string.split(html, "tabindex=\"0\"")) == 2
   assert list.length(string.split(html, "aria-selected=\"true\"")) == 2
+  assert string.contains(html, "aria-selected=\"true\" role=\"gridcell\"")
   // Closed, the dialog is still there for opening, but empty.
   let closed =
     element.to_string(

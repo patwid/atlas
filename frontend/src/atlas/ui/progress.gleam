@@ -5,9 +5,10 @@ import lustre/element.{type Element}
 import lustre/element/html
 
 /// M3 Expressive's loading indicator, a shape that morphs as it turns, with what is going on next to it, such as
-/// "Copying…", for a wait of a few seconds. The text is the status screen readers announce; the shape is decorative.
+/// "Copying…", for a wait of a few seconds. The text is read out through the page's live region (`data-announce`,
+/// ADR 0124); the shape is decorative.
 pub fn loading(label: String) -> Element(msg) {
-  html.p([class("loading"), attribute.role("status")], [
+  html.p([class("loading"), attribute.attribute("data-announce", label)], [
     html.span(
       [
         class("md-loading-indicator"),

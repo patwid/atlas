@@ -1054,32 +1054,36 @@ fn distance_text(week: plan_schedule.Week, goal: Option(Float)) -> String {
 fn goal_meter(week: plan_schedule.Week, goal: Option(Float)) -> Element(Msg) {
   case plan_schedule.goal_share(week, goal) {
     Error(Nil) -> element.none()
-    Ok(share) ->
+    Ok(share) -> {
+      let percent = float.round(share *. 100.0)
       html.div(
         [
           class("goal-meter"),
           attribute.classes([#("over", share >. 1.0)]),
           attribute.role("meter"),
           attribute.attribute("aria-label", "Distance against this week's goal"),
-          attribute.attribute(
-            "aria-valuenow",
-            int.to_string(float.round(share *. 100.0)),
-          ),
+          attribute.attribute("aria-valuenow", int.to_string(percent)),
           attribute.attribute("aria-valuemin", "0"),
-          attribute.attribute("aria-valuemax", "100"),
+          // A week over its goal goes past 100%: the maximum grows with it, so the value stays in range (ADR 0124).
+          attribute.attribute(
+            "aria-valuemax",
+            int.to_string(int.max(percent, 100)),
+          ),
+          attribute.attribute("aria-valuetext", int.to_string(percent) <> "%"),
         ],
         [
           html.span(
             [
               attribute.style(
                 "width",
-                int.to_string(int.min(float.round(share *. 100.0), 100)) <> "%",
+                int.to_string(int.min(percent, 100)) <> "%",
               ),
             ],
             [],
           ),
         ],
       )
+    }
   }
 }
 

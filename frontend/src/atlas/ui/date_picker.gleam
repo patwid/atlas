@@ -263,34 +263,40 @@ fn grid(
               case cell {
                 None -> html.td([], [])
                 Some(d) ->
-                  html.td([attribute.role("gridcell")], [
-                    html.button(
-                      [
-                        attribute.type_("button"),
-                        attribute.id(day_id(id, d)),
-                        class("date-picker-day"),
-                        attribute.classes([
-                          #("selected", d == draft),
-                          #("today", d == today),
-                        ]),
-                        attribute.attribute("aria-selected", case d == draft {
-                          True -> "true"
-                          False -> "false"
-                        }),
-                        case d == today {
-                          True -> attribute.attribute("aria-current", "date")
-                          False -> attribute.none()
-                        },
-                        attribute.aria_label(date.format(d)),
-                        attribute.attribute("tabindex", case d == focusable {
-                          True -> "0"
-                          False -> "-1"
-                        }),
-                        event.on_click(to_msg(DayPicked(d))),
-                      ],
-                      [html.text(int.to_string(d.day))],
-                    ),
-                  ])
+                  // A selected cell, not its button, says so: aria-selected belongs to the grid cell (ADR 0124).
+                  html.td(
+                    [
+                      attribute.role("gridcell"),
+                      attribute.attribute("aria-selected", case d == draft {
+                        True -> "true"
+                        False -> "false"
+                      }),
+                    ],
+                    [
+                      html.button(
+                        [
+                          attribute.type_("button"),
+                          attribute.id(day_id(id, d)),
+                          class("date-picker-day"),
+                          attribute.classes([
+                            #("selected", d == draft),
+                            #("today", d == today),
+                          ]),
+                          case d == today {
+                            True -> attribute.attribute("aria-current", "date")
+                            False -> attribute.none()
+                          },
+                          attribute.aria_label(date.format(d)),
+                          attribute.attribute("tabindex", case d == focusable {
+                            True -> "0"
+                            False -> "-1"
+                          }),
+                          event.on_click(to_msg(DayPicked(d))),
+                        ],
+                        [html.text(int.to_string(d.day))],
+                      ),
+                    ],
+                  )
               }
             }),
           )

@@ -75,6 +75,9 @@
   --md-sys-elevation-3:
     0 4px 8px 3px color-mix(in srgb, var(--md-sys-color-shadow) 15%, transparent),
     0 1px 3px color-mix(in srgb, var(--md-sys-color-shadow) 30%, transparent);
+  --md-sys-elevation-4:
+    0 6px 10px 4px color-mix(in srgb, var(--md-sys-color-shadow) 15%, transparent),
+    0 2px 3px color-mix(in srgb, var(--md-sys-color-shadow) 30%, transparent);
 
   --md-sys-state-hover: 0.08;
   --md-sys-state-focus: 0.1;
@@ -253,21 +256,22 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 .button-group > .md-icon-button:has(+ .md-icon-button:active), .button-group > .md-icon-button:active + .md-icon-button { width: 2.125rem; }
 @media (prefers-reduced-motion: reduce) { .button-group > .md-icon-button { transition: none; } }
 
-/* Icon button (ADR 0047): a 40px circle around a 24px icon. */
+/* Icon button (ADR 0047): a 40px circle around a 24px icon. Its touch target is M3's 48px (ADR 0124): ::before
+   reaches 4px past the circle, so the state layer is the button's own background and the ripple grows from its
+   centre, inside the circle, without clipping that would also clip the target. */
 .md-icon-button {
   text-decoration: none; position: relative; display: inline-grid; place-items: center; width: 2.5rem; height: 2.5rem; flex: none;
   padding: 0; border: 0; border-radius: var(--md-sys-shape-corner-full); background: transparent;
   color: var(--md-sys-color-on-surface-variant); cursor: pointer; isolation: isolate;
   -webkit-tap-highlight-color: transparent;
-  transition: border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
+  transition: border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    background-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
-.md-icon-button::before {
-  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
-  background: currentColor; opacity: 0; transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
-}
-.md-icon-button:hover::before { opacity: var(--md-sys-state-hover); }
-.md-icon-button:focus-visible::before, .md-icon-button:active::before { opacity: var(--md-sys-state-focus); }
+.md-icon-button::before { content: ""; position: absolute; inset: -0.25rem; border-radius: var(--md-sys-shape-corner-full); }
+.md-icon-button:not(:disabled):hover { background-color: color-mix(in srgb, currentColor calc(var(--md-sys-state-hover) * 100%), transparent); }
+.md-icon-button:not(:disabled):is(:focus-visible, :active) { background-color: color-mix(in srgb, currentColor calc(var(--md-sys-state-focus) * 100%), transparent); }
 .md-icon-button:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+.md-icon-button:disabled { cursor: default; color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent); }
 
 /* Extended FAB (ADR 0047, 0068): a phone's main action, floating at the bottom right above the navigation bar. From
    the medium window class the same action is a button in the app bar instead (.bar-main-action). */
@@ -278,13 +282,15 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
   background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container);
   font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem;
   box-shadow: var(--md-sys-elevation-3); -webkit-tap-highlight-color: transparent;
-  transition: border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
+  transition: border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    box-shadow var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
 .md-fab::before {
   content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
   background: currentColor; opacity: 0; transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
 .md-fab:hover::before { opacity: var(--md-sys-state-hover); }
+.md-fab:hover { box-shadow: var(--md-sys-elevation-4); }
 .md-fab:focus-visible::before, .md-fab:active::before { opacity: var(--md-sys-state-focus); }
 .md-fab:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
 /* Room under the last item, so the FAB does not cover it. */
@@ -320,7 +326,9 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
   font: 500 0.75rem/1rem var(--md-ref-typeface); letter-spacing: 0.03125rem; color: var(--md-sys-color-on-surface-variant);
 }
 .choice-options { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.choice-option { position: relative; margin: 0; font: inherit; color: inherit; letter-spacing: normal; }
+/* The option's label is what is pressed: 8px above and below the 32px chip make M3's 48px touch target, taken back
+   by the margins so the layout does not move (ADR 0124). */
+.choice-option { position: relative; margin: -0.5rem 0; padding: 0.5rem 0; font: inherit; color: inherit; letter-spacing: normal; }
 .choice-option input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
 .choice-label {
   position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; isolation: isolate;
@@ -378,6 +386,7 @@ textarea.md-text-field { resize: vertical; min-height: 6rem; }
 .md-text-field:hover:not(:disabled):not(:focus) { border-color: var(--md-sys-color-on-surface); }
 .md-text-field:focus { outline: 0; border-color: var(--md-sys-color-primary); box-shadow: inset 0 0 0 1px var(--md-sys-color-primary); }
 .md-text-field[aria-invalid="true"] { border-color: var(--md-sys-color-error); }
+.md-text-field[aria-invalid="true"]:hover:not(:disabled):not(:focus) { border-color: var(--md-sys-color-on-error-container); }
 .md-text-field[aria-invalid="true"]:focus { box-shadow: inset 0 0 0 1px var(--md-sys-color-error); }
 .md-text-field:disabled {
   color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
@@ -700,8 +709,9 @@ label {
 }
 .week-label:hover { background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, var(--md-sys-color-surface)); }
 .calendar-week.selected .week-label { background: var(--selected); color: var(--md-sys-color-on-secondary-container); }
-.week-label:focus-visible, .workout:focus-visible, .add-here:focus-visible { outline: 2px solid var(--md-sys-color-secondary); outline-offset: -2px; }
-.week-distance { color: var(--md-sys-color-on-surface-variant); font-size: 0.8125rem; }
+.week-label:focus-visible, .workout:focus-visible { outline: var(--focus-ring); outline-offset: -3px; }
+.add-here:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+.week-distance { color: var(--md-sys-color-on-surface-variant); font-size: 0.75rem; line-height: 1rem; letter-spacing: 0.025rem; }
 /* On a phone a day is a row: its name, its workouts, and the add button at the trailing edge (ADR 0107). The name
    lines up with the first workout's title, or with the button on a day without workouts. */
 .calendar-day {
@@ -713,9 +723,10 @@ label {
 .day-name { color: var(--md-sys-color-on-surface-variant); font-size: 0.75rem; line-height: 1rem; letter-spacing: 0.025rem; padding-top: 0.375rem; }
 .day-name > span { display: block; }
 .day-date, .week-dates { color: var(--md-sys-color-on-surface-variant); font-size: 0.75rem; font-weight: 400; }
-/* A day of week 1 before the plan starts (ADR 0108): dimmed, with nothing to add. */
+/* A day of week 1 before the plan starts (ADR 0108): dimmed by its container and quieter colours, not by opacity,
+   which took its text below 4.5:1 (ADR 0124); nothing to add. */
 .calendar-day.before-start { background: var(--md-sys-color-surface-container); }
-.calendar-day.before-start .day-name, .calendar-day.before-start .workout { opacity: 0.6; }
+.calendar-day.before-start .workout { --kind: var(--md-sys-color-outline-variant); color: var(--md-sys-color-on-surface-variant); background: var(--md-sys-color-surface-container-highest); }
 .day-body { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
 /* A workout is a small filled card (ADR 0051), its kind a bar along the leading edge. */
 .workout {
@@ -830,6 +841,8 @@ label {
   .add-here { width: 2rem; height: 2rem; }
   .day-body:not(:empty) + .add-here { margin-top: 0.25rem; }
 }
+/* Without a mouse, the wide calendar's add button keeps the 40px of the phone's (ADR 0124). */
+@media (min-width: 52.5rem) and (hover: none) { .add-here { width: 2.5rem; height: 2.5rem; } }
 
 /* An athlete's summary (ADR 0124): filled cards side by side, a label, the number in headline-medium and what it
    counts, and for this week a meter of the workouts done. */
@@ -877,8 +890,11 @@ button.strava-connect:disabled { opacity: 0.6; cursor: progress; }
 .attribution img { height: 15px; width: auto; }
 /* Disconnect, the quieter action, is set apart at the end of the row (ADR 0074). */
 .strava .actions .disconnect { margin-left: auto; }
-/* "View on Strava" must be identifiable as a link: bold, underlined and in Strava's orange. */
-a.strava-link { color: #FC5200; font-weight: 700; text-decoration: underline; }
+/* "View on Strava" must be identifiable as a link: bold and underlined, which Strava's rules allow in place of its
+   orange. On a light surface #FC5200 is about 3.2:1, below 4.5:1, so it is in the text colour there; in the dark
+   scheme the orange is legible and kept (ADR 0124). */
+a.strava-link { color: var(--md-sys-color-on-surface); font-weight: 700; text-decoration: underline; }
+@media (prefers-color-scheme: dark) { a.strava-link { color: #FC5200; } }
 /* Training zones in Settings (ADR 0034, 0035) */
 .zones-form .subheader { margin: 1.25rem 0 0; }
 .zones-form > .muted { font-size: 0.875rem; margin: 0.25rem 0 0; }
@@ -903,16 +919,25 @@ a.strava-link { color: #FC5200; font-weight: 700; text-decoration: underline; }
 
 /* Ripple (ADR 0051): a circle that grows from where the pointer went down and fades. atlas/ui/interaction sets its
    position and size and flips data-ripple between a and b to restart it. */
-.md-button, .md-fab, .md-icon-button, .choice-label, .link-list a, .nav-indicator { overflow: hidden; }
-:is(.md-button, .md-fab, .md-icon-button, .choice-label, .link-list a, .nav-indicator)[data-ripple]::after {
+.md-button, .md-fab, .choice-label, .link-list a, .md-menu-item, .nav-indicator { overflow: hidden; }
+:is(.md-button, .md-fab, .md-icon-button, .choice-label, .link-list a, .md-menu-item, .nav-indicator)[data-ripple]::after {
   content: ""; position: absolute; z-index: -1; pointer-events: none;
   left: var(--ripple-x); top: var(--ripple-y); width: var(--ripple-size); height: var(--ripple-size);
   border-radius: 50%; background: currentColor; opacity: 0; transform: translate(-50%, -50%) scale(1);
 }
 [data-ripple="a"]::after { animation: ripple-a 0.45s cubic-bezier(0.2, 0, 0, 1); }
 [data-ripple="b"]::after { animation: ripple-b 0.45s cubic-bezier(0.2, 0, 0, 1); }
-@keyframes ripple-a { from { opacity: 0.12; transform: translate(-50%, -50%) scale(0); } }
-@keyframes ripple-b { from { opacity: 0.12; transform: translate(-50%, -50%) scale(0); } }
+/* The ripple is the pressed state layer (ADR 0124): it starts at the pressed opacity, and a rippling element keeps
+   only its hover layer under it while pressed, so the two do not add up. */
+@keyframes ripple-a { from { opacity: var(--md-sys-state-pressed); transform: translate(-50%, -50%) scale(0); } }
+@keyframes ripple-b { from { opacity: var(--md-sys-state-pressed); transform: translate(-50%, -50%) scale(0); } }
+:is(.md-button:not(:disabled), .md-fab, .link-list a, .md-menu-item)[data-ripple]:active::before { opacity: var(--md-sys-state-hover); }
+.tabs a:active .nav-indicator[data-ripple]::before { opacity: var(--md-sys-state-hover); }
+/* An icon button's ripple fills its circle from the centre: the button is not clipped, so its touch target is not. */
+button.md-icon-button[data-ripple]::after, a.md-icon-button[data-ripple]::after {
+  left: 50%; top: 50%; width: 100%; height: 100%; border-radius: inherit;
+}
+.md-icon-button[data-ripple]:active { background-color: color-mix(in srgb, currentColor calc(var(--md-sys-state-hover) * 100%), transparent); }
 @media (prefers-reduced-motion: reduce) {
   [data-ripple]::after { animation: none !important; }
   .page { animation: none; }
@@ -1061,8 +1086,8 @@ dialog .dialog-supporting { margin: 0 0 1.5rem; font-size: 0.875rem; line-height
   transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
 .md-menu-item:hover::before { opacity: var(--md-sys-state-hover); }
-.md-menu-item:focus-visible { outline: none; }
-.md-menu-item:focus-visible::before { opacity: var(--md-sys-state-focus); }
+.md-menu-item:focus-visible { outline: var(--focus-ring); outline-offset: -3px; }
+.md-menu-item:focus-visible::before, .md-menu-item:active::before { opacity: var(--md-sys-state-focus); }
 .md-menu-item .icon { color: var(--md-sys-color-on-surface-variant); }
 /* In a list row the menu button sits at the row's top end. */
 .list li:has(.md-menu-button) { padding-right: 3.5rem; }
@@ -1188,7 +1213,7 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
 /* With a mouse, the many add buttons of a wide calendar stay faint until their day is pointed at; a
    touch screen has no pointing, so there they are always in full (ADR 0075). */
 @media (min-width: 52.5rem) and (hover: hover) {
-  .add-here { opacity: 0.4; }
+  .add-here { opacity: 0.6; } /* 3:1 for an icon (ADR 0124) */
   .calendar-day:hover .add-here, .add-here:focus-visible { opacity: 1; }
 }
 
@@ -1197,7 +1222,7 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
 @media (max-width: 52.4375rem) {
   .calendar-week .week-label { position: sticky; top: var(--app-bar-height); z-index: 1; }
   .calendar-day:not(:has(.workout)) { min-height: 0; padding-top: 0.125rem; padding-bottom: 0.125rem; align-items: center; }
-  .calendar-day:not(:has(.workout)) .day-name { opacity: 0.7; padding-top: 0; }
+  .calendar-day:not(:has(.workout)) .day-name { padding-top: 0; }
   /* For someone who cannot edit the plan an empty day holds nothing, so the stacked days leave it out (ADR 0072). */
   .calendar-day:not(:has(.workout, .add-here)) { display: none; }
 }

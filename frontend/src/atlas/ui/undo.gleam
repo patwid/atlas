@@ -11,8 +11,9 @@ import gleam/option.{type Option, None, Some}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 
-/// How long the snackbar stays before the delete is written.
-pub const seconds = 6
+/// How long the snackbar stays before the delete is written: M3's longest, as it has an action (ADR 0124). It
+/// waits on while the snackbar is pointed at or has the focus.
+pub const seconds = 10
 
 pub type Undo {
   Undo(
@@ -37,7 +38,7 @@ pub fn start(
   #(
     Undo(Some(#(n, id)), n),
     option.map(undo.pending, fn(p) { p.1 }),
-    timer.after(seconds, expired(n)),
+    timer.after_unheld(seconds, expired(n)),
   )
 }
 

@@ -1,7 +1,8 @@
 // Page-wide interaction that needs the DOM: touch feedback and the app bar's scrolled state (ADR 0051), placing
-// and moving through menus (ADR 0056), and opening and closing dialogs with data-open (ADR 0057, 0066). It only
-// sets attributes, CSS variables and focus and calls the dialogs' own methods; it never adds or removes nodes, so
-// Lustre's view of the DOM stays right.
+// and moving through menus (ADR 0056), opening and closing dialogs with data-open (ADR 0057, 0066), and reading out
+// messages (ADR 0124). It only sets attributes, CSS variables and focus and calls the dialogs' own methods; it never
+// adds or removes nodes inside the app, so Lustre's view of the DOM stays right. The one node it adds, the live
+// region, is outside the app's root.
 
 const rippling = ".md-button, .md-fab, .md-icon-button, .choice-label, .link-list a, .md-menu-item, .tabs a .nav-indicator"
 
@@ -47,10 +48,14 @@ export function install() {
     }
     menu.querySelector('[role="menuitem"]')?.focus()
   }, true)
-  // The arrow keys, Home and End move between a menu's items.
+  // The arrow keys, Home and End move between a menu's items; Tab closes the menu and moves on from its button.
   document.addEventListener("keydown", (event) => {
     const menu = event.target instanceof Element ? event.target.closest(".md-menu") : null
     if (!menu) return
+    if (event.key === "Tab") {
+      menu.hidePopover?.()
+      return
+    }
     const items = [...menu.querySelectorAll('[role="menuitem"]')]
     const at = items.indexOf(event.target)
     const next = { ArrowDown: at + 1, ArrowUp: at - 1, Home: 0, End: items.length - 1 }[event.key]
@@ -75,10 +80,29 @@ export function install() {
       else if (!wanted && dialog.open) dialog.close()
     }
   }
-  new MutationObserver(syncDialogs).observe(document.body, {
-    subtree: true, childList: true, attributes: true, attributeFilter: ["data-open"],
+  // Messages (snackbars, loading) carry their text in data-announce. A live region added to the page together with
+  // its text is often not read out, so one region stays in the page, empty, and each new message is put into it.
+  const region = document.createElement("div")
+  region.className = "visually-hidden"
+  region.setAttribute("role", "status")
+  region.setAttribute("aria-live", "polite")
+  document.body.append(region)
+  const announced = new WeakMap()
+  const announce = () => {
+    for (const el of document.querySelectorAll("[data-announce]")) {
+      const text = el.dataset.announce
+      if (announced.get(el) === text) continue
+      announced.set(el, text)
+      // Emptied first, so the same words said again are read again.
+      region.textContent = ""
+      setTimeout(() => { region.textContent = text }, 50)
+    }
+  }
+  new MutationObserver(() => { syncDialogs(); announce() }).observe(document.body, {
+    subtree: true, childList: true, attributes: true, attributeFilter: ["data-open", "data-announce"],
   })
   syncDialogs()
+  announce()
 
   // The top app bar takes a container color once the page has scrolled under it.
   const scrolled = () => {

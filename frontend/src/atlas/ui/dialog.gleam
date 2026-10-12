@@ -38,17 +38,25 @@ pub fn view(
   footer: List(Element(msg)),
 ) -> Element(msg) {
   let label_id = id <> "-label"
+  let supporting_id = id <> "-supporting"
+  // An alert dialog (ADR 0124): it asks before something that cannot be taken back, and its sentence is read out
+  // with its headline.
   html.dialog(
     [
       attribute.id(id),
+      attribute.role("alertdialog"),
       attribute.attribute("aria-labelledby", label_id),
+      attribute.attribute("aria-describedby", supporting_id),
       event.on("close", decode.success(on_hide)),
     ],
     [
-      html.p([attribute.id(label_id), attribute.class("dialog-headline")], [
+      html.h2([attribute.id(label_id), attribute.class("dialog-headline")], [
         html.text(label),
       ]),
-      html.p([attribute.class("dialog-supporting")], [html.text(supporting)]),
+      html.p(
+        [attribute.id(supporting_id), attribute.class("dialog-supporting")],
+        [html.text(supporting)],
+      ),
       html.form(
         [attribute.attribute("method", "dialog"), attribute.class("actions")],
         footer,
