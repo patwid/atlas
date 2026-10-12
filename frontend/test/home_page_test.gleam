@@ -263,16 +263,32 @@ pub fn the_day_and_its_sections_are_shown_test() {
   assert string.contains(after_coming_up, "Last 7 days")
 }
 
-pub fn the_week_ahead_lists_the_furthest_day_first_test() {
+pub fn the_week_ahead_lists_the_nearest_day_first_test() {
   let html =
     html_of(
       home_page.new(),
       Inputs(..inputs([]), today: monday, activities: []),
     )
-  let assert [_, thursday_on] = string.split(html, "Thursday rest")
-  assert string.contains(thursday_on, "Wednesday tempo")
-  let assert [_, wednesday_on] = string.split(thursday_on, "Wednesday tempo")
-  assert string.contains(wednesday_on, "Tuesday easy")
+  let assert [_, tuesday_on] = string.split(html, "Tuesday easy")
+  assert string.contains(tuesday_on, "Wednesday tempo")
+  let assert [_, wednesday_on] = string.split(tuesday_on, "Wednesday tempo")
+  assert string.contains(wednesday_on, "Thursday rest")
+}
+
+pub fn the_last_days_list_the_latest_day_first_keeping_a_days_order_test() {
+  let base = inputs([])
+  let friday = date.add_days(monday, 4)
+  let past =
+    Inputs(..base, today: friday, activities: [], workouts: [
+      Workout("w1", "p1", 1, 0, "Tuesday easy", plan.Run, Some(8000.0), None),
+      Workout("w2", "p1", 2, 0, "Wednesday first", plan.Run, None, None),
+      Workout("w2b", "p1", 2, 1, "Wednesday second", plan.Run, None, None),
+    ])
+  let html = html_of(home_page.new(), past)
+  let assert [_, last_days] = string.split(html, "Last 7 days")
+  let assert [_, first_on] = string.split(last_days, "Wednesday first")
+  let assert [_, second_on] = string.split(first_on, "Wednesday second")
+  assert string.contains(second_on, "Tuesday easy")
 }
 
 pub fn the_plan_is_named_when_more_than_one_is_followed_test() {

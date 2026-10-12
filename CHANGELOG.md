@@ -60,6 +60,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Export to watch: a workout (but a rest day) downloads as a FIT workout file, with its warm-up, reps, recoveries, repeats and cool-down, and pace ranges from the zones of the plan's athlete or a race goal's pace. Garmin watches load it from `GARMIN/NewFiles` over USB. The button is in the workout's dialog and in the bar of its form ([ADR 0122](docs/adr/0122-export-a-workout-as-a-fit-workout-file.md)).
 
 ### Changed
+- Home's Coming up starts with tomorrow and runs to the end of the week ahead, so the next workouts are right under Today ([ADR 0123](docs/adr/0123-coming-up-nearest-day-first.md)).
 - The activity form no longer offers a sport, a climb or an average heart rate: an activity entered by hand is a run, and an imported activity of another sport keeps its sport as a choice of its own. A FIT import still saves the file's climb and heart rate ([ADR 0121](docs/adr/0121-activity-kind-and-fields-of-a-workout.md)).
 - A workout is a run, intervals, a race or a rest day: easy and long runs are one kind, "Run", and tempo runs, cross-training and strength are gone. Existing workouts of those kinds are runs now; rides, swims and strength sessions no longer match a workout (ADR 0114).
 - An interval workout's `steps` are written in a second version, and the workout's own Zone is no longer asked for it (ADR 0116); it is saved without one, as only its parts have a zone (ADR 0117).
@@ -145,6 +146,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Sharing a plan with named people, public plans and starting someone else's plan: a plan is for one person, and reusing one means copying it (ADR 0110). The Schedule and Sharing tabs are gone.
 
 ### Fixed
+- Home's last seven days show yesterday first, as meant, instead of the oldest day ([ADR 0123](docs/adr/0123-coming-up-nearest-day-first.md)).
 - In the installed app on a phone, a page that fits the screen (an empty list, say) no longer scrolls a little: the frame fills the window through the page's own height instead of `100dvh`, which can be taller than the window there.
 - On a phone, a plan's week labels stay right under the app bar again, without the gap left from the removed Schedule and Sharing tabs (ADR 0110).
 - Installed apps never updated after a deploy: PocketBase answered every check for a new `sw.js` with 304, because files in the Nix store are all dated 1970. Caddy now serves the app shell without dates and with `Cache-Control: no-cache` (ADR 0101).

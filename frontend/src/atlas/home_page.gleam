@@ -250,7 +250,8 @@ pub fn view(model: Model, inputs: Inputs) -> Element(Msg) {
         )
       _ ->
         html.div([], [
-          // Today first, then the week ahead and the last seven days, each newest first (ADR 0102).
+          // Today first, then the week ahead from tomorrow on and the last seven days from yesterday back, so the
+          // nearest days are next to Today (ADR 0123).
           group(
             "Today · " <> date.format(inputs.today),
             sections.today,
@@ -260,7 +261,7 @@ pub fn view(model: Model, inputs: Inputs) -> Element(Msg) {
           ),
           group(
             "Coming up",
-            newest_first(sections.upcoming),
+            sections.upcoming,
             model,
             inputs,
             "Nothing planned in the next "
@@ -272,7 +273,7 @@ pub fn view(model: Model, inputs: Inputs) -> Element(Msg) {
             recent ->
               group(
                 "Last " <> int.to_string(today.window_days) <> " days",
-                newest_first(recent),
+                recent,
                 model,
                 inputs,
                 "",
@@ -281,14 +282,6 @@ pub fn view(model: Model, inputs: Inputs) -> Element(Msg) {
         ])
     },
   ])
-}
-
-/// Items ordered by day, newest first. A day's workouts keep their order: plan, then position.
-fn newest_first(items: List(Item)) -> List(Item) {
-  items
-  |> list.chunk(fn(item) { item.scheduled.date })
-  |> list.reverse
-  |> list.flatten
 }
 
 fn group(

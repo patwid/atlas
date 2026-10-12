@@ -105,7 +105,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0099 | [Serve Atlas over HTTPS on atlas.patwid.ch](0099-https-on-atlas-patwid-ch.md) | Accepted |
 | 0100 | [Import activities from FIT files with a decoder in Gleam](0100-fit-file-import.md) | Accepted |
 | 0101 | [Serve the app shell without dates, so deploys reach installed apps](0101-no-dates-on-the-app-shell.md) | Accepted |
-| 0102 | [Today first on the home screen](0102-today-first-on-home.md) | Accepted |
+| 0102 | [Today first on the home screen](0102-today-first-on-home.md) | Accepted (Coming up order changed by 0123) |
 | 0103 | [Check for updates when the app is resumed, and reload when a new version takes over](0103-update-installed-apps-on-resume.md) | Accepted |
 | 0104 | [Repetitions of an interval workout, kept in its steps](0104-interval-repetitions.md) | Accepted (warm-up, sets and cool-down: 0116) |
 | 0105 | [A target zone for each workout](0105-workout-target-zone.md) | Accepted (a zone per part of an interval workout: 0116) |
@@ -125,3 +125,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0120 | [A rep is run at a zone or at a race goal, chosen first; its intensity is a slider](0120-rep-target-choice-and-intensity-slider.md) | Accepted |
 | 0121 | [An activity has a workout's kind and fields](0121-activity-kind-and-fields-of-a-workout.md) | Accepted |
 | 0122 | [Export a workout to a watch as a FIT workout file, written in Gleam](0122-export-a-workout-as-a-fit-workout-file.md) | Accepted |
+| 0123 | [List Coming up from tomorrow on, and fix the last seven days' order](0123-coming-up-nearest-day-first.md) | Accepted |

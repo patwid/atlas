@@ -126,8 +126,16 @@ pub fn sections(items: List(Item), today: Date) -> Sections {
     recent: list.filter(items, fn(i) {
       date.compare(i.scheduled.date, today) == order.Lt
     })
-      |> list.reverse,
+      |> latest_day_first,
   )
+}
+
+/// Items ordered by day, latest first. A day's workouts keep their order: plan, then position.
+fn latest_day_first(items: List(Item)) -> List(Item) {
+  items
+  |> list.chunk(fn(item) { item.scheduled.date })
+  |> list.reverse
+  |> list.flatten
 }
 
 /// The activities the user can link to an item by hand: their own on the same local day, not used by
