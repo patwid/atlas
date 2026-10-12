@@ -532,8 +532,8 @@ pub fn a_plan_says_who_it_is_for_and_who_it_is_from_test() {
   let page = fn(model) {
     element.to_string(atlas.view(Model(..model, route: route.Plan("p1"))))
   }
-  assert string.contains(page(assigned("u1", "ana")), "For Ana.")
-  assert string.contains(page(assigned("ana", "u1")), "From Ana.")
+  assert string.contains(page(assigned("u1", "ana")), ">For Ana<")
+  assert string.contains(page(assigned("ana", "u1")), ">From Ana<")
   assert !string.contains(page(assigned("u1", "u1")), "For ")
 }
 

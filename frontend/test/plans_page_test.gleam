@@ -380,7 +380,8 @@ pub fn an_own_plan_offers_edit_copy_and_delete_in_the_app_bar_test() {
 pub fn the_detail_of_a_coachs_plan_is_read_only_and_says_who_it_is_from_test() {
   let html = html_of(detail(with_plans([others("o", "Coach plan")]), "o"))
   // The plan's name is the app bar's title now (ADR 0055), see atlas_test.
-  assert string.contains(html, "From Coach Zed. Only they can change it.")
+  assert string.contains(html, ">From Coach Zed<")
+  assert string.contains(html, ">Only they can change it.")
   assert !string.contains(html, ">Edit<")
   assert !string.contains(html, ">Delete<")
 }

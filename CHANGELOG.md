@@ -53,6 +53,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - The workout form fills in the duration from a typed distance, or the distance from a typed duration, at the pace of the target zone in your pace zones; for intervals, the time or distance of a rep. Interval workouts show a read-only total distance and time of their repetitions (ADR 0106).
 
 ### Changed
+- A plan's header is one block in one type size with even gaps: whom the plan is for or from comes first with a person icon, then its phases and description; a coach's plan ends with a lock line saying only they can change it.
 - When this browser cannot open its local storage, a banner on every page says so, instead of only the Sync row in Settings (ADR 0113).
 - The goal and intensity meters are flat bars again instead of waves, so their filled length is easier to read (ADR 0111).
 - Every plan is for one person, chosen when it is made: yourself, or, when you coach someone, one of your athletes ("For"). It cannot be changed later; copying a plan asks whom the copy is for. The plan page has no tabs any more, only its calendar, and says whom the plan is for or from; the plan list groups your plans, your athletes' plans and plans from your coaches. Only the plan's owner removes it, by deleting it. Plans that several people followed were split into a copy for each of them, with their linked activities (ADR 0110).

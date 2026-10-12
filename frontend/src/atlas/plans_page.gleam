@@ -592,30 +592,37 @@ pub fn view_detail(
       html.section([class("plans")], [
         form_view(model, model.mode == Editing(id), "Edit plan", user_id, []),
         copy_dialog(model.copy, user_id, athletes),
-        html.div([], [
+        // One block in one type size: who the plan is for or from, its phases, then its description; a coach's
+        // plan ends with why it cannot be edited here.
+        html.div([class("plan-header")], [
           chips(found),
+          case relation(found) {
+            ForMe -> element.none()
+            ForAthlete(name) -> meta(icon.AccountCircle, "For " <> name)
+            FromCoach(name) -> meta(icon.AccountCircle, "From " <> name)
+          },
           case summary(found) {
             "" -> element.none()
             text -> html.p([class("plan-summary")], [html.text(text)])
           },
           description_view(found.description, model.description_open),
           case relation(found) {
-            ForMe -> element.none()
-            ForAthlete(name) ->
-              html.p([class("muted")], [html.text("For " <> name <> ".")])
-            FromCoach(name) ->
-              html.p([class("muted")], [
-                html.text(
-                  "From "
-                  <> name
-                  <> ". Only they can change it. Copy it to make a version of your own.",
-                ),
-              ])
+            FromCoach(_) ->
+              meta(
+                icon.Lock,
+                "Only they can change it. Copy it to make a version of your own.",
+              )
+            _ -> element.none()
           },
           copy_view(model.copy, found.id),
         ]),
       ])
   }
+}
+
+/// A line of the plan's header led by an icon.
+fn meta(symbol: icon.Icon, text: String) -> Element(Msg) {
+  html.p([class("plan-meta")], [icon.view(symbol), html.text(text)])
 }
 
 /// A long description is cut to three lines above the tabs, so it does not push the calendar off a phone's screen;
