@@ -56,8 +56,10 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - An interval rep can be run at a race goal of the plan's athlete at an intensity from 1 to 100 % of its speed, instead of a zone; its distance or time is worked out from that pace (ADR 0118).
 - A race has an optional warm-up and cool-down, each with its own zone, distance and time, shown before and after the race in the calendar (ADR 0119).
 - Each interval rep is run at either a zone (the default) or a race goal, chosen with segmented buttons, and its race goal intensity is set with a slider (ADR 0120).
+- An activity has a workout's kind and fields: the activity form asks for a title, the kind (Run, Intervals or Race; no rest day), the zone, an interval's warm-up, sets and cool-down or a race's warm-up and cool-down, the distance, the duration and notes. Nothing is worked out from a zone, as the values were measured. The list shows an activity's kind and its zone or parts ([ADR 0121](docs/adr/0121-activity-kind-and-fields-of-a-workout.md)).
 
 ### Changed
+- The activity form no longer offers a sport, a climb or an average heart rate: an activity entered by hand is a run, and an imported activity of another sport keeps its sport as a choice of its own. A FIT import still saves the file's climb and heart rate ([ADR 0121](docs/adr/0121-activity-kind-and-fields-of-a-workout.md)).
 - A workout is a run, intervals, a race or a rest day: easy and long runs are one kind, "Run", and tempo runs, cross-training and strength are gone. Existing workouts of those kinds are runs now; rides, swims and strength sessions no longer match a workout (ADR 0114).
 - An interval workout's `steps` are written in a second version, and the workout's own Zone is no longer asked for it (ADR 0116); it is saved without one, as only its parts have a zone (ADR 0117).
 - A plan's header is one block in one type size with even gaps: whom the plan is for or from comes first with a person icon, then its phases as chips ("Base · 4 weeks", alike as the bands are, ADR 0063) and its description; a coach's plan ends with a lock line saying only they can change it.

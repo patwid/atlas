@@ -3,6 +3,8 @@ import atlas/activity_form.{Form}
 import atlas/fit.{Lap, Summary}
 import atlas/fit_import
 import atlas/outbox
+import atlas/plan
+import atlas/workout_form
 import gleam/dict
 import gleam/option.{None, Some}
 
@@ -39,27 +41,27 @@ fn field(fields: outbox.Fields, name: String) -> Result(String, Nil) {
 }
 
 pub fn the_file_fills_in_the_form_in_local_time_test() {
-  assert imported().filled
-    == Form(
-      date: "2025-09-28",
-      time: "15:20",
-      sport: activity.TrailRun,
-      name: "",
-      distance_km: "10.235",
-      duration: "0:48:21",
-      elevation_m: "412",
-      avg_hr: "155",
-      error: None,
-    )
+  let form = imported().filled
+  assert form.date == "2025-09-28"
+  assert form.time == "15:20"
+  assert form.sport == activity.TrailRun
+  assert form.session.kind == plan.Run
+  assert form.session.title == ""
+  assert form.session.distance_km == "10.235"
+  assert form.session.duration == "0:48:21"
+  assert form.error == None
 }
 
 pub fn missing_values_leave_their_fields_empty_test() {
   let bare =
     Summary(..summary(), elevation_gain_m: None, avg_hr: None, distance_m: 0.0)
-  let form = fit_import.new(bare, "x.fit", 0).filled
-  assert form.elevation_m == ""
-  assert form.avg_hr == ""
-  assert form.distance_km == ""
+  let imported = fit_import.new(bare, "x.fit", 0)
+  assert imported.filled.session.distance_km == ""
+  // Not in the form (ADR 0121), and not written when the file has none.
+  let assert Ok(valid) = activity_form.validate(imported.filled)
+  let fields = fit_import.create_fields("u1", imported, valid, 0)
+  assert field(fields, "elevation_gain_m") == Error(Nil)
+  assert field(fields, "avg_hr") == Error(Nil)
 }
 
 pub fn what_the_user_left_alone_is_written_as_the_file_says_test() {
@@ -102,12 +104,9 @@ pub fn a_file_without_laps_stores_none_test() {
 pub fn what_the_user_changed_is_written_as_typed_test() {
   let fields =
     saved(
-      Form(
-        ..imported().filled,
-        time: "15:30",
-        distance_km: "10.5",
-        duration: "50",
-      ),
+      activity_form.edit(Form(..imported().filled, time: "15:30"), fn(f) {
+        workout_form.Form(..f, distance_km: "10.5", duration: "50")
+      }),
     )
   assert field(fields, "started_at") == Ok("\"2025-09-28 13:30:00.000Z\"")
   assert field(fields, "distance_m") == Ok("10500")
@@ -144,6 +143,10 @@ fn row(owner: String, source: activity.Source, external_id: String) {
     avg_hr: 0,
     updated: "x",
     external_id: external_id,
+    kind: None,
+    zone: 0,
+    intervals: None,
+    description: "",
   )
 }
 

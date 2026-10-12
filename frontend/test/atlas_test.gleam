@@ -559,16 +559,19 @@ fn activities_screen() -> atlas.Model {
     activities: activities_page.Model(
       ..activities_page.new(),
       mode: activities_page.Adding,
-      form: activity_form.Form(
-        "2026-10-05",
-        "07:30",
-        activity.Run,
-        "Morning run",
-        "8,5",
-        "45",
-        "",
-        "",
-        None,
+      form: activity_form.edit(
+        activity_form.Form(
+          ..activity_form.empty_for(date.Date(2026, 10, 5)),
+          time: "07:30",
+        ),
+        fn(f) {
+          workout_form.Form(
+            ..f,
+            title: "Morning run",
+            distance_km: "8,5",
+            duration: "45",
+          )
+        },
       ),
     ),
   )
@@ -596,17 +599,7 @@ pub fn an_invalid_activity_is_not_queued_test() {
       activities: activities_page.Model(
         ..activities_page.new(),
         mode: activities_page.Adding,
-        form: activity_form.Form(
-          "2026-10-05",
-          "07:30",
-          activity.Run,
-          "",
-          "",
-          "",
-          "",
-          "",
-          None,
-        ),
+        form: activity_form.empty_for(date.Date(2026, 10, 5)),
       ),
     )
   let #(model, _) =
@@ -636,6 +629,10 @@ pub fn signing_out_clears_the_activities_on_screen_test() {
           0.0,
           0,
           "T",
+          "",
+          None,
+          0,
+          None,
           "",
         ),
       ]),
@@ -680,6 +677,10 @@ fn today_screen() -> atlas.Model {
         0.0,
         0,
         "T",
+        "",
+        None,
+        0,
+        None,
         "",
       ),
     ]),

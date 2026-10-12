@@ -183,6 +183,20 @@ test("activities: clients cannot create strava or garmin rows; the server can", 
   assert.equal((await update("alice", "activities", r.body.id, { name: "mine now" })).status, 404)
 })
 
+test("activities: a kind, zone, parts and notes are stored; another kind or zone is refused (ADR 0121)", async () => {
+  const steps = { v: 2, warmup: { zone: 1, duration_s: 900 }, sets: [{ reps: 6, work: { zone: 4, distance_m: 800 } }] }
+  const a = await mkActivity("alice", { source: "manual", kind: "interval", zone: 0, steps, description: "Track" })
+  assert.equal(a.kind, "interval")
+  assert.deepEqual(a.steps, steps)
+  assert.equal(a.description, "Track")
+  const none = await mkActivity("alice", { source: "manual" })
+  assert.equal(none.kind, "")
+  assert.equal(none.steps, null)
+  assert.equal((await update("alice", "activities", a.id, { kind: "rest" })).status, 400)
+  assert.equal((await update("alice", "activities", a.id, { zone: 6 })).status, 400)
+  assert.equal((await update("alice", "activities", a.id, { kind: "race", zone: 5, steps: null })).status, 200)
+})
+
 test("activities: Strava activities are visible to a granted coach (ADR 0005)", async () => {
   const r = await api("POST", "collections/activities/records", {
     token: h.admin, body: { id: id(), owner: people.alice.id, source: "strava", external_id: "99", started_at: "2026-10-01 07:00:00.000Z", sport: "run" },

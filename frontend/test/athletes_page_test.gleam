@@ -25,6 +25,10 @@ fn run(
     0,
     "T",
     "",
+    None,
+    0,
+    None,
+    "",
   )
 }
 
@@ -177,6 +181,10 @@ pub fn a_coach_sees_the_link_back_to_strava_too_test() {
       0,
       "T",
       "777888",
+      None,
+      0,
+      None,
+      "",
     )
   let with_link = Inputs(..inputs(), activities: [strava_run])
   let html =

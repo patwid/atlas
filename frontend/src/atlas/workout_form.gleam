@@ -318,6 +318,23 @@ pub fn edit_segment(
   text: String,
   zones: PaceZones,
 ) -> Form {
+  let edited = set_segment(form, part, field, text)
+  let filled =
+    fill_segment(
+      segment(edited, part),
+      is_long(part),
+      segment_pace(segment(edited, part), form.goals, zones),
+    )
+  put_segment(edited, part, filled)
+}
+
+/// A field of a part as typed, with nothing worked out: an activity's parts were measured, not planned (ADR 0121).
+pub fn set_segment(
+  form: Form,
+  part: Part,
+  field: SegmentField,
+  text: String,
+) -> Form {
   let current = segment(form, part)
   let edited = case field {
     ZoneField if text == "" -> SegmentForm(..current, zone: text)
@@ -345,15 +362,17 @@ pub fn edit_segment(
         _, _, _ -> current
       }
   }
-  let filled =
-    fill_segment(edited, is_long(part), segment_pace(edited, form.goals, zones))
+  put_segment(form, part, edited)
+}
+
+fn put_segment(form: Form, part: Part, segment: SegmentForm) -> Form {
   case part {
-    Warmup -> Form(..form, warmup: filled)
-    Cooldown -> Form(..form, cooldown: filled)
+    Warmup -> Form(..form, warmup: segment)
+    Cooldown -> Form(..form, cooldown: segment)
     Work(index) ->
-      update_set(form, index, fn(set) { SetForm(..set, work: filled) })
+      update_set(form, index, fn(set) { SetForm(..set, work: segment) })
     Recovery(index) ->
-      update_set(form, index, fn(set) { SetForm(..set, recovery: filled) })
+      update_set(form, index, fn(set) { SetForm(..set, recovery: segment) })
   }
 }
 

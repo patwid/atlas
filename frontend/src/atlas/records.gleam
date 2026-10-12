@@ -299,6 +299,35 @@ pub fn activity_row(record: Dynamic) -> Result(activity_form.Row, Nil) {
           "",
           decode.string,
         )
+        // A workout's kind, zone, parts and notes (ADR 0121); activities saved before have none.
+        use kind <- decode.optional_field(
+          "kind",
+          None,
+          decode.one_of(
+            decode.map(decode.string, fn(text) {
+              option.from_result(plan.kind_from_string(text))
+            }),
+            [decode.success(None)],
+          ),
+        )
+        use steps <- decode.optional_field(
+          "steps",
+          Error(Nil),
+          decode.one_of(decode.map(steps_decoder(), Ok), [
+            decode.success(Error(Nil)),
+          ]),
+        )
+        use zone <- decode.optional_field(
+          "zone",
+          0,
+          decode.one_of(whole_number(), [decode.success(0)]),
+        )
+        use description <- decode.optional_field(
+          "description",
+          "",
+          decode.string,
+        )
+        let zone = zone_or_none(zone)
         decode.success(activity_form.Row(
           found,
           owner,
@@ -307,6 +336,13 @@ pub fn activity_row(record: Dynamic) -> Result(activity_form.Row, Nil) {
           heart_rate,
           updated,
           external_id,
+          kind,
+          zone,
+          case steps {
+            Ok(read) -> Some(read(zone))
+            Error(Nil) -> None
+          },
+          description,
         ))
       })
   }

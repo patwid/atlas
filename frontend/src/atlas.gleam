@@ -492,7 +492,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
             activities_page.update(
               model.activities,
               inner,
-              activities_context(session),
+              activities_context(model, session),
             )
           let #(state, action_effects) =
             perform_activities(model.syncing, actions)
@@ -691,12 +691,17 @@ fn perform_matches(
 
 /// What the activities screen needs from the browser: today, and the UTC offset for any moment
 /// (it changes with daylight saving, so one number for the whole year would be wrong).
-fn activities_context(session: Session) -> activities_page.Context {
+fn activities_context(
+  model: Model,
+  session: Session,
+) -> activities_page.Context {
   activities_page.Context(
     session.user_id,
     clock.today(),
     clock.utc_offset_at_local,
     clock.utc_offset_at_utc,
+    goal.of(model.goals.goals, session.user_id)
+      |> list.map(fn(g) { workout_form.RaceGoal(g.id, g.distance_m, g.time_s) }),
   )
 }
 
@@ -1181,7 +1186,10 @@ fn page(model: Model, session: Session) -> Element(Msg) {
     }
     route.Activities ->
       element.map(
-        activities_page.view(model.activities, activities_context(session)),
+        activities_page.view(
+          model.activities,
+          activities_context(model, session),
+        ),
         ActivitiesPage,
       )
     // Settings is a list whose rows open a section's page, one pane at every width (ADR 0065).

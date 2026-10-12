@@ -16,7 +16,6 @@ import atlas/route
 import atlas/store
 import atlas/ui/button
 import atlas/ui/chip
-import atlas/ui/choice
 import atlas/ui/date_picker
 import atlas/ui/empty
 import atlas/ui/error
@@ -29,6 +28,8 @@ import atlas/ui/progress
 import atlas/ui/time_picker
 import atlas/ui/undo.{type Undo}
 import atlas/units
+import atlas/workout_fields
+import atlas/workout_form
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
@@ -81,6 +82,8 @@ pub type Context {
     offset_at_local: fn(Date, Int, Int) -> Int,
     /// The UTC offset in minutes that applied at a UTC timestamp.
     offset_at_utc: fn(String) -> Int,
+    /// The user's race goals, which reps can be run at (ADR 0118, 0121).
+    goals: List(workout_form.RaceGoal),
   )
 }
 
@@ -97,12 +100,23 @@ pub type Msg {
   TimePickerOpened
   DatePicker(date_picker.Msg)
   TimePicker(time_picker.Msg)
-  SportChanged(String)
-  NameChanged(String)
+  /// A kind, or the sport of an activity that is not a run (ADR 0121).
+  KindChanged(String)
+  TitleChanged(String)
+  ZoneChanged(String)
   DistanceChanged(String)
   DurationChanged(String)
-  ElevationChanged(String)
-  HeartRateChanged(String)
+  DescriptionChanged(String)
+  /// A zone, race goal, intensity, distance or time of a part (ADR 0116, 0121).
+  SegmentChanged(
+    part: workout_form.Part,
+    field: workout_form.SegmentField,
+    value: String,
+  )
+  /// The repetitions of a set, from 0.
+  RepsChanged(set: Int, value: String)
+  SetAdded
+  SetRemoved(Int)
   Submitted
   /// Deletes at once, with Undo for a few seconds (ADR 0056).
   DeleteClicked(String)
@@ -208,7 +222,7 @@ pub fn update(
       Model(
         ..model,
         mode: Adding,
-        form: activity_form.empty_for(context.today),
+        form: with_goals(activity_form.empty_for(context.today), context),
         imported: None,
         import_error: None,
       ),
@@ -226,9 +240,10 @@ pub fn update(
                 ..model,
                 mode: Editing(id),
                 form: activity_form.from_row(
-                  row,
-                  context.offset_at_utc(row.activity.started_at),
-                ),
+                    row,
+                    context.offset_at_utc(row.activity.started_at),
+                  )
+                  |> with_goals(context),
               ),
               effect.none(),
               [],
@@ -286,7 +301,7 @@ pub fn update(
               #(
                 Model(
                   ..model,
-                  form: imported.filled,
+                  form: with_goals(imported.filled, context),
                   imported: Some(imported),
                   import_error: None,
                 ),
@@ -327,22 +342,26 @@ pub fn update(
       }
       #(model, effect.map(picker_effect, TimePicker), [])
     }
-    SportChanged(v) ->
-      typed(model, fn(f) {
-        case activity.sport_from_string(v) {
-          Ok(sport) -> activity_form.Form(..f, sport: sport)
-          Error(Nil) -> f
-        }
-      })
-    NameChanged(v) -> typed(model, fn(f) { activity_form.Form(..f, name: v) })
+    KindChanged(v) -> typed(model, activity_form.choose(_, v))
+    TitleChanged(v) ->
+      session(model, fn(f) { workout_form.Form(..f, title: v) })
+    ZoneChanged(v) -> session(model, fn(f) { workout_form.Form(..f, zone: v) })
     DistanceChanged(v) ->
-      typed(model, fn(f) { activity_form.Form(..f, distance_km: v) })
+      session(model, fn(f) { workout_form.Form(..f, distance_km: v) })
     DurationChanged(v) ->
-      typed(model, fn(f) { activity_form.Form(..f, duration: v) })
-    ElevationChanged(v) ->
-      typed(model, fn(f) { activity_form.Form(..f, elevation_m: v) })
-    HeartRateChanged(v) ->
-      typed(model, fn(f) { activity_form.Form(..f, avg_hr: v) })
+      session(model, fn(f) { workout_form.Form(..f, duration: v) })
+    DescriptionChanged(v) ->
+      session(model, fn(f) { workout_form.Form(..f, description: v) })
+    SegmentChanged(part, field, v) ->
+      session(model, workout_form.set_segment(_, part, field, v))
+    RepsChanged(set, v) -> session(model, workout_form.type_reps(_, set, v))
+    SetAdded -> {
+      let #(next, effect, actions) = session(model, workout_form.add_set)
+      let field =
+        workout_form.reps_field_name(list.length(next.form.session.sets) - 1)
+      #(next, effect.batch([effect, focus.soon(field_id(field))]), actions)
+    }
+    SetRemoved(set) -> session(model, workout_form.remove_set(_, set))
 
     Submitted ->
       case activity_form.validate(model.form) {
@@ -465,22 +484,27 @@ fn typed(
   )
 }
 
+/// A change to the fields shared with a workout's form (ADR 0121).
+fn session(
+  model: Model,
+  change: fn(workout_form.Form) -> workout_form.Form,
+) -> #(Model, Effect(Msg), List(Action)) {
+  typed(model, activity_form.edit(_, change))
+}
+
+/// The form with the user's race goals, which reps can be run at (ADR 0118).
+fn with_goals(
+  form: activity_form.Form,
+  context: Context,
+) -> activity_form.Form {
+  activity_form.edit(form, workout_form.with_goals(_, context.goals))
+}
+
 fn find(rows: List(Row), id: String) -> Result(Row, Nil) {
   list.find(rows, fn(row) { row.activity.id == id })
 }
 
 // VIEWS -------------------------------------------------------------------------------------------
-
-const sports = [
-  activity.Run,
-  activity.TrailRun,
-  activity.Walk,
-  activity.Hike,
-  activity.Ride,
-  activity.Swim,
-  activity.Strength,
-  activity.Other,
-]
 
 pub fn view(model: Model, context: Context) -> Element(Msg) {
   let rows = mine(model, context.user_id)
@@ -547,6 +571,11 @@ fn row_view(row: Row, context: Context) -> Element(Msg) {
       "" -> element.none()
       text -> html.p([class("figures")], [html.text(text)])
     },
+    // The zone or parts, as a workout shows them (ADR 0121).
+    case activity_form.targets(row) {
+      "" -> element.none()
+      text -> html.p([class("muted")], [html.text(text)])
+    },
     view_on_strava(row),
   ])
 }
@@ -572,7 +601,7 @@ pub fn view_on_strava(row: Row) -> Element(msg) {
 
 fn title(row: Row) -> String {
   case row.name {
-    "" -> activity_form.sport_label(row.activity.sport)
+    "" -> activity_form.type_label(row)
     name -> name
   }
 }
@@ -597,14 +626,12 @@ fn source_label(source: Source) -> String {
   }
 }
 
-/// `Thu 1 Oct 2026, 07:30 · Run`, in the user's local time. The sport is left out when it is already the title.
+/// `Thu 1 Oct 2026, 07:30 · Run`, in the user's local time. The kind or sport is left out when it is already the
+/// title.
 fn when(row: Row, context: Context) -> String {
   case row.name {
     "" -> moment(row, context)
-    _ ->
-      moment(row, context)
-      <> " · "
-      <> activity_form.sport_label(row.activity.sport)
+    _ -> moment(row, context) <> " · " <> activity_form.type_label(row)
   }
 }
 
@@ -779,82 +806,44 @@ fn form_fields(form: activity_form.Form) -> Element(Msg) {
           time_picker.trigger(time_picker_id, TimePickerOpened),
         ),
       ]),
-      choice.chips(
-        "sport",
-        "Sport",
-        activity.sport_to_string(form.sport),
-        list.map(sports, fn(sport) {
-          #(activity.sport_to_string(sport), activity_form.sport_label(sport))
-        }),
-        SportChanged,
+      field.text(
+        "activity-title",
+        "Title",
+        on(field.help("Optional"), "title"),
+        [
+          attribute.type_("text"),
+          attribute.name("title"),
+          attribute.value(form.session.title),
+          attribute.attribute("maxlength", "200"),
+          event.on_input(TitleChanged),
+        ],
       ),
-      html.div([class("row")], [
-        field.text(
-          "activity-distance",
-          "Distance",
-          // One of the two is needed: said up front rather than only once Save is pressed.
-          on(
-            field.Help("A distance, a duration or both", "km", None),
-            "distance",
-          ),
-          [
-            attribute.type_("text"),
-            attribute.attribute("inputmode", "decimal"),
-            attribute.name("distance"),
-            attribute.value(form.distance_km),
-            event.on_input(DistanceChanged),
-          ],
-        ),
-        field.text(
-          "activity-duration",
-          "Duration",
-          on(
-            field.help("Minutes, or hours and minutes: 45 or 1:30"),
-            "duration",
-          ),
-          [
-            attribute.type_("text"),
-            attribute.name("duration"),
-            attribute.value(form.duration),
-            event.on_input(DurationChanged),
-          ],
-        ),
-      ]),
-      // What is not needed is a group of its own, after what is (ADR 0085).
-      layout.subheader("Optional"),
-      field.text("activity-name", "Name", on(field.plain, "name"), [
-        attribute.type_("text"),
-        attribute.name("name"),
-        attribute.value(form.name),
-        attribute.attribute("maxlength", "200"),
-        event.on_input(NameChanged),
-      ]),
-      html.div([class("row")], [
-        field.text(
-          "activity-elevation",
-          "Climb",
-          on(field.suffix("m"), "elevation"),
-          [
-            attribute.type_("text"),
-            attribute.attribute("inputmode", "numeric"),
-            attribute.name("elevation"),
-            attribute.value(form.elevation_m),
-            event.on_input(ElevationChanged),
-          ],
-        ),
-        field.text(
-          "activity-hr",
-          "Average heart rate",
-          on(field.suffix("bpm"), "avg_hr"),
-          [
-            attribute.type_("text"),
-            attribute.attribute("inputmode", "numeric"),
-            attribute.name("heart_rate"),
-            attribute.value(form.avg_hr),
-            event.on_input(HeartRateChanged),
-          ],
-        ),
-      ]),
+      workout_fields.kind_field(
+        activity_form.kind_value(form),
+        activity_form.kind_options(form),
+        events,
+      ),
+      // Another sport than a run has no zone or parts (ADR 0121). One of distance and duration is needed: said up
+      // front rather than only once Save is pressed.
+      case activity_form.is_running(form.sport) {
+        True ->
+          workout_fields.targets(
+            form.session,
+            "activity",
+            "A distance, a duration or both",
+            on,
+            events,
+          )
+        False ->
+          workout_fields.distance_and_duration(
+            form.session,
+            "activity",
+            "A distance, a duration or both",
+            on,
+            events,
+          )
+      },
+      workout_fields.notes(form.session, "activity", on, events),
       // A problem that is about no single field shows at the end.
       case form.error, wrong {
         Some(message), "" -> error.message(message)
@@ -862,6 +851,24 @@ fn form_fields(form: activity_form.Form) -> Element(Msg) {
       },
     ],
   )
+}
+
+const events =
+  workout_fields.Events(
+    kind: KindChanged,
+    zone: ZoneChanged,
+    distance: DistanceChanged,
+    duration: DurationChanged,
+    description: DescriptionChanged,
+    segment: SegmentChanged,
+    reps: RepsChanged,
+    set_added: SetAdded,
+    set_removed: SetRemoved,
+  )
+
+/// `set1_reps` as an element ID: `activity-set1-reps`.
+fn field_id(name: String) -> String {
+  workout_fields.field_id("activity", name)
 }
 
 fn pad2(n: Int) -> String {

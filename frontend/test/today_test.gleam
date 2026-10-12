@@ -50,6 +50,10 @@ fn activity_row(
     0,
     "T",
     "",
+    None,
+    0,
+    None,
+    "",
   )
 }
 

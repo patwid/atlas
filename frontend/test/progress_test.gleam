@@ -7,7 +7,7 @@ import atlas/plan.{Assignment, Workout}
 import atlas/progress.{Week}
 import atlas/today.{Inputs}
 import gleam/list
-import gleam/option.{Some}
+import gleam/option.{None, Some}
 
 // Ana follows a plan that started on Monday 28 September. Today is Wednesday 7 October.
 const monday = Date(2026, 9, 28)
@@ -36,6 +36,10 @@ fn run(
     0.0,
     0,
     "T",
+    "",
+    None,
+    0,
+    None,
     "",
   )
 }

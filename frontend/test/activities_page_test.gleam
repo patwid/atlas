@@ -1,12 +1,15 @@
 import atlas/activities_page.{
   ActivitiesRead, AddClicked, Adding, Browsing, Context, Create, DateChanged,
   Delete, DeleteClicked, DeleteExpired, DistanceChanged, DurationChanged, Edit,
-  EditClicked, Editing, Model, NameChanged, SportChanged, Submitted, TimeChanged,
+  EditClicked, Editing, KindChanged, Model, RepsChanged, SegmentChanged,
+  Submitted, TimeChanged, TitleChanged,
 }
 import atlas/activity.{Activity}
 import atlas/activity_form.{type Row, Form, Row}
 import atlas/date.{Date}
 import atlas/outbox
+import atlas/plan
+import atlas/workout_form
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
@@ -20,7 +23,7 @@ const today = Date(2026, 10, 6)
 
 /// Swiss summer time all year: simple and enough to see conversions happen.
 fn context() -> activities_page.Context {
-  Context("me", today, fn(_, _, _) { 120 }, fn(_) { 120 })
+  Context("me", today, fn(_, _, _) { 120 }, fn(_) { 120 }, [])
 }
 
 fn row(
@@ -37,6 +40,10 @@ fn row(
     120.0,
     152,
     "T-" <> id,
+    "",
+    None,
+    0,
+    None,
     "",
   )
 }
@@ -110,8 +117,8 @@ pub fn adding_an_activity_converts_local_time_to_utc_test() {
   let #(model, _) = update(activities_page.new(), AddClicked)
   let #(model, _) = update(model, DateChanged("2026-10-05"))
   let #(model, _) = update(model, TimeChanged("07:30"))
-  let #(model, _) = update(model, SportChanged("trail_run"))
-  let #(model, _) = update(model, NameChanged("Morning loop"))
+  let #(model, _) = update(model, KindChanged("race"))
+  let #(model, _) = update(model, TitleChanged("Morning loop"))
   let #(model, _) = update(model, DistanceChanged("8,5"))
   let #(model, _) = update(model, DurationChanged("1:05"))
   let #(model, actions) = update(model, Submitted)
@@ -120,7 +127,9 @@ pub fn adding_an_activity_converts_local_time_to_utc_test() {
   assert dict.get(fields, "owner") == Ok("\"me\"")
   assert dict.get(fields, "source") == Ok("\"manual\"")
   assert dict.get(fields, "started_at") == Ok("\"2026-10-05 05:30:00.000Z\"")
-  assert dict.get(fields, "sport") == Ok("\"trail_run\"")
+  assert dict.get(fields, "sport") == Ok("\"run\"")
+  assert dict.get(fields, "kind") == Ok("\"race\"")
+  assert dict.get(fields, "name") == Ok("\"Morning loop\"")
   assert dict.get(fields, "distance_m") == Ok("8500")
   assert dict.get(fields, "moving_time_s") == Ok("3900")
   assert model.mode == Browsing
@@ -143,18 +152,13 @@ pub fn editing_shows_the_stored_values_in_local_time_test() {
     ])
   let #(model, _) = update(model, EditClicked("a"))
   assert model.mode == Editing("a")
-  assert model.form
-    == Form(
-      "2026-10-01",
-      "07:30",
-      activity.Run,
-      "Morning run",
-      "8.5",
-      "45",
-      "120",
-      "152",
-      None,
-    )
+  assert model.form.date == "2026-10-01"
+  assert model.form.time == "07:30"
+  assert model.form.sport == activity.Run
+  assert model.form.session.kind == plan.Run
+  assert model.form.session.title == "Morning run"
+  assert model.form.session.distance_km == "8.5"
+  assert model.form.session.duration == "45"
 }
 
 pub fn an_edit_sends_only_what_changed_with_the_local_base_test() {
@@ -163,7 +167,7 @@ pub fn an_edit_sends_only_what_changed_with_the_local_base_test() {
       row("a", "me", activity.Manual, "2026-10-01 05:30:00.000Z", "Morning run"),
     ])
   let #(model, _) = update(model, EditClicked("a"))
-  let #(model, _) = update(model, NameChanged("Easy run"))
+  let #(model, _) = update(model, TitleChanged("Easy run"))
   let #(model, actions) = update(model, Submitted)
   assert actions
     == [
@@ -344,15 +348,8 @@ pub fn the_form_is_labelled_and_shows_errors_test() {
       ..with_rows([]),
       mode: Adding,
       form: Form(
-        "2026-10-06",
-        "07:00",
-        activity.Run,
-        "",
-        "",
-        "",
-        "",
-        "",
-        Some("Enter a distance or a duration, or both."),
+        ..activity_form.empty_for(today),
+        error: Some("Enter a distance or a duration, or both."),
       ),
     )
   let html = html_of(model)
@@ -360,7 +357,14 @@ pub fn the_form_is_labelled_and_shows_errors_test() {
   assert string.contains(html, "type=\"date\"")
   assert string.contains(html, "type=\"time\"")
   assert string.contains(html, "for=\"activity-distance\"")
-  assert string.contains(html, "Trail run")
+  assert string.contains(html, "for=\"activity-title\"")
+  assert string.contains(html, ">Intervals<")
+  assert string.contains(html, ">Race<")
+  // Resting is not recorded, and the sports are not offered (ADR 0121).
+  assert !string.contains(html, "Rest day")
+  assert !string.contains(html, "Trail run")
+  assert !string.contains(html, "activity-elevation")
+  assert !string.contains(html, "activity-hr")
   assert string.contains(html, "role=\"alert\"")
   assert string.contains(html, "Enter a distance or a duration, or both.")
 }
@@ -420,4 +424,43 @@ pub fn the_undo_button_reads_as_the_snackbars_action_test() {
     html_of(waiting),
     "class=\"md-button md-button-text snackbar-action\"",
   )
+}
+
+pub fn an_interval_activity_is_saved_with_its_parts_and_their_totals_test() {
+  let #(model, _) = update(activities_page.new(), AddClicked)
+  let #(model, _) = update(model, KindChanged("interval"))
+  let #(model, _) = update(model, RepsChanged(0, "6"))
+  let #(model, _) =
+    update(
+      model,
+      SegmentChanged(workout_form.Work(0), workout_form.DistanceField, "800"),
+    )
+  let #(model, _) =
+    update(
+      model,
+      SegmentChanged(workout_form.Work(0), workout_form.TimeField, "3:00"),
+    )
+  let #(_, actions) = update(model, Submitted)
+  let assert [Create(_, fields)] = actions
+  assert dict.get(fields, "kind") == Ok("\"interval\"")
+  // Distance and duration were left empty: the parts' totals are saved.
+  assert dict.get(fields, "distance_m") == Ok("4800")
+  assert dict.get(fields, "moving_time_s") == Ok("1080")
+  let assert Ok(steps) = dict.get(fields, "steps")
+  assert string.contains(steps, "\"reps\":6")
+}
+
+pub fn the_kind_or_parts_show_in_the_list_test() {
+  let html =
+    html_of(
+      with_rows([
+        Row(
+          ..row("a", "me", activity.Manual, "2026-10-01 05:30:00.000Z", ""),
+          kind: Some(plan.Race),
+          zone: 5,
+        ),
+      ]),
+    )
+  assert string.contains(html, ">Race<")
+  assert string.contains(html, "Zone 5")
 }

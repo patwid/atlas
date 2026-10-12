@@ -48,6 +48,10 @@ pub fn new(summary: Summary, file_name: String, offset: Int) -> Import {
       avg_hr: option.unwrap(summary.avg_hr, 0),
       updated: "",
       external_id: summary.file_id,
+      kind: None,
+      zone: 0,
+      intervals: None,
+      description: "",
     )
   Import(summary, file_name, activity_form.from_row(row, offset))
 }
@@ -127,6 +131,15 @@ fn file_fields(imported: Import, valid: Valid) -> List(#(String, String)) {
         outbox.field_int("elapsed_time_s", summary.elapsed_time_s),
       ]
       False -> []
+    },
+    // The climb and heart rate are not in the form (ADR 0121): they are written as the file has them.
+    case summary.elevation_gain_m {
+      Some(m) -> [outbox.field_int("elevation_gain_m", m)]
+      None -> []
+    },
+    case summary.avg_hr {
+      Some(bpm) -> [outbox.field_int("avg_hr", bpm)]
+      None -> []
     },
     case summary.max_hr {
       Some(bpm) -> [outbox.field_int("max_hr", bpm)]
