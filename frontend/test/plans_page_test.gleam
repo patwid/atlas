@@ -525,9 +525,12 @@ pub fn the_plans_phases_and_goal_are_summed_up_in_a_line_test() {
     == "10 weeks"
   assert plans_page.subtitle(plan.Plan(..p, phases: plan.Phases(0, 0, 0)))
     == "40 km a week"
-  assert plans_page.summary(p)
-    == "4 base, 4 pre-competition and 2 competition weeks"
-  assert plans_page.summary(plan.Plan(..p, phases: plan.Phases(0, 0, 0))) == ""
+  assert plans_page.phase_chips(p)
+    == ["Base · 4 weeks", "Pre-competition · 4 weeks", "Competition · 2 weeks"]
+  assert plans_page.phase_chips(plan.Plan(..p, phases: plan.Phases(1, 0, 2)))
+    == ["Base · 1 week", "Competition · 2 weeks"]
+  assert plans_page.phase_chips(plan.Plan(..p, phases: plan.Phases(0, 0, 0)))
+    == []
 }
 
 pub fn a_long_description_shows_three_lines_until_more_test() {

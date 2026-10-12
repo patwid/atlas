@@ -1215,7 +1215,9 @@ html[data-scrolled] .bar-subtitle { display: none; }
 .plan-header > *, .plan-header p { margin: 0; }
 .plan-header > .chip-row { margin-left: 0; }
 .plan-header > .chip-row:empty { display: none; }
-.plan-summary, .plan-meta { color: var(--md-sys-color-on-surface-variant); }
+.plan-meta { color: var(--md-sys-color-on-surface-variant); }
+.plan-phases { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.plan-phases .label-chip { margin-right: 0; }
 .plan-meta { display: flex; align-items: flex-start; gap: 0.5rem; }
 .plan-meta .icon { width: 1.125rem; height: 1.125rem; margin-top: 0.0625rem; }
 

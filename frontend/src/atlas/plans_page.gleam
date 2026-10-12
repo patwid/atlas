@@ -601,9 +601,10 @@ pub fn view_detail(
             ForAthlete(name) -> meta(icon.AccountCircle, "For " <> name)
             FromCoach(name) -> meta(icon.AccountCircle, "From " <> name)
           },
-          case summary(found) {
-            "" -> element.none()
-            text -> html.p([class("plan-summary")], [html.text(text)])
+          case phase_chips(found) {
+            [] -> element.none()
+            labels ->
+              html.div([class("plan-phases")], list.map(labels, chip.label))
           },
           description_view(found.description, model.description_open),
           case relation(found) {
@@ -994,18 +995,19 @@ pub fn subtitle(p: Plan) -> String {
 }
 
 /// How the plan's weeks split into phases, under the app bar's subtitle, which has their total.
-pub fn summary(p: Plan) -> String {
+/// A plan's phases as chip labels in the band titles' words, "Base · 4 weeks"; a phase without weeks has none. The
+/// chips are all alike, as the bands are (ADR 0063).
+pub fn phase_chips(p: Plan) -> List(String) {
   let phases = p.phases
-  case plan.phase_weeks(phases) {
-    0 -> ""
-    _ ->
-      int.to_string(phases.base_weeks)
-      <> " base, "
-      <> int.to_string(phases.pre_competition_weeks)
-      <> " pre-competition and "
-      <> int.to_string(phases.competition_weeks)
-      <> " competition weeks"
-  }
+  [
+    #(plan.Base, phases.base_weeks),
+    #(plan.PreCompetition, phases.pre_competition_weeks),
+    #(plan.Competition, phases.competition_weeks),
+  ]
+  |> list.filter(fn(phase) { phase.1 > 0 })
+  |> list.map(fn(phase) {
+    plan.phase_label(phase.0) <> " · " <> plural(phase.1, "week")
+  })
 }
 
 fn plural(n: Int, word: String) -> String {
