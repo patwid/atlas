@@ -47,6 +47,7 @@ import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
+import gleam/string
 import gleam/uri.{type Uri}
 import lustre
 import lustre/attribute
@@ -1390,8 +1391,12 @@ fn sync_banners(sync_state: syncing.State) -> Element(Msg) {
     case sync_state.problems {
       [] -> element.none()
       problems ->
+        // Read out through the page's live region (ADR 0124): a status added with its text is often not read.
         banner.view(
-          [attribute.class("problems"), attribute.role("status")],
+          [
+            attribute.class("problems"),
+            attribute.attribute("data-announce", string.join(problems, " ")),
+          ],
           icon.ErrorOutline,
           [
             html.ul(

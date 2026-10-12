@@ -178,7 +178,7 @@ pub fn the_form_is_labelled_and_uses_the_screens_wording_test() {
   assert string.contains(html, "Their address")
   assert string.contains(html, "Found Bob Coach. Sure?")
   assert string.contains(html, "Yes please")
-  assert string.contains(html, "role=\"status\"")
+  assert string.contains(html, "data-announce=\"Found Bob Coach. Sure?\"")
 }
 
 pub fn failures_are_announced_and_looking_disables_the_button_test() {

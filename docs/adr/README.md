@@ -127,3 +127,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0122 | [Export a workout to a watch as a FIT workout file, written in Gleam](0122-export-a-workout-as-a-fit-workout-file.md) | Accepted |
 | 0123 | [List Coming up from tomorrow on, and fix the last seven days' order](0123-coming-up-nearest-day-first.md) | Accepted |
 | 0124 | [Material review, second round: bugs, consistency and accessibility](0124-material-review-accessibility-and-consistency.md) | Accepted |
+| 0125 | [Material review follow-up: the cases ADR 0124 missed](0125-material-review-follow-up.md) | Accepted |

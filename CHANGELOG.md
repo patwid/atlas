@@ -148,6 +148,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Sharing a plan with named people, public plans and starting someone else's plan: a plan is for one person, and reusing one means copying it (ADR 0110). The Schedule and Sharing tabs are gone.
 
 ### Fixed
+- Material review follow-up ([ADR 0125](docs/adr/0125-material-review-follow-up.md)): choices in Home's activity dialog are no longer drawn as list rows; the full-screen dialog's title ends in an ellipsis; the sync problems banner and a found person are read out; the phone calendar's add button and date picker days have 48px targets; an unset intensity slider no longer looks disabled; button-group icon buttons fade again, a keyboard press shows the pressed layer, and wrapped chips no longer overlap.
 - Home's "Go to activities" in the activity dialog looks like a text button again; a click on a dialog's own padding no longer closes it; a long title in the small app bar ends in an ellipsis instead of wrapping ([ADR 0124](docs/adr/0124-material-review-accessibility-and-consistency.md)).
 - Home's last seven days show yesterday first, as meant, instead of the oldest day ([ADR 0123](docs/adr/0123-coming-up-nearest-day-first.md)).
 - In the installed app on a phone, a page that fits the screen (an empty list, say) no longer scrolls a little: the frame fills the window through the page's own height instead of `100dvh`, which can be taller than the window there.

@@ -250,7 +250,8 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 .button-group { display: flex; align-items: center; gap: 0.125rem; }
 .button-group > .md-icon-button {
   width: 2.5rem; transition: width var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
-    border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
+    border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    background-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
 .button-group > .md-icon-button:active { width: 2.875rem; }
 .button-group > .md-icon-button:has(+ .md-icon-button:active), .button-group > .md-icon-button:active + .md-icon-button { width: 2.125rem; }
@@ -271,7 +272,6 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 .md-icon-button:not(:disabled):hover { background-color: color-mix(in srgb, currentColor calc(var(--md-sys-state-hover) * 100%), transparent); }
 .md-icon-button:not(:disabled):is(:focus-visible, :active) { background-color: color-mix(in srgb, currentColor calc(var(--md-sys-state-focus) * 100%), transparent); }
 .md-icon-button:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
-.md-icon-button:disabled { cursor: default; color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent); }
 
 /* Extended FAB (ADR 0047, 0068): a phone's main action, floating at the bottom right above the navigation bar. From
    the medium window class the same action is a button in the app bar instead (.bar-main-action). */
@@ -325,7 +325,8 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
   padding: 0; margin-bottom: 0.5rem;
   font: 500 0.75rem/1rem var(--md-ref-typeface); letter-spacing: 0.03125rem; color: var(--md-sys-color-on-surface-variant);
 }
-.choice-options { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+/* 16px between wrapped rows, so the chips' 48px targets meet without overlapping (ADR 0124). */
+.choice-options { display: flex; flex-wrap: wrap; gap: 1rem 0.5rem; }
 /* The option's label is what is pressed: 8px above and below the 32px chip make M3's 48px touch target, taken back
    by the margins so the layout does not move (ADR 0124). */
 .choice-option { position: relative; margin: -0.5rem 0; padding: 0.5rem 0; font: inherit; color: inherit; letter-spacing: normal; }
@@ -412,7 +413,7 @@ dialog {
 }
 dialog::backdrop { background: color-mix(in srgb, var(--md-sys-color-scrim) 32%, transparent); }
 dialog .dialog-headline { margin: 0 0 1rem; font: 500 1.5rem/2rem var(--md-ref-typeface); letter-spacing: 0; color: var(--md-sys-color-on-surface); }
-dialog .actions { justify-content: flex-end; margin-top: 0; }
+dialog .actions, .list dialog .actions { justify-content: flex-end; margin-top: 0; }
 dialog[open] { animation: dialog-in var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial); }
 @keyframes dialog-in { from { opacity: 0; transform: translateY(-1rem) scale(0.97); } }
 @media (prefers-reduced-motion: reduce) { dialog[open] { animation: none; } }
@@ -579,8 +580,8 @@ label {
 /* A link row's padding is its link's, so the state layer and ripple cover the whole row. `.list.link-list`, not
    `.link-list`: the list's own item padding comes later in this file and would win otherwise. A row that only shows
    something (the account, Sync) has the same padding itself, so all rows line up. */
-.list.link-list li { padding: 0; }
-.list.link-list li.info-item { padding: 0.75rem 1rem; }
+.list.link-list > li { padding: 0; }
+.list.link-list > li.info-item { padding: 0.75rem 1rem; }
 .link-list a {
   position: relative; display: flex; align-items: center; gap: 1rem; min-height: 4.5rem; padding: 0.75rem 1rem 0.75rem 1rem;
   color: var(--md-sys-color-on-surface); text-decoration: none; isolation: isolate;
@@ -603,17 +604,18 @@ label {
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 
 /* Lists (ADR 0047), as M3 Expressive's segmented list (ADR 0053): each item its own filled shape, 2px apart, with
-   large corners at the ends of the list and extra-small ones between items; the link is the headline. */
+   large corners at the ends of the list and extra-small ones between items; the link is the headline. Only the
+   list's own items: a dialog opened from a row sits inside it, and its choices are not list items (ADR 0124). */
 .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
-.list li {
+.list > li {
   position: relative; padding: 0.75rem 1rem; min-height: 3.5rem; overflow: hidden;
   background: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-extra-small);
   transition: border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
 }
 /* The item's lines are centred in it, so a one-line item is as high as M3's 56px with its text in the middle. */
-.list li:not(.info-item) { display: flex; flex-direction: column; justify-content: center; }
-.list li:first-child { border-top-left-radius: var(--md-sys-shape-corner-large); border-top-right-radius: var(--md-sys-shape-corner-large); }
-.list li:last-child { border-bottom-left-radius: var(--md-sys-shape-corner-large); border-bottom-right-radius: var(--md-sys-shape-corner-large); }
+.list > li:not(.info-item) { display: flex; flex-direction: column; justify-content: center; }
+.list > li:first-child { border-top-left-radius: var(--md-sys-shape-corner-large); border-top-right-radius: var(--md-sys-shape-corner-large); }
+.list > li:last-child { border-bottom-left-radius: var(--md-sys-shape-corner-large); border-bottom-right-radius: var(--md-sys-shape-corner-large); }
 /* Only rows that open something change shape when pointed at. */
 .link-list li:has(> a):hover { border-radius: var(--md-sys-shape-corner-medium); }
 .link-list li:has(> a):active, .link-list li:has(> a):focus-within { border-radius: var(--md-sys-shape-corner-large); }
@@ -631,9 +633,9 @@ label {
   padding: 0; border: 0; background: none; cursor: pointer; text-align: left;
   color: var(--md-sys-color-on-surface); font: 400 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
 }
-.list li:has(.row-link):hover .row-link::after { opacity: var(--md-sys-state-hover); }
-.list li:has(.row-link):active .row-link::after { opacity: var(--md-sys-state-pressed); }
-.list li:has(.row-link):hover { border-radius: var(--md-sys-shape-corner-medium); }
+.list > li:has(.row-link):hover .row-link::after { opacity: var(--md-sys-state-hover); }
+.list > li:has(.row-link):active .row-link::after { opacity: var(--md-sys-state-pressed); }
+.list > li:has(.row-link):hover { border-radius: var(--md-sys-shape-corner-medium); }
 .list .row-link:focus-visible { outline: 0; }
 .list .row-link:focus-visible::after { outline: var(--focus-ring); outline-offset: -3px; }
 .list p { margin: 0.125rem 0 0; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; color: var(--md-sys-color-on-surface-variant); }
@@ -722,7 +724,7 @@ label {
 /* The calendar's small text is M3's body-small, 12/16 (ADR 0124). */
 .day-name { color: var(--md-sys-color-on-surface-variant); font-size: 0.75rem; line-height: 1rem; letter-spacing: 0.025rem; padding-top: 0.375rem; }
 .day-name > span { display: block; }
-.day-date, .week-dates { color: var(--md-sys-color-on-surface-variant); font-size: 0.75rem; font-weight: 400; }
+.day-date, .week-dates { color: var(--md-sys-color-on-surface-variant); font-size: 0.75rem; line-height: 1rem; letter-spacing: 0.025rem; font-weight: 400; }
 /* A day of week 1 before the plan starts (ADR 0108): dimmed by its container and quieter colours, not by opacity,
    which took its text below 4.5:1 (ADR 0124); nothing to add. */
 .calendar-day.before-start { background: var(--md-sys-color-surface-container); }
@@ -755,16 +757,17 @@ label {
 }
 .workout.open .workout-kind { color: inherit; }
 .workout-targets { color: var(--md-sys-color-on-surface-variant); }
-/* Adding a workout to a day: an icon button, 40px to touch (ADR 0075). */
+/* Adding a workout to a day: an icon button, 40px, with M3's 48px touch target around it (ADR 0075, 0124). */
 .add-here {
-  display: grid; place-items: center; width: 2.5rem; height: 2.5rem; padding: 0; cursor: pointer; align-self: flex-start;
+  position: relative; display: grid; place-items: center; width: 2.5rem; height: 2.5rem; padding: 0; cursor: pointer; align-self: flex-start;
   border: 0; border-radius: var(--md-sys-shape-corner-full);
   background: none; color: var(--md-sys-color-on-surface-variant);
   transition: background-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
+.add-here::before { content: ""; position: absolute; inset: -0.25rem; border-radius: var(--md-sys-shape-corner-full); }
 .add-here .icon { width: 1.25rem; height: 1.25rem; }
 .add-here:hover { color: var(--md-sys-color-on-secondary-container); background: var(--md-sys-color-secondary-container); }
-.intensity { font-size: 0.75rem; font-weight: 500; padding: 0 0.375rem; border-radius: var(--md-sys-shape-corner-small); border: 1px solid currentColor; }
+.intensity { font-size: 0.75rem; line-height: 1rem; letter-spacing: 0.03125rem; font-weight: 500; padding: 0 0.375rem; border-radius: var(--md-sys-shape-corner-small); border: 1px solid currentColor; }
 /* An intensity chip is filled with its custom colour's container (ADR 0061). */
 .intensity-low { border-color: transparent; background: var(--md-custom-color-low-container); color: var(--md-custom-color-on-low-container); }
 .intensity-medium { border-color: transparent; background: var(--md-custom-color-medium-container); color: var(--md-custom-color-on-medium-container); }
@@ -803,8 +806,10 @@ label {
 .intensity-control input[type="range"]:focus-visible { outline: none; }
 .intensity-control input[type="range"]:focus-visible::-webkit-slider-thumb { outline: var(--focus-ring); outline-offset: 0.375rem; }
 .intensity-control input[type="range"]:focus-visible::-moz-range-thumb { outline: var(--focus-ring); outline-offset: 0.375rem; }
-/* A week without an intensity: the slider sits at 0 but looks inactive until it is moved. */
-.intensity-control input[type="range"].unset { opacity: 0.38; }
+/* A week without an intensity: the slider sits at 0 with a quieter handle until it is moved. Not faded, which read as
+   disabled and took it below 3:1 (ADR 0124). */
+.intensity-control input[type="range"].unset::-webkit-slider-thumb { background: var(--md-sys-color-on-surface-variant); }
+.intensity-control input[type="range"].unset::-moz-range-thumb { background: var(--md-sys-color-on-surface-variant); }
 .intensity-meter { margin-top: 0.25rem; }
 .facts { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 0.75rem; margin: 0.5rem 0 0; align-items: center; }
 .facts dt { color: var(--md-sys-color-on-surface-variant); font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; }
@@ -862,7 +867,7 @@ label {
 }
 .table-wrap { overflow-x: auto; }
 table.progress { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 0.875rem; line-height: 1.25rem; }
-table.progress caption { text-align: left; color: var(--md-sys-color-on-surface-variant); font-size: 0.875rem; padding-bottom: 0.25rem; }
+table.progress caption { text-align: left; color: var(--md-sys-color-on-surface-variant); font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; padding-bottom: 0.25rem; }
 table.progress th, table.progress td {
   padding: 0.75rem 0.5rem; border-bottom: 1px solid var(--md-sys-color-outline-variant); text-align: right; white-space: nowrap;
 }
@@ -897,7 +902,7 @@ a.strava-link { color: var(--md-sys-color-on-surface); font-weight: 700; text-de
 @media (prefers-color-scheme: dark) { a.strava-link { color: #FC5200; } }
 /* Training zones in Settings (ADR 0034, 0035) */
 .zones-form .subheader { margin: 1.25rem 0 0; }
-.zones-form > .muted { font-size: 0.875rem; margin: 0.25rem 0 0; }
+.zones-form > .muted { font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; margin: 0.25rem 0 0; }
 /* The value zones are calculated from, with its Calculate button on the line under its help (ADR 0084): beside the
    field, the long label left the field narrow and wrapped on a phone. */
 .zone-source { display: grid; justify-items: start; gap: 0.75rem; }
@@ -931,13 +936,14 @@ a.strava-link { color: var(--md-sys-color-on-surface); font-weight: 700; text-de
    only its hover layer under it while pressed, so the two do not add up. */
 @keyframes ripple-a { from { opacity: var(--md-sys-state-pressed); transform: translate(-50%, -50%) scale(0); } }
 @keyframes ripple-b { from { opacity: var(--md-sys-state-pressed); transform: translate(-50%, -50%) scale(0); } }
-:is(.md-button:not(:disabled), .md-fab, .link-list a, .md-menu-item)[data-ripple]:active::before { opacity: var(--md-sys-state-hover); }
-.tabs a:active .nav-indicator[data-ripple]::before { opacity: var(--md-sys-state-hover); }
+/* A keyboard press (with the focus ring showing) has no ripple, so it keeps the pressed layer. */
+:is(.md-button:not(:disabled), .md-fab, .link-list a, .md-menu-item)[data-ripple]:active:not(:focus-visible)::before { opacity: var(--md-sys-state-hover); }
+.tabs a:active:not(:focus-visible) .nav-indicator[data-ripple]::before { opacity: var(--md-sys-state-hover); }
 /* An icon button's ripple fills its circle from the centre: the button is not clipped, so its touch target is not. */
 button.md-icon-button[data-ripple]::after, a.md-icon-button[data-ripple]::after {
   left: 50%; top: 50%; width: 100%; height: 100%; border-radius: inherit;
 }
-.md-icon-button[data-ripple]:active { background-color: color-mix(in srgb, currentColor calc(var(--md-sys-state-hover) * 100%), transparent); }
+.md-icon-button[data-ripple]:active:not(:focus-visible) { background-color: color-mix(in srgb, currentColor calc(var(--md-sys-state-hover) * 100%), transparent); }
 @media (prefers-reduced-motion: reduce) {
   [data-ripple]::after { animation: none !important; }
   .page { animation: none; }
@@ -987,9 +993,12 @@ dialog.date-picker { width: 22.5rem; }
   font: 400 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
 }
 .date-picker-grid td { width: 3rem; height: 3rem; padding: 0; text-align: center; }
+/* A day is pressed anywhere in its 48px cell: the button fills it, and a transparent 4px border leaves the 40px circle
+   that is drawn (ADR 0124). */
 .date-picker-day {
-  position: relative; width: 2.5rem; height: 2.5rem; padding: 0; border: 0; isolation: isolate; overflow: hidden;
-  border-radius: var(--md-sys-shape-corner-full); background: none; cursor: pointer;
+  position: relative; width: 3rem; height: 3rem; padding: 0; border: 0.25rem solid transparent; background-clip: padding-box;
+  isolation: isolate; overflow: hidden;
+  border-radius: var(--md-sys-shape-corner-full); background-color: transparent; cursor: pointer;
   color: var(--md-sys-color-on-surface); font: 400 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
   font-variant-numeric: tabular-nums; -webkit-tap-highlight-color: transparent;
 }
@@ -998,9 +1007,9 @@ dialog.date-picker { width: 22.5rem; }
   background: currentColor; opacity: 0; transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
 .date-picker-day:hover::before { opacity: var(--md-sys-state-hover); }
-.date-picker-day:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+.date-picker-day:focus-visible { outline: var(--focus-ring); outline-offset: -0.125rem; }
 .date-picker-day.today { color: var(--md-sys-color-primary); box-shadow: inset 0 0 0 1px var(--md-sys-color-primary); }
-.date-picker-day.selected { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); box-shadow: none; }
+.date-picker-day.selected { background-color: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); box-shadow: none; }
 
 /* Time picker: the hour and minute as large fields, then a 256px dial with the hand. 24-hour: the inner ring holds
    00 and 13 to 23. */
@@ -1090,7 +1099,7 @@ dialog .dialog-supporting { margin: 0 0 1.5rem; font-size: 0.875rem; line-height
 .md-menu-item:focus-visible::before, .md-menu-item:active::before { opacity: var(--md-sys-state-focus); }
 .md-menu-item .icon { color: var(--md-sys-color-on-surface-variant); }
 /* In a list row the menu button sits at the row's top end. */
-.list li:has(.md-menu-button) { padding-right: 3.5rem; }
+.list > li:has(.md-menu-button) { padding-right: 3.5rem; }
 .list .md-menu-button { position: absolute; top: 0.5rem; right: 0.25rem; }
 .list .actions:has(> .md-menu-button) { margin: 0; }
 @media (prefers-reduced-motion: reduce) { .md-menu:popover-open { animation: none; } }
@@ -1109,7 +1118,10 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
   background: var(--md-sys-color-surface);
 }
 .form-dialog-bar form { display: contents; }
-.form-dialog-bar h2 { flex: 1; min-width: 0; margin: 0 0 0 0.25rem; font: 400 1.375rem/1.75rem var(--md-ref-typeface); }
+.form-dialog-bar h2 {
+  flex: 1; min-width: 0; margin: 0 0 0 0.25rem; font: 400 1.375rem/1.75rem var(--md-ref-typeface);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .form-dialog-body { flex: 1; overflow-y: auto; padding: 0 1.5rem 1.5rem; padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
 /* The plan form drops its card look in a dialog but keeps the dialog form's top padding, which its first field's
    floating label needs to stay inside the scrolling body. */
@@ -1271,3 +1283,7 @@ html[data-scrolled] .bar-subtitle { display: none; }
 .plan-meta { display: flex; align-items: flex-start; gap: 0.5rem; }
 .plan-meta .icon { width: 1.125rem; height: 1.125rem; margin-top: 0.0625rem; }
 
+/* Disabled icon buttons (ADR 0124), last so they win over the colours the app bar and snackbar give their buttons. */
+.md-icon-button:disabled, .bar-content .md-icon-button:disabled, .snackbar .md-icon-button:disabled {
+  cursor: default; color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+}

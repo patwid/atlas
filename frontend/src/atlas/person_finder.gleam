@@ -205,19 +205,32 @@ pub fn view(
       case model.lookup {
         Unreachable(message) -> error.message(message)
         Found(person) ->
-          html.div([class("found"), attribute.role("status")], [
-            html.p([], [html.text(labels.question(display(person)))]),
-            layout.actions([
-              button.filled(
-                [attribute.type_("button"), event.on_click(confirm)],
-                [html.text(labels.confirm_label)],
+          // Read out through the page's live region (ADR 0124).
+          html.div(
+            [
+              class("found"),
+              attribute.attribute(
+                "data-announce",
+                labels.question(display(person)),
               ),
-              button.outlined(
-                [attribute.type_("button"), event.on_click(wrap(CancelClicked))],
-                [html.text("Cancel")],
-              ),
-            ]),
-          ])
+            ],
+            [
+              html.p([], [html.text(labels.question(display(person)))]),
+              layout.actions([
+                button.filled(
+                  [attribute.type_("button"), event.on_click(confirm)],
+                  [html.text(labels.confirm_label)],
+                ),
+                button.outlined(
+                  [
+                    attribute.type_("button"),
+                    event.on_click(wrap(CancelClicked)),
+                  ],
+                  [html.text("Cancel")],
+                ),
+              ]),
+            ],
+          )
         _ -> element.none()
       },
     ],
