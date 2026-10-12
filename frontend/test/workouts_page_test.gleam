@@ -165,8 +165,8 @@ pub fn an_interval_workout_asks_for_its_parts_test() {
     == Ok(
       "{\"v\":2,\"warmup\":{\"duration_s\":900},\"sets\":[{\"reps\":6,\"work\":{\"zone\":4,\"distance_m\":800,\"duration_s\":246},\"recovery\":{\"distance_m\":200,\"duration_s\":90}}]}",
     )
-  // The workout's zone is the highest of its reps.
-  assert dict.get(fields, "zone") == Ok("4")
+  // The workout has no zone of its own (ADR 0117).
+  assert dict.get(fields, "zone") == Ok("0")
 }
 
 pub fn sets_are_added_and_removed_test() {

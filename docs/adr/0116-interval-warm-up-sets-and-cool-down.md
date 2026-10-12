@@ -1,6 +1,6 @@
 # 0116. An interval workout's warm-up, sets and cool-down, each with a zone, distance and time
 
-- Status: Accepted
+- Status: Accepted. An interval workout has no zone of its own: [0117](0117-no-zone-of-its-own-for-an-interval-workout.md).
 - Date: 2026-10-12
 - Deciders: owner (asked for a configurable warm-up and cool-down, and a zone, duration and distance for the reps and the
   recovery, set independently for each set); agent (the details below)

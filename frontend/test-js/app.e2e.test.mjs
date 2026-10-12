@@ -278,7 +278,7 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
     ],
     cooldown: { distance_m: 2000 },
   })
-  assert.equal(track.zone, 5, "the highest zone of its reps (ADR 0116)")
+  assert.equal(track.zone, 0, "no zone of its own: its parts have one (ADR 0117)")
   await waitFor("the parts on the calendar", () => d.querySelector(".calendar").textContent.includes("15:00 warm-up · 6 × 800 m in 4:06 (Zone 4), 1:30 recovery · 4 × 400 m in 1:59 (Zone 5), 1:30 recovery · 2 km cool-down"))
   click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Track")))
   await waitFor("the parts in the form", () => d.querySelector("#workout-set2-reps")?.value === "4")

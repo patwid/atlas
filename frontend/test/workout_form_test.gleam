@@ -347,8 +347,8 @@ pub fn an_interval_workout_carries_its_parts_test() {
       [plan.Set(6, work(4, 800.0, 170), work(0, 0.0, 90))],
       plan.no_segment,
     ))
-  // The workout's zone is the highest of its reps (ADR 0116).
-  assert valid.zone == 4
+  // The workout has no zone of its own: its parts have one (ADR 0117).
+  assert valid.zone == 0
   let assert Ok(valid) =
     workout_form.validate(
       Form(
@@ -380,7 +380,7 @@ pub fn an_interval_workout_carries_its_parts_test() {
       ],
       work(0, 0.0, 600),
     ))
-  assert valid.zone == 5
+  assert valid.zone == 0
 }
 
 pub fn the_parts_are_optional_and_only_for_intervals_test() {
@@ -391,10 +391,10 @@ pub fn the_parts_are_optional_and_only_for_intervals_test() {
   let assert Ok(valid) =
     workout_form.validate(Form(..intervals_form(), kind: plan.Run))
   assert valid.intervals == None
-  // Without zones on its reps an interval workout keeps the zone it had.
+  // A zone chosen while it was a run is not kept.
   let assert Ok(valid) =
     workout_form.validate(Form(..form(), kind: plan.Interval, zone: "3"))
-  assert valid.zone == 3
+  assert valid.zone == 0
 }
 
 pub fn problems_with_the_parts_name_their_field_test() {
@@ -526,10 +526,18 @@ pub fn an_edit_sends_steps_only_when_the_parts_changed_test() {
       Workout("w1", "p1", 0, 0, "Easy run", plan.Interval, None, None),
       "",
       valid.intervals,
-      4,
+      0,
       "T",
     )
   assert workout_form.changed_fields(stored, valid, 0) == dict.new()
+  // Steps of the first version, read with the workout's zone in their reps: the zone goes, and the steps are
+  // written again so that the reps keep it (ADR 0117).
+  let first_version = Row(..stored, zone: 4)
+  assert workout_form.changed_fields(first_version, valid, 0)
+    == dict.from_list([
+      workout_form.steps_field(valid.intervals),
+      outbox.field_int("zone", 0),
+    ])
   let assert Ok(fewer) =
     workout_form.validate(
       with_set(fn(set) { workout_form.SetForm(..set, reps: "5") }),
@@ -541,6 +549,7 @@ pub fn an_edit_sends_steps_only_when_the_parts_changed_test() {
     == dict.from_list([
       outbox.field_string("kind", "run"),
       outbox.field_null("steps"),
+      outbox.field_int("zone", 4),
     ])
 }
 

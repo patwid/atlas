@@ -56,7 +56,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 
 ### Changed
 - A workout is a run, intervals, a race or a rest day: easy and long runs are one kind, "Run", and tempo runs, cross-training and strength are gone. Existing workouts of those kinds are runs now; rides, swims and strength sessions no longer match a workout (ADR 0114).
-- An interval workout's `steps` are written in a second version, and its zone is the highest of its reps; the workout's own Zone is no longer asked for it (ADR 0116).
+- An interval workout's `steps` are written in a second version, and the workout's own Zone is no longer asked for it (ADR 0116); it is saved without one, as only its parts have a zone (ADR 0117).
 - A plan's header is one block in one type size with even gaps: whom the plan is for or from comes first with a person icon, then its phases as chips ("Base · 4 weeks", alike as the bands are, ADR 0063) and its description; a coach's plan ends with a lock line saying only they can change it.
 - When this browser cannot open its local storage, a banner on every page says so, instead of only the Sync row in Settings (ADR 0113).
 - The goal and intensity meters are flat bars again instead of waves, so their filled length is easier to read (ADR 0111).

@@ -118,4 +118,5 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0113 | [No sync row in Settings; unusable device storage as a banner on every page](0113-no-sync-row-in-settings.md) | Accepted |
 | 0114 | [One kind for every run; no tempo, cross-training or strength workouts](0114-one-kind-for-every-run.md) | Accepted |
 | 0115 | [Keep race goals as rows of their own, set in Settings](0115-race-goals.md) | Accepted |
-| 0116 | [An interval workout's warm-up, sets and cool-down, each with a zone, distance and time](0116-interval-warm-up-sets-and-cool-down.md) | Accepted |
+| 0116 | [An interval workout's warm-up, sets and cool-down, each with a zone, distance and time](0116-interval-warm-up-sets-and-cool-down.md) | Accepted (no zone of its own for an interval workout: 0117) |
+| 0117 | [An interval workout has no zone of its own](0117-no-zone-of-its-own-for-an-interval-workout.md) | Accepted |

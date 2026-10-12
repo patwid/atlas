@@ -514,7 +514,7 @@ pub fn validate_fields(form: Form) -> Result(Valid, #(String, String)) {
                 duration_s: duration,
                 description: description,
                 intervals: intervals,
-                zone: interval_zone(intervals, zone),
+                zone: zone,
               ))
           }
       }
@@ -549,27 +549,14 @@ fn target_duration(text: String) -> Result(Int, String) {
   }
 }
 
-/// The target zone; a rest day has none, whatever was chosen before its kind was changed (ADR 0105).
+/// The target zone; a rest day has none, whatever was chosen before its kind was changed (ADR 0105), and an
+/// interval workout has none of its own: each of its parts has one (ADR 0117).
 fn target_zone(form: Form) -> Result(Int, String) {
   case form.kind, int.parse(string.trim(form.zone)) {
-    plan.Rest, _ -> Ok(0)
+    plan.Rest, _ | plan.Interval, _ -> Ok(0)
     _, _ if form.zone == "" -> Ok(0)
     _, Ok(n) if n >= 1 && n <= 5 -> Ok(n)
     _, _ -> Error("Choose a zone from 1 to 5.")
-  }
-}
-
-/// An interval workout's zone is the highest of its reps (ADR 0116): what it is mostly about. Without zones on its
-/// reps it keeps the one it had.
-fn interval_zone(intervals: Option(Intervals), zone: Int) -> Int {
-  let highest = case intervals {
-    Some(i) ->
-      list.fold(i.sets, 0, fn(high, set) { int.max(high, set.work.zone) })
-    None -> 0
-  }
-  case highest {
-    0 -> zone
-    n -> n
   }
 }
 
@@ -943,7 +930,11 @@ pub fn changed_fields(
         "description" -> valid.description != row.description
         "distance_m" -> valid.distance_m != option.unwrap(w.distance_m, 0.0)
         "duration_s" -> valid.duration_s != option.unwrap(w.duration_s, 0)
-        "steps" -> valid.intervals != row.intervals
+        // Steps of the first version take their reps' zone from the workout's (ADR 0116): when that goes, they are
+        // written again with the zone in the reps (ADR 0117).
+        "steps" ->
+          valid.intervals != row.intervals
+          || { valid.zone != row.zone && option.is_some(valid.intervals) }
         "zone" -> valid.zone != row.zone
         _ -> False
       }
