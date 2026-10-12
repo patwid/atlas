@@ -993,6 +993,7 @@ pub fn view(model: Model) -> Element(Msg) {
           main_action: main_action(model, session),
         ),
         element.fragment([
+          storage_banner(model.syncing),
           page(model, session),
           case model.notice {
             Some(#(_, text)) -> snackbar.view(text, None, NoticeClosed)
@@ -1158,10 +1159,10 @@ fn page(model: Model, session: Session) -> Element(Msg) {
   }
 }
 
-/// Settings is a list (ADR 0049, 0055): the account and the sync state as rows of their own, then a row per section
-/// that opens the section's page. Sync problems show at the top of every Settings page, so they are not missed.
+/// Settings is a list (ADR 0049, 0055): the account as a row of its own, then a row per section that opens the
+/// section's page. Sync problems show at the top of every Settings page, so they are not missed; there is no sync
+/// row (ADR 0113).
 fn settings_list(session: Session, model: Model) -> Element(Msg) {
-  let sync_state = model.syncing
   html.section([attribute.class("settings")], [
     html.ul([attribute.class("list link-list")], [
       layout.info_item(
@@ -1173,7 +1174,6 @@ fn settings_list(session: Session, model: Model) -> Element(Msg) {
           [html.text("Sign out")],
         ),
       ),
-      layout.info_item(icon.Sync, "Sync", sync_text(sync_state), element.none()),
       ..list.map(route.settings_pages, fn(page) {
         let #(symbol, supporting) = case page {
           route.Zones -> #(icon.Favorite, zones_summary(model, session))
@@ -1240,18 +1240,22 @@ fn account_name(session: Session) -> String {
   }
 }
 
-fn sync_text(sync_state: syncing.State) -> String {
-  case sync_state.phase, sync_state.problems {
-    syncing.Unavailable, _ ->
-      "This browser could not open its local storage, so nothing is synced. Try reloading."
-    syncing.Loading, _ -> "Opening the data on this device…"
-    syncing.NotLoaded, _ -> "Not started."
-    syncing.Ready, [] ->
-      "Your data is stored on this device and synced when you are online."
-    syncing.Ready, [_] -> "1 change needs your attention, see above."
-    syncing.Ready, problems ->
-      int.to_string(list.length(problems))
-      <> " changes need your attention, see above."
+/// The device database could not be opened, on every page (ADR 0113): the app would look empty and nothing would
+/// sync, so the user has to know why.
+fn storage_banner(sync_state: syncing.State) -> Element(Msg) {
+  case sync_state.phase {
+    syncing.Unavailable ->
+      banner.view(
+        [attribute.class("banner-error"), attribute.role("alert")],
+        icon.ErrorOutline,
+        [
+          html.text(
+            "This browser could not open its local storage, so nothing is shown or synced. Try reloading.",
+          ),
+        ],
+        [],
+      )
+    _ -> element.none()
   }
 }
 

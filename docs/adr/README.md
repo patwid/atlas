@@ -58,7 +58,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0052 | [The plan calendar's sidebar as a bottom sheet on smaller screens](0052-calendar-bottom-sheet.md) | Superseded by 0066 |
 | 0053 | [Adopt Material 3 Expressive's shapes, motion and components where they fit](0053-material-3-expressive.md) | Accepted (navigation, progress, menus and motion extended by 0095; wavy meters replaced by 0111) |
 | 0054 | [Material 3 date and time pickers beside the native fields](0054-material-date-and-time-pickers.md) | Accepted |
-| 0055 | [Material review, quick fixes: titles, dialogs, offline, badges, loading, icons, Settings](0055-material-review-quick-fixes.md) | Accepted |
+| 0055 | [Material review, quick fixes: titles, dialogs, offline, badges, loading, icons, Settings](0055-material-review-quick-fixes.md) | Accepted (sync row removed by 0113) |
 | 0056 | [Menus for item actions, and Undo instead of confirming deletes](0056-menus-and-undo.md) | Accepted |
 | 0057 | [Create and edit forms in full-screen dialogs](0057-forms-in-full-screen-dialogs.md) | Accepted |
 | 0058 | [The plan page: tabs, actions in the app bar, and floating action buttons](0058-plan-page-tabs-and-app-bar-actions.md) | Accepted (tabs gone: 0110) |
@@ -115,3 +115,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0109 | [Name a dated plan's weeks by their week of the year](0109-plan-weeks-named-by-week-of-the-year.md) | Accepted |
 | 0110 | [Every plan is for one athlete; sharing and public plans are gone](0110-one-athlete-per-plan.md) | Accepted |
 | 0111 | [Flat goal and intensity meters instead of the wave](0111-flat-goal-and-intensity-meters.md) | Accepted |
+| 0113 | [No sync row in Settings; unusable device storage as a banner on every page](0113-no-sync-row-in-settings.md) | Accepted |

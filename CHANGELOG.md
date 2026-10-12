@@ -53,6 +53,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - The workout form fills in the duration from a typed distance, or the distance from a typed duration, at the pace of the target zone in your pace zones; for intervals, the time or distance of a rep. Interval workouts show a read-only total distance and time of their repetitions (ADR 0106).
 
 ### Changed
+- When this browser cannot open its local storage, a banner on every page says so, instead of only the Sync row in Settings (ADR 0113).
 - The goal and intensity meters are flat bars again instead of waves, so their filled length is easier to read (ADR 0111).
 - Every plan is for one person, chosen when it is made: yourself, or, when you coach someone, one of your athletes ("For"). It cannot be changed later; copying a plan asks whom the copy is for. The plan page has no tabs any more, only its calendar, and says whom the plan is for or from; the plan list groups your plans, your athletes' plans and plans from your coaches. Only the plan's owner removes it, by deleting it. Plans that several people followed were split into a copy for each of them, with their linked activities (ADR 0110).
 - A plan has a start date, asked for when it is made (the coming Monday by default) and changed with Edit. The plan calendar runs its weeks from Monday to Sunday with each day's and week's dates; the days before the start are dimmed and cannot be added to. Starting one's own plan follows its date, so moving the plan moves the schedule; someone else's plan is started on a date of one's own. Existing plans and schedules keep their dates (ADR 0108).
@@ -128,6 +129,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - A workout's week choice offers only the plan's weeks, no longer one more after its last phase.
 
 ### Removed
+- The Sync row in Settings: sync problems keep their badge and banner, and syncing shows the progress bar (ADR 0113).
 - Sharing a plan with named people, public plans and starting someone else's plan: a plan is for one person, and reusing one means copying it (ADR 0110). The Schedule and Sharing tabs are gone.
 
 ### Fixed

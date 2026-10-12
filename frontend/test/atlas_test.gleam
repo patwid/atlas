@@ -745,12 +745,31 @@ pub fn settings_is_a_list_of_its_sections_test() {
   let html =
     element.to_string(atlas.view(Model(..signed_in(), route: route.Settings)))
   assert string.contains(html, "Sign out")
-  assert string.contains(html, ">Sync<")
+  assert !string.contains(html, ">Sync<")
   assert !string.contains(html, "href=\"/settings/account\"")
   assert string.contains(html, "href=\"/settings/zones\"")
   assert string.contains(html, "href=\"/settings/coaches\"")
   assert string.contains(html, "href=\"/settings/strava\"")
   assert !string.contains(html, "Checking")
+}
+
+pub fn local_storage_that_cannot_be_opened_is_shown_on_every_page_test() {
+  let model =
+    Model(
+      ..signed_in(),
+      route: route.Home,
+      syncing: syncing.State(..syncing.new(), phase: syncing.Unavailable),
+    )
+  let html = element.to_string(atlas.view(model))
+  assert string.contains(html, "could not open its local storage")
+  let html = element.to_string(atlas.view(Model(..model, route: route.Plans)))
+  assert string.contains(html, "could not open its local storage")
+}
+
+pub fn no_storage_banner_while_the_device_database_works_test() {
+  let html =
+    element.to_string(atlas.view(Model(..signed_in(), route: route.Home)))
+  assert !string.contains(html, "could not open its local storage")
 }
 
 pub fn settings_rows_say_what_is_set_test() {

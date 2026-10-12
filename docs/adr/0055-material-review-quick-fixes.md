@@ -1,6 +1,6 @@
 # 0055. Material review, quick fixes: titles, dialogs, offline, badges, loading, icons, Settings
 
-- Status: Accepted
+- Status: Accepted. The sync row in Settings is removed by [0113](0113-no-sync-row-in-settings.md).
 - Date: 2026-10-08
 - Deciders: owner (asked for a review of the app against Material Design 3 and for its quick fixes); agent (the
   review and the details below)

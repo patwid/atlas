@@ -22,7 +22,6 @@ pub type Icon {
   Pending
   ChevronRight
   AccountCircle
-  Sync
   Favorite
   Link
   CloudOff
@@ -135,10 +134,6 @@ fn paths(icon: Icon, style: Style) -> List(String) {
     ]
     AccountCircle, Filled -> [
       "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm0 14c-2.03 0-4.43-.82-6.14-2.88a9.947 9.947 0 0 1 12.28 0C16.43 19.18 14.03 20 12 20z",
-    ]
-    // sync
-    Sync, _ -> [
-      "M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z",
     ]
     // favorite: training zones
     Favorite, _ -> [
