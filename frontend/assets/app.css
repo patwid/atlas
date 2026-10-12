@@ -810,8 +810,8 @@ label {
   border-radius: 50%; background: var(--md-sys-color-primary);
 }
 .goal-meter.over span { background: var(--intensity-medium); }
-.plan-settings { border: 0; padding: 0; margin: 0.75rem 0 0; min-width: 0; }
-.plan-settings legend { font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem; padding: 0; }
+.plan-settings, .interval-part { border: 0; padding: 0; margin: 0.75rem 0 0; min-width: 0; }
+:is(.plan-settings, .interval-part) legend { font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem; padding: 0; }
 @media (min-width: 52.5rem) {
   .calendar-head, .calendar-week { grid-template-columns: 6rem repeat(7, minmax(0, 1fr)); }
   .calendar-head {
@@ -1074,7 +1074,7 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
 /* The form (ADR 0085): one 16px rhythm between fields, chips and groups, so a floating label never meets the help
    line above it. Pairs of fields stack on a phone and sit side by side, in equal columns, from 600px. */
 .form-dialog-body > form { display: grid; gap: 1rem; padding-top: 0.5rem; }
-.form-dialog-body > form :is(.md-field, .field-with-trigger, .choice, .plan-settings) { margin-top: 0; }
+.form-dialog-body > form :is(.md-field, .field-with-trigger, .choice, .plan-settings, .interval-part) { margin-top: 0; }
 .form-dialog-body > form .row { display: grid; gap: 1rem; }
 .form-dialog-body > form > .supporting { margin-top: -0.75rem; }
 .form-dialog-body > form > .subheader { margin: 0.5rem 0 -0.5rem; }
@@ -1086,8 +1086,11 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
   border-bottom: 1px solid var(--md-sys-color-outline-variant);
 }
 .activity-import > :is(.muted, .error) { margin: 0; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; }
-.form-dialog .plan-settings { display: grid; gap: 1rem; }
-.form-dialog .plan-settings legend { margin-bottom: 0.5rem; }
+.form-dialog :is(.plan-settings, .interval-part) { display: grid; gap: 1rem; }
+.form-dialog :is(.plan-settings, .interval-part) legend { margin-bottom: 0.5rem; }
+/* An interval workout's parts (ADR 0116): Add set under the sets, a set's Remove at its end. */
+.interval-add-set, .interval-remove-set { display: flex; }
+.interval-remove-set { justify-content: flex-end; margin-top: -0.5rem; }
 .form-dialog .plan-settings .phases-error { margin-top: -0.75rem; }
 .form-dialog textarea.md-text-field { min-height: 0; }
 /* Cancel and Save at the bottom are for wider screens; a phone has them in the top bar. */

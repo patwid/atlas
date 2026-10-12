@@ -60,11 +60,23 @@ pub type Workout {
   )
 }
 
-/// The repetitions of an interval workout, kept in its `steps` (ADR 0104): `reps` times a rep of
-/// `rep_distance_m`, `rep_s` or both, with `recovery_s` between them. 0 means not set.
+/// The parts of an interval workout, kept in its `steps` (ADR 0104, 0116): a warm-up, sets of repetitions and a
+/// cool-down.
 pub type Intervals {
-  Intervals(reps: Int, rep_distance_m: Float, rep_s: Int, recovery_s: Int)
+  Intervals(warmup: Segment, sets: List(Set), cooldown: Segment)
 }
+
+/// `reps` times `work`, each followed by `recovery` except the last rep of the workout (ADR 0116).
+pub type Set {
+  Set(reps: Int, work: Segment, recovery: Segment)
+}
+
+/// A distance, a time or both, at a target zone from 1 to 5. 0 means not set.
+pub type Segment {
+  Segment(zone: Int, distance_m: Float, duration_s: Int)
+}
+
+pub const no_segment = Segment(0, 0.0, 0)
 
 pub type Assignment {
   /// `start_date` None: the assignment follows its plan's start date (ADR 0108).

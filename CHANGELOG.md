@@ -52,9 +52,11 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Workouts have a target zone: the workout form has an optional Zone (1 to 5) for every kind but a rest day. It is shown on the calendar as "Zone 4" before the other targets, and copied with a plan (ADR 0105).
 - The workout form fills in the duration from a typed distance, or the distance from a typed duration, at the pace of the target zone in your pace zones; for intervals, the time or distance of a rep. Interval workouts show a read-only total distance and time of their repetitions (ADR 0106).
 - Goals in Settings: any number of race goals, each a distance and the time to run it in, added, edited and deleted on their own page; synced as the new `goals` collection, readable by the athlete's coach (ADR 0115).
+- An interval workout has an optional warm-up and cool-down and any number of sets; each set's reps and recovery, the warm-up and the cool-down have their own zone, distance and time, worked out from one another at the zone's pace (ADR 0116).
 
 ### Changed
 - A workout is a run, intervals, a race or a rest day: easy and long runs are one kind, "Run", and tempo runs, cross-training and strength are gone. Existing workouts of those kinds are runs now; rides, swims and strength sessions no longer match a workout (ADR 0114).
+- An interval workout's `steps` are written in a second version, and its zone is the highest of its reps; the workout's own Zone is no longer asked for it (ADR 0116).
 - A plan's header is one block in one type size with even gaps: whom the plan is for or from comes first with a person icon, then its phases as chips ("Base · 4 weeks", alike as the bands are, ADR 0063) and its description; a coach's plan ends with a lock line saying only they can change it.
 - When this browser cannot open its local storage, a banner on every page says so, instead of only the Sync row in Settings (ADR 0113).
 - The goal and intensity meters are flat bars again instead of waves, so their filled length is easier to read (ADR 0111).

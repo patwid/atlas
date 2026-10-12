@@ -1,6 +1,6 @@
 # 0105. A target zone for each workout
 
-- Status: Accepted
+- Status: Accepted. Each part of an interval workout has its own zone: [0116](0116-interval-warm-up-sets-and-cool-down.md).
 - Date: 2026-10-11
 - Deciders: owner (asked for a zone to be selectable in the workout editor); agent (the details below)
 

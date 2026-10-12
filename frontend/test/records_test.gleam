@@ -149,28 +149,52 @@ pub fn a_workout_row_carries_description_and_the_local_updated_test() {
   assert records.workout_row(parse("{\"id\":\"w3\"}")) == Error(Nil)
 }
 
-pub fn a_workout_row_reads_the_repetitions_of_its_steps_test() {
+pub fn a_workout_row_reads_the_parts_of_its_steps_test() {
   let with = fn(steps) {
     records.workout_row(parse(
-      "{\"id\":\"w1\",\"plan\":\"p1\",\"title\":\"Track\",\"kind\":\"interval\",\"steps\":"
+      "{\"id\":\"w1\",\"plan\":\"p1\",\"title\":\"Track\",\"kind\":\"interval\",\"zone\":4,\"steps\":"
       <> steps
       <> "}",
     ))
   }
+  let one = fn(set) {
+    Some(plan.Intervals(plan.no_segment, [set], plan.no_segment))
+  }
+  // The first version: one set, whose reps are at the workout's zone (ADR 0116).
   let assert Ok(row) =
     with(
       "{\"v\":1,\"reps\":6,\"work\":{\"distance_m\":800,\"duration_s\":170},\"recovery\":{\"duration_s\":90}}",
     )
-  assert row.intervals == Some(plan.Intervals(6, 800.0, 170, 90))
+  assert row.intervals
+    == one(plan.Set(6, plan.Segment(4, 800.0, 170), plan.Segment(0, 0.0, 90)))
   let assert Ok(row) =
     with("{\"v\":1,\"reps\":10,\"work\":{\"duration_s\":60}}")
-  assert row.intervals == Some(plan.Intervals(10, 0.0, 60, 0))
-  // No steps, or steps this client cannot read: the workout still reads, without repetitions.
+  assert row.intervals
+    == one(plan.Set(10, plan.Segment(4, 0.0, 60), plan.no_segment))
+  let assert Ok(row) =
+    with(
+      "{\"v\":2,\"warmup\":{\"zone\":1,\"duration_s\":900},\"sets\":[{\"reps\":6,\"work\":{\"zone\":5,\"distance_m\":400},\"recovery\":{\"zone\":1,\"distance_m\":200,\"duration_s\":90}},{\"reps\":2,\"work\":{\"duration_s\":300}}],\"cooldown\":{\"distance_m\":1000}}",
+    )
+  assert row.intervals
+    == Some(plan.Intervals(
+      plan.Segment(1, 0.0, 900),
+      [
+        plan.Set(6, plan.Segment(5, 400.0, 0), plan.Segment(1, 200.0, 90)),
+        plan.Set(2, plan.Segment(0, 0.0, 300), plan.no_segment),
+      ],
+      plan.Segment(0, 1000.0, 0),
+    ))
+  // No steps, or steps this client cannot read: the workout still reads, without its parts.
   let assert Ok(row) = with("null")
   assert row.intervals == None
-  let assert Ok(row) = with("{\"v\":2,\"blocks\":[]}")
+  let assert Ok(row) = with("{\"v\":3,\"blocks\":[]}")
+  assert row.intervals == None
+  let assert Ok(row) = with("{\"v\":2}")
   assert row.intervals == None
   let assert Ok(row) = with("{\"v\":1,\"reps\":6,\"work\":{}}")
+  assert row.intervals == None
+  let assert Ok(row) =
+    with("{\"v\":2,\"sets\":[{\"reps\":0,\"work\":{\"duration_s\":60}}]}")
   assert row.intervals == None
   let assert Ok(row) = with("[]")
   assert row.intervals == None

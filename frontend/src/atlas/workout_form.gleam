@@ -3,7 +3,9 @@
 
 import atlas/outbox
 import atlas/pace_zones.{type PaceZones}
-import atlas/plan.{type Intervals, type Kind, type Workout, Intervals}
+import atlas/plan.{
+  type Intervals, type Kind, type Segment, type Workout, Intervals,
+}
 import gleam/dict
 import gleam/float
 import gleam/int
@@ -30,6 +32,10 @@ const max_rep_distance_m = 20_000.0
 
 const max_rep_seconds = 3600
 
+const max_warmup_distance_m = 50_000.0
+
+const max_warmup_seconds = 18_000
+
 /// The training zones of the athlete's settings: five of each kind (ADR 0034, 0035, 0036).
 pub const zones = [1, 2, 3, 4, 5]
 
@@ -44,23 +50,48 @@ pub type Form {
     distance_km: String,
     duration: String,
     description: String,
-    /// The repetitions of an interval workout, as typed; only read when the kind is intervals (ADR 0104).
-    reps: String,
-    /// Metres.
-    rep_distance: String,
-    /// Seconds, or minutes and seconds: `90`, `1:30`.
-    rep_time: String,
-    recovery: String,
+    /// The parts of an interval workout, as typed; only read when the kind is intervals (ADR 0104, 0116).
+    warmup: SegmentForm,
+    /// At least one, so a new interval workout shows the fields of its first set.
+    sets: List(SetForm),
+    cooldown: SegmentForm,
     /// The target zone, `""` for none (ADR 0105).
     zone: String,
     /// Which of distance and duration was typed last: the other is worked out from the zone (ADR 0106).
     target_typed: Typed,
-    /// The same for the distance and time of a rep.
-    rep_typed: Typed,
     /// The plan's first day: days of week 1 before it cannot be chosen (ADR 0108).
     first_day: Int,
     error: Option(String),
   )
+}
+
+/// A warm-up, a cool-down, or a rep or recovery of a set, as typed (ADR 0116). A warm-up's and a cool-down's
+/// distance is in kilometres and its time in minutes, like the workout's; a rep's and a recovery's in metres and
+/// seconds (`90`, `1:30`).
+pub type SegmentForm {
+  SegmentForm(zone: String, distance: String, time: String, typed: Typed)
+}
+
+pub const blank_segment = SegmentForm("", "", "", NeitherTyped)
+
+pub type SetForm {
+  SetForm(reps: String, work: SegmentForm, recovery: SegmentForm)
+}
+
+pub const blank_set = SetForm("", blank_segment, blank_segment)
+
+/// A segment of the form; sets are counted from 0.
+pub type Part {
+  Warmup
+  Cooldown
+  Work(set: Int)
+  Recovery(set: Int)
+}
+
+pub type SegmentField {
+  ZoneField
+  DistanceField
+  TimeField
 }
 
 /// Which of a distance and a time the user typed last (ADR 0106).
@@ -107,12 +138,10 @@ pub fn empty_for(week: Int, day: Int) -> Form {
     "",
     "",
     "",
+    blank_segment,
+    [blank_set],
+    blank_segment,
     "",
-    "",
-    "",
-    "",
-    "",
-    NeitherTyped,
     NeitherTyped,
     0,
     None,
@@ -135,31 +164,143 @@ pub fn from_row(row: Row) -> Form {
       None -> ""
     },
     description: row.description,
-    reps: case row.intervals {
-      Some(i) -> int.to_string(i.reps)
-      None -> ""
+    warmup: case row.intervals {
+      Some(i) -> segment_form(i.warmup, Warmup)
+      None -> blank_segment
     },
-    rep_distance: case row.intervals {
-      Some(i) if i.rep_distance_m >. 0.0 ->
-        int.to_string(float.round(i.rep_distance_m))
-      _ -> ""
+    sets: case row.intervals {
+      Some(Intervals(sets: [_, ..] as sets, ..)) ->
+        list.map(sets, fn(set) {
+          SetForm(
+            int.to_string(set.reps),
+            segment_form(set.work, Work(0)),
+            segment_form(set.recovery, Recovery(0)),
+          )
+        })
+      _ -> [blank_set]
     },
-    rep_time: case row.intervals {
-      Some(i) if i.rep_s > 0 -> format_rep_time(i.rep_s)
-      _ -> ""
-    },
-    recovery: case row.intervals {
-      Some(i) if i.recovery_s > 0 -> format_rep_time(i.recovery_s)
-      _ -> ""
+    cooldown: case row.intervals {
+      Some(i) -> segment_form(i.cooldown, Cooldown)
+      None -> blank_segment
     },
     zone: case row.zone {
       0 -> ""
       n -> int.to_string(n)
     },
     target_typed: NeitherTyped,
-    rep_typed: NeitherTyped,
     first_day: 0,
     error: None,
+  )
+}
+
+fn segment_form(segment: Segment, part: Part) -> SegmentForm {
+  SegmentForm(
+    zone: case segment.zone {
+      0 -> ""
+      n -> int.to_string(n)
+    },
+    distance: case segment.distance_m >. 0.0, is_long(part) {
+      False, _ -> ""
+      True, True -> format_km(segment.distance_m)
+      True, False -> int.to_string(float.round(segment.distance_m))
+    },
+    time: case segment.duration_s > 0, is_long(part) {
+      False, _ -> ""
+      True, True -> format_duration(segment.duration_s)
+      True, False -> format_rep_time(segment.duration_s)
+    },
+    typed: NeitherTyped,
+  )
+}
+
+/// A warm-up and a cool-down are typed in kilometres and minutes, like a workout; reps and recoveries in metres
+/// and seconds (ADR 0116).
+fn is_long(part: Part) -> Bool {
+  case part {
+    Warmup | Cooldown -> True
+    Work(_) | Recovery(_) -> False
+  }
+}
+
+// THE PARTS OF AN INTERVAL WORKOUT (ADR 0116) -------------------------------------------------------
+
+pub fn segment(form: Form, part: Part) -> SegmentForm {
+  case part {
+    Warmup -> form.warmup
+    Cooldown -> form.cooldown
+    Work(index) -> set_at(form, index).work
+    Recovery(index) -> set_at(form, index).recovery
+  }
+}
+
+fn set_at(form: Form, index: Int) -> SetForm {
+  case list.drop(form.sets, index) {
+    [set, ..] -> set
+    [] -> blank_set
+  }
+}
+
+/// A zone, distance or time of a part was typed: the other of its distance and time is worked out from its zone.
+pub fn edit_segment(
+  form: Form,
+  part: Part,
+  field: SegmentField,
+  text: String,
+  zones: PaceZones,
+) -> Form {
+  let current = segment(form, part)
+  let edited = case field {
+    ZoneField -> SegmentForm(..current, zone: text)
+    DistanceField ->
+      SegmentForm(..current, distance: text, typed: DistanceTyped)
+    TimeField -> SegmentForm(..current, time: text, typed: TimeTyped)
+  }
+  let filled = fill_segment(edited, is_long(part), zones)
+  case part {
+    Warmup -> Form(..form, warmup: filled)
+    Cooldown -> Form(..form, cooldown: filled)
+    Work(index) ->
+      update_set(form, index, fn(set) { SetForm(..set, work: filled) })
+    Recovery(index) ->
+      update_set(form, index, fn(set) { SetForm(..set, recovery: filled) })
+  }
+}
+
+pub fn type_reps(form: Form, index: Int, text: String) -> Form {
+  update_set(form, index, fn(set) { SetForm(..set, reps: text) })
+}
+
+/// A new set starts as a copy of the last one, which is then changed: sets often differ in one value only.
+pub fn add_set(form: Form) -> Form {
+  let next = case list.last(form.sets) {
+    Ok(last) -> last
+    Error(Nil) -> blank_set
+  }
+  Form(..form, sets: list.append(form.sets, [next]))
+}
+
+/// The last set is emptied rather than removed, so its fields stay in the form.
+pub fn remove_set(form: Form, index: Int) -> Form {
+  let rest =
+    form.sets
+    |> list.index_map(fn(set, i) { #(set, i) })
+    |> list.filter(fn(pair) { pair.1 != index })
+    |> list.map(fn(pair) { pair.0 })
+  Form(..form, sets: case rest {
+    [] -> [blank_set]
+    _ -> rest
+  })
+}
+
+fn update_set(form: Form, index: Int, change: fn(SetForm) -> SetForm) -> Form {
+  Form(
+    ..form,
+    sets: list.index_map(form.sets, fn(set, i) {
+      case i == index {
+        True -> change(set)
+        False -> set
+      }
+    }),
   )
 }
 
@@ -174,14 +315,6 @@ pub fn type_duration(form: Form, text: String, zones: PaceZones) -> Form {
   fill(Form(..form, duration: text, target_typed: TimeTyped), zones)
 }
 
-pub fn type_rep_distance(form: Form, text: String, zones: PaceZones) -> Form {
-  fill(Form(..form, rep_distance: text, rep_typed: DistanceTyped), zones)
-}
-
-pub fn type_rep_time(form: Form, text: String, zones: PaceZones) -> Form {
-  fill(Form(..form, rep_time: text, rep_typed: TimeTyped), zones)
-}
-
 /// Another zone works out again whatever was worked out from the one before.
 pub fn choose_zone(form: Form, text: String, zones: PaceZones) -> Form {
   fill(Form(..form, zone: text), zones)
@@ -192,19 +325,24 @@ pub fn choose_kind(form: Form, kind: Kind, zones: PaceZones) -> Form {
 }
 
 /// Works out the field the user did not type last from the one they did, at the zone's pace in the athlete's
-/// pace zones. For an interval workout the zone is that of the reps (ADR 0105), so only a rep's distance and time
-/// are worked out; the workout's own distance and duration are left as typed. Nothing changes without a zone, or
-/// while the typed value is not usable; clearing the typed value clears the worked-out one.
+/// pace zones. An interval workout has no zone of its own: each of its parts has one (ADR 0116), and its own
+/// distance and duration are left as typed. Nothing changes without a zone, or while the typed value is not
+/// usable; clearing the typed value clears the worked-out one.
 fn fill(form: Form, zones: PaceZones) -> Form {
-  let pace = case form.kind, int.parse(string.trim(form.zone)) {
-    plan.Rest, _ -> Error(Nil)
-    _, Ok(zone) -> pace_zones.planning_pace(zones, zone)
-    _, Error(_) -> Error(Nil)
+  case form.kind {
+    plan.Rest | plan.Interval -> form
+    _ ->
+      case pace_of(form.zone, zones) {
+        Ok(pace) -> fill_target(form, pace)
+        Error(Nil) -> form
+      }
   }
-  case pace, form.kind {
-    Error(Nil), _ -> form
-    Ok(pace), plan.Interval -> fill_rep(form, pace)
-    Ok(pace), _ -> fill_target(form, pace)
+}
+
+fn pace_of(zone: String, zones: PaceZones) -> Result(Int, Nil) {
+  case int.parse(string.trim(zone)) {
+    Ok(zone) -> pace_zones.planning_pace(zones, zone)
+    Error(_) -> Error(Nil)
   }
 }
 
@@ -214,84 +352,125 @@ fn fill_target(form: Form, pace: Int) -> Form {
     DistanceTyped ->
       case string.trim(form.distance_km), target_distance(form.distance_km) {
         "", _ -> Form(..form, duration: "")
-        _, Ok(m) if m >. 0.0 -> {
-          // To the nearest minute, as durations are typed.
-          let seconds = float.round(m *. int.to_float(pace) /. 1000.0)
-          let minutes = int.max({ seconds + 30 } / 60, 1)
-          Form(..form, duration: format_duration(minutes * 60))
-        }
+        _, Ok(m) if m >. 0.0 ->
+          Form(..form, duration: format_duration(minutes_at(m, pace) * 60))
         _, _ -> form
       }
     TimeTyped ->
       case string.trim(form.duration), target_duration(form.duration) {
         "", _ -> Form(..form, distance_km: "")
-        _, Ok(s) if s > 0 -> {
-          // To the nearest 100 m.
-          let m = int.to_float(s) *. 1000.0 /. int.to_float(pace)
-          let hundreds = int.max(float.round(m /. 100.0), 1)
-          Form(..form, distance_km: format_km(int.to_float(hundreds * 100)))
-        }
+        _, Ok(s) if s > 0 ->
+          Form(..form, distance_km: format_km(hundreds_at(s, pace)))
         _, _ -> form
       }
   }
 }
 
-fn fill_rep(form: Form, pace: Int) -> Form {
-  case form.rep_typed {
-    NeitherTyped -> form
-    DistanceTyped ->
-      case string.trim(form.rep_distance), rep_distance(form.rep_distance) {
-        "", _ -> Form(..form, rep_time: "")
+/// To the nearest minute, as durations are typed.
+fn minutes_at(metres: Float, pace: Int) -> Int {
+  let seconds = float.round(metres *. int.to_float(pace) /. 1000.0)
+  int.max({ seconds + 30 } / 60, 1)
+}
+
+/// To the nearest 100 m.
+fn hundreds_at(seconds: Int, pace: Int) -> Float {
+  let m = int.to_float(seconds) *. 1000.0 /. int.to_float(pace)
+  int.to_float(int.max(float.round(m /. 100.0), 1) * 100)
+}
+
+/// A warm-up or cool-down to the minute and 100 m, like a workout; a rep or recovery to the second and 10 m.
+fn fill_segment(
+  form: SegmentForm,
+  long: Bool,
+  zones: PaceZones,
+) -> SegmentForm {
+  case pace_of(form.zone, zones), form.typed {
+    Error(Nil), _ | _, NeitherTyped -> form
+    Ok(pace), DistanceTyped ->
+      case string.trim(form.distance), segment_distance(form.distance, long) {
+        "", _ -> SegmentForm(..form, time: "")
+        _, Ok(m) if m >. 0.0 && long ->
+          case minutes_at(m, pace) * 60 {
+            s if s <= max_warmup_seconds ->
+              SegmentForm(..form, time: format_duration(s))
+            _ -> form
+          }
         _, Ok(m) if m >. 0.0 ->
           case float.round(m *. int.to_float(pace) /. 1000.0) {
             s if s <= max_rep_seconds ->
-              Form(..form, rep_time: format_rep_time(int.max(s, 1)))
+              SegmentForm(..form, time: format_rep_time(int.max(s, 1)))
             _ -> form
           }
         _, _ -> form
       }
-    TimeTyped ->
-      case
-        string.trim(form.rep_time),
-        rep_time(form.rep_time, "time of a rep")
-      {
-        "", _ -> Form(..form, rep_distance: "")
+    Ok(pace), TimeTyped ->
+      case string.trim(form.time), segment_time(form.time, long) {
+        "", _ -> SegmentForm(..form, distance: "")
+        _, Ok(s) if s > 0 && long ->
+          SegmentForm(..form, distance: format_km(hundreds_at(s, pace)))
         _, Ok(s) if s > 0 -> {
-          // To the nearest 10 m.
           let m = int.to_float(s) *. 1000.0 /. int.to_float(pace)
           let tens = int.max(float.round(m /. 10.0), 1)
-          Form(..form, rep_distance: int.to_string(tens * 10))
+          SegmentForm(..form, distance: int.to_string(tens * 10))
         }
         _, _ -> form
       }
   }
 }
 
-/// All the repetitions of an interval workout as typed so far (ADR 0106): the distance of the reps in metres,
-/// and the time of the reps with the recoveries between them in seconds. `None` for what is not known yet;
-/// both `None` without a usable number of repetitions. Recoveries have no distance.
+/// All the parts of an interval workout as typed so far (ADR 0106, 0116): the distance in metres and the time in
+/// seconds of the parts that have one, with a recovery after every rep but the last of the workout. `None` while no
+/// part has one.
 pub fn interval_totals(form: Form) -> #(Option(Float), Option(Int)) {
-  case int.parse(string.trim(form.reps)) {
-    Ok(reps) if reps >= 1 && reps <= max_reps -> {
-      let distance = case rep_distance(form.rep_distance) {
-        Ok(m) if m >. 0.0 -> Some(int.to_float(reps) *. m)
-        _ -> None
-      }
-      let time = case
-        rep_time(form.rep_time, "time of a rep"),
-        rep_time(form.recovery, "recovery")
-      {
-        Ok(s), Ok(recovery) if s > 0 -> Some(reps * s + { reps - 1 } * recovery)
-        _, _ -> None
-      }
-      #(distance, time)
+  let reps = fn(set: SetForm) {
+    case int.parse(string.trim(set.reps)) {
+      Ok(n) if n >= 1 && n <= max_reps -> n
+      _ -> 0
     }
-    _ -> #(None, None)
   }
+  let last_with_reps =
+    form.sets
+    |> list.index_map(fn(set, i) { #(i, reps(set)) })
+    |> list.filter(fn(pair) { pair.1 > 0 })
+    |> list.last
+    |> result.map(fn(pair) { pair.0 })
+    |> result.unwrap(-1)
+  // How often each part is run.
+  let parts =
+    list.flatten([
+      [#(form.warmup, True, 1), #(form.cooldown, True, 1)],
+      ..list.index_map(form.sets, fn(set, i) {
+        let n = reps(set)
+        [
+          #(set.work, False, n),
+          #(set.recovery, False, case i == last_with_reps {
+            True -> n - 1
+            False -> n
+          }),
+        ]
+      })
+    ])
+  let distance =
+    list.fold(parts, None, fn(total, part) {
+      case segment_distance({ part.0 }.distance, part.1) {
+        Ok(m) if m >. 0.0 && part.2 > 0 ->
+          Some(option.unwrap(total, 0.0) +. int.to_float(part.2) *. m)
+        _ -> total
+      }
+    })
+  let time =
+    list.fold(parts, None, fn(total, part) {
+      case segment_time({ part.0 }.time, part.1) {
+        Ok(s) if s > 0 && part.2 > 0 ->
+          Some(option.unwrap(total, 0) + part.2 * s)
+        _ -> total
+      }
+    })
+  #(distance, time)
 }
 
 /// Checks the form; a problem names the field it is about: `week`, `day`, `title`, `description`, `distance`,
-/// `duration`, `reps`, `rep_distance`, `rep_time`, `recovery` or `zone`.
+/// `duration`, `zone`, or a field of an interval workout's parts (`segment_field_name`, `reps_field_name`).
 pub fn validate_fields(form: Form) -> Result(Valid, #(String, String)) {
   let title = string.trim(form.title)
   let description = string.trim(form.description)
@@ -335,7 +514,7 @@ pub fn validate_fields(form: Form) -> Result(Valid, #(String, String)) {
                 duration_s: duration,
                 description: description,
                 intervals: intervals,
-                zone: zone,
+                zone: interval_zone(intervals, zone),
               ))
           }
       }
@@ -380,6 +559,20 @@ fn target_zone(form: Form) -> Result(Int, String) {
   }
 }
 
+/// An interval workout's zone is the highest of its reps (ADR 0116): what it is mostly about. Without zones on its
+/// reps it keeps the one it had.
+fn interval_zone(intervals: Option(Intervals), zone: Int) -> Int {
+  let highest = case intervals {
+    Some(i) ->
+      list.fold(i.sets, 0, fn(high, set) { int.max(high, set.work.zone) })
+    None -> 0
+  }
+  case highest {
+    0 -> zone
+    n -> n
+  }
+}
+
 /// `Zone 2`, `""` for none.
 pub fn zone_label(zone: Int) -> String {
   case zone {
@@ -388,64 +581,192 @@ pub fn zone_label(zone: Int) -> String {
   }
 }
 
-/// The repetitions, for an interval workout only: none when every field of them is empty, as before
-/// they existed (ADR 0104).
+/// The parts, for an interval workout only: none when every field of them is empty, as before they existed
+/// (ADR 0104). Sets left empty are left out.
 fn intervals(form: Form) -> Result(Option(Intervals), #(String, String)) {
-  let reps = string.trim(form.reps)
-  let typed = [reps, form.rep_distance, form.rep_time, form.recovery]
-  case form.kind, list.all(typed, fn(text) { string.trim(text) == "" }) {
-    plan.Interval, False ->
-      case
-        int.parse(reps),
-        rep_distance(form.rep_distance),
-        rep_time(form.rep_time, "time of a rep"),
-        rep_time(form.recovery, "recovery")
-      {
-        Error(_), _, _, _ if reps == "" ->
-          Error(#("reps", "Enter how many repetitions."))
-        Error(_), _, _, _ ->
-          Error(#("reps", "Enter the repetitions as a whole number."))
-        Ok(n), _, _, _ if n < 1 || n > max_reps ->
-          Error(#("reps", "The repetitions must be between 1 and 100."))
-        _, Error(message), _, _ -> Error(#("rep_distance", message))
-        _, _, Error(message), _ -> Error(#("rep_time", message))
-        _, _, _, Error(message) -> Error(#("recovery", message))
-        _, Ok(0.0), Ok(0), _ ->
-          Error(#("rep_distance", "Give each rep a distance, a time or both."))
-        Ok(n), Ok(distance), Ok(time), Ok(recovery) ->
-          Ok(Some(Intervals(n, distance, time, recovery)))
+  case form.kind {
+    plan.Interval -> {
+      use warmup <- result.try(valid_segment(form.warmup, Warmup))
+      use sets <- result.try(
+        form.sets
+        |> list.index_map(fn(set, i) { #(set, i) })
+        |> list.filter(fn(pair) { !is_blank_set(pair.0) })
+        |> list.try_map(fn(pair) { valid_set(pair.0, pair.1) }),
+      )
+      use cooldown <- result.try(valid_segment(form.cooldown, Cooldown))
+      case warmup, sets, cooldown {
+        plan.Segment(0, 0.0, 0), [], plan.Segment(0, 0.0, 0) -> Ok(None)
+        _, _, _ -> Ok(Some(Intervals(warmup, sets, cooldown)))
       }
-    _, _ -> Ok(None)
+    }
+    _ -> Ok(None)
   }
 }
 
-fn rep_distance(text: String) -> Result(Float, String) {
-  case string.trim(text) {
-    "" -> Ok(0.0)
-    typed ->
+fn is_blank_set(set: SetForm) -> Bool {
+  [set.reps, ..list.flat_map([set.work, set.recovery], segment_texts)]
+  |> list.all(fn(text) { string.trim(text) == "" })
+}
+
+fn segment_texts(segment: SegmentForm) -> List(String) {
+  [segment.zone, segment.distance, segment.time]
+}
+
+fn valid_set(set: SetForm, index: Int) -> Result(plan.Set, #(String, String)) {
+  let reps = string.trim(set.reps)
+  let field = reps_field_name(index)
+  case int.parse(reps) {
+    Error(_) if reps == "" -> Error(#(field, "Enter how many repetitions."))
+    Error(_) -> Error(#(field, "Enter the repetitions as a whole number."))
+    Ok(n) if n < 1 || n > max_reps ->
+      Error(#(field, "The repetitions must be between 1 and 100."))
+    Ok(n) -> {
+      use work <- result.try(valid_segment(set.work, Work(index)))
+      use recovery <- result.try(valid_segment(set.recovery, Recovery(index)))
+      case work {
+        plan.Segment(_, 0.0, 0) ->
+          Error(#(
+            segment_field_name(Work(index), DistanceField),
+            "Give each rep a distance, a time or both.",
+          ))
+        _ -> Ok(plan.Set(n, work, recovery))
+      }
+    }
+  }
+}
+
+/// An empty part is `plan.no_segment`; a part with a zone needs a distance or a time.
+fn valid_segment(
+  form: SegmentForm,
+  part: Part,
+) -> Result(Segment, #(String, String)) {
+  let long = is_long(part)
+  let zone = case string.trim(form.zone), int.parse(string.trim(form.zone)) {
+    "", _ -> Ok(0)
+    _, Ok(n) if n >= 1 && n <= 5 -> Ok(n)
+    _, _ -> Error("Choose a zone from 1 to 5.")
+  }
+  case
+    zone,
+    segment_distance(form.distance, long)
+    |> result.map_error(fn(message) { distance_message(message, part) }),
+    segment_time(form.time, long)
+    |> result.map_error(fn(message) { time_message(message, part) })
+  {
+    Error(message), _, _ ->
+      Error(#(segment_field_name(part, ZoneField), message))
+    _, Error(message), _ ->
+      Error(#(segment_field_name(part, DistanceField), message))
+    _, _, Error(message) ->
+      Error(#(segment_field_name(part, TimeField), message))
+    Ok(zone), Ok(0.0), Ok(0) if zone > 0 ->
+      case part {
+        // A rep without a length is reported as such by `valid_set`.
+        Work(_) -> Ok(plan.Segment(zone, 0.0, 0))
+        _ ->
+          Error(#(
+            segment_field_name(part, DistanceField),
+            "Give the " <> part_name(part) <> " a distance, a time or both.",
+          ))
+      }
+    Ok(zone), Ok(distance), Ok(time) -> Ok(plan.Segment(zone, distance, time))
+  }
+}
+
+/// What went wrong with a distance: too long, or not a number.
+type Problem {
+  TooLong
+  NotUnderstood
+}
+
+fn segment_distance(text: String, long: Bool) -> Result(Float, Problem) {
+  case string.trim(text), long {
+    "", _ -> Ok(0.0)
+    typed, True ->
+      case parse_decimal(typed) {
+        Ok(km) if km *. 1000.0 <=. max_warmup_distance_m ->
+          Ok(int.to_float(float.round(km *. 1000.0)))
+        Ok(_) -> Error(TooLong)
+        Error(Nil) -> Error(NotUnderstood)
+      }
+    typed, False ->
       case parse_decimal(typed) {
         Ok(m) if m <=. max_rep_distance_m -> Ok(int.to_float(float.round(m)))
-        Ok(_) -> Error("The distance of a rep can be at most 20000 m.")
-        Error(Nil) -> Error("Enter the distance in metres, for example 400.")
+        Ok(_) -> Error(TooLong)
+        Error(Nil) -> Error(NotUnderstood)
       }
   }
 }
 
-fn rep_time(text: String, what: String) -> Result(Int, String) {
-  case string.trim(text) {
-    "" -> Ok(0)
-    typed ->
+fn segment_time(text: String, long: Bool) -> Result(Int, Problem) {
+  case string.trim(text), long {
+    "", _ -> Ok(0)
+    typed, True ->
+      case parse_duration(typed) {
+        Ok(seconds) if seconds <= max_warmup_seconds -> Ok(seconds)
+        Ok(_) -> Error(TooLong)
+        Error(Nil) -> Error(NotUnderstood)
+      }
+    typed, False ->
       case parse_rep_time(typed) {
         Ok(seconds) if seconds <= max_rep_seconds -> Ok(seconds)
-        Ok(_) -> Error("The " <> what <> " can be at most 60 minutes.")
-        Error(Nil) ->
-          Error(
-            "Enter the "
-            <> what
-            <> " in seconds (90) or as minutes and seconds (1:30).",
-          )
+        Ok(_) -> Error(TooLong)
+        Error(Nil) -> Error(NotUnderstood)
       }
   }
+}
+
+fn distance_message(problem: Problem, part: Part) -> String {
+  case problem, is_long(part) {
+    TooLong, True -> "The " <> part_name(part) <> " can be at most 50 km."
+    NotUnderstood, True ->
+      "Enter the distance in kilometres, for example 2 or 2.5."
+    TooLong, False ->
+      "The distance of a " <> part_name(part) <> " can be at most 20000 m."
+    NotUnderstood, False -> "Enter the distance in metres, for example 400."
+  }
+}
+
+fn time_message(problem: Problem, part: Part) -> String {
+  case problem, is_long(part) {
+    TooLong, True -> "The " <> part_name(part) <> " can be at most 5 hours."
+    NotUnderstood, True ->
+      "Enter the time in minutes (15) or as hours and minutes (1:30)."
+    TooLong, False ->
+      "The time of a " <> part_name(part) <> " can be at most 60 minutes."
+    NotUnderstood, False ->
+      "Enter the time in seconds (90) or as minutes and seconds (1:30)."
+  }
+}
+
+fn part_name(part: Part) -> String {
+  case part {
+    Warmup -> "warm-up"
+    Cooldown -> "cool-down"
+    Work(_) -> "rep"
+    Recovery(_) -> "recovery"
+  }
+}
+
+/// The name a problem gives a field of a part: `warmup_time`, `set2_work_distance`, `set1_recovery_zone`.
+pub fn segment_field_name(part: Part, field: SegmentField) -> String {
+  let prefix = case part {
+    Warmup -> "warmup"
+    Cooldown -> "cooldown"
+    Work(index) -> "set" <> int.to_string(index + 1) <> "_work"
+    Recovery(index) -> "set" <> int.to_string(index + 1) <> "_recovery"
+  }
+  prefix
+  <> case field {
+    ZoneField -> "_zone"
+    DistanceField -> "_distance"
+    TimeField -> "_time"
+  }
+}
+
+/// `set1_reps`.
+pub fn reps_field_name(index: Int) -> String {
+  "set" <> int.to_string(index + 1) <> "_reps"
 }
 
 /// Seconds from `90` (seconds), `1:30` (minutes and seconds) or `1:00:00` (with hours): reps and
@@ -468,23 +789,48 @@ pub fn format_rep_time(seconds: Int) -> String {
   }
 }
 
-/// `6 × 400 m in 1:15, 1:30 recovery`.
+/// `2 km warm-up (Zone 1) · 6 × 800 m in 2:50 (Zone 4), 1:30 recovery · 1 km cool-down`: the warm-up, each set
+/// and the cool-down (ADR 0116).
 pub fn intervals_summary(intervals: Intervals) -> String {
-  let distance = case intervals.rep_distance_m {
+  let sets =
+    list.map(intervals.sets, fn(set) {
+      let recovery = case set.recovery {
+        plan.Segment(_, 0.0, 0) -> ""
+        recovery -> ", " <> segment_summary(recovery, "recovery")
+      }
+      int.to_string(set.reps)
+      <> " × "
+      <> segment_summary(set.work, "")
+      <> recovery
+    })
+  [
+    segment_summary(intervals.warmup, "warm-up"),
+    ..list.append(sets, [segment_summary(intervals.cooldown, "cool-down")])
+  ]
+  |> list.filter(fn(part) { part != "" })
+  |> string.join(" · ")
+}
+
+/// `800 m in 2:50 (Zone 4)`, `15:00 warm-up`; `""` for a part without a distance or time.
+fn segment_summary(segment: Segment, name: String) -> String {
+  let distance = case segment.distance_m {
     m if m >=. 1000.0 -> format_km(m) <> " km"
     m if m >. 0.0 -> int.to_string(float.round(m)) <> " m"
     _ -> ""
   }
-  let rep = case distance, intervals.rep_s {
+  let length = case distance, segment.duration_s {
+    "", 0 -> ""
     "", s -> format_rep_time(s)
     _, 0 -> distance
     _, s -> distance <> " in " <> format_rep_time(s)
   }
-  let recovery = case intervals.recovery_s {
-    0 -> ""
-    s -> ", " <> format_rep_time(s) <> " recovery"
+  case length, name, segment.zone {
+    "", _, _ -> ""
+    _, "", 0 -> length
+    _, _, 0 -> length <> " " <> name
+    _, "", zone -> length <> " (" <> zone_label(zone) <> ")"
+    _, _, zone -> length <> " " <> name <> " (" <> zone_label(zone) <> ")"
   }
-  int.to_string(intervals.reps) <> " × " <> rep <> recovery
 }
 
 /// A non-negative decimal number, with a point or a comma: `5`, `5.5`, `5,5`, `.5`.
@@ -622,34 +968,56 @@ fn value_fields(valid: Valid) -> List(#(String, String)) {
   ]
 }
 
-/// The repetitions as the `steps` JSON (ADR 0104), `null` when there are none. Unset values are left out.
+/// The parts as the `steps` JSON (ADR 0104, 0116), `null` when there are none. Unset values and parts are left out.
 pub fn steps_field(intervals: Option(Intervals)) -> #(String, String) {
   case intervals {
     None -> outbox.field_null("steps")
     Some(i) -> {
-      let work =
-        [
-          #("distance_m", i.rep_distance_m >. 0.0, json.float(i.rep_distance_m)),
-          #("duration_s", i.rep_s > 0, json.int(i.rep_s)),
-        ]
-        |> list.filter(fn(part) { part.1 })
-        |> list.map(fn(part) { #(part.0, part.2) })
-      let recovery = case i.recovery_s {
-        0 -> []
-        s -> [#("recovery", json.object([#("duration_s", json.int(s))]))]
+      let set_json = fn(set: plan.Set) {
+        json.object([
+          #("reps", json.int(set.reps)),
+          #("work", segment_json(set.work)),
+          ..optional_segment("recovery", set.recovery)
+        ])
       }
       #(
         "steps",
-        json.object([
-          #("v", json.int(1)),
-          #("reps", json.int(i.reps)),
-          #("work", json.object(work)),
-          ..recovery
-        ])
+        json.object(
+          list.flatten([
+            [#("v", json.int(2))],
+            optional_segment("warmup", i.warmup),
+            case i.sets {
+              [] -> []
+              sets -> [#("sets", json.array(sets, set_json))]
+            },
+            optional_segment("cooldown", i.cooldown),
+          ]),
+        )
           |> json.to_string,
       )
     }
   }
+}
+
+fn optional_segment(
+  name: String,
+  segment: Segment,
+) -> List(#(String, json.Json)) {
+  case segment == plan.no_segment {
+    True -> []
+    False -> [#(name, segment_json(segment))]
+  }
+}
+
+fn segment_json(segment: Segment) -> json.Json {
+  [
+    #("zone", segment.zone > 0, json.int(segment.zone)),
+    #("distance_m", segment.distance_m >. 0.0, json.float(segment.distance_m)),
+    #("duration_s", segment.duration_s > 0, json.int(segment.duration_s)),
+  ]
+  |> list.filter(fn(part) { part.1 })
+  |> list.map(fn(part) { #(part.0, part.2) })
+  |> json.object
 }
 
 pub fn kind_label(kind: Kind) -> String {

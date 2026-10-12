@@ -241,34 +241,55 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
   assert.equal(second.day_index, 1)
   assert.equal(second.position, 1, "it goes after the first one on that day")
 
-  // An interval workout with its repetitions, kept in steps (ADR 0104).
+  // An interval workout with a warm-up, sets and a cool-down, kept in steps (ADR 0104, 0116).
   click(w, byLabel(w, "Add a workout to week 1, Fri"))
   await waitFor("the form for day 5", () => d.querySelector("#workout-title") && d.querySelector("#workout-day").value === "5")
-  assert.equal(d.querySelector("#workout-reps"), null, "no repetitions for an easy run")
+  assert.equal(d.querySelector("#workout-set1-reps"), null, "no repetitions for a run")
   typeInto(w, d.querySelector("#workout-title"), "Track")
   pick(w, "kind", "interval")
-  await waitFor("the repetition fields", () => d.querySelector("#workout-reps"))
-  typeInto(w, d.querySelector("#workout-reps"), "6")
-  typeInto(w, d.querySelector("#workout-rep-distance"), "800")
-  typeInto(w, d.querySelector("#workout-recovery"), "1:30")
-  choose(w, d.querySelector("#workout-zone"), "4")
-  // The time of a rep from the zone's pace, 5:08 /km in the default zones, and the totals (ADR 0106).
-  await waitFor("the rep time from the zone", () => d.querySelector("#workout-rep-time").value === "4:06")
+  await waitFor("the fields of the parts", () => d.querySelector("#workout-set1-reps"))
+  assert.equal(d.querySelector("#workout-zone"), null, "each part has its own zone")
+  typeInto(w, d.querySelector("#workout-warmup-time"), "15")
+  typeInto(w, d.querySelector("#workout-set1-reps"), "6")
+  typeInto(w, d.querySelector("#workout-set1-work-distance"), "800")
+  typeInto(w, d.querySelector("#workout-set1-recovery-time"), "1:30")
+  choose(w, d.querySelector("#workout-set1-work-zone"), "4")
+  // The time of a rep from its zone's pace, 5:08 /km in the default zones, and the totals (ADR 0106).
+  await waitFor("the rep time from the zone", () => d.querySelector("#workout-set1-work-time").value === "4:06")
   assert.equal(d.querySelector("#workout-total-distance").value, "4.8")
-  assert.equal(d.querySelector("#workout-total-time").value, "32:06")
+  assert.equal(d.querySelector("#workout-total-time").value, "47:06")
+  // A second set, at first a copy of the first.
+  click(w, [...d.querySelectorAll(".workout-form button")].find((el) => el.textContent.includes("Add set")))
+  await waitFor("the second set", () => d.querySelector("#workout-set2-reps")?.value === "6")
+  typeInto(w, d.querySelector("#workout-set2-reps"), "4")
+  typeInto(w, d.querySelector("#workout-set2-work-distance"), "")
+  typeInto(w, d.querySelector("#workout-set2-work-time"), "")
+  typeInto(w, d.querySelector("#workout-set2-work-distance"), "400")
+  choose(w, d.querySelector("#workout-set2-work-zone"), "5")
+  typeInto(w, d.querySelector("#workout-cooldown-distance"), "2")
   submit(w, d.querySelector(".workout-form"))
   const track = await waitFor("the interval workout", async () => (await workouts()).find((x) => x.title === "Track"))
-  assert.deepEqual(track.steps, { v: 1, reps: 6, work: { distance_m: 800, duration_s: 246 }, recovery: { duration_s: 90 } })
-  assert.equal(track.zone, 4, "its target zone (ADR 0105)")
-  await waitFor("the zone and repetitions on the calendar", () => d.querySelector(".calendar").textContent.includes("Zone 4 · 6 × 800 m in 4:06, 1:30 recovery"))
+  assert.deepEqual(track.steps, {
+    v: 2,
+    warmup: { duration_s: 900 },
+    sets: [
+      { reps: 6, work: { zone: 4, distance_m: 800, duration_s: 246 }, recovery: { duration_s: 90 } },
+      { reps: 4, work: { zone: 5, distance_m: 400, duration_s: 119 }, recovery: { duration_s: 90 } },
+    ],
+    cooldown: { distance_m: 2000 },
+  })
+  assert.equal(track.zone, 5, "the highest zone of its reps (ADR 0116)")
+  await waitFor("the parts on the calendar", () => d.querySelector(".calendar").textContent.includes("15:00 warm-up · 6 × 800 m in 4:06 (Zone 4), 1:30 recovery · 4 × 400 m in 1:59 (Zone 5), 1:30 recovery · 2 km cool-down"))
   click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Track")))
-  await waitFor("the repetitions in the form", () => d.querySelector("#workout-reps")?.value === "6")
-  assert.equal(d.querySelector("#workout-rep-distance").value, "800")
-  assert.equal(d.querySelector("#workout-recovery").value, "1:30")
-  assert.equal(d.querySelector("#workout-zone").value, "4")
+  await waitFor("the parts in the form", () => d.querySelector("#workout-set2-reps")?.value === "4")
+  assert.equal(d.querySelector("#workout-set1-work-distance").value, "800")
+  assert.equal(d.querySelector("#workout-set1-recovery-time").value, "1:30")
+  assert.equal(d.querySelector("#workout-set1-work-zone").value, "4")
+  assert.equal(d.querySelector("#workout-warmup-time").value, "15")
+  assert.equal(d.querySelector("#workout-cooldown-distance").value, "2")
   pick(w, "kind", "run")
   submit(w, d.querySelector(".workout-form"))
-  await waitFor("the repetitions cleared with the kind", async () => (await workouts()).find((x) => x.id === track.id && x.kind === "run")?.steps === null)
+  await waitFor("the parts cleared with the kind", async () => (await workouts()).find((x) => x.id === track.id && x.kind === "run")?.steps === null)
 
   // Move the first workout to day 4 and rename it: the owner opens it straight in its form (ADR 0080).
   click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Easy run")))
@@ -878,7 +899,7 @@ test("an athlete copies a coach's plan with its workouts, for herself, then edit
   assert.equal(copied[1].description, "3 x 10 min")
   assert.equal(copied[1].distance_m, 8000)
   assert.equal(copied[1].duration_s, 2700)
-  assert.deepEqual(copied[1].steps, { v: 1, reps: 3, work: { duration_s: 600 } }, "the repetitions came along (ADR 0104)")
+  assert.deepEqual(copied[1].steps, { v: 2, sets: [{ reps: 3, work: { zone: 3, duration_s: 600 } }] }, "the repetitions came along (ADR 0104), in the second version of steps (ADR 0116)")
   assert.equal(copied[1].zone, 3, "the zone came along (ADR 0105)")
 
   // The original has not changed.

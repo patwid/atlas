@@ -1,6 +1,6 @@
 # 0104. Repetitions of an interval workout, kept in its steps
 
-- Status: Accepted
+- Status: Accepted. Warm-up, cool-down, several sets and a recovery distance: [0116](0116-interval-warm-up-sets-and-cool-down.md).
 - Date: 2026-10-11
 - Deciders: owner (reported that a new interval workout cannot say how many repetitions it has, and approved this fix); agent (the details below)
 

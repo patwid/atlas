@@ -6,9 +6,9 @@ import atlas/workout_form.{type Row, Form, Row}
 import atlas/workouts_page.{
   AddClicked, Adding, Browsing, Create, DayChanged, Delete, DeleteClicked,
   DeleteExpired, Edit, EditClicked, EditPlan, Editing, IntensityChanged,
-  IntensityCleared, IntensityInput, KindChanged, Model, RecoveryChanged,
-  RepDistanceChanged, RepsChanged, Submitted, TitleChanged, Viewing, WeekChanged,
-  WeekSelected, WorkoutSelected, WorkoutsRead, ZoneChanged,
+  IntensityCleared, IntensityInput, KindChanged, Model, RepsChanged,
+  SegmentChanged, SetAdded, SetRemoved, Submitted, TitleChanged, Viewing,
+  WeekChanged, WeekSelected, WorkoutSelected, WorkoutsRead,
 }
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -118,21 +118,76 @@ pub fn adding_a_workout_creates_it_at_the_end_of_its_day_test() {
   assert model.mode == Browsing
 }
 
-pub fn an_interval_workout_asks_for_its_repetitions_test() {
+pub fn an_interval_workout_asks_for_its_parts_test() {
   let #(model, _) = update(workouts_page.new(), AddClicked(1, 1))
   let #(model, _) = update(model, TitleChanged("Track"))
   assert !string.contains(html_of(model, True), "Repetitions")
   let #(model, _) = update(model, KindChanged("interval"))
-  assert string.contains(html_of(model, True), "Repetitions")
-  let #(model, _) = update(model, RepsChanged("6"))
-  let #(model, _) = update(model, RepDistanceChanged("800"))
-  let #(model, _) = update(model, RecoveryChanged("1:30"))
+  let html = html_of(model, True)
+  assert string.contains(html, "Repetitions")
+  assert string.contains(html, "Warm-up")
+  assert string.contains(html, "Cool-down")
+  // Each part has its own zone, so the workout's is not asked for (ADR 0116).
+  assert !string.contains(html, "id=\"workout-zone\"")
+  let #(model, _) =
+    update(
+      model,
+      SegmentChanged(workout_form.Warmup, workout_form.TimeField, "15"),
+    )
+  let #(model, _) = update(model, RepsChanged(0, "6"))
+  let #(model, _) =
+    update(
+      model,
+      SegmentChanged(workout_form.Work(0), workout_form.DistanceField, "800"),
+    )
+  let #(model, _) =
+    update(
+      model,
+      SegmentChanged(workout_form.Work(0), workout_form.ZoneField, "4"),
+    )
+  let #(model, _) =
+    update(
+      model,
+      SegmentChanged(
+        workout_form.Recovery(0),
+        workout_form.DistanceField,
+        "200",
+      ),
+    )
+  let #(model, _) =
+    update(
+      model,
+      SegmentChanged(workout_form.Recovery(0), workout_form.TimeField, "1:30"),
+    )
   let #(_, actions) = update(model, Submitted)
   let assert [Create(_, fields)] = actions
   assert dict.get(fields, "steps")
     == Ok(
-      "{\"v\":1,\"reps\":6,\"work\":{\"distance_m\":800},\"recovery\":{\"duration_s\":90}}",
+      "{\"v\":2,\"warmup\":{\"duration_s\":900},\"sets\":[{\"reps\":6,\"work\":{\"zone\":4,\"distance_m\":800,\"duration_s\":246},\"recovery\":{\"distance_m\":200,\"duration_s\":90}}]}",
     )
+  // The workout's zone is the highest of its reps.
+  assert dict.get(fields, "zone") == Ok("4")
+}
+
+pub fn sets_are_added_and_removed_test() {
+  let #(model, _) = update(workouts_page.new(), AddClicked(1, 1))
+  let #(model, _) = update(model, KindChanged("interval"))
+  assert !string.contains(html_of(model, True), "Remove set")
+  let #(model, _) = update(model, RepsChanged(0, "4"))
+  let #(model, _) = update(model, SetAdded)
+  // A new set is a copy of the last one.
+  let assert [first, second] = model.form.sets
+  assert second == first
+  let html = html_of(model, True)
+  assert string.contains(html, "Set 2")
+  assert string.contains(html, "id=\"workout-set2-reps\"")
+  let #(model, _) = update(model, RepsChanged(1, "3"))
+  let #(model, _) = update(model, SetRemoved(0))
+  let assert [only] = model.form.sets
+  assert only.reps == "3"
+  // The last set is emptied, not removed.
+  let #(model, _) = update(model, SetRemoved(0))
+  assert model.form.sets == [workout_form.blank_set]
 }
 
 pub fn a_rep_time_and_the_totals_are_worked_out_from_the_zone_test() {
@@ -140,12 +195,25 @@ pub fn a_rep_time_and_the_totals_are_worked_out_from_the_zone_test() {
   let #(model, _) = update(model, TitleChanged("Track"))
   let #(model, _) = update(model, KindChanged("interval"))
   assert !string.contains(html_of(model, True), "Total distance")
-  let #(model, _) = update(model, RepsChanged("6"))
-  let #(model, _) = update(model, RepDistanceChanged("800"))
-  let #(model, _) = update(model, RecoveryChanged("1:30"))
-  let #(model, _) = update(model, ZoneChanged("4"))
+  let #(model, _) = update(model, RepsChanged(0, "6"))
+  let #(model, _) =
+    update(
+      model,
+      SegmentChanged(workout_form.Work(0), workout_form.DistanceField, "800"),
+    )
+  let #(model, _) =
+    update(
+      model,
+      SegmentChanged(workout_form.Recovery(0), workout_form.TimeField, "1:30"),
+    )
+  let #(model, _) =
+    update(
+      model,
+      SegmentChanged(workout_form.Work(0), workout_form.ZoneField, "4"),
+    )
   // 800 m at 5:08 /km, the middle of the default zone 4.
-  assert model.form.rep_time == "4:06"
+  let assert [set] = model.form.sets
+  assert set.work.time == "4:06"
   let html = html_of(model, True)
   assert string.contains(html, "Total distance")
   assert string.contains(html, "value=\"4.8\"")
@@ -153,16 +221,25 @@ pub fn a_rep_time_and_the_totals_are_worked_out_from_the_zone_test() {
   assert string.contains(html, "value=\"32:06\"")
 }
 
-pub fn the_calendar_shows_the_repetitions_test() {
+pub fn the_calendar_shows_the_parts_test() {
   let track =
     Row(
       ..row("a", "p1", 0, 0, "Track"),
-      intervals: Some(plan.Intervals(6, 800.0, 0, 90)),
+      intervals: Some(plan.Intervals(
+        plan.Segment(1, 2000.0, 0),
+        [
+          plan.Set(6, plan.Segment(4, 800.0, 0), plan.Segment(0, 0.0, 90)),
+        ],
+        plan.no_segment,
+      )),
+      zone: 4,
     )
+  let html = html_of(with_rows([track]), True)
   assert string.contains(
-    html_of(with_rows([track]), True),
-    "6 × 800 m, 1:30 recovery",
+    html,
+    "2 km warm-up (Zone 1) · 6 × 800 m (Zone 4), 1:30 recovery",
   )
+  assert !string.contains(html, "Zone 4 · ")
 }
 
 pub fn workouts_of_other_plans_do_not_affect_the_position_test() {
@@ -449,12 +526,10 @@ pub fn the_form_is_labelled_and_shows_errors_test() {
         "",
         "",
         "",
+        workout_form.blank_segment,
+        [workout_form.blank_set],
+        workout_form.blank_segment,
         "",
-        "",
-        "",
-        "",
-        "",
-        workout_form.NeitherTyped,
         workout_form.NeitherTyped,
         0,
         Some("Give the workout a title."),

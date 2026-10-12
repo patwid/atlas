@@ -136,11 +136,11 @@ pub fn workout_row(record: Dynamic) -> Result(Row, Nil) {
           "",
           decode.string,
         )
-        use intervals <- decode.optional_field(
+        use steps <- decode.optional_field(
           "steps",
-          None,
-          decode.one_of(decode.map(intervals_decoder(), Some), [
-            decode.success(None),
+          Error(Nil),
+          decode.one_of(decode.map(steps_decoder(), Ok), [
+            decode.success(Error(Nil)),
           ]),
         )
         // Not required: workouts saved before it existed have none (ADR 0105).
@@ -150,34 +150,91 @@ pub fn workout_row(record: Dynamic) -> Result(Row, Nil) {
           decode.one_of(whole_number(), [decode.success(0)]),
         )
         use updated <- decode.optional_field("updated", "", decode.string)
-        let zone = case zone >= 1 && zone <= 5 {
-          True -> zone
-          False -> 0
+        let zone = zone_or_none(zone)
+        let intervals = case steps {
+          Ok(read) -> Some(read(zone))
+          Error(Nil) -> None
         }
         decode.success(Row(found, description, intervals, zone, updated))
       })
   }
 }
 
-/// The repetitions in a workout's `steps` (ADR 0104). Steps this client cannot read, such as a later
+/// The parts of an interval workout in its `steps` (ADR 0104, 0116), given the workout's zone: the first version
+/// had one set and the workout's zone was that of its reps. Steps this client cannot read, such as a later
 /// version, are ignored rather than making the workout unreadable.
-fn intervals_decoder() -> Decoder(plan.Intervals) {
+fn steps_decoder() -> Decoder(fn(Int) -> plan.Intervals) {
   use version <- decode.field("v", whole_number())
+  case version {
+    1 -> {
+      use set <- decode.then(set_decoder())
+      decode.success(fn(zone) {
+        plan.Intervals(
+          plan.no_segment,
+          [plan.Set(..set, work: plan.Segment(..set.work, zone: zone))],
+          plan.no_segment,
+        )
+      })
+    }
+    2 -> {
+      use warmup <- decode.optional_field(
+        "warmup",
+        plan.no_segment,
+        segment_decoder(),
+      )
+      use sets <- decode.optional_field("sets", [], decode.list(set_decoder()))
+      use cooldown <- decode.optional_field(
+        "cooldown",
+        plan.no_segment,
+        segment_decoder(),
+      )
+      let found = plan.Intervals(warmup, sets, cooldown)
+      case
+        sets == [] && warmup == plan.no_segment && cooldown == plan.no_segment
+      {
+        True -> decode.failure(fn(_) { found }, "Intervals")
+        False -> decode.success(fn(_) { found })
+      }
+    }
+    _ ->
+      decode.failure(
+        fn(_) { plan.Intervals(plan.no_segment, [], plan.no_segment) },
+        "Intervals",
+      )
+  }
+}
+
+fn set_decoder() -> Decoder(plan.Set) {
   use reps <- decode.field("reps", whole_number())
-  use #(distance, time) <- decode.field("work", {
-    use distance <- decode.optional_field("distance_m", 0.0, number())
-    use time <- decode.optional_field("duration_s", 0, whole_number())
-    decode.success(#(distance, time))
-  })
+  use work <- decode.field("work", segment_decoder())
   use recovery <- decode.optional_field(
     "recovery",
-    0,
-    decode.optional_field("duration_s", 0, whole_number(), decode.success),
+    plan.no_segment,
+    segment_decoder(),
   )
-  let found = plan.Intervals(reps, distance, time, recovery)
-  case version == 1 && reps > 0 && { distance >. 0.0 || time > 0 } {
+  let found = plan.Set(reps, work, recovery)
+  case reps > 0 && { work.distance_m >. 0.0 || work.duration_s > 0 } {
     True -> decode.success(found)
-    False -> decode.failure(found, "Intervals")
+    False -> decode.failure(found, "Set")
+  }
+}
+
+fn segment_decoder() -> Decoder(plan.Segment) {
+  use zone <- decode.optional_field(
+    "zone",
+    0,
+    decode.one_of(whole_number(), [decode.success(0)]),
+  )
+  use distance <- decode.optional_field("distance_m", 0.0, number())
+  use time <- decode.optional_field("duration_s", 0, whole_number())
+  decode.success(plan.Segment(zone_or_none(zone), distance, time))
+}
+
+/// A zone from 1 to 5, 0 for none or one this client does not know (ADR 0105).
+fn zone_or_none(zone: Int) -> Int {
+  case zone >= 1 && zone <= 5 {
+    True -> zone
+    False -> 0
   }
 }
 

@@ -15,12 +15,10 @@ fn form() -> workout_form.Form {
     "",
     "",
     "",
+    workout_form.blank_segment,
+    [workout_form.blank_set],
+    workout_form.blank_segment,
     "",
-    "",
-    "",
-    "",
-    "",
-    NeitherTyped,
     NeitherTyped,
     0,
     None,
@@ -139,12 +137,10 @@ pub fn the_week_is_checked_first_so_one_mistake_gives_one_message_test() {
       "x",
       "y",
       "",
+      workout_form.blank_segment,
+      [workout_form.blank_set],
+      workout_form.blank_segment,
       "",
-      "",
-      "",
-      "",
-      "",
-      NeitherTyped,
       NeitherTyped,
       0,
       None,
@@ -172,12 +168,10 @@ pub fn editing_starts_from_the_stored_workout_test() {
       "8",
       "45",
       "3 x 10 min",
+      workout_form.blank_segment,
+      [workout_form.blank_set],
+      workout_form.blank_segment,
       "",
-      "",
-      "",
-      "",
-      "",
-      NeitherTyped,
       NeitherTyped,
       0,
       None,
@@ -199,12 +193,10 @@ pub fn editing_starts_from_the_stored_workout_test() {
       "",
       "",
       "",
+      workout_form.blank_segment,
+      [workout_form.blank_set],
+      workout_form.blank_segment,
       "",
-      "",
-      "",
-      "",
-      "",
-      NeitherTyped,
       NeitherTyped,
       0,
       None,
@@ -280,12 +272,10 @@ pub fn a_problem_names_its_field_test() {
       "",
       "",
       "",
+      workout_form.blank_segment,
+      [workout_form.blank_set],
+      workout_form.blank_segment,
       "",
-      "",
-      "",
-      "",
-      "",
-      NeitherTyped,
       NeitherTyped,
       0,
       None,
@@ -298,12 +288,10 @@ pub fn a_problem_names_its_field_test() {
       "x",
       "",
       "",
+      workout_form.blank_segment,
+      [workout_form.blank_set],
+      workout_form.blank_segment,
       "",
-      "",
-      "",
-      "",
-      "",
-      NeitherTyped,
       NeitherTyped,
       0,
       None,
@@ -317,12 +305,10 @@ pub fn a_problem_names_its_field_test() {
       "",
       "",
       "",
+      workout_form.blank_segment,
+      [workout_form.blank_set],
+      workout_form.blank_segment,
       "",
-      "",
-      "",
-      "",
-      "",
-      NeitherTyped,
       NeitherTyped,
       0,
       None,
@@ -330,28 +316,74 @@ pub fn a_problem_names_its_field_test() {
     == ""
 }
 
-fn intervals_form() -> workout_form.Form {
-  Form(
-    ..form(),
-    kind: plan.Interval,
-    reps: "6",
-    rep_distance: "800",
-    rep_time: "2:50",
-    recovery: "90",
-  )
+fn segment(zone: String, distance: String, time: String) {
+  workout_form.SegmentForm(zone, distance, time, NeitherTyped)
 }
 
-pub fn an_interval_workout_carries_its_repetitions_test() {
+fn intervals_form() -> workout_form.Form {
+  Form(..form(), kind: plan.Interval, sets: [
+    workout_form.SetForm(
+      "6",
+      segment("4", "800", "2:50"),
+      segment("", "", "90"),
+    ),
+  ])
+}
+
+fn with_set(change: fn(workout_form.SetForm) -> workout_form.SetForm) {
+  let assert [set] = intervals_form().sets
+  Form(..intervals_form(), sets: [change(set)])
+}
+
+fn work(zone: Int, distance: Float, time: Int) -> plan.Segment {
+  plan.Segment(zone, distance, time)
+}
+
+pub fn an_interval_workout_carries_its_parts_test() {
   let assert Ok(valid) = workout_form.validate(intervals_form())
-  assert valid.intervals == Some(plan.Intervals(6, 800.0, 170, 90))
+  assert valid.intervals
+    == Some(plan.Intervals(
+      plan.no_segment,
+      [plan.Set(6, work(4, 800.0, 170), work(0, 0.0, 90))],
+      plan.no_segment,
+    ))
+  // The workout's zone is the highest of its reps (ADR 0116).
+  assert valid.zone == 4
   let assert Ok(valid) =
     workout_form.validate(
-      Form(..intervals_form(), rep_distance: "", recovery: " "),
+      Form(
+        ..intervals_form(),
+        warmup: segment("1", "2", "15"),
+        cooldown: segment("", "", "10"),
+        sets: [
+          workout_form.SetForm(
+            "3",
+            segment("5", "400", ""),
+            segment("1", "200", ""),
+          ),
+          // An empty set is left out.
+          workout_form.blank_set,
+          workout_form.SetForm(
+            "2",
+            segment("3", "", "5:00"),
+            segment("", "", ""),
+          ),
+        ],
+      ),
     )
-  assert valid.intervals == Some(plan.Intervals(6, 0.0, 170, 0))
+  assert valid.intervals
+    == Some(plan.Intervals(
+      work(1, 2000.0, 900),
+      [
+        plan.Set(3, work(5, 400.0, 0), work(1, 200.0, 0)),
+        plan.Set(2, work(3, 0.0, 300), plan.no_segment),
+      ],
+      work(0, 0.0, 600),
+    ))
+  assert valid.zone == 5
 }
 
-pub fn repetitions_are_optional_and_only_for_intervals_test() {
+pub fn the_parts_are_optional_and_only_for_intervals_test() {
   let assert Ok(valid) =
     workout_form.validate(Form(..form(), kind: plan.Interval))
   assert valid.intervals == None
@@ -359,31 +391,63 @@ pub fn repetitions_are_optional_and_only_for_intervals_test() {
   let assert Ok(valid) =
     workout_form.validate(Form(..intervals_form(), kind: plan.Run))
   assert valid.intervals == None
+  // Without zones on its reps an interval workout keeps the zone it had.
+  let assert Ok(valid) =
+    workout_form.validate(Form(..form(), kind: plan.Interval, zone: "3"))
+  assert valid.zone == 3
 }
 
-pub fn repetition_problems_name_their_field_test() {
+pub fn problems_with_the_parts_name_their_field_test() {
   let problem = fn(f) { workout_form.validate_fields(f) }
-  assert problem(Form(..intervals_form(), reps: ""))
-    == Error(#("reps", "Enter how many repetitions."))
-  assert problem(Form(..intervals_form(), reps: "six"))
-    == Error(#("reps", "Enter the repetitions as a whole number."))
-  assert problem(Form(..intervals_form(), reps: "0"))
-    == Error(#("reps", "The repetitions must be between 1 and 100."))
-  assert problem(Form(..intervals_form(), reps: "101"))
-    == Error(#("reps", "The repetitions must be between 1 and 100."))
-  assert problem(Form(..intervals_form(), rep_distance: "far"))
-    == Error(#("rep_distance", "Enter the distance in metres, for example 400."))
-  assert problem(Form(..intervals_form(), rep_distance: "20001"))
-    == Error(#("rep_distance", "The distance of a rep can be at most 20000 m."))
-  assert problem(Form(..intervals_form(), rep_time: "1:75"))
+  let reps = fn(text) {
+    with_set(fn(set) { workout_form.SetForm(..set, reps: text) })
+  }
+  let rep = fn(s) { with_set(fn(set) { workout_form.SetForm(..set, work: s) }) }
+  let recovery = fn(s) {
+    with_set(fn(set) { workout_form.SetForm(..set, recovery: s) })
+  }
+  assert problem(reps(""))
+    == Error(#("set1_reps", "Enter how many repetitions."))
+  assert problem(reps("six"))
+    == Error(#("set1_reps", "Enter the repetitions as a whole number."))
+  assert problem(reps("0"))
+    == Error(#("set1_reps", "The repetitions must be between 1 and 100."))
+  assert problem(reps("101"))
+    == Error(#("set1_reps", "The repetitions must be between 1 and 100."))
+  assert problem(rep(segment("", "far", "")))
     == Error(#(
-      "rep_time",
-      "Enter the time of a rep in seconds (90) or as minutes and seconds (1:30).",
+      "set1_work_distance",
+      "Enter the distance in metres, for example 400.",
     ))
-  assert problem(Form(..intervals_form(), recovery: "61:00"))
-    == Error(#("recovery", "The recovery can be at most 60 minutes."))
-  assert problem(Form(..intervals_form(), rep_distance: "", rep_time: ""))
-    == Error(#("rep_distance", "Give each rep a distance, a time or both."))
+  assert problem(rep(segment("", "20001", "")))
+    == Error(#(
+      "set1_work_distance",
+      "The distance of a rep can be at most 20000 m.",
+    ))
+  assert problem(rep(segment("", "", "1:75")))
+    == Error(#(
+      "set1_work_time",
+      "Enter the time in seconds (90) or as minutes and seconds (1:30).",
+    ))
+  assert problem(recovery(segment("", "", "61:00")))
+    == Error(#(
+      "set1_recovery_time",
+      "The time of a recovery can be at most 60 minutes.",
+    ))
+  assert problem(rep(segment("4", "", "")))
+    == Error(#(
+      "set1_work_distance",
+      "Give each rep a distance, a time or both.",
+    ))
+  assert problem(recovery(segment("1", "", "")))
+    == Error(#(
+      "set1_recovery_distance",
+      "Give the recovery a distance, a time or both.",
+    ))
+  assert problem(Form(..intervals_form(), warmup: segment("", "51", "")))
+    == Error(#("warmup_distance", "The warm-up can be at most 50 km."))
+  assert problem(Form(..intervals_form(), cooldown: segment("", "", "5:01")))
+    == Error(#("cooldown_time", "The cool-down can be at most 5 hours."))
 }
 
 pub fn rep_times_are_seconds_or_minutes_and_seconds_test() {
@@ -398,63 +462,98 @@ pub fn rep_times_are_seconds_or_minutes_and_seconds_test() {
   assert workout_form.format_rep_time(3600) == "1:00"
 }
 
-pub fn the_repetitions_are_summed_up_in_words_test() {
-  assert workout_form.intervals_summary(plan.Intervals(6, 800.0, 0, 90))
+pub fn the_parts_are_summed_up_in_words_test() {
+  let one = fn(set) { plan.Intervals(plan.no_segment, [set], plan.no_segment) }
+  assert workout_form.intervals_summary(
+      one(plan.Set(6, work(0, 800.0, 0), work(0, 0.0, 90))),
+    )
     == "6 × 800 m, 1:30 recovery"
-  assert workout_form.intervals_summary(plan.Intervals(5, 0.0, 180, 0))
+  assert workout_form.intervals_summary(
+      one(plan.Set(5, work(0, 0.0, 180), plan.no_segment)),
+    )
     == "5 × 3:00"
-  assert workout_form.intervals_summary(plan.Intervals(10, 400.0, 75, 60))
-    == "10 × 400 m in 1:15, 1:00 recovery"
-  assert workout_form.intervals_summary(plan.Intervals(3, 2000.0, 0, 0))
-    == "3 × 2 km"
+  assert workout_form.intervals_summary(
+      one(plan.Set(10, work(5, 400.0, 75), work(1, 200.0, 60))),
+    )
+    == "10 × 400 m in 1:15 (Zone 5), 200 m in 1:00 recovery (Zone 1)"
+  assert workout_form.intervals_summary(plan.Intervals(
+      work(1, 2000.0, 0),
+      [
+        plan.Set(3, work(0, 2000.0, 0), plan.no_segment),
+        plan.Set(4, work(0, 400.0, 0), plan.no_segment),
+      ],
+      work(0, 0.0, 600),
+    ))
+    == "2 km warm-up (Zone 1) · 3 × 2 km · 4 × 400 m · 10:00 cool-down"
 }
 
-pub fn repetitions_are_written_to_steps_and_read_back_into_the_form_test() {
-  let assert Ok(valid) = workout_form.validate(intervals_form())
+pub fn the_parts_are_written_to_steps_and_read_back_into_the_form_test() {
+  let full =
+    Form(
+      ..intervals_form(),
+      warmup: segment("1", "2", "15"),
+      cooldown: segment("", "1.5", ""),
+    )
+  let assert Ok(valid) = workout_form.validate(full)
   let fields = workout_form.create_fields("p1", 0, valid)
   assert dict.get(fields, "steps")
     == Ok(
-      "{\"v\":1,\"reps\":6,\"work\":{\"distance_m\":800,\"duration_s\":170},\"recovery\":{\"duration_s\":90}}",
+      "{\"v\":2,\"warmup\":{\"zone\":1,\"distance_m\":2000,\"duration_s\":900},\"sets\":[{\"reps\":6,\"work\":{\"zone\":4,\"distance_m\":800,\"duration_s\":170},\"recovery\":{\"duration_s\":90}}],\"cooldown\":{\"distance_m\":1500}}",
     )
   let stored =
     Row(
       Workout("w1", "p1", 0, 0, "Track", plan.Interval, None, None),
       "",
       valid.intervals,
-      0,
+      4,
       "T",
     )
   assert workout_form.from_row(stored)
-    == Form(
-      ..intervals_form(),
-      title: "Track",
-      rep_time: "2:50",
-      recovery: "1:30",
-    )
+    == Form(..full, title: "Track", zone: "4", sets: [
+      workout_form.SetForm(
+        "6",
+        segment("4", "800", "2:50"),
+        segment("", "", "1:30"),
+      ),
+    ])
   assert workout_form.steps_field(None) == outbox.field_null("steps")
 }
 
-pub fn an_edit_sends_steps_only_when_the_repetitions_changed_test() {
+pub fn an_edit_sends_steps_only_when_the_parts_changed_test() {
   let assert Ok(valid) = workout_form.validate(intervals_form())
   let stored =
     Row(
       Workout("w1", "p1", 0, 0, "Easy run", plan.Interval, None, None),
       "",
       valid.intervals,
-      0,
+      4,
       "T",
     )
   assert workout_form.changed_fields(stored, valid, 0) == dict.new()
   let assert Ok(fewer) =
-    workout_form.validate(Form(..intervals_form(), reps: "5"))
+    workout_form.validate(
+      with_set(fn(set) { workout_form.SetForm(..set, reps: "5") }),
+    )
   assert dict.keys(workout_form.changed_fields(stored, fewer, 0)) == ["steps"]
   let assert Ok(tempo) =
-    workout_form.validate(Form(..intervals_form(), kind: plan.Run))
+    workout_form.validate(Form(..intervals_form(), kind: plan.Run, zone: "4"))
   assert workout_form.changed_fields(stored, tempo, 0)
     == dict.from_list([
       outbox.field_string("kind", "run"),
       outbox.field_null("steps"),
     ])
+}
+
+pub fn sets_are_added_as_copies_and_removed_test() {
+  let f = workout_form.add_set(intervals_form())
+  let assert [first, second] = f.sets
+  assert first == second
+  let f = workout_form.type_reps(f, 1, "3")
+  let assert [_, second] = f.sets
+  assert second.reps == "3"
+  let f = workout_form.remove_set(f, 0)
+  assert f.sets == [second]
+  assert workout_form.remove_set(f, 0).sets == [workout_form.blank_set]
 }
 
 pub fn a_zone_is_chosen_stored_and_typed_back_test() {
@@ -549,32 +648,128 @@ pub fn nothing_is_worked_out_without_a_zone_or_before_anything_is_typed_test() {
 
 pub fn a_rep_is_worked_out_in_seconds_and_tens_of_metres_test() {
   let f =
-    Form(..form(), kind: plan.Interval, zone: "4")
-    |> workout_form.type_rep_distance("800", zones())
+    Form(..form(), kind: plan.Interval)
+    |> workout_form.edit_segment(
+      workout_form.Work(0),
+      workout_form.ZoneField,
+      "4",
+      zones(),
+    )
+    |> workout_form.edit_segment(
+      workout_form.Work(0),
+      workout_form.DistanceField,
+      "800",
+      zones(),
+    )
   // 800 m at 308 s/km is 246.4 s.
-  assert f.rep_time == "4:06"
-  let f = workout_form.type_rep_time(f, "90", zones())
+  assert workout_form.segment(f, workout_form.Work(0)).time == "4:06"
+  let f =
+    workout_form.edit_segment(
+      f,
+      workout_form.Work(0),
+      workout_form.TimeField,
+      "90",
+      zones(),
+    )
   // 90 s at 308 s/km is 292 m.
-  assert f.rep_distance == "290"
-  assert f.rep_time == "90"
+  assert workout_form.segment(f, workout_form.Work(0))
+    == workout_form.SegmentForm("4", "290", "90", workout_form.TimeTyped)
 }
 
-pub fn the_reps_zone_leaves_the_workouts_own_targets_as_typed_test() {
+pub fn each_part_is_worked_out_at_its_own_zone_test() {
+  // A recovery at zone 2: 90 s at 365 s/km is 247 m.
+  let f =
+    Form(..form(), kind: plan.Interval)
+    |> workout_form.edit_segment(
+      workout_form.Recovery(0),
+      workout_form.TimeField,
+      "90",
+      zones(),
+    )
+    |> workout_form.edit_segment(
+      workout_form.Recovery(0),
+      workout_form.ZoneField,
+      "2",
+      zones(),
+    )
+  assert workout_form.segment(f, workout_form.Recovery(0)).distance == "250"
+  // A warm-up to the minute and 100 m, like a workout: 2 km at 6:05 is 12:10.
+  let f =
+    workout_form.edit_segment(
+      f,
+      workout_form.Warmup,
+      workout_form.ZoneField,
+      "2",
+      zones(),
+    )
+    |> workout_form.edit_segment(
+      workout_form.Warmup,
+      workout_form.DistanceField,
+      "2",
+      zones(),
+    )
+  assert workout_form.segment(f, workout_form.Warmup).time == "12"
+  let f =
+    workout_form.edit_segment(
+      f,
+      workout_form.Cooldown,
+      workout_form.ZoneField,
+      "2",
+      zones(),
+    )
+    |> workout_form.edit_segment(
+      workout_form.Cooldown,
+      workout_form.TimeField,
+      "10",
+      zones(),
+    )
+  assert workout_form.segment(f, workout_form.Cooldown).distance == "1.6"
+}
+
+pub fn an_interval_workouts_own_targets_stay_as_typed_test() {
   let f =
     Form(..form(), kind: plan.Interval, zone: "4")
     |> workout_form.type_distance("10", zones())
   assert f.duration == ""
 }
 
-pub fn interval_totals_add_up_the_reps_and_the_recoveries_between_them_test() {
+pub fn interval_totals_add_up_every_part_test() {
   assert workout_form.interval_totals(intervals_form())
     == #(Some(4800.0), Some(6 * 170 + 5 * 90))
-  assert workout_form.interval_totals(Form(..intervals_form(), rep_time: ""))
-    == #(Some(4800.0), None)
-  assert workout_form.interval_totals(Form(..intervals_form(), recovery: ""))
-    == #(Some(4800.0), Some(6 * 170))
-  assert workout_form.interval_totals(Form(..intervals_form(), reps: "x"))
+  assert workout_form.interval_totals(
+      with_set(fn(set) {
+        workout_form.SetForm(..set, work: segment("", "800", ""))
+      }),
+    )
+    == #(Some(4800.0), Some(5 * 90))
+  assert workout_form.interval_totals(
+      with_set(fn(set) { workout_form.SetForm(..set, reps: "x") }),
+    )
     == #(None, None)
+  // A warm-up, two sets with a recovery after every rep but the last, and a cool-down.
+  let full =
+    Form(
+      ..intervals_form(),
+      warmup: segment("", "2", "12"),
+      sets: [
+        workout_form.SetForm(
+          "3",
+          segment("", "1000", "4:00"),
+          segment("", "200", "1:00"),
+        ),
+        workout_form.SetForm(
+          "2",
+          segment("", "400", "1:30"),
+          segment("", "200", "1:00"),
+        ),
+      ],
+      cooldown: segment("", "1", "6"),
+    )
+  assert workout_form.interval_totals(full)
+    == #(
+      Some(2000.0 +. 3000.0 +. 600.0 +. 800.0 +. 200.0 +. 1000.0),
+      Some(720 + 720 + 180 + 180 + 60 + 360),
+    )
 }
 
 pub fn a_day_before_the_plan_starts_cannot_be_chosen_test() {
