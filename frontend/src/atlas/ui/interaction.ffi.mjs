@@ -3,7 +3,15 @@
 // sets attributes, CSS variables and focus and calls the dialogs' own methods; it never adds or removes nodes, so
 // Lustre's view of the DOM stays right.
 
-const rippling = ".md-button, .md-fab, .md-icon-button, .choice-label, .link-list a, .tabs a .nav-indicator"
+const rippling = ".md-button, .md-fab, .md-icon-button, .choice-label, .link-list a, .md-menu-item, .tabs a .nav-indicator"
+
+/** Whether a click on a dialog fell outside its box, on the backdrop. A click on the dialog's own padding also has
+ * the dialog as its target, so the target alone does not tell (ADR 0124). */
+export function clickedOutside(dialog, event) {
+  if (event.target !== dialog) return false
+  const box = dialog.getBoundingClientRect()
+  return event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom
+}
 
 export function install() {
   if (typeof document === "undefined" || document.documentElement.dataset.interaction) return
@@ -60,7 +68,7 @@ export function install() {
         // so nothing typed is lost (ADR 0057).
         if (!dialog.classList.contains("form-dialog") && !dialog.dataset.lightDismiss) {
           dialog.dataset.lightDismiss = "on"
-          dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close() })
+          dialog.addEventListener("click", (event) => { if (clickedOutside(dialog, event)) dialog.close() })
         }
         dialog.showModal()
       }

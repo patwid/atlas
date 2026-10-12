@@ -30,7 +30,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0024 | [Coach access: grants with names, and the Coaches screen](0024-coach-grants-screen.md) | Accepted |
 | 0025 | [Entering activities by hand](0025-manual-activities.md) | Accepted |
 | 0026 | [The Today screen and stored matches](0026-today-screen.md) | Accepted |
-| 0027 | [The Strava section in Settings](0027-strava-screen.md) | Accepted |
+| 0027 | [The Strava section in Settings](0027-strava-screen.md) | Accepted (View on Strava's colour changed by 0124) |
 | 0028 | [Copying a plan](0028-copy-a-plan.md) | Accepted (steps copied since 0104) |
 | 0029 | [Sharing a plan with named people](0029-sharing-plans.md) | Superseded by 0110 |
 | 0030 | [The membership sweep: access that is taken away reaches the device](0030-membership-sweep.md) | Accepted |
@@ -51,7 +51,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0045 | [Use Material Design 3's baseline colors only](0045-material-baseline-colors.md) | Accepted (intensity changed by 0061, phase bands by 0063) |
 | 0046 | [Name buttons after Material Design 3 and drop the danger button](0046-material-button-names.md) | Accepted |
 | 0047 | [Use more Material Design 3 components](0047-more-material-components.md) | Accepted |
-| 0048 | [Material back button, progress indicators and status chips](0048-material-navigation-progress-status.md) | Accepted |
+| 0048 | [Material back button, progress indicators and status chips](0048-material-navigation-progress-status.md) | Accepted (status chips changed by 0124) |
 | 0049 | [Settings as a list of pages, and banners for offline and sync problems](0049-settings-list-and-banners.md) | Accepted (partly changed by 0055) |
 | 0050 | [Badges with icons, empty states and icons in buttons](0050-chips-empty-states-button-icons.md) | Accepted |
 | 0051 | [Material slider and progress, a phone layout for the athlete table, calendar cards, ripple and motion](0051-material-slider-progress-motion.md) | Accepted |
@@ -126,3 +126,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0121 | [An activity has a workout's kind and fields](0121-activity-kind-and-fields-of-a-workout.md) | Accepted |
 | 0122 | [Export a workout to a watch as a FIT workout file, written in Gleam](0122-export-a-workout-as-a-fit-workout-file.md) | Accepted |
 | 0123 | [List Coming up from tomorrow on, and fix the last seven days' order](0123-coming-up-nearest-day-first.md) | Accepted |
+| 0124 | [Material review, second round: bugs, consistency and accessibility](0124-material-review-accessibility-and-consistency.md) | Accepted |

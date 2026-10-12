@@ -84,7 +84,7 @@ test("a form dialog opens and closes with its data-open attribute", async () => 
   assert.ok(dialog.hasAttribute("open"), "opened again")
 })
 
-test("a basic dialog closes on a click outside it; a form dialog does not", async () => {
+test("a basic dialog closes on a click outside it, not on its own padding; a form dialog does not", async () => {
   const basic = d.createElement("dialog")
   basic.dataset.open = "true"
   const form = d.createElement("dialog")
@@ -92,8 +92,14 @@ test("a basic dialog closes on a click outside it; a form dialog does not", asyn
   form.dataset.open = "true"
   d.body.append(basic, form)
   await new Promise((resolve) => setTimeout(resolve, 0))
-  basic.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }))
-  form.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }))
+  // jsdom lays nothing out, so the dialogs get a box: a click on the dialog inside it is a click on its padding.
+  const box = { left: 100, right: 400, top: 100, bottom: 300 }
+  basic.getBoundingClientRect = form.getBoundingClientRect = () => box
+  const click = (el, x, y) => el.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true, clientX: x, clientY: y }))
+  click(basic, 110, 110)
+  assert.ok(basic.hasAttribute("open"), "a click on the padding leaves it open")
+  click(basic, 20, 20)
+  click(form, 20, 20)
   assert.ok(!basic.hasAttribute("open"), "the basic dialog closed")
   assert.ok(form.hasAttribute("open"), "the form dialog stays")
 })
