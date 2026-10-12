@@ -166,23 +166,31 @@ pub fn a_workout_row_reads_the_parts_of_its_steps_test() {
       "{\"v\":1,\"reps\":6,\"work\":{\"distance_m\":800,\"duration_s\":170},\"recovery\":{\"duration_s\":90}}",
     )
   assert row.intervals
-    == one(plan.Set(6, plan.Segment(4, 800.0, 170), plan.Segment(0, 0.0, 90)))
+    == one(plan.Set(
+      6,
+      plan.Segment(4, 800.0, 170, None),
+      plan.Segment(0, 0.0, 90, None),
+    ))
   let assert Ok(row) =
     with("{\"v\":1,\"reps\":10,\"work\":{\"duration_s\":60}}")
   assert row.intervals
-    == one(plan.Set(10, plan.Segment(4, 0.0, 60), plan.no_segment))
+    == one(plan.Set(10, plan.Segment(4, 0.0, 60, None), plan.no_segment))
   let assert Ok(row) =
     with(
       "{\"v\":2,\"warmup\":{\"zone\":1,\"duration_s\":900},\"sets\":[{\"reps\":6,\"work\":{\"zone\":5,\"distance_m\":400},\"recovery\":{\"zone\":1,\"distance_m\":200,\"duration_s\":90}},{\"reps\":2,\"work\":{\"duration_s\":300}}],\"cooldown\":{\"distance_m\":1000}}",
     )
   assert row.intervals
     == Some(plan.Intervals(
-      plan.Segment(1, 0.0, 900),
+      plan.Segment(1, 0.0, 900, None),
       [
-        plan.Set(6, plan.Segment(5, 400.0, 0), plan.Segment(1, 200.0, 90)),
-        plan.Set(2, plan.Segment(0, 0.0, 300), plan.no_segment),
+        plan.Set(
+          6,
+          plan.Segment(5, 400.0, 0, None),
+          plan.Segment(1, 200.0, 90, None),
+        ),
+        plan.Set(2, plan.Segment(0, 0.0, 300, None), plan.no_segment),
       ],
-      plan.Segment(0, 1000.0, 0),
+      plan.Segment(0, 1000.0, 0, None),
     ))
   // No steps, or steps this client cannot read: the workout still reads, without its parts.
   let assert Ok(row) = with("null")
@@ -295,4 +303,27 @@ pub fn an_activity_row_carries_the_providers_id_test() {
       "{\"id\":\"x2\",\"source\":\"manual\",\"started_at\":\"2026-10-01 05:30:00.000Z\",\"sport\":\"run\"}",
     ))
   assert bare.external_id == ""
+}
+
+pub fn a_workout_row_reads_a_reps_race_goal_test() {
+  let with = fn(goal) {
+    let assert Ok(row) =
+      records.workout_row(parse(
+        "{\"id\":\"w1\",\"plan\":\"p1\",\"title\":\"Track\",\"kind\":\"interval\",\"steps\":{\"v\":2,\"sets\":[{\"reps\":6,\"work\":{\"distance_m\":400,\"goal\":"
+        <> goal
+        <> "}}]}}",
+      ))
+    let assert Some(plan.Intervals(sets: [set], ..)) = row.intervals
+    set.work.goal
+  }
+  assert with(
+      "{\"id\":\"g1\",\"distance_m\":10000,\"time_s\":2400,\"intensity\":95}",
+    )
+    == Some(plan.GoalPace("g1", 10_000.0, 2400, 95))
+  // One that cannot give a pace is left out; the rep still reads.
+  assert with(
+      "{\"id\":\"g1\",\"distance_m\":10000,\"time_s\":2400,\"intensity\":0}",
+    )
+    == None
+  assert with("\"g1\"") == None
 }

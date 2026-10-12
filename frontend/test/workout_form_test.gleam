@@ -21,6 +21,7 @@ fn form() -> workout_form.Form {
     "",
     NeitherTyped,
     0,
+    [],
     None,
   )
 }
@@ -143,6 +144,7 @@ pub fn the_week_is_checked_first_so_one_mistake_gives_one_message_test() {
       "",
       NeitherTyped,
       0,
+      [],
       None,
     ))
     == Error("Enter the week as a number.")
@@ -174,6 +176,7 @@ pub fn editing_starts_from_the_stored_workout_test() {
       "",
       NeitherTyped,
       0,
+      [],
       None,
     )
   let no_targets =
@@ -199,6 +202,7 @@ pub fn editing_starts_from_the_stored_workout_test() {
       "",
       NeitherTyped,
       0,
+      [],
       None,
     )
 }
@@ -278,6 +282,7 @@ pub fn a_problem_names_its_field_test() {
       "",
       NeitherTyped,
       0,
+      [],
       None,
     ))
   assert workout_form.error_field(workout_form.Form(
@@ -294,6 +299,7 @@ pub fn a_problem_names_its_field_test() {
       "",
       NeitherTyped,
       0,
+      [],
       None,
     ))
     == "distance"
@@ -311,13 +317,14 @@ pub fn a_problem_names_its_field_test() {
       "",
       NeitherTyped,
       0,
+      [],
       None,
     ))
     == ""
 }
 
 fn segment(zone: String, distance: String, time: String) {
-  workout_form.SegmentForm(zone, distance, time, NeitherTyped)
+  workout_form.SegmentForm(zone, distance, time, NeitherTyped, "", "")
 }
 
 fn intervals_form() -> workout_form.Form {
@@ -336,7 +343,7 @@ fn with_set(change: fn(workout_form.SetForm) -> workout_form.SetForm) {
 }
 
 fn work(zone: Int, distance: Float, time: Int) -> plan.Segment {
-  plan.Segment(zone, distance, time)
+  plan.Segment(zone, distance, time, None)
 }
 
 pub fn an_interval_workout_carries_its_parts_test() {
@@ -682,7 +689,14 @@ pub fn a_rep_is_worked_out_in_seconds_and_tens_of_metres_test() {
     )
   // 90 s at 308 s/km is 292 m.
   assert workout_form.segment(f, workout_form.Work(0))
-    == workout_form.SegmentForm("4", "290", "90", workout_form.TimeTyped)
+    == workout_form.SegmentForm(
+      "4",
+      "290",
+      "90",
+      workout_form.TimeTyped,
+      "",
+      "",
+    )
 }
 
 pub fn each_part_is_worked_out_at_its_own_zone_test() {
@@ -792,4 +806,120 @@ pub fn a_day_before_the_plan_starts_cannot_be_chosen_test() {
   let assert Ok(valid) =
     workout_form.validate(Form(..starts_wednesday, week: "2", day: "1"))
   assert valid.day_index == 7
+}
+
+// A REP AT A RACE GOAL (ADR 0118) -----------------------------------------------------------------
+
+/// 10 km in 40:00: 4:00 /km.
+fn ten_k() -> workout_form.RaceGoal {
+  workout_form.RaceGoal("g1", 10_000.0, 2400)
+}
+
+fn with_goal(form: workout_form.Form) -> workout_form.Form {
+  Form(..form, goals: [ten_k()])
+}
+
+fn rep(
+  form: workout_form.Form,
+  field: workout_form.SegmentField,
+  text: String,
+) {
+  workout_form.edit_segment(form, workout_form.Work(0), field, text, zones())
+}
+
+pub fn a_goal_is_run_at_a_share_of_its_speed_test() {
+  assert workout_form.goal_pace(ten_k(), 100) == Ok(240)
+  // 240 s/km at 90 % of the speed is 266.7 s/km.
+  assert workout_form.goal_pace(ten_k(), 90) == Ok(267)
+  assert workout_form.goal_pace(ten_k(), 0) == Error(Nil)
+  assert workout_form.goal_label(ten_k()) == "10 km in 40:00"
+}
+
+pub fn a_rep_at_a_race_goal_is_worked_out_from_its_pace_test() {
+  let f =
+    with_goal(Form(..form(), kind: plan.Interval))
+    |> rep(workout_form.ZoneField, "4")
+    |> rep(workout_form.GoalField, "g1")
+    |> rep(workout_form.DistanceField, "400")
+  let segment = workout_form.segment(f, workout_form.Work(0))
+  // Choosing a goal clears the zone and starts at 100 %: 400 m at 4:00 /km is 1:36.
+  assert segment.zone == ""
+  assert segment.intensity == "100"
+  assert segment.time == "1:36"
+  // At 80 %, 300 s/km: 2:00.
+  let f = rep(f, workout_form.IntensityField, "80")
+  assert workout_form.segment(f, workout_form.Work(0)).time == "2:00"
+  // A time gives the distance: 90 s at 300 s/km is 300 m.
+  let f = rep(f, workout_form.TimeField, "90")
+  assert workout_form.segment(f, workout_form.Work(0)).distance == "300"
+  // A zone takes the goal's place.
+  let f = rep(f, workout_form.ZoneField, "4")
+  let segment = workout_form.segment(f, workout_form.Work(0))
+  assert segment.goal == ""
+  assert segment.intensity == ""
+  assert segment.distance == "290"
+}
+
+pub fn a_rep_at_a_race_goal_is_saved_with_the_goal_test() {
+  let f =
+    with_goal(intervals_form())
+    |> rep(workout_form.GoalField, "g1")
+    |> rep(workout_form.IntensityField, "95")
+  let assert Ok(valid) = workout_form.validate(f)
+  let assert Some(plan.Intervals(sets: [set], ..)) = valid.intervals
+  assert set.work
+    == plan.Segment(
+      0,
+      800.0,
+      170,
+      Some(plan.GoalPace("g1", 10_000.0, 2400, 95)),
+    )
+  assert workout_form.steps_field(valid.intervals)
+    == #(
+      "steps",
+      "{\"v\":2,\"sets\":[{\"reps\":6,\"work\":{\"distance_m\":800,\"duration_s\":170,\"goal\":{\"id\":\"g1\",\"distance_m\":10000,\"time_s\":2400,\"intensity\":95}},\"recovery\":{\"duration_s\":90}}]}",
+    )
+  let assert Some(intervals) = valid.intervals
+  assert workout_form.intervals_summary(intervals)
+    == "6 × 800 m in 2:50 (95 % of 10 km pace), 1:30 recovery"
+}
+
+pub fn a_race_goal_needs_an_intensity_from_1_to_100_test() {
+  let f = with_goal(intervals_form()) |> rep(workout_form.GoalField, "g1")
+  let with = fn(text) {
+    workout_form.validate_fields(rep(f, workout_form.IntensityField, text))
+  }
+  let message = "Enter the intensity as a whole number from 1 to 100."
+  assert with("0") == Error(#("set1_work_intensity", message))
+  assert with("101") == Error(#("set1_work_intensity", message))
+  assert with("") == Error(#("set1_work_intensity", message))
+  let assert Ok(_) = with("1")
+  // A goal that is not among the form's.
+  assert workout_form.validate_fields(Form(..f, goals: []))
+    == Error(#("set1_work_goal", "Choose a race goal."))
+}
+
+pub fn a_rep_keeps_a_goal_that_is_gone_and_reads_a_changed_one_anew_test() {
+  let goal = Some(plan.GoalPace("g1", 10_000.0, 2400, 90))
+  let stored =
+    Row(
+      Workout("w1", "p1", 0, 0, "Track", plan.Interval, None, None),
+      "",
+      Some(plan.Intervals(
+        plan.no_segment,
+        [plan.Set(5, plan.Segment(0, 1000.0, 267, goal), plan.no_segment)],
+        plan.no_segment,
+      )),
+      0,
+      "T",
+    )
+  let f = workout_form.from_row(stored)
+  assert workout_form.segment(f, workout_form.Work(0)).goal == "g1"
+  assert workout_form.segment(f, workout_form.Work(0)).intensity == "90"
+  // Deleted since: kept as it was saved.
+  assert workout_form.with_goals(f, []).goals == [ten_k()]
+  // Changed since: read as it is now.
+  let faster = workout_form.RaceGoal("g1", 10_000.0, 2280)
+  let other = workout_form.RaceGoal("g2", 5000.0, 1200)
+  assert workout_form.with_goals(f, [faster, other]).goals == [faster, other]
 }

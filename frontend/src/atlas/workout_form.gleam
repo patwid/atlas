@@ -4,8 +4,10 @@
 import atlas/outbox
 import atlas/pace_zones.{type PaceZones}
 import atlas/plan.{
-  type Intervals, type Kind, type Segment, type Workout, Intervals,
+  type GoalPace, type Intervals, type Kind, type Segment, type Workout, GoalPace,
+  Intervals,
 }
+import atlas/units
 import gleam/dict
 import gleam/float
 import gleam/int
@@ -61,18 +63,34 @@ pub type Form {
     target_typed: Typed,
     /// The plan's first day: days of week 1 before it cannot be chosen (ADR 0108).
     first_day: Int,
+    /// The race goals a rep can be run at (ADR 0118): the plan's athlete's, and any a rep was saved with that are
+    /// no longer among them.
+    goals: List(RaceGoal),
     error: Option(String),
   )
 }
 
-/// A warm-up, a cool-down, or a rep or recovery of a set, as typed (ADR 0116). A warm-up's and a cool-down's
-/// distance is in kilometres and its time in minutes, like the workout's; a rep's and a recovery's in metres and
-/// seconds (`90`, `1:30`).
-pub type SegmentForm {
-  SegmentForm(zone: String, distance: String, time: String, typed: Typed)
+/// A race goal a rep can be run at a share of (ADR 0115, 0118).
+pub type RaceGoal {
+  RaceGoal(id: String, distance_m: Float, time_s: Int)
 }
 
-pub const blank_segment = SegmentForm("", "", "", NeitherTyped)
+/// A warm-up, a cool-down, or a rep or recovery of a set, as typed (ADR 0116). A warm-up's and a cool-down's
+/// distance is in kilometres and its time in minutes, like the workout's; a rep's and a recovery's in metres and
+/// seconds (`90`, `1:30`). A rep can be run at an intensity of a race goal instead of a zone: `goal` is its ID, `""`
+/// for none, and `intensity` the percentage of its speed (ADR 0118).
+pub type SegmentForm {
+  SegmentForm(
+    zone: String,
+    distance: String,
+    time: String,
+    typed: Typed,
+    goal: String,
+    intensity: String,
+  )
+}
+
+pub const blank_segment = SegmentForm("", "", "", NeitherTyped, "", "")
 
 pub type SetForm {
   SetForm(reps: String, work: SegmentForm, recovery: SegmentForm)
@@ -92,6 +110,8 @@ pub type SegmentField {
   ZoneField
   DistanceField
   TimeField
+  GoalField
+  IntensityField
 }
 
 /// Which of a distance and a time the user typed last (ADR 0106).
@@ -144,6 +164,7 @@ pub fn empty_for(week: Int, day: Int) -> Form {
     "",
     NeitherTyped,
     0,
+    [],
     None,
   )
 }
@@ -189,8 +210,34 @@ pub fn from_row(row: Row) -> Form {
     },
     target_typed: NeitherTyped,
     first_day: 0,
+    goals: case row.intervals {
+      Some(i) ->
+        list.filter_map(i.sets, fn(set) {
+          case set.work.goal {
+            Some(g) -> Ok(RaceGoal(g.goal_id, g.distance_m, g.time_s))
+            None -> Error(Nil)
+          }
+        })
+        |> list.unique
+      None -> []
+    },
     error: None,
   )
+}
+
+/// The form with the race goals its reps can be run at (ADR 0118): `goals`, then those a rep was saved with that
+/// are not among them, so a changed goal is read as it is now and a deleted one can still be kept.
+pub fn with_goals(form: Form, goals: List(RaceGoal)) -> Form {
+  let gone =
+    list.filter(form.goals, fn(kept) {
+      !list.any(goals, fn(goal) { goal.id == kept.id })
+    })
+  Form(..form, goals: list.append(goals, gone))
+}
+
+/// `10 km in 45:00`
+pub fn goal_label(goal: RaceGoal) -> String {
+  format_km(goal.distance_m) <> " km in " <> units.format_duration(goal.time_s)
 }
 
 fn segment_form(segment: Segment, part: Part) -> SegmentForm {
@@ -210,6 +257,14 @@ fn segment_form(segment: Segment, part: Part) -> SegmentForm {
       True, False -> format_rep_time(segment.duration_s)
     },
     typed: NeitherTyped,
+    goal: case segment.goal {
+      Some(g) -> g.goal_id
+      None -> ""
+    },
+    intensity: case segment.goal {
+      Some(g) -> int.to_string(g.intensity)
+      None -> ""
+    },
   )
 }
 
@@ -240,7 +295,9 @@ fn set_at(form: Form, index: Int) -> SetForm {
   }
 }
 
-/// A zone, distance or time of a part was typed: the other of its distance and time is worked out from its zone.
+/// A zone, race goal, intensity, distance or time of a part was typed: the other of its distance and time is worked
+/// out from its zone, or from its race goal at its intensity (ADR 0118). A zone and a race goal exclude each other:
+/// choosing one clears the other, and a race goal starts at 100 %.
 pub fn edit_segment(
   form: Form,
   part: Part,
@@ -250,12 +307,26 @@ pub fn edit_segment(
 ) -> Form {
   let current = segment(form, part)
   let edited = case field {
-    ZoneField -> SegmentForm(..current, zone: text)
+    ZoneField if text == "" -> SegmentForm(..current, zone: text)
+    ZoneField -> SegmentForm(..current, zone: text, goal: "", intensity: "")
     DistanceField ->
       SegmentForm(..current, distance: text, typed: DistanceTyped)
     TimeField -> SegmentForm(..current, time: text, typed: TimeTyped)
+    GoalField if text == "" -> SegmentForm(..current, goal: "", intensity: "")
+    GoalField ->
+      SegmentForm(
+        ..current,
+        zone: "",
+        goal: text,
+        intensity: case string.trim(current.intensity) {
+          "" -> "100"
+          intensity -> intensity
+        },
+      )
+    IntensityField -> SegmentForm(..current, intensity: text)
   }
-  let filled = fill_segment(edited, is_long(part), zones)
+  let filled =
+    fill_segment(edited, is_long(part), segment_pace(edited, form.goals, zones))
   case part {
     Warmup -> Form(..form, warmup: filled)
     Cooldown -> Form(..form, cooldown: filled)
@@ -378,13 +449,54 @@ fn hundreds_at(seconds: Int, pace: Int) -> Float {
   int.to_float(int.max(float.round(m /. 100.0), 1) * 100)
 }
 
+/// The pace of a part in seconds per kilometre: that of its race goal at its intensity, else that of its zone.
+fn segment_pace(
+  form: SegmentForm,
+  goals: List(RaceGoal),
+  zones: PaceZones,
+) -> Result(Int, Nil) {
+  case string.trim(form.goal) {
+    "" -> pace_of(form.zone, zones)
+    id ->
+      case
+        list.find(goals, fn(goal) { goal.id == id }),
+        parse_intensity(form.intensity)
+      {
+        Ok(goal), Ok(intensity) -> goal_pace(goal, intensity)
+        _, _ -> Error(Nil)
+      }
+  }
+}
+
+/// A goal's pace at `intensity` percent of its speed (ADR 0118): 10 km in 40:00 is 4:00 /km, and 4:27 /km at 90 %.
+pub fn goal_pace(goal: RaceGoal, intensity: Int) -> Result(Int, Nil) {
+  case goal.distance_m >. 0.0 && goal.time_s > 0 && intensity > 0 {
+    True ->
+      Ok(float.round(
+        int.to_float(goal.time_s)
+        *. 1000.0
+        *. 100.0
+        /. { goal.distance_m *. int.to_float(intensity) },
+      ))
+    False -> Error(Nil)
+  }
+}
+
+/// A whole percentage from 1 to 100.
+fn parse_intensity(text: String) -> Result(Int, Nil) {
+  case int.parse(string.trim(string.replace(text, "%", ""))) {
+    Ok(n) if n >= 1 && n <= 100 -> Ok(n)
+    _ -> Error(Nil)
+  }
+}
+
 /// A warm-up or cool-down to the minute and 100 m, like a workout; a rep or recovery to the second and 10 m.
 fn fill_segment(
   form: SegmentForm,
   long: Bool,
-  zones: PaceZones,
+  pace: Result(Int, Nil),
 ) -> SegmentForm {
-  case pace_of(form.zone, zones), form.typed {
+  case pace, form.typed {
     Error(Nil), _ | _, NeitherTyped -> form
     Ok(pace), DistanceTyped ->
       case string.trim(form.distance), segment_distance(form.distance, long) {
@@ -573,16 +685,20 @@ pub fn zone_label(zone: Int) -> String {
 fn intervals(form: Form) -> Result(Option(Intervals), #(String, String)) {
   case form.kind {
     plan.Interval -> {
-      use warmup <- result.try(valid_segment(form.warmup, Warmup))
+      use warmup <- result.try(valid_segment(form.warmup, Warmup, form.goals))
       use sets <- result.try(
         form.sets
         |> list.index_map(fn(set, i) { #(set, i) })
         |> list.filter(fn(pair) { !is_blank_set(pair.0) })
-        |> list.try_map(fn(pair) { valid_set(pair.0, pair.1) }),
+        |> list.try_map(fn(pair) { valid_set(pair.0, pair.1, form.goals) }),
       )
-      use cooldown <- result.try(valid_segment(form.cooldown, Cooldown))
-      case warmup, sets, cooldown {
-        plan.Segment(0, 0.0, 0), [], plan.Segment(0, 0.0, 0) -> Ok(None)
+      use cooldown <- result.try(valid_segment(
+        form.cooldown,
+        Cooldown,
+        form.goals,
+      ))
+      case warmup == plan.no_segment, sets, cooldown == plan.no_segment {
+        True, [], True -> Ok(None)
         _, _, _ -> Ok(Some(Intervals(warmup, sets, cooldown)))
       }
     }
@@ -596,10 +712,14 @@ fn is_blank_set(set: SetForm) -> Bool {
 }
 
 fn segment_texts(segment: SegmentForm) -> List(String) {
-  [segment.zone, segment.distance, segment.time]
+  [segment.zone, segment.distance, segment.time, segment.goal]
 }
 
-fn valid_set(set: SetForm, index: Int) -> Result(plan.Set, #(String, String)) {
+fn valid_set(
+  set: SetForm,
+  index: Int,
+  goals: List(RaceGoal),
+) -> Result(plan.Set, #(String, String)) {
   let reps = string.trim(set.reps)
   let field = reps_field_name(index)
   case int.parse(reps) {
@@ -608,10 +728,14 @@ fn valid_set(set: SetForm, index: Int) -> Result(plan.Set, #(String, String)) {
     Ok(n) if n < 1 || n > max_reps ->
       Error(#(field, "The repetitions must be between 1 and 100."))
     Ok(n) -> {
-      use work <- result.try(valid_segment(set.work, Work(index)))
-      use recovery <- result.try(valid_segment(set.recovery, Recovery(index)))
+      use work <- result.try(valid_segment(set.work, Work(index), goals))
+      use recovery <- result.try(valid_segment(
+        set.recovery,
+        Recovery(index),
+        goals,
+      ))
       case work {
-        plan.Segment(_, 0.0, 0) ->
+        plan.Segment(_, 0.0, 0, _) ->
           Error(#(
             segment_field_name(Work(index), DistanceField),
             "Give each rep a distance, a time or both.",
@@ -626,6 +750,7 @@ fn valid_set(set: SetForm, index: Int) -> Result(plan.Set, #(String, String)) {
 fn valid_segment(
   form: SegmentForm,
   part: Part,
+  goals: List(RaceGoal),
 ) -> Result(Segment, #(String, String)) {
   let long = is_long(part)
   let zone = case string.trim(form.zone), int.parse(string.trim(form.zone)) {
@@ -633,6 +758,7 @@ fn valid_segment(
     _, Ok(n) if n >= 1 && n <= 5 -> Ok(n)
     _, _ -> Error("Choose a zone from 1 to 5.")
   }
+  use goal <- result.try(valid_goal(form, part, goals))
   case
     zone,
     segment_distance(form.distance, long)
@@ -649,14 +775,41 @@ fn valid_segment(
     Ok(zone), Ok(0.0), Ok(0) if zone > 0 ->
       case part {
         // A rep without a length is reported as such by `valid_set`.
-        Work(_) -> Ok(plan.Segment(zone, 0.0, 0))
+        Work(_) -> Ok(plan.Segment(zone, 0.0, 0, goal))
         _ ->
           Error(#(
             segment_field_name(part, DistanceField),
             "Give the " <> part_name(part) <> " a distance, a time or both.",
           ))
       }
-    Ok(zone), Ok(distance), Ok(time) -> Ok(plan.Segment(zone, distance, time))
+    Ok(zone), Ok(distance), Ok(time) ->
+      Ok(plan.Segment(zone, distance, time, goal))
+  }
+}
+
+/// A part's race goal and intensity (ADR 0118), with the goal's distance and time as they are now.
+fn valid_goal(
+  form: SegmentForm,
+  part: Part,
+  goals: List(RaceGoal),
+) -> Result(Option(GoalPace), #(String, String)) {
+  case string.trim(form.goal) {
+    "" -> Ok(None)
+    id ->
+      case
+        list.find(goals, fn(goal) { goal.id == id }),
+        parse_intensity(form.intensity)
+      {
+        Error(Nil), _ ->
+          Error(#(segment_field_name(part, GoalField), "Choose a race goal."))
+        _, Error(Nil) ->
+          Error(#(
+            segment_field_name(part, IntensityField),
+            "Enter the intensity as a whole number from 1 to 100.",
+          ))
+        Ok(goal), Ok(intensity) ->
+          Ok(Some(GoalPace(goal.id, goal.distance_m, goal.time_s, intensity)))
+      }
   }
 }
 
@@ -748,6 +901,8 @@ pub fn segment_field_name(part: Part, field: SegmentField) -> String {
     ZoneField -> "_zone"
     DistanceField -> "_distance"
     TimeField -> "_time"
+    GoalField -> "_goal"
+    IntensityField -> "_intensity"
   }
 }
 
@@ -782,7 +937,7 @@ pub fn intervals_summary(intervals: Intervals) -> String {
   let sets =
     list.map(intervals.sets, fn(set) {
       let recovery = case set.recovery {
-        plan.Segment(_, 0.0, 0) -> ""
+        plan.Segment(_, 0.0, 0, _) -> ""
         recovery -> ", " <> segment_summary(recovery, "recovery")
       }
       int.to_string(set.reps)
@@ -798,7 +953,8 @@ pub fn intervals_summary(intervals: Intervals) -> String {
   |> string.join(" · ")
 }
 
-/// `800 m in 2:50 (Zone 4)`, `15:00 warm-up`; `""` for a part without a distance or time.
+/// `800 m in 2:50 (Zone 4)`, `400 m in 1:12 (95 % of 10 km pace)`, `15:00 warm-up`; `""` for a part without a
+/// distance or time.
 fn segment_summary(segment: Segment, name: String) -> String {
   let distance = case segment.distance_m {
     m if m >=. 1000.0 -> format_km(m) <> " km"
@@ -811,12 +967,25 @@ fn segment_summary(segment: Segment, name: String) -> String {
     _, 0 -> distance
     _, s -> distance <> " in " <> format_rep_time(s)
   }
-  case length, name, segment.zone {
+  let target = case segment.goal, segment.zone {
+    Some(goal), _ -> goal_pace_label(goal)
+    None, zone -> zone_label(zone)
+  }
+  case length, name, target {
     "", _, _ -> ""
-    _, "", 0 -> length
-    _, _, 0 -> length <> " " <> name
-    _, "", zone -> length <> " (" <> zone_label(zone) <> ")"
-    _, _, zone -> length <> " " <> name <> " (" <> zone_label(zone) <> ")"
+    _, "", "" -> length
+    _, _, "" -> length <> " " <> name
+    _, "", target -> length <> " (" <> target <> ")"
+    _, _, target -> length <> " " <> name <> " (" <> target <> ")"
+  }
+}
+
+/// `10 km pace`, `95 % of 10 km pace`
+pub fn goal_pace_label(goal: GoalPace) -> String {
+  let pace = format_km(goal.distance_m) <> " km pace"
+  case goal.intensity {
+    100 -> pace
+    n -> int.to_string(n) <> " % of " <> pace
   }
 }
 
@@ -1005,6 +1174,21 @@ fn segment_json(segment: Segment) -> json.Json {
     #("zone", segment.zone > 0, json.int(segment.zone)),
     #("distance_m", segment.distance_m >. 0.0, json.float(segment.distance_m)),
     #("duration_s", segment.duration_s > 0, json.int(segment.duration_s)),
+    ..case segment.goal {
+      Some(goal) -> [
+        #(
+          "goal",
+          True,
+          json.object([
+            #("id", json.string(goal.goal_id)),
+            #("distance_m", json.float(goal.distance_m)),
+            #("time_s", json.int(goal.time_s)),
+            #("intensity", json.int(goal.intensity)),
+          ]),
+        ),
+      ]
+      None -> []
+    }
   ]
   |> list.filter(fn(part) { part.1 })
   |> list.map(fn(part) { #(part.0, part.2) })

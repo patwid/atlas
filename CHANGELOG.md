@@ -53,6 +53,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - The workout form fills in the duration from a typed distance, or the distance from a typed duration, at the pace of the target zone in your pace zones; for intervals, the time or distance of a rep. Interval workouts show a read-only total distance and time of their repetitions (ADR 0106).
 - Goals in Settings: any number of race goals, each a distance and the time to run it in, added, edited and deleted on their own page; synced as the new `goals` collection, readable by the athlete's coach (ADR 0115).
 - An interval workout has an optional warm-up and cool-down and any number of sets; each set's reps and recovery, the warm-up and the cool-down have their own zone, distance and time, worked out from one another at the zone's pace (ADR 0116).
+- An interval rep can be run at a race goal of the plan's athlete at an intensity from 1 to 100 % of its speed, instead of a zone; its distance or time is worked out from that pace (ADR 0118).
 
 ### Changed
 - A workout is a run, intervals, a race or a rest day: easy and long runs are one kind, "Run", and tempo runs, cross-training and strength are gone. Existing workouts of those kinds are runs now; rides, swims and strength sessions no longer match a workout (ADR 0114).

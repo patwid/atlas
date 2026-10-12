@@ -416,6 +416,7 @@ fn plan_screen(owner: String) -> atlas.Model {
         "",
         workout_form.NeitherTyped,
         0,
+        [],
         None,
       ),
     ),

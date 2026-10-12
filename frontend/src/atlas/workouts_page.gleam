@@ -148,13 +148,15 @@ fn workouts_of(model: Model, plan_id: String) -> List(Workout) {
   list.map(rows_of(model, plan_id), fn(row) { row.workout })
 }
 
-/// `on_screen` is the plan on screen. Changes are only made to it, and only when `can_edit`.
+/// `on_screen` is the plan on screen. Changes are only made to it, and only when `can_edit`. `goals` are the race goals
+/// of the plan's athlete, which a rep can be run at (ADR 0118).
 pub fn update(
   model: Model,
   msg: Msg,
   on_screen: Option(Plan),
   can_edit: Bool,
   zones: PaceZones,
+  goals: List(workout_form.RaceGoal),
 ) -> #(Model, Effect(Msg), List(Action)) {
   let plan_id = case on_screen {
     Some(p) -> p.id
@@ -212,7 +214,7 @@ pub fn update(
     WorkoutSelected(id) ->
       case can_edit, find(rows_of(model, plan_id), id) {
         True, Ok(_) ->
-          update(model, EditClicked(id), on_screen, can_edit, zones)
+          update(model, EditClicked(id), on_screen, can_edit, zones, goals)
         False, Ok(row) -> #(
           Model(..model, mode: Viewing(id), selected_week: week_of(row.workout)),
           effect.none(),
@@ -230,6 +232,7 @@ pub fn update(
             form: workout_form.Form(
               ..workout_form.empty_for(week, day),
               first_day: first_day,
+              goals: goals,
             ),
             selected_week: week,
           ),
@@ -246,9 +249,10 @@ pub fn update(
             ..model,
             mode: Editing(id),
             form: workout_form.Form(
-              ..workout_form.from_row(row),
-              first_day: first_day,
-            ),
+                ..workout_form.from_row(row),
+                first_day: first_day,
+              )
+              |> workout_form.with_goals(goals),
             selected_week: week_of(row.workout),
           ),
           focus.soon(form_title_id),
@@ -1329,6 +1333,7 @@ fn set_group(
       ),
     ]),
     segment_fields(form, workout_form.Work(index), "Rep ", on),
+    goal_fields(form, workout_form.Work(index), on),
     segment_fields(form, workout_form.Recovery(index), "Recovery ", on),
     case several {
       True ->
@@ -1412,6 +1417,59 @@ fn segment_fields(
       ],
     ),
   ])
+}
+
+/// A rep's race goal and intensity, instead of a zone (ADR 0118); only when the athlete has goals or the rep has one.
+fn goal_fields(
+  form: workout_form.Form,
+  part: workout_form.Part,
+  on: fn(field.Help, String) -> field.Help,
+) -> Element(Msg) {
+  let segment = workout_form.segment(form, part)
+  let name = workout_form.segment_field_name(part, _)
+  case form.goals, segment.goal {
+    [], "" -> element.none()
+    goals, goal ->
+      html.div([class("row")], [
+        field.choose(
+          field_id(name(workout_form.GoalField)),
+          "Rep race goal",
+          on(field.help("Instead of a zone"), name(workout_form.GoalField)),
+          [
+            attribute.name(name(workout_form.GoalField)),
+            event.on_change(SegmentChanged(part, workout_form.GoalField, _)),
+          ],
+          goal,
+          [
+            #("", "No race goal"),
+            ..list.map(goals, fn(g) { #(g.id, workout_form.goal_label(g)) })
+          ],
+        ),
+        case goal {
+          "" -> element.none()
+          _ ->
+            field.text(
+              field_id(name(workout_form.IntensityField)),
+              "Rep intensity",
+              on(
+                field.Help("100 is the goal's pace", "%", None),
+                name(workout_form.IntensityField),
+              ),
+              [
+                attribute.type_("text"),
+                attribute.attribute("inputmode", "numeric"),
+                attribute.name(name(workout_form.IntensityField)),
+                attribute.value(segment.intensity),
+                event.on_input(SegmentChanged(
+                  part,
+                  workout_form.IntensityField,
+                  _,
+                )),
+              ],
+            )
+        },
+      ])
+  }
 }
 
 /// All the parts together, worked out and read-only (ADR 0106, 0116). The fields have no name, so they are not

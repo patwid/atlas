@@ -3,6 +3,7 @@
 
 import atlas/activities_page
 import atlas/api
+import atlas/assignment_form
 import atlas/assignments
 import atlas/athlete_settings
 import atlas/athletes_page
@@ -39,6 +40,7 @@ import atlas/ui/interaction
 import atlas/ui/layout
 import atlas/ui/progress
 import atlas/ui/snackbar
+import atlas/workout_form
 import atlas/workouts_page
 import atlas/zones_page
 import gleam/int
@@ -416,6 +418,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               on_screen,
               can_edit,
               zones_page.current(model.zones, session.user_id).pace,
+              race_goals(model, on_screen),
             )
           let #(state, action_effects) =
             perform_workouts(model.syncing, actions)
@@ -591,6 +594,24 @@ fn plan_on_screen(
         Error(Nil) -> #(None, False)
       }
     _ -> #(None, False)
+  }
+}
+
+/// The race goals of the athlete a plan is for, which its reps can be run at (ADR 0118).
+fn race_goals(
+  model: Model,
+  on_screen: option.Option(plan.Plan),
+) -> List(workout_form.RaceGoal) {
+  case on_screen {
+    Some(p) -> {
+      let athlete = case assignment_form.of_plan(model.assignments.rows, p.id) {
+        Some(row) -> row.assignment.athlete_id
+        None -> p.owner_id
+      }
+      goal.of(model.goals.goals, athlete)
+      |> list.map(fn(g) { workout_form.RaceGoal(g.id, g.distance_m, g.time_s) })
+    }
+    None -> []
   }
 }
 

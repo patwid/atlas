@@ -120,3 +120,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0115 | [Keep race goals as rows of their own, set in Settings](0115-race-goals.md) | Accepted |
 | 0116 | [An interval workout's warm-up, sets and cool-down, each with a zone, distance and time](0116-interval-warm-up-sets-and-cool-down.md) | Accepted (no zone of its own for an interval workout: 0117) |
 | 0117 | [An interval workout has no zone of its own](0117-no-zone-of-its-own-for-an-interval-workout.md) | Accepted |
+| 0118 | [A rep can be run at an intensity of a race goal](0118-reps-at-a-race-goal-intensity.md) | Accepted |

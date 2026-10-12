@@ -70,7 +70,7 @@ fn the_plan() -> plan.Plan {
 
 fn update(model: workouts_page.Model, msg: workouts_page.Msg) {
   let #(next, _, actions) =
-    workouts_page.update(model, msg, Some(the_plan()), True, zones())
+    workouts_page.update(model, msg, Some(the_plan()), True, zones(), [])
   #(next, actions)
 }
 
@@ -226,9 +226,13 @@ pub fn the_calendar_shows_the_parts_test() {
     Row(
       ..row("a", "p1", 0, 0, "Track"),
       intervals: Some(plan.Intervals(
-        plan.Segment(1, 2000.0, 0),
+        plan.Segment(1, 2000.0, 0, None),
         [
-          plan.Set(6, plan.Segment(4, 800.0, 0), plan.Segment(0, 0.0, 90)),
+          plan.Set(
+            6,
+            plan.Segment(4, 800.0, 0, None),
+            plan.Segment(0, 0.0, 90, None),
+          ),
         ],
         plan.no_segment,
       )),
@@ -326,7 +330,7 @@ pub fn nothing_can_be_changed_without_permission_test() {
   let model = with_rows([row("a", "p1", 0, 0, "Easy")])
   let attempt = fn(msg) {
     let #(next, _, actions) =
-      workouts_page.update(model, msg, Some(the_plan()), False, zones())
+      workouts_page.update(model, msg, Some(the_plan()), False, zones(), [])
     #(next == model, actions)
   }
   assert attempt(AddClicked(1, 1)) == #(True, [])
@@ -451,6 +455,7 @@ pub fn selecting_a_week_or_a_workout_opens_its_dialog_test() {
       Some(the_plan()),
       False,
       zones(),
+      [],
     )
   assert model.mode == Viewing("a")
   assert model.selected_week == 3
@@ -532,6 +537,7 @@ pub fn the_form_is_labelled_and_shows_errors_test() {
         "",
         workout_form.NeitherTyped,
         0,
+        [],
         Some("Give the workout a title."),
       ),
     )
@@ -594,6 +600,7 @@ pub fn a_workouts_dialog_closes_only_its_own_viewing_test() {
       Some(the_plan()),
       False,
       zones(),
+      [],
     )
   assert string.contains(
     html_of(viewing, False),
@@ -629,7 +636,7 @@ fn dated_plan() -> plan.Plan {
 
 fn update_dated(model: workouts_page.Model, msg: workouts_page.Msg) {
   let #(next, _, actions) =
-    workouts_page.update(model, msg, Some(dated_plan()), True, zones())
+    workouts_page.update(model, msg, Some(dated_plan()), True, zones(), [])
   #(next, actions)
 }
 
@@ -670,4 +677,40 @@ pub fn add_workout_starts_on_the_plans_first_day_test() {
   let assert Some(main) =
     workouts_page.main_action(with_rows([]), dated_plan(), True)
   assert main.msg == AddClicked(1, 3)
+}
+
+pub fn a_rep_can_be_run_at_a_race_goal_of_the_athlete_test() {
+  let goals = [workout_form.RaceGoal("g1", 10_000.0, 2400)]
+  let #(model, _, _) =
+    workouts_page.update(
+      workouts_page.new(),
+      AddClicked(1, 1),
+      Some(the_plan()),
+      True,
+      zones(),
+      goals,
+    )
+  let #(model, _) = update(model, KindChanged("interval"))
+  let html = html_of(model, True)
+  assert string.contains(html, "id=\"workout-set1-work-goal\"")
+  assert string.contains(html, "10 km in 40:00")
+  assert !string.contains(html, "id=\"workout-set1-work-intensity\"")
+  let #(model, _) =
+    update(
+      model,
+      SegmentChanged(workout_form.Work(0), workout_form.GoalField, "g1"),
+    )
+  let #(model, _) =
+    update(
+      model,
+      SegmentChanged(workout_form.Work(0), workout_form.DistanceField, "400"),
+    )
+  let html = html_of(model, True)
+  assert string.contains(html, "id=\"workout-set1-work-intensity\"")
+  // 400 m at the goal's 4:00 /km.
+  assert string.contains(html, "value=\"1:36\"")
+  // Without goals, a rep asks for none.
+  let #(model, _) = update(workouts_page.new(), AddClicked(1, 1))
+  let #(model, _) = update(model, KindChanged("interval"))
+  assert !string.contains(html_of(model, True), "workout-set1-work-goal")
 }

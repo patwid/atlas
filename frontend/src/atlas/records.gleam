@@ -227,7 +227,25 @@ fn segment_decoder() -> Decoder(plan.Segment) {
   )
   use distance <- decode.optional_field("distance_m", 0.0, number())
   use time <- decode.optional_field("duration_s", 0, whole_number())
-  decode.success(plan.Segment(zone_or_none(zone), distance, time))
+  use goal <- decode.optional_field(
+    "goal",
+    None,
+    decode.one_of(decode.map(goal_pace_decoder(), Some), [decode.success(None)]),
+  )
+  decode.success(plan.Segment(zone_or_none(zone), distance, time, goal))
+}
+
+/// A rep's race goal and intensity (ADR 0118); one that cannot give a pace is ignored.
+fn goal_pace_decoder() -> Decoder(plan.GoalPace) {
+  use id <- decode.field("id", decode.string)
+  use distance <- decode.field("distance_m", number())
+  use time <- decode.field("time_s", whole_number())
+  use intensity <- decode.field("intensity", whole_number())
+  let found = plan.GoalPace(id, distance, time, intensity)
+  case distance >. 0.0 && time > 0 && intensity >= 1 && intensity <= 100 {
+    True -> decode.success(found)
+    False -> decode.failure(found, "GoalPace")
+  }
 }
 
 /// A zone from 1 to 5, 0 for none or one this client does not know (ADR 0105).

@@ -71,12 +71,19 @@ pub type Set {
   Set(reps: Int, work: Segment, recovery: Segment)
 }
 
-/// A distance, a time or both, at a target zone from 1 to 5. 0 means not set.
+/// A distance, a time or both, at a target zone from 1 to 5. 0 means not set. A rep can instead be run at an
+/// intensity of one of the athlete's race goals (ADR 0118).
 pub type Segment {
-  Segment(zone: Int, distance_m: Float, duration_s: Int)
+  Segment(zone: Int, distance_m: Float, duration_s: Int, goal: Option(GoalPace))
 }
 
-pub const no_segment = Segment(0, 0.0, 0)
+pub const no_segment = Segment(0, 0.0, 0, option.None)
+
+/// A share of the speed of a race goal (ADR 0115, 0118): 100 is the goal's own pace. The goal's distance and time
+/// are kept with it, so the pace can still be read when the goal is changed or gone, or not on the device.
+pub type GoalPace {
+  GoalPace(goal_id: String, distance_m: Float, time_s: Int, intensity: Int)
+}
 
 pub type Assignment {
   /// `start_date` None: the assignment follows its plan's start date (ADR 0108).
