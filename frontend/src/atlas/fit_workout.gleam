@@ -88,6 +88,30 @@ pub fn encode(name: String, steps: List(Step), created: Int) -> BitArray {
   <<body:bits, { crc(body) }:little-size(16)>>
 }
 
+/// The file's name: the title in lower case, with a dash for every run of anything but ASCII letters and digits,
+/// and `.fit`. `workout.fit` for a title without any.
+pub fn file_name(title: String) -> String {
+  let #(kept, _) =
+    string.to_graphemes(string.lowercase(title))
+    |> list.fold(#("", True), fn(acc, grapheme) {
+      let #(kept, after_dash) = acc
+      case string.contains("abcdefghijklmnopqrstuvwxyz0123456789", grapheme) {
+        True -> #(kept <> grapheme, False)
+        False if after_dash -> acc
+        False -> #(kept <> "-", True)
+      }
+    })
+  case kept {
+    "" -> "workout.fit"
+    _ ->
+      case string.ends_with(kept, "-") {
+        True -> string.drop_end(kept, 1)
+        False -> kept
+      }
+      <> ".fit"
+  }
+}
+
 /// The name, cut to whole characters within `max_name_bytes`. A workout without a title is called Workout.
 fn truncate(name: String) -> String {
   case string.trim(name) {

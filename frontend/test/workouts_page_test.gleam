@@ -70,7 +70,15 @@ fn the_plan() -> plan.Plan {
 
 fn update(model: workouts_page.Model, msg: workouts_page.Msg) {
   let #(next, _, actions) =
-    workouts_page.update(model, msg, Some(the_plan()), True, zones(), [])
+    workouts_page.update(
+      model,
+      msg,
+      Some(the_plan()),
+      True,
+      zones(),
+      zones(),
+      [],
+    )
   #(next, actions)
 }
 
@@ -381,7 +389,15 @@ pub fn nothing_can_be_changed_without_permission_test() {
   let model = with_rows([row("a", "p1", 0, 0, "Easy")])
   let attempt = fn(msg) {
     let #(next, _, actions) =
-      workouts_page.update(model, msg, Some(the_plan()), False, zones(), [])
+      workouts_page.update(
+        model,
+        msg,
+        Some(the_plan()),
+        False,
+        zones(),
+        zones(),
+        [],
+      )
     #(next == model, actions)
   }
   assert attempt(AddClicked(1, 1)) == #(True, [])
@@ -505,6 +521,7 @@ pub fn selecting_a_week_or_a_workout_opens_its_dialog_test() {
       WorkoutSelected("a"),
       Some(the_plan()),
       False,
+      zones(),
       zones(),
       [],
     )
@@ -651,6 +668,7 @@ pub fn a_workouts_dialog_closes_only_its_own_viewing_test() {
       Some(the_plan()),
       False,
       zones(),
+      zones(),
       [],
     )
   assert string.contains(
@@ -687,7 +705,15 @@ fn dated_plan() -> plan.Plan {
 
 fn update_dated(model: workouts_page.Model, msg: workouts_page.Msg) {
   let #(next, _, actions) =
-    workouts_page.update(model, msg, Some(dated_plan()), True, zones(), [])
+    workouts_page.update(
+      model,
+      msg,
+      Some(dated_plan()),
+      True,
+      zones(),
+      zones(),
+      [],
+    )
   #(next, actions)
 }
 
@@ -739,6 +765,7 @@ pub fn a_rep_can_be_run_at_a_race_goal_of_the_athlete_test() {
       Some(the_plan()),
       True,
       zones(),
+      zones(),
       goals,
     )
   let #(model, _) = update(model, KindChanged("interval"))
@@ -773,4 +800,34 @@ pub fn a_rep_can_be_run_at_a_race_goal_of_the_athlete_test() {
   let #(model, _) = update(workouts_page.new(), AddClicked(1, 1))
   let #(model, _) = update(model, KindChanged("interval"))
   assert !string.contains(html_of(model, True), "set1_work_target")
+}
+
+pub fn a_workout_but_a_rest_day_can_be_exported_to_a_watch_test() {
+  let rest =
+    Row(
+      ..row("r", "p1", 1, 0, "Off"),
+      workout: Workout(..row("r", "p1", 1, 0, "Off").workout, kind: plan.Rest),
+    )
+  let model = with_rows([row("a", "p1", 0, 0, "Easy run"), rest])
+  // In the dialog of those who see the plan, and in the bar of the owner's form (ADR 0122).
+  assert string.contains(
+    html_of(Model(..model, mode: Viewing("a")), False),
+    "Export to watch",
+  )
+  assert string.contains(
+    html_of(Model(..model, mode: Editing("a")), True),
+    "aria-label=\"Export to watch\"",
+  )
+  assert !string.contains(
+    html_of(Model(..model, mode: Viewing("r")), False),
+    "Export to watch",
+  )
+  assert !string.contains(
+    html_of(Model(..model, mode: Editing("r")), True),
+    "Export to watch",
+  )
+  // Exporting changes nothing and writes nothing.
+  let #(next, actions) = update(model, workouts_page.ExportClicked("a"))
+  assert next == model
+  assert actions == []
 }

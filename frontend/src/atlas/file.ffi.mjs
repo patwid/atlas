@@ -1,4 +1,5 @@
-// A file the user picks, read in the browser (ADR 0100). Nothing is uploaded: the bytes go to Gleam.
+// A file the user picks, read in the browser (ADR 0100), or one made there for them to save (ADR 0122). Nothing is
+// uploaded: the bytes go to and from Gleam.
 import { BitArray } from "../gleam.mjs"
 
 // Opens the picker of a (hidden) file input.
@@ -21,4 +22,19 @@ export function read(id, callback) {
       callback(false, file.name, new BitArray(new Uint8Array(0)))
     },
   )
+}
+
+// Downloads bytes as a file called name, through a link to a blob that is let go once the download has started.
+export function save(name, bytes) {
+  if (typeof document === "undefined" || typeof URL.createObjectURL !== "function") return
+  const blob = new Blob([bytes.rawBuffer.subarray(0, bytes.byteSize)], { type: "application/octet-stream" })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = name
+  link.hidden = true
+  document.body.append(link)
+  link.click()
+  link.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }

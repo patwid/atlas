@@ -3,8 +3,11 @@
 //// a workout open in a dialog (ADR 0022, 0043, 0066, 0108).
 //// Own state and messages, embedded by the app; writes come back as `Action`s (ADR 0020).
 
+import atlas/clock
 import atlas/collection
 import atlas/date
+import atlas/file
+import atlas/fit_workout
 import atlas/outbox
 import atlas/pace_zones.{type PaceZones}
 import atlas/plan.{type Kind, type Plan, type Workout}
@@ -25,6 +28,7 @@ import atlas/ui/icon
 import atlas/ui/progress
 import atlas/ui/undo.{type Undo}
 import atlas/units
+import atlas/watch_workout
 import atlas/workout_fields
 import atlas/workout_form.{type Row}
 import gleam/dict
@@ -97,6 +101,8 @@ pub type Msg {
   Submitted
   /// Deletes at once, with Undo for a few seconds (ADR 0056).
   DeleteClicked(String)
+  /// Download the workout as last saved for a watch (ADR 0122).
+  ExportClicked(String)
   UndoClicked
   DeleteExpired(Int)
   /// The slider moved; nothing is written until it is let go.
@@ -149,13 +155,15 @@ fn workouts_of(model: Model, plan_id: String) -> List(Workout) {
 }
 
 /// `on_screen` is the plan on screen. Changes are only made to it, and only when `can_edit`. `goals` are the race goals
-/// of the plan's athlete, which a rep can be run at (ADR 0118).
+/// of the plan's athlete, which a rep can be run at (ADR 0118), and `athlete_zones` their pace zones, which a workout
+/// exported for their watch has its targets from (ADR 0122).
 pub fn update(
   model: Model,
   msg: Msg,
   on_screen: Option(Plan),
   can_edit: Bool,
   zones: PaceZones,
+  athlete_zones: PaceZones,
   goals: List(workout_form.RaceGoal),
 ) -> #(Model, Effect(Msg), List(Action)) {
   let plan_id = case on_screen {
@@ -214,7 +222,15 @@ pub fn update(
     WorkoutSelected(id) ->
       case can_edit, find(rows_of(model, plan_id), id) {
         True, Ok(_) ->
-          update(model, EditClicked(id), on_screen, can_edit, zones, goals)
+          update(
+            model,
+            EditClicked(id),
+            on_screen,
+            can_edit,
+            zones,
+            athlete_zones,
+            goals,
+          )
         False, Ok(row) -> #(
           Model(..model, mode: Viewing(id), selected_week: week_of(row.workout)),
           effect.none(),
@@ -346,6 +362,22 @@ pub fn update(
             Browsing | Viewing(_) -> #(model, effect.none(), [])
           }
         }
+      }
+
+    // Anyone who sees the plan can take a workout to their watch (ADR 0122).
+    ExportClicked(id) ->
+      case exportable(rows_of(model, plan_id), id) {
+        Ok(row) -> {
+          let steps = watch_workout.steps(row, athlete_zones)
+          #(
+            model,
+            file.save(fit_workout.file_name(row.workout.title), fn() {
+              fit_workout.encode(row.workout.title, steps, clock.now_seconds())
+            }),
+            [],
+          )
+        }
+        Error(Nil) -> #(model, effect.none(), [])
       }
 
     DeleteClicked(id) ->
@@ -489,7 +521,7 @@ pub fn view(model: Model, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
     )
   html.section([class("workouts plan-calendar")], [
     undo.snackbar(model.undo, "Workout deleted", UndoClicked, DeleteExpired),
-    form_view(model, on_screen, weeks, can_edit),
+    form_view(model, on_screen, rows, weeks, can_edit),
     // The plan's tabs name this section (ADR 0058); adding a workout is its main action (ADR 0068).
     button.fab_for(main_action(model, on_screen, can_edit)),
     html.div([class("calendar")], case model.loaded {
@@ -796,6 +828,32 @@ fn workout_chip(
   )
 }
 
+/// The saved workout with this ID, if it can be run on a watch (ADR 0122).
+fn exportable(rows: List(Row), id: String) -> Result(Row, Nil) {
+  case find(rows, id) {
+    Ok(row) ->
+      case watch_workout.can_export(row.workout.kind) {
+        True -> Ok(row)
+        False -> Error(Nil)
+      }
+    Error(Nil) -> Error(Nil)
+  }
+}
+
+/// Export to watch, for a workout that can be run on one (ADR 0122): an icon button in the bar of the form, a text
+/// button among the actions of the dialog.
+fn export_button(rows: List(Row), id: String, in_form: Bool) -> Element(Msg) {
+  let attributes = [
+    attribute.type_("button"),
+    event.on_click(ExportClicked(id)),
+  ]
+  case exportable(rows, id), in_form {
+    Ok(_), True -> button.icon(attributes, icon.Watch, "Export to watch")
+    Ok(_), False -> button.text(attributes, [html.text("Export to watch")])
+    Error(Nil), _ -> element.none()
+  }
+}
+
 // DIALOGS -----------------------------------------------------------------------------------------
 
 /// The open workout, for those who cannot edit the plan (ADR 0066, 0080).
@@ -840,7 +898,7 @@ fn workout_dialog(
           },
         ],
         // Only those who cannot edit the plan see a workout here; the owner gets its form (ADR 0080).
-        [],
+        [export_button(rows, w.id, False)],
       )
     }
   }
@@ -1122,6 +1180,7 @@ const form_id = "workout-form"
 fn form_view(
   model: Model,
   on_screen: Plan,
+  rows: List(Row),
   weeks: List(plan_schedule.Week),
   can_edit: Bool,
 ) -> Element(Msg) {
@@ -1137,14 +1196,17 @@ fn form_view(
     form_id,
     "Save",
     CancelClicked,
-    // A workout is deleted from its form, with Undo (ADR 0056, 0080).
+    // A workout is deleted from its form, with Undo (ADR 0056, 0080), and taken to a watch as saved (ADR 0122).
     case can_edit, model.mode {
       True, Editing(id) ->
-        button.icon(
-          [attribute.type_("button"), event.on_click(DeleteClicked(id))],
-          icon.Delete,
-          "Delete workout",
-        )
+        element.fragment([
+          export_button(rows, id, True),
+          button.icon(
+            [attribute.type_("button"), event.on_click(DeleteClicked(id))],
+            icon.Delete,
+            "Delete workout",
+          ),
+        ])
       _, _ -> element.none()
     },
     [form_fields(model.form, on_screen, weeks)],

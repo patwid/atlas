@@ -140,3 +140,9 @@ fn name_of(bytes: BitArray) -> String {
   let assert Ok(text) = bit_array.to_string(text)
   text
 }
+
+pub fn the_file_is_named_after_the_title_test() {
+  let assert "6-800-m-zone-4.fit" = fit_workout.file_name("6 × 800 m (Zone 4)")
+  let assert "long-run.fit" = fit_workout.file_name("  Long run! ")
+  let assert "workout.fit" = fit_workout.file_name("…")
+}

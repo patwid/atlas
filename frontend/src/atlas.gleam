@@ -418,6 +418,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               on_screen,
               can_edit,
               zones_page.current(model.zones, session.user_id).pace,
+              athlete_zones(model, on_screen),
               race_goals(model, on_screen),
             )
           let #(state, action_effects) =
@@ -603,15 +604,30 @@ fn race_goals(
   on_screen: option.Option(plan.Plan),
 ) -> List(workout_form.RaceGoal) {
   case on_screen {
-    Some(p) -> {
-      let athlete = case assignment_form.of_plan(model.assignments.rows, p.id) {
-        Some(row) -> row.assignment.athlete_id
-        None -> p.owner_id
-      }
-      goal.of(model.goals.goals, athlete)
+    Some(p) ->
+      goal.of(model.goals.goals, plan_athlete(model, p))
       |> list.map(fn(g) { workout_form.RaceGoal(g.id, g.distance_m, g.time_s) })
-    }
     None -> []
+  }
+}
+
+/// The pace zones of the plan's athlete, which a workout exported for their watch has its targets from (ADR 0122):
+/// the defaults when theirs are not on the device.
+fn athlete_zones(
+  model: Model,
+  on_screen: option.Option(plan.Plan),
+) -> pace_zones.PaceZones {
+  case on_screen {
+    Some(p) -> zones_page.current(model.zones, plan_athlete(model, p)).pace
+    None -> athlete_settings.defaults().pace
+  }
+}
+
+/// Who a plan is for: its assigned athlete, else its owner (ADR 0110).
+fn plan_athlete(model: Model, p: plan.Plan) -> String {
+  case assignment_form.of_plan(model.assignments.rows, p.id) {
+    Some(row) -> row.assignment.athlete_id
+    None -> p.owner_id
   }
 }
 
