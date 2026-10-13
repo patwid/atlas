@@ -190,8 +190,12 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
     RouteChanged(uri) -> {
       let next = route.parse(uri)
+      let daily = case next {
+        route.Home -> model.daily
+        _ -> home_page.leave(model.daily)
+      }
       #(
-        Model(..model, route: next),
+        Model(..model, route: next, daily: daily),
         // The Strava state is looked up when its Settings page is opened.
         case next, model.auth {
           route.SettingsPage(route.Strava), SignedIn(_) ->

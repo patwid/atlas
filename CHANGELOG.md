@@ -178,6 +178,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - A sync requested while another one is running is no longer lost: one more run follows (ADR 0018, addendum).
 - Test servers are stopped with SIGKILL, and tests have a timeout, so a slow PocketBase shutdown can no longer keep the test process alive.
 - The HTTP glue no longer reports an error thrown by the app's own handler as "no connection".
+- Home's "Which activity was it?" dialog no longer opens again on coming back to Home after leaving it, for example by its "Go to activities".
 
 ### Changed
 - Coach access to athletes' activities, including Strava-sourced data, now that Strava has confirmed the usage in writing (ADR 0005).

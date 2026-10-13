@@ -80,6 +80,12 @@ pub fn new() -> Model {
   Model([], False, None, None, 0)
 }
 
+/// Leaving Home closes the activity list, so it is not open again on coming back: its "Go to activities"
+/// leaves Home without closing it.
+pub fn leave(model: Model) -> Model {
+  Model(..model, choosing: None)
+}
+
 pub fn refresh() -> Effect(Msg) {
   effect.from(fn(dispatch) {
     store.get_all(collection.Matches, fn(result) {

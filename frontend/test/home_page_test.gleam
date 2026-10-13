@@ -233,6 +233,12 @@ pub fn the_list_of_activities_opens_and_cancels_test() {
   assert closed.choosing == None
 }
 
+pub fn leaving_home_closes_the_list_of_activities_test() {
+  let #(open, _) =
+    update(home_page.new(), ChooseClicked(wednesday_key), inputs([]))
+  assert home_page.leave(open).choosing == None
+}
+
 // What is on the screen ---------------------------------------------------------------------------
 
 fn html_of(model: home_page.Model, i: today.Inputs) -> String {
