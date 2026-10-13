@@ -112,7 +112,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0106 | [Work distances and times out from the target zone's pace](0106-targets-from-the-zone-pace.md) | Accepted |
 | 0107 | [On a phone, a day's add button at the trailing edge](0107-phone-calendar-add-button-at-the-trailing-edge.md) | Accepted |
 | 0108 | [A plan has a start date; its calendar shows real days from a Monday](0108-plan-start-date.md) | Accepted (no own dates on assignments: 0110) |
-| 0109 | [Name a dated plan's weeks by their week of the year](0109-plan-weeks-named-by-week-of-the-year.md) | Accepted |
+| 0109 | [Name a dated plan's weeks by their week of the year](0109-plan-weeks-named-by-week-of-the-year.md) | Superseded by 0126 |
 | 0110 | [Every plan is for one athlete; sharing and public plans are gone](0110-one-athlete-per-plan.md) | Accepted |
 | 0111 | [Flat goal and intensity meters instead of the wave](0111-flat-goal-and-intensity-meters.md) | Accepted |
 | 0113 | [No sync row in Settings; unusable device storage as a banner on every page](0113-no-sync-row-in-settings.md) | Accepted |
@@ -128,3 +128,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0123 | [List Coming up from tomorrow on, and fix the last seven days' order](0123-coming-up-nearest-day-first.md) | Accepted |
 | 0124 | [Material review, second round: bugs, consistency and accessibility](0124-material-review-accessibility-and-consistency.md) | Accepted |
 | 0125 | [Material review follow-up: the cases ADR 0124 missed](0125-material-review-follow-up.md) | Accepted |
+| 0126 | [Count a dated plan's weeks from its start again](0126-plan-weeks-counted-from-the-plans-start.md) | Accepted |

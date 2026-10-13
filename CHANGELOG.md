@@ -181,6 +181,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - Home's "Which activity was it?" dialog no longer opens again on coming back to Home after leaving it, for example by its "Go to activities".
 
 ### Changed
+- A dated plan's weeks are counted from its start again ("Week 3 · 16–22 Nov") instead of named by the week of the year (ADR 0126).
 - On a phone the calendar shows only a day's number, not its month: the week's label already names it.
 - Coach access to athletes' activities, including Strava-sourced data, now that Strava has confirmed the usage in writing (ADR 0005).
 - ADRs 0003 and 0004 accepted.

@@ -1,6 +1,6 @@
 //// The layout of a plan as weeks and days, for showing and editing it. Weeks run from Monday to Sunday, and week 1
-//// is the week of the plan's start date; with a start date every day has its date (ADR 0108) and a week is named by
-//// its week of the year (ADR 0109). Weeks belong to the plan's phases in order (ADR 0043).
+//// is the week of the plan's start date; with a start date every day has its date (ADR 0108). Weeks are counted from
+//// 1, with or without a start date (ADR 0126). Weeks belong to the plan's phases in order (ADR 0043).
 
 import atlas/date.{type Date}
 import atlas/plan.{type Phase, type Phases, type Workout}
@@ -26,7 +26,7 @@ pub type Day {
 pub type Week {
   Week(
     number: Int,
-    /// "Week 46": what the calendar calls it (see `week_name`).
+    /// "Week 3": what the calendar calls it (see `week_name`).
     name: String,
     days: List(Day),
     distance_m: Float,
@@ -75,7 +75,7 @@ pub fn weeks(
         let in_week = list.flat_map(days, fn(day) { day.workouts })
         Week(
           number: number,
-          name: week_name(start, number),
+          name: week_name(number),
           days: days,
           distance_m: list.fold(in_week, 0.0, fn(total, w) {
             total +. option.unwrap(w.distance_m, 0.0)
@@ -153,20 +153,15 @@ pub fn weekday_name(number: Int) -> String {
   }
 }
 
-/// "Week 46" for the plan's week `number` (from 1): the ISO week of the year for a plan with a start date, else the
-/// plan's own week number.
-pub fn week_name(start: Option(Date), number: Int) -> String {
-  "Week "
-  <> int.to_string(case start {
-    Some(day) -> date.iso_week(plan.day_date(day, { number - 1 } * 7))
-    None -> number
-  })
+/// "Week 3" for the plan's week `number` (from 1), with or without a start date (ADR 0126).
+pub fn week_name(number: Int) -> String {
+  "Week " <> int.to_string(number)
 }
 
-/// "Week 46 · Pre-competition 2" or, outside the phases, "Week 50". It starts with the name the calendar's rows show,
+/// "Week 6 · Pre-competition 2" or, outside the phases, "Week 13". It starts with the name the calendar's rows show,
 /// so a week reads the same in a form or dialog as in the calendar.
-pub fn week_label(phases: Phases, start: Option(Date), number: Int) -> String {
-  let week = week_name(start, number)
+pub fn week_label(phases: Phases, number: Int) -> String {
+  let week = week_name(number)
   case plan.phase_of_week(phases, number) {
     Ok(#(phase, in_phase)) ->
       week <> " · " <> plan.phase_label(phase) <> " " <> int.to_string(in_phase)

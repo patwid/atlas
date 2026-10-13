@@ -1,6 +1,6 @@
 # 0109. Name a dated plan's weeks by their week of the year
 
-- Status: Accepted
+- Status: Superseded by [0126](0126-plan-weeks-counted-from-the-plans-start.md)
 - Date: 2026-10-11
 - Deciders: owner (calendar week numbers instead of 1 to n in the plan view); agent (ISO 8601 weeks, the details below)
 

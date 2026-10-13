@@ -880,11 +880,7 @@ fn workout_dialog(
         [
           html.p([class("muted")], [
             html.text(
-              plan_schedule.week_label(
-                on_screen.phases,
-                on_screen.start_date,
-                week_of(w),
-              )
+              plan_schedule.week_label(on_screen.phases, week_of(w))
               <> " · "
               <> day_text(on_screen, w.day_index),
             ),
@@ -931,11 +927,7 @@ fn week_dialog(
       dialog.details(
         "week-dialog",
         True,
-        plan_schedule.week_label(
-          on_screen.phases,
-          on_screen.start_date,
-          week.number,
-        ),
+        plan_schedule.week_label(on_screen.phases, week.number),
         WeekClosed,
         [
           intensity_view(model, week.number, intensity, can_edit),
@@ -1163,7 +1155,7 @@ fn week_options(
   }
   list.map(numbers, fn(n) {
     let label =
-      plan_schedule.week_label(on_screen.phases, on_screen.start_date, n)
+      plan_schedule.week_label(on_screen.phases, n)
     #(int.to_string(n), case list.find(weeks, fn(w) { w.number == n }) {
       Ok(week) ->
         case plan_schedule.week_dates(week) {
