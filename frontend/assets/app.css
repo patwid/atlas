@@ -1235,6 +1235,8 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
   .calendar-week .week-label { position: sticky; top: var(--app-bar-height); z-index: 1; }
   .calendar-day:not(:has(.workout)) { min-height: 0; padding-top: 0.125rem; padding-bottom: 0.125rem; align-items: center; }
   .calendar-day:not(:has(.workout)) .day-name { padding-top: 0; }
+  /* The week's label names the month, so a day shows only its number. */
+  .day-month { display: none; }
   /* For someone who cannot edit the plan an empty day holds nothing, so the stacked days leave it out (ADR 0072). */
   .calendar-day:not(:has(.workout, .add-here)) { display: none; }
 }

@@ -740,10 +740,12 @@ fn day_cell(
         ]),
         case day.date {
           Some(on) ->
+            // On a phone the week's label already names the month, so the day shows only its number.
             html.span([class("day-date")], [
-              html.text(
-                int.to_string(on.day) <> " " <> date.month_short(on.month),
-              ),
+              html.text(int.to_string(on.day)),
+              html.span([class("day-month")], [
+                html.text(" " <> date.month_short(on.month)),
+              ]),
             ])
           None -> element.none()
         },
