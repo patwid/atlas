@@ -560,6 +560,8 @@ label {
   margin: 1.25rem 1rem 0.5rem; color: var(--md-sys-color-on-surface-variant);
   font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem;
 }
+/* A section with nothing in it says so in a line that lines up with its subheader, as its items' text would. */
+.group > .muted { margin: 0 1rem; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; }
 .toolbar:empty { display: none; }
 /* Banners (ADR 0049): a message at the top of the content until it is resolved, with an icon and actions. */
 .banner {
