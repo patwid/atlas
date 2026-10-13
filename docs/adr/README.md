@@ -129,3 +129,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0124 | [Material review, second round: bugs, consistency and accessibility](0124-material-review-accessibility-and-consistency.md) | Accepted |
 | 0125 | [Material review follow-up: the cases ADR 0124 missed](0125-material-review-follow-up.md) | Accepted |
 | 0126 | [Count a dated plan's weeks from its start again](0126-plan-weeks-counted-from-the-plans-start.md) | Accepted |
+| 0127 | [Workouts on the phone calendar as two-line cards, scrolled across](0127-phone-calendar-workouts-as-two-line-cards.md) | Accepted |

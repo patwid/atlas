@@ -844,3 +844,39 @@ pub fn a_workout_but_a_rest_day_can_be_exported_to_a_watch_test() {
   assert next == model
   assert actions == []
 }
+
+pub fn a_workout_shows_its_distance_for_the_phone_test() {
+  let html = html_of(with_rows([row("a", "p1", 8, 0, "Shake-out")]), False)
+  assert string.contains(
+    html,
+    "<span aria-hidden=\"true\" class=\"workout-distance\">8 km</span>",
+  )
+}
+
+pub fn an_interval_workout_without_a_distance_totals_its_parts_test() {
+  let base = row("a", "p1", 8, 0, "Track")
+  let intervals =
+    plan.Intervals(
+      plan.Segment(1, 2000.0, 0, None),
+      [
+        plan.Set(
+          3,
+          plan.Segment(4, 800.0, 0, None),
+          plan.Segment(1, 200.0, 0, None),
+        ),
+        plan.Set(0, plan.no_segment, plan.no_segment),
+      ],
+      plan.Segment(1, 1000.0, 0, None),
+    )
+  let no_distance =
+    Row(
+      ..base,
+      workout: Workout(..base.workout, distance_m: None),
+      intervals: Some(intervals),
+    )
+  // 2 km + 3 × 800 m + 2 × 200 m + 1 km: no recovery after the last rep.
+  assert workouts_page.total_distance(no_distance) == Some(5800.0)
+  assert workouts_page.total_distance(Row(..no_distance, intervals: None))
+    == None
+  assert workouts_page.total_distance(base) == Some(8000.0)
+}

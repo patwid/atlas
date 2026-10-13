@@ -37,6 +37,7 @@ import gleam/float
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/result
 import gleam/string
 import lustre/attribute.{class}
 import lustre/effect.{type Effect}
@@ -750,6 +751,7 @@ fn day_cell(
           None -> element.none()
         },
       ]),
+      // On a phone a day's workouts are side by side, scrolled across when there is more than one (ADR 0127).
       html.div(
         [class("day-body")],
         list.filter_map(day.workouts, fn(w) {
@@ -784,7 +786,8 @@ fn day_cell(
 }
 
 /// A workout in the calendar. Its kind is written out as well as shown by the colour of its bar, which some kinds
-/// share; its name says the week and day, since the calendar's column heads are not read out (ADR 0070).
+/// share; its name says the week and day, since the calendar's column heads are not read out (ADR 0070). On a phone
+/// it is a card of one height with two lines, its title and its total distance (ADR 0127).
 fn workout_chip(
   row: Row,
   week: plan_schedule.Week,
@@ -826,8 +829,51 @@ fn workout_chip(
         "" -> element.none()
         text -> html.span([class("workout-targets")], [html.text(text)])
       },
+      // On a phone the card's second line instead of its kind and targets (ADR 0127).
+      html.span(
+        [class("workout-distance"), attribute.attribute("aria-hidden", "true")],
+        [
+          html.text(case total_distance(row) {
+            Some(d) -> units.format_planned_km(d)
+            None -> ""
+          }),
+        ],
+      ),
     ],
   )
+}
+
+/// The workout's distance or, for an interval workout without one, that of all its parts: the warm-up, the reps,
+/// a recovery after every rep but the last, and the cool-down (ADR 0116, 0127). `None` when nothing has a distance.
+pub fn total_distance(row: Row) -> Option(Float) {
+  case row.workout.distance_m, row.intervals {
+    Some(d), _ -> Some(d)
+    None, None -> None
+    None, Some(intervals) -> {
+      let sets =
+        list.fold(intervals.sets, 0.0, fn(total, set) {
+          total
+          +. int.to_float(set.reps)
+          *. { set.work.distance_m +. set.recovery.distance_m }
+        })
+      // No recovery after the workout's last rep.
+      let last_recovery =
+        intervals.sets
+        |> list.filter(fn(set) { set.reps > 0 })
+        |> list.last
+        |> result.map(fn(set) { set.recovery.distance_m })
+        |> result.unwrap(0.0)
+      let total =
+        intervals.warmup.distance_m
+        +. sets
+        -. last_recovery
+        +. intervals.cooldown.distance_m
+      case total >. 0.0 {
+        True -> Some(total)
+        False -> None
+      }
+    }
+  }
 }
 
 /// The saved workout with this ID, if it can be run on a watch (ADR 0122).
@@ -1154,8 +1200,7 @@ fn week_options(
     _ -> one_to(last)
   }
   list.map(numbers, fn(n) {
-    let label =
-      plan_schedule.week_label(on_screen.phases, n)
+    let label = plan_schedule.week_label(on_screen.phases, n)
     #(int.to_string(n), case list.find(weeks, fn(w) { w.number == n }) {
       Ok(week) ->
         case plan_schedule.week_dates(week) {

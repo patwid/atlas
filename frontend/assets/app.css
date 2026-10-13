@@ -757,6 +757,7 @@ label {
 }
 .workout.open .workout-kind { color: inherit; }
 .workout-targets { color: var(--md-sys-color-on-surface-variant); }
+.workout-distance { display: none; }
 /* Adding a workout to a day: an icon button, 40px, with M3's 48px touch target around it (ADR 0075, 0124). */
 .add-here {
   position: relative; display: grid; place-items: center; width: 2.5rem; height: 2.5rem; padding: 0; cursor: pointer; align-self: flex-start;
@@ -1239,6 +1240,16 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
   .day-month { display: none; }
   /* For someone who cannot edit the plan an empty day holds nothing, so the stacked days leave it out (ADR 0072). */
   .calendar-day:not(:has(.workout, .add-here)) { display: none; }
+  /* A workout is a card of one height with two lines, its title and its total distance; its kind is in its bar's
+     colour and its name. A day's workouts sit side by side and scroll across, the next one peeking in (ADR 0127). */
+  .day-body { flex-direction: row; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; }
+  .day-body::-webkit-scrollbar { display: none; }
+  .day-body > .workout { flex: 0 0 100%; height: 2.75rem; justify-content: flex-start; scroll-snap-align: start; }
+  .day-body:has(> .workout + .workout) > .workout { flex-basis: 85%; }
+  .day-body .workout-kind, .day-body .workout-targets { display: none; }
+  .day-body .workout-title { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .day-body .workout-distance { display: block; min-height: 1rem; color: var(--md-sys-color-on-surface-variant); }
+  .day-body .workout.open .workout-distance { color: inherit; }
 }
 
 /* M3's medium app bar (ADR 0062) on a plan's or athlete's page: the name on its own line in headline-medium, under

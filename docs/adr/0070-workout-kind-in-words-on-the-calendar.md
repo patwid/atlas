@@ -1,6 +1,6 @@
 # 0070. A workout's kind in words on the calendar, and its week and day in its name
 
-- Status: Accepted
+- Status: Accepted. On a phone the card shows only its title and total distance since [0127](0127-phone-calendar-workouts-as-two-line-cards.md).
 - Date: 2026-10-09
 - Deciders: owner (asked to go ahead with the layout review's suggested order); agent (the details below)
 
