@@ -5,7 +5,7 @@
 
 import atlas/clock
 import atlas/collection
-import atlas/date
+import atlas/date.{type Date}
 import atlas/file
 import atlas/fit_workout
 import atlas/outbox
@@ -509,7 +509,13 @@ fn kind_from_value(value: String, fallback: Kind) -> Kind {
 
 // VIEWS -------------------------------------------------------------------------------------------
 
-pub fn view(model: Model, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
+/// `today` is marked on a dated plan's calendar (ADR 0129).
+pub fn view(
+  model: Model,
+  on_screen: Plan,
+  can_edit: Bool,
+  today: Date,
+) -> Element(Msg) {
   // A workout being deleted is left out while its Undo lasts (ADR 0056).
   let rows =
     rows_of(model, on_screen.id)
@@ -547,7 +553,7 @@ pub fn view(model: Model, on_screen: Plan, can_edit: Bool) -> Element(Msg) {
             html.div([], [
               calendar_head(),
               ..list.map(plan_schedule.bands(weeks), fn(band) {
-                band_view(band, on_screen, rows, model, can_edit)
+                band_view(band, on_screen, rows, model, can_edit, today)
               })
             ])
         },
@@ -580,6 +586,7 @@ fn band_view(
   rows: List(Row),
   model: Model,
   can_edit: Bool,
+  today: Date,
 ) -> Element(Msg) {
   let #(name, modifier) = case band.phase {
     Ok(plan.Base) -> #("Base phase", "phase-base")
@@ -601,7 +608,7 @@ fn band_view(
         ])
     },
     ..list.map(band.weeks, fn(week) {
-      week_row(week, on_screen, rows, model, can_edit)
+      week_row(week, on_screen, rows, model, can_edit, today)
     })
   ])
 }
@@ -619,6 +626,7 @@ fn week_row(
   rows: List(Row),
   model: Model,
   can_edit: Bool,
+  today: Date,
 ) -> Element(Msg) {
   let selected = week.number == model.selected_week
   let intensity = dict.get(on_screen.week_intensity, week.number)
@@ -651,7 +659,7 @@ fn week_row(
         ],
       ),
       ..list.map(week.days, fn(day) {
-        day_cell(week, day, rows, model, can_edit)
+        day_cell(week, day, rows, model, can_edit, today)
       })
     ],
   )
@@ -727,12 +735,21 @@ fn day_cell(
   rows: List(Row),
   model: Model,
   can_edit: Bool,
+  today: Date,
 ) -> Element(Msg) {
-  // A day of week 1 before the plan starts is dimmed and cannot be added to (ADR 0108).
+  let is_today = day.date == Some(today)
+  // A day of week 1 before the plan starts is dimmed and cannot be added to (ADR 0108). Today is marked (ADR 0129).
   html.div(
     [
       class("calendar-day"),
-      attribute.classes([#("before-start", day.before_start)]),
+      attribute.classes([
+        #("before-start", day.before_start),
+        #("today", is_today),
+      ]),
+      case is_today {
+        True -> attribute.attribute("aria-current", "date")
+        False -> attribute.none()
+      },
     ],
     [
       html.span([class("day-name")], [

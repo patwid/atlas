@@ -731,6 +731,13 @@ label {
    which took its text below 4.5:1 (ADR 0124); nothing to add. */
 .calendar-day.before-start { background: var(--md-sys-color-surface-container); }
 .calendar-day.before-start .workout { --kind: var(--md-sys-color-outline-variant); color: var(--md-sys-color-on-surface-variant); background: var(--md-sys-color-surface-container-highest); }
+/* Today, on a dated plan (ADR 0129): its weekday in the primary colour and its date on a filled primary pill, as a
+   calendar marks it, in both layouts. */
+.calendar-day.today .day-weekday { color: var(--md-sys-color-primary); font-weight: 500; }
+.calendar-day.today .day-date {
+  display: inline-block; min-width: 1.5rem; padding: 0 0.375rem; border-radius: var(--md-sys-shape-corner-full); box-sizing: border-box;
+  text-align: center; background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); font-weight: 500;
+}
 .day-body { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
 /* A workout is a small filled card (ADR 0051), its kind a bar along the leading edge. */
 .workout {
@@ -1241,7 +1248,7 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
   /* The week's label names the month, so a day shows only its number. */
   .day-month { display: none; }
   /* For someone who cannot edit the plan an empty day holds nothing, so the stacked days leave it out (ADR 0072). */
-  .calendar-day:not(:has(.workout, .add-here)) { display: none; }
+  .calendar-day:not(.today):not(:has(.workout, .add-here)) { display: none; } /* today stays, to show where it is (ADR 0129) */
   /* A workout is a card of one height with two lines, its title and its total distance; its kind is in its bar's
      colour and its name. A day's workouts sit side by side and scroll across, the next one peeking in (ADR 0127). */
   .day-body { flex-direction: row; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; }

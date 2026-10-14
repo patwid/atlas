@@ -1198,6 +1198,7 @@ fn page(model: Model, session: Session) -> Element(Msg) {
                 model.workouts,
                 found,
                 found.owner_id == session.user_id,
+                clock.today(),
               ),
               WorkoutsPage,
             ),

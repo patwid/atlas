@@ -427,7 +427,12 @@ pub fn a_workout_removed_elsewhere_ends_an_edit_of_it_test() {
 // What is on the screen ---------------------------------------------------------------------------
 
 fn html_of(model: workouts_page.Model, can_edit: Bool) -> String {
-  element.to_string(workouts_page.view(model, the_plan(), can_edit))
+  element.to_string(workouts_page.view(
+    model,
+    the_plan(),
+    can_edit,
+    Date(2026, 10, 14),
+  ))
 }
 
 pub fn weeks_days_and_totals_are_shown_test() {
@@ -730,12 +735,37 @@ fn update_dated(model: workouts_page.Model, msg: workouts_page.Msg) {
   #(next, actions)
 }
 
+pub fn today_is_marked_on_a_dated_plan_test() {
+  let html =
+    element.to_string(workouts_page.view(
+      with_rows([row("a", "p1", 9, 0, "Shake-out")]),
+      dated_plan(),
+      True,
+      Date(2026, 11, 11),
+    ))
+  // Only today's cell is marked, for screen readers too (ADR 0129).
+  assert string.contains(
+    html,
+    "<div aria-current=\"date\" class=\"calendar-day today \"><span class=\"day-name\"><span class=\"day-weekday\">Wed</span><span class=\"day-date\">11<",
+  )
+  assert list.length(string.split(html, "aria-current=\"date\"")) == 2
+  let undated =
+    element.to_string(workouts_page.view(
+      with_rows([row("a", "p1", 9, 0, "Shake-out")]),
+      the_plan(),
+      True,
+      Date(2026, 11, 11),
+    ))
+  assert !string.contains(undated, "aria-current=\"date\"")
+}
+
 pub fn a_dated_plan_shows_its_days_and_weeks_with_dates_test() {
   let html =
     element.to_string(workouts_page.view(
       with_rows([row("a", "p1", 9, 0, "Shake-out")]),
       dated_plan(),
       True,
+      Date(2026, 10, 14),
     ))
   assert string.contains(html, "2–8 Nov")
   assert string.contains(html, "9–15 Nov")

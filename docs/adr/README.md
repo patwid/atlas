@@ -131,3 +131,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0126 | [Count a dated plan's weeks from its start again](0126-plan-weeks-counted-from-the-plans-start.md) | Accepted |
 | 0127 | [Workouts on the phone calendar as two-line cards, scrolled across](0127-phone-calendar-workouts-as-two-line-cards.md) | Accepted |
 | 0128 | [Dependency update pull requests from Renovate](0128-dependency-updates-with-renovate.md) | Accepted |
+| 0129 | [Today is marked on a dated plan's calendar](0129-today-marked-on-the-plan-calendar.md) | Accepted |
