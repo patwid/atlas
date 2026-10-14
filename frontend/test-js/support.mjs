@@ -122,6 +122,11 @@ export const pick = (w, name, value) => click(w, w.document.querySelector(`input
 // A Fluent UI dialog (ADR 0133) is open when the <dialog> in its shadow root is.
 export const openDialog = (w) => w.document.querySelector("dialog[open]")
   ?? [...w.document.querySelectorAll("fluent-dialog")].find((d) => d.shadowRoot?.querySelector("dialog[open]"))
+/** The element `selector` finds if it is an open dialog: a native one, or a Fluent UI one (ADR 0133). */
+export const shown = (w, selector) => {
+  const el = w.document.querySelector(selector)
+  return el && (el.hasAttribute("open") || el.shadowRoot?.querySelector("dialog[open]")) ? el : null
+}
 export const dialogButton = (w, text) => [...(openDialog(w)?.querySelectorAll(buttons) ?? [])].find((b) => b.textContent.trim() === text)
 export const location = (w) => w.location.pathname
 export const byLabel = (w, label) => [...w.document.querySelectorAll(buttons)].find((b) => b.getAttribute("aria-label") === label)

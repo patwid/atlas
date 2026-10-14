@@ -6,6 +6,20 @@
 
 const rippling = ".md-button, .md-icon-button, .choice-label, .link-list a, .md-menu-item, .tabs a .nav-indicator"
 
+/** Opens a Fluent UI dialog (ADR 0133). A form with method="dialog" in it cannot close it, as its <dialog> is in its
+ * shadow root, so the form's submit closes it instead. */
+export function showFluent(dialog) {
+  if (!dialog.dataset.submitBound) {
+    dialog.addEventListener("submit", (event) => {
+      if (event.target.getAttribute("method") !== "dialog") return
+      event.preventDefault()
+      dialog.hide()
+    })
+    dialog.dataset.submitBound = "true"
+  }
+  dialog.show()
+}
+
 /** Whether a click on a dialog fell outside its box, on the backdrop. A click on the dialog's own padding also has
  * the dialog as its target, so the target alone does not tell (ADR 0124). */
 export function clickedOutside(dialog, event) {
@@ -64,8 +78,20 @@ export function install() {
     items[(next + items.length) % items.length]?.focus()
   })
 
-  // Form dialogs (ADR 0057) say with data-open whether they should show; this keeps the native modal in step.
+  // Form dialogs (ADR 0057) say with data-open whether they should show; this keeps the native modal in step. So do
+  // Fluent UI's dialogs (details and choices, ADR 0133), whose own show() and hide() open and close them.
   const syncDialogs = () => {
+    for (const dialog of document.querySelectorAll("fluent-dialog[data-open]")) {
+      // Drawn before Fluent's bundle has loaded: again once it has.
+      if (typeof dialog.show !== "function") {
+        customElements.whenDefined("fluent-dialog").then(syncDialogs)
+        continue
+      }
+      const wanted = dialog.dataset.open === "true"
+      const open = !!dialog.shadowRoot?.querySelector("dialog")?.open
+      if (wanted && !open) showFluent(dialog)
+      else if (!wanted && open) dialog.hide()
+    }
     for (const dialog of document.querySelectorAll("dialog[data-open]")) {
       const wanted = dialog.dataset.open === "true"
       if (wanted && !dialog.open) {

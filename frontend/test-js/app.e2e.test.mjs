@@ -6,7 +6,7 @@ import { toList } from "../build/dev/javascript/atlas/gleam.mjs"
 import * as store from "../build/dev/javascript/atlas/atlas/store.ffi.mjs"
 import { startPocketBase } from "../../backend/tests/harness.mjs"
 import {
-  appRunner, built, button, byLabel, call, location, choose, click, daysFromNow, dialogButton, openDialog, pick, pub, setup, sleep, submit, typeInto,
+  appRunner, built, button, shown, byLabel, call, location, choose, click, daysFromNow, dialogButton, openDialog, pick, pub, setup, sleep, submit, typeInto,
   utcOf, waitFor, weekdayOf, ymd,
 } from "./support.mjs"
 
@@ -299,7 +299,7 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
   // Move the first workout to day 4 and rename it: the owner opens it straight in its form (ADR 0080).
   click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Easy run")))
   await waitFor("the edit form", () => d.querySelector("#workout-title")?.value === "Easy run")
-  assert.equal(d.querySelector("#workout-dialog[open]"), null, "no details dialog under it")
+  assert.equal(shown(w, "#workout-dialog"), null, "no details dialog under it")
   assert.equal(d.querySelector("#workout-distance").value, "8.5")
   assert.equal(d.querySelector("#workout-duration").value, "1:15")
   choose(w, d.querySelector("#workout-day"), "4")
@@ -342,7 +342,7 @@ test("the owner sets a week's intensity in its dialog and the plan's phases and 
 
   // Select week 2 and make it a hard week.
   click(w, [...d.querySelectorAll(".week-label")].find((b) => b.textContent.startsWith("Week 2")))
-  await waitFor("week 2 in its dialog", () => d.querySelector("#week-dialog[open]")?.textContent.includes("Week 2 · Base 2"))
+  await waitFor("week 2 in its dialog", () => shown(w, "#week-dialog")?.textContent.includes("Week 2 · Base 2"))
   assert.equal(d.querySelector("#week-intensity").type, "range")
   choose(w, d.querySelector("#week-intensity"), "0.8")
   await waitFor("the intensity on the server", async () => (await onServer()).week_intensity?.[1] === 0.8)
@@ -362,7 +362,7 @@ test("the owner sets a week's intensity in its dialog and the plan's phases and 
   // Week 2 is at 80%, so it aims for 80% of 40 km (ADR 0064).
   await waitFor("the week against its goal, in its row", () => d.querySelector(".calendar")?.textContent.includes("20 / 32 km"))
   click(w, [...d.querySelectorAll(".week-label")].find((b) => b.textContent.startsWith("Week 2")))
-  await waitFor("and in its dialog", () => d.querySelector("#week-dialog[open]")?.textContent.includes("20 km of 32 km (63%)"))
+  await waitFor("and in its dialog", () => shown(w, "#week-dialog")?.textContent.includes("20 km of 32 km (63%)"))
   await waitFor("five weeks now", () => d.querySelectorAll(".calendar-week").length === 5)
   assert.equal((await onServer()).week_intensity[1], 0.8, "the intensity stays")
   w.close()
@@ -385,7 +385,7 @@ test("someone else's plan shows its workouts but offers no way to change them", 
   assert.equal(button(w, "Delete"), undefined)
   // A workout opens read-only in its dialog.
   click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Hill repeats")))
-  await waitFor("the workout in its dialog", () => d.querySelector("#workout-dialog[open]")?.textContent.includes("Week 1 · Mon"))
+  await waitFor("the workout in its dialog", () => shown(w, "#workout-dialog")?.textContent.includes("Week 1 · Mon"))
   assert.equal(d.querySelector("#workout-title"), null)
   assert.equal(byLabel(w, "Delete workout"), undefined)
   w.close()
@@ -857,7 +857,7 @@ test("Home shows missed, looks-done and rest days; the user confirms, unlinks, r
   await waitFor("the missed workout to offer activities", () => inCard("Easy shake-out", "Link activity"))
   click(w, inCard("Easy shake-out", "Link activity"))
   await waitFor("the list with yesterday's run", () => d.body.textContent.includes("Which activity was it?") && d.body.textContent.includes("18:00 · Run"))
-  click(w, d.querySelector(".choice-dialog[open] .choice-row"))
+  click(w, shown(w, ".choice-dialog").querySelector(".choice-row"))
   await waitFor("the second match on the server", async () => (await matches()).some((m) => m.activity === "todayact0000002" && m.workout === "todaywork000001"))
   await waitFor("done by hand", () => card("Easy shake-out").querySelector(".status-done")?.textContent === "Done" && card("Easy shake-out").textContent.includes("18:00"))
   assert.equal((await matches()).length, 2)

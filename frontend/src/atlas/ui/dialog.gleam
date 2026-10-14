@@ -1,14 +1,13 @@
-//// A confirmation dialog backed by the native `<dialog>` element. Unlike Atlas's other form
-//// controls, `<dialog>` can't be driven by attributes alone: `showModal()` must be called
-//// imperatively to get a real modal (focus trap, Escape-to-cancel, a backdrop) rather than a
-//// plain block-level element. `show` does that via a small FFI call, as an `Effect` run the
-//// moment a page's `Model` moves into "confirming" (see ADR 0040).
+//// Atlas's dialogs, drawn as Fluent UI's (ADR 0040, 0133): confirmations (`view`), simple dialogs of choices
+//// (`simple`) and details (`details`). A dialog can't be driven by attributes alone: its `show()` must be called. For
+//// a confirmation `show` does that, as an `Effect` run the moment a page's `Model` moves into "confirming"; the
+//// others say with `data-open` whether they should show, and `atlas/ui/interaction` keeps them in step.
 ////
-//// Once open, the browser's own Escape key, a backdrop click (light-dismiss, wired in the FFI),
-//// or any `<button>` inside the dialog's `<form method="dialog">` all close it natively and fire
-//// the `close` event `on_hide` is wired to — so the page's `Model` and the dialog's actual state
-//// can't drift apart, regardless of how it was closed.
+//// Once open, Escape, a click outside (except on a confirmation) or a submit button in the dialog's
+//// `<form method="dialog">` close it, and each sends the dialog's close message, so the page's `Model` and the
+//// dialog's actual state can't drift apart, however it was closed.
 
+import atlas/ui/button
 import atlas/ui/icon.{type Icon}
 import gleam/dynamic/decode
 import gleam/list
@@ -38,53 +37,26 @@ pub fn view(
   on_hide: msg,
   footer: List(Element(msg)),
 ) -> Element(msg) {
-  let label_id = id <> "-label"
-  let supporting_id = id <> "-supporting"
-  // Fluent UI's alert dialog (ADR 0124, 0133 spike): it asks before something that cannot be taken back, so a click
-  // outside does not close it. The native `<dialog>` is in its shadow root; `show` opens it, and Fluent reports any
-  // way it closes as a `toggle` to "closed".
-  element.element(
-    "fluent-dialog",
+  // An alert dialog (ADR 0124): it asks before something that cannot be taken back, so a click outside does not close
+  // it. Its sentence is not read out with the headline: see `fluent`.
+  fluent(
+    id,
+    "alert",
+    label,
+    [],
+    on_hide,
     [
-      attribute.id(id),
-      attribute.attribute("type", "alert"),
-      // Fluent passes ARIA on to the `<dialog>` in its shadow root, where an id from the page cannot be found, so the
-      // name is given as text. The sentence is not read out with it: Fluent passes on no text form of a description.
-      attribute.aria_label(label),
-      event.on("toggle", {
-        use state <- decode.subfield(["detail", "newState"], decode.string)
-        case state {
-          "closed" -> decode.success(on_hide)
-          _ -> decode.failure(on_hide, "a dialog closing")
-        }
-      }),
+      html.p(
+        [
+          attribute.id(id <> "-supporting"),
+          attribute.class("dialog-supporting"),
+        ],
+        [
+          html.text(supporting),
+        ],
+      ),
     ],
-    [
-      element.element("fluent-dialog-body", [], [
-        html.h2(
-          [
-            attribute.id(label_id),
-            attribute.class("dialog-headline"),
-            attribute.attribute("slot", "title"),
-          ],
-          [html.text(label)],
-        ),
-        html.p(
-          [attribute.id(supporting_id), attribute.class("dialog-supporting")],
-          [html.text(supporting)],
-        ),
-        // A form with method="dialog" closes the `<dialog>` it is in, but here that one is in the shadow root, out of
-        // its reach: `show` closes the dialog on the form's submit instead.
-        html.form(
-          [
-            attribute.attribute("method", "dialog"),
-            attribute.class("actions"),
-            attribute.attribute("slot", "action"),
-          ],
-          footer,
-        ),
-      ]),
-    ],
+    footer,
   )
 }
 
@@ -98,25 +70,17 @@ pub fn simple(
   body: Element(msg),
   actions: List(Element(msg)),
 ) -> Element(msg) {
-  let headline_id = id <> "-headline"
-  html.dialog(
+  fluent(
+    id,
+    "modal",
+    headline,
     [
-      attribute.id(id),
       attribute.class("choice-dialog"),
       attribute.attribute("data-open", "true"),
-      attribute.attribute("aria-labelledby", headline_id),
-      event.on("close", decode.success(on_close)),
     ],
-    [
-      html.h2([attribute.class("dialog-headline"), attribute.id(headline_id)], [
-        html.text(headline),
-      ]),
-      body,
-      html.form(
-        [attribute.attribute("method", "dialog"), attribute.class("actions")],
-        actions,
-      ),
-    ],
+    on_close,
+    [body],
+    actions,
   )
 }
 
@@ -125,10 +89,10 @@ pub fn choices(items: List(Element(msg))) -> Element(msg) {
   html.ul([attribute.class("choices")], items)
 }
 
-/// One of a `simple` dialog's `choices`: an icon and what it is.
+/// One of a `simple` dialog's `choices`: an icon and what it is. Fluent has no list, so a row is a native button.
 pub fn choice(symbol: Icon, label: String, on_click: msg) -> Element(msg) {
   html.li([], [
-    html.button(
+    button.button(
       [
         attribute.type_("button"),
         attribute.class("choice-row"),
@@ -150,41 +114,97 @@ pub fn details(
   body: List(Element(msg)),
   actions: List(Element(msg)),
 ) -> Element(msg) {
-  let headline_id = id <> "-headline"
-  html.dialog(
+  let data_open =
+    attribute.attribute("data-open", case open {
+      True -> "true"
+      False -> "false"
+    })
+  case open {
+    False ->
+      element.element(
+        "fluent-dialog",
+        [
+          attribute.id(id),
+          attribute.class("details-dialog"),
+          data_open,
+          on_closed(on_close),
+        ],
+        [],
+      )
+    True ->
+      fluent(
+        id,
+        "modal",
+        headline,
+        [attribute.class("details-dialog"), data_open],
+        on_close,
+        [html.div([attribute.class("details-body")], body)],
+        list.append(actions, [
+          button.text([attribute.type_("submit")], [html.text("Close")]),
+        ]),
+      )
+  }
+}
+
+/// Fluent UI's dialog (ADR 0133) of a `kind`: "alert", which only its buttons and Escape close, or "modal", which a
+/// click outside also closes. The native `<dialog>` is in its shadow root, so:
+///
+/// - Fluent passes ARIA on to that `<dialog>`, where an id from the page cannot be found: the dialog is named by its
+///   `headline` as text, and nothing describes it.
+/// - A form with method="dialog" cannot close it from outside: `atlas/ui/dialog.ffi.mjs` and `atlas/ui/interaction`
+///   close it on the form's submit.
+/// - It reports any way it closes as a `toggle` to "closed", which sends `on_close`.
+///
+/// The headline keeps an id (`id-headline`), so a test can tell whether the content is drawn.
+fn fluent(
+  id: String,
+  kind: String,
+  headline: String,
+  attributes: List(attribute.Attribute(msg)),
+  on_close: msg,
+  content: List(Element(msg)),
+  actions: List(Element(msg)),
+) -> Element(msg) {
+  element.element(
+    "fluent-dialog",
     [
       attribute.id(id),
-      attribute.class("details-dialog"),
-      attribute.attribute("data-open", case open {
-        True -> "true"
-        False -> "false"
-      }),
-      attribute.attribute("aria-labelledby", headline_id),
-      event.on("close", decode.success(on_close)),
+      attribute.attribute("type", kind),
+      attribute.aria_label(headline),
+      on_closed(on_close),
+      ..attributes
     ],
-    case open {
-      False -> []
-      True -> [
+    [
+      element.element("fluent-dialog-body", [], [
         html.h2(
-          [attribute.id(headline_id), attribute.class("dialog-headline")],
           [
-            html.text(headline),
+            attribute.id(id <> "-headline"),
+            attribute.class("dialog-headline"),
+            attribute.attribute("slot", "title"),
           ],
+          [html.text(headline)],
         ),
-        html.div([attribute.class("details-body")], body),
-        html.form(
-          [attribute.attribute("method", "dialog"), attribute.class("actions")],
-          list.append(actions, [
-            html.button(
-              [
-                attribute.type_("submit"),
-                attribute.class("md-button md-button-text"),
-              ],
-              [html.text("Close")],
-            ),
-          ]),
-        ),
-      ]
-    },
+        ..list.append(content, [
+          html.form(
+            [
+              attribute.attribute("method", "dialog"),
+              attribute.class("actions"),
+              attribute.attribute("slot", "action"),
+            ],
+            actions,
+          ),
+        ])
+      ]),
+    ],
   )
+}
+
+fn on_closed(message: msg) -> attribute.Attribute(msg) {
+  event.on("toggle", {
+    use state <- decode.subfield(["detail", "newState"], decode.string)
+    case state {
+      "closed" -> decode.success(message)
+      _ -> decode.failure(message, "a dialog closing")
+    }
+  })
 }
