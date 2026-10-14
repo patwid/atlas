@@ -1,4 +1,5 @@
-//// Material 3's modal date picker (ADR 0054), opened from the calendar button of a date field. The field itself stays
+//// A modal date picker after Material 3's (ADR 0054), in Fluent's tokens, as Fluent's web components have none
+//// (ADR 0133). It is opened from the calendar button of a date field. The field itself stays
 //// a native date input that can be typed in; the picker is a second way to fill it.
 ////
 //// A page keeps a `State` per picker, wraps `Msg` in its own message, and calls `update`, which says when a date was
@@ -342,7 +343,7 @@ fn day_id(id: String, d: Date) -> String {
   id <> "-" <> date.to_string(d)
 }
 
-/// `Mon, 5 Oct`, as M3's picker headline shows the chosen date.
+/// `Mon, 5 Oct`, as the picker's headline shows the chosen date.
 fn headline(d: Date) -> String {
   date.weekday_short(date.weekday(d))
   <> ", "

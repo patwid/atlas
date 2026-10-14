@@ -1,4 +1,5 @@
-//// Material 3's modal time picker with a dial (ADR 0054), opened from the clock button of a time field. The field
+//// A modal time picker with a dial after Material 3's (ADR 0054), in Fluent's tokens, as Fluent's web components
+//// have none (ADR 0133). It is opened from the clock button of a time field. The field
 //// stays a native time input that can be typed in; the picker is a second way to fill it.
 ////
 //// The clock is 24-hour: the outer ring holds 12 and 1 to 11, the inner ring 00 and 13 to 23, as on Android. Picking
@@ -61,7 +62,7 @@ pub fn update(
       #(Open(hour, minute, Hours), dialog.show(id), None)
     }
     PartChosen(part), Open(h, m, _) -> #(Open(h, m, part), effect.none(), None)
-    // As in M3, choosing the hour moves on to the minutes.
+    // Choosing the hour moves on to the minutes.
     HourPicked(h), Open(_, m, _) -> #(Open(h, m, Minutes), effect.none(), None)
     MinutePicked(m), Open(h, _, part) -> #(
       Open(h, m, part),

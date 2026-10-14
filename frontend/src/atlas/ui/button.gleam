@@ -1,11 +1,11 @@
-//// Atlas's buttons, named after Material Design 3's common buttons (ADR 0040, 0044, 0046, 0047) and drawn as Fluent
+//// Atlas's buttons, named after Material Design 3's common buttons (ADR 0040, 0044, 0046, 0047) but drawn as Fluent
 //// UI's (ADR 0133): a constructor per kind of button instead of an element and its appearance typed out at every
 //// call site.
 ////
 //// Links that look like buttons (`text_link`, `icon_link`) stay native `<a>` elements styled like Fluent's buttons:
 //// the router (modem) only follows a click on an `<a>` in the page, not one in a `fluent-anchor-button`'s shadow root.
 ////
-//// M3 has no "danger" button: a destructive action is confirmed in a dialog, whose actions are both text
+//// There is no "danger" button: a destructive action is confirmed in a dialog, whose actions are both text
 //// buttons, the dismissive one first.
 ////
 //// `button` is the plain, unstyled base the variants below are built from; use it directly for a
@@ -89,8 +89,7 @@ pub fn medium() -> Attribute(msg) {
   attribute.attribute("size", "large")
 }
 
-/// M3 Expressive's standard button group (ADR 0098): buttons side by side, the one pressed widening while its
-/// neighbours give way, such as a plan's Edit and More in the app bar.
+/// Buttons side by side (ADR 0098), such as a plan's Edit and More in the app bar.
 pub fn group(children: List(Element(msg))) -> Element(msg) {
   html.div([attribute.class("button-group")], children)
 }

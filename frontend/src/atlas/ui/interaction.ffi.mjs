@@ -46,15 +46,9 @@ export function install() {
     }
     for (const dialog of document.querySelectorAll("dialog[data-open]")) {
       const wanted = dialog.dataset.open === "true"
-      if (wanted && !dialog.open) {
-        // Basic dialogs (details, choices; ADR 0066) close on a click outside them, as M3's do; form dialogs do not,
-        // so nothing typed is lost (ADR 0057).
-        if (!dialog.classList.contains("form-dialog") && !dialog.dataset.lightDismiss) {
-          dialog.dataset.lightDismiss = "on"
-          dialog.addEventListener("click", (event) => { if (clickedOutside(dialog, event)) dialog.close() })
-        }
-        dialog.showModal()
-      }
+      // Only form dialogs are native and open this way; they do not close on a click outside, so nothing typed is
+      // lost (ADR 0057).
+      if (wanted && !dialog.open) dialog.showModal()
       else if (!wanted && dialog.open) dialog.close()
     }
   }

@@ -1,5 +1,5 @@
-/* Window size classes (ADR 0060), M3's: compact under 600px (37.5rem), medium from 600px, expanded from 840px
-   (52.5rem), large from 1200px (75rem). Media queries use these widths only.
+/* Window size classes (ADR 0060), as Material 3 defines them: compact under 600px (37.5rem), medium from 600px,
+   expanded from 840px (52.5rem), large from 1200px (75rem). Media queries use these widths only.
 
    Fluent 2 (ADR 0133): Fluent UI's web components draw the controls, and fluent-theme.css, loaded before this file,
    holds Fluent's design tokens for light and dark. Every color, corner, shadow, curve and size of type here is one of
@@ -134,7 +134,7 @@ fluent-button.fab {
 }
 /* 16px between wrapped rows, so the chips' 48px targets meet without overlapping (ADR 0124). */
 .choice-options { display: flex; flex-wrap: wrap; gap: 1rem 0.5rem; }
-/* The option's label is what is pressed: 8px above and below the 32px chip make M3's 48px touch target, taken back
+/* The option's label is what is pressed: 8px above and below the 32px chip make a 48px touch target, taken back
    by the margins so the layout does not move (ADR 0124). */
 .choice-option { position: relative; margin: -0.5rem 0; padding: 0.5rem 0; font: inherit; color: inherit; }
 .choice-option input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
@@ -156,27 +156,16 @@ fluent-button.fab {
 }
 .choice-option input:checked + .choice-label .icon { display: block; }
 .choice-option input:focus-visible + .choice-label { outline: var(--focus-ring); outline-offset: 2px; }
-/* Segmented buttons drawn as M3 Expressive's connected button group (ADR 0053): tonal buttons 2px apart, round outer
-   corners, small inner corners that tighten while pressed, and the selected one fully round. */
+/* Segmented buttons (ADR 0047): a row of radio buttons 2px apart, drawn in Fluent's tokens (ADR 0133), which has no
+   segmented control; the selected one is in the brand's subtle color. */
 .segmented .choice-options { flex-wrap: nowrap; gap: 2px; }
 .segmented .choice-option { flex: 1; display: flex; }
 .segmented .choice-label {
-  --outer: var(--borderRadiusCircular); --inner: var(--borderRadiusMedium);
-  flex: 1; height: 2.5rem; padding: 0 0.75rem; border: 0; border-radius: var(--inner);
+  flex: 1; height: 2.5rem; padding: 0 0.75rem; border: 0;
   background: var(--colorNeutralBackground1Hover); color: var(--colorNeutralForeground3);
-  transition: border-radius var(--durationFast) var(--curveDecelerateMid),
-    background-color var(--durationFaster) var(--curveEasyEase);
+  transition: background-color var(--durationFaster) var(--curveEasyEase);
 }
-.segmented .choice-option:first-child .choice-label { border-radius: var(--outer) var(--inner) var(--inner) var(--outer); }
-.segmented .choice-option:last-child .choice-label { border-radius: var(--inner) var(--outer) var(--outer) var(--inner); }
-.segmented .choice-label:active { --inner: var(--borderRadiusMedium); }
-.segmented .choice-option input:checked + .choice-label {
-  border-radius: var(--borderRadiusCircular);
-  background: var(--colorBrandBackground2); color: var(--colorBrandForeground2);
-}
-/* Chips square off a little when selected, the Expressive toggle shape. */
-.chips .choice-label { transition: border-radius var(--durationFast) var(--curveDecelerateMid); }
-.chips .choice-option input:checked + .choice-label { border-radius: var(--borderRadiusLarge); }
+.segmented .choice-option input:checked + .choice-label { background: var(--colorBrandBackground2); color: var(--colorBrandForeground2); }
 .supporting {
   margin: 0.25rem 1rem 0; font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200);
   color: var(--colorNeutralForeground3);
@@ -384,8 +373,8 @@ label {
 }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 
-/* Lists (ADR 0047), as M3 Expressive's segmented list (ADR 0053): each item its own filled shape, 2px apart, with
-   large corners at the ends of the list and extra-small ones between items; the link is the headline. Only the
+/* Lists (ADR 0047): each item a card in Fluent's tokens (ADR 0133), 2px apart, with rounded corners at the ends of
+   the list; the link is the headline. Only the
    list's own items: a dialog opened from a row sits inside it, and its choices are not list items (ADR 0124). */
 .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .list > li {
@@ -393,7 +382,7 @@ label {
   background: var(--colorNeutralBackground1); border-radius: var(--borderRadiusMedium);
   transition: border-radius var(--durationFast) var(--curveDecelerateMid);
 }
-/* The item's lines are centred in it, so a one-line item is as high as M3's 56px with its text in the middle. */
+/* The item's lines are centred in it, so a one-line item is 56px high with its text in the middle. */
 .list > li:not(.info-item) { display: flex; flex-direction: column; justify-content: center; }
 .list > li:first-child { border-top-left-radius: var(--borderRadiusXLarge); border-top-right-radius: var(--borderRadiusXLarge); }
 .list > li:last-child { border-bottom-left-radius: var(--borderRadiusXLarge); border-bottom-right-radius: var(--borderRadiusXLarge); }
@@ -403,8 +392,8 @@ label {
 /* A list item's headline is body-large at 400, whether a link, a button or text (ADR 0124). A link drawn as a button,
    such as a dialog's action, keeps the button's look. */
 .list a:where(:not(.link-button)), .list strong { color: var(--colorNeutralForeground1); font: var(--fontWeightRegular) var(--fontSizeBase400)/var(--lineHeightBase400) var(--fontFamilyBase); text-decoration: none; }
-/* A row that opens a page (ADR 0069): its headline link covers the whole item, with M3's state layer and the
-   segmented list's shape change on hover, like the Settings list. */
+/* A row that opens a page (ADR 0069): its headline link covers the whole item, with a state layer on hover,
+   like the Settings list. */
 .list .row-link::after {
   content: ""; position: absolute; inset: 0; background: var(--colorNeutralForeground1);
   opacity: 0; transition: opacity var(--durationFaster) var(--curveEasyEase);
@@ -498,7 +487,7 @@ label {
   gap: 0.5rem; align-items: start; min-height: 2.25rem;
 }
 .calendar-day:has(> .add-here) { grid-template-columns: 3.5rem 1fr auto; }
-/* The calendar's small text is M3's body-small, 12/16 (ADR 0124). */
+/* The calendar's small text is Fluent's caption size, 12/16 (ADR 0124, 0133). */
 .day-name { color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); padding-top: 0.375rem; }
 .day-name > span { display: block; }
 .day-date, .week-dates { color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); font-weight: var(--fontWeightRegular); }
@@ -542,7 +531,7 @@ label {
 .workout.open .workout-kind { color: inherit; }
 .workout-targets { color: var(--colorNeutralForeground3); }
 .workout-distance { display: none; }
-/* Adding a workout to a day: an icon button, 40px, with M3's 48px touch target around it (ADR 0075, 0124). */
+/* Adding a workout to a day: an icon button, 40px, with a 48px touch target around it (ADR 0075, 0124). */
 .add-here {
   position: relative; display: grid; place-items: center; width: 2.5rem; height: 2.5rem; padding: 0; cursor: pointer; align-self: flex-start;
   border: 0; border-radius: var(--borderRadiusCircular);
@@ -600,18 +589,14 @@ label {
 .facts dt { color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); }
 .facts dt label { margin: 0; }
 .facts dd { margin: 0; }
-/* A determinate linear progress indicator as Material 3 draws it (ADR 0051): the indicator, a gap, the rest of the
-   track, and a stop dot at its end. */
-.goal-meter { position: relative; display: flex; align-items: center; gap: 0.25rem; height: 0.625rem; margin-top: 0.75rem; }
-/* The active indicator is a flat bar, not Expressive's wave (ADR 0111): these meters are readings, not activity. */
-.goal-meter span {
-  flex: none; display: block; height: 0.25rem; max-width: calc(100% - 0.25rem);
-  border-radius: var(--borderRadiusCircular); background: var(--colorBrandForeground1);
+/* A meter drawn like Fluent's determinate progress bar (ADR 0051, 0133): a 4px track with the filled part in the
+   brand color. A flat bar (ADR 0111): these meters are readings, not activity. */
+.goal-meter {
+  position: relative; height: 0.25rem; margin-top: 0.75rem; overflow: hidden;
+  border-radius: var(--borderRadiusCircular); background: var(--colorNeutralBackground6);
 }
-.goal-meter::after { content: ""; flex: 1; height: 0.25rem; border-radius: var(--borderRadiusCircular); background: var(--colorBrandBackground2); }
-.goal-meter::before {
-  content: ""; position: absolute; right: 0; top: 50%; width: 0.25rem; height: 0.25rem; transform: translateY(-50%);
-  border-radius: 50%; background: var(--colorBrandForeground1);
+.goal-meter span {
+  display: block; height: 100%; border-radius: var(--borderRadiusCircular); background: var(--colorCompoundBrandBackground);
 }
 .goal-meter.over span { background: var(--intensity-medium); }
 .plan-settings, .interval-part { border: 0; padding: 0; margin: 0.75rem 0 0; min-width: 0; }
@@ -726,7 +711,8 @@ a.strava-link { color: var(--colorNeutralForeground1); font-weight: var(--fontWe
 /* The person finder's search turns into a small loading indicator while it looks (ADR 0083). */
 .field-trigger:disabled { cursor: progress; }
 
-/* M3's modal pickers (ADR 0054): a label, a headline or the time fields, the picking area, and Cancel and OK. */
+/* The modal pickers (ADR 0054), after Material 3's, in Fluent's tokens: Fluent's web components have no date or time
+   picker (ADR 0133). A label, a headline or the time fields, the picking area, and Cancel and OK. */
 dialog.picker { padding: 0; min-width: 0; width: auto; max-width: calc(100% - 2rem); }
 .picker-label {
   margin: 0; padding: 1rem 1.5rem 0; color: var(--colorNeutralForeground3);
@@ -959,7 +945,7 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
   .day-body .workout.open .workout-distance { color: inherit; }
 }
 
-/* M3's medium app bar (ADR 0062) on a plan's or athlete's page: the name on its own line in headline-medium, under
+/* A medium app bar (ADR 0062) on a plan's or athlete's page: the name on its own line in a larger size, under
    the back button and the actions; once the page scrolls it is the small bar again. */
 .bar-medium .bar-content { flex-wrap: wrap; row-gap: 0; }
 .bar-medium h1 {
@@ -972,7 +958,7 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
 html[data-scrolled] .bar-medium .bar-content { flex-wrap: nowrap; }
 html[data-scrolled] .bar-medium h1 { order: 0; flex-basis: auto; padding: 0; font-size: var(--fontSizeBase500); line-height: var(--lineHeightBase500); white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .bar-medium h1 { transition: none; } }
-/* M3 Expressive's medium flexible app bar (ADR 0097): a subtitle under the name, such as a plan's length and goal. The
+/* The medium app bar's subtitle (ADR 0097): a line under the name, such as a plan's length and goal. The
    small bar it becomes on scrolling has the name only. */
 .bar-subtitle {
   order: 2; flex-basis: 100%; margin: 0 0 0.5rem; color: var(--colorNeutralForeground3);

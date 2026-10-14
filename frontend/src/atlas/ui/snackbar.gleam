@@ -1,4 +1,4 @@
-//// A Material 3 snackbar (ADR 0047): a short message about something the app just did, at the bottom of the
+//// A snackbar (ADR 0047), drawn like Fluent's toast, which its web components do not have (ADR 0133): a short message about something the app just did, at the bottom of the
 //// screen, with at most one action and a button to close it. The page keeps the message in its `Model` and
 //// closes it on `on_close`. Its text is read out through the page's live region (`data-announce`, ADR 0124).
 ////

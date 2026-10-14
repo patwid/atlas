@@ -42,7 +42,7 @@ pub type Frame(msg) {
 
 pub fn view(frame: Frame(msg), page: Element(msg)) -> Element(msg) {
   html.div([class("shell")], [
-    // A plan's or an athlete's page has M3's medium app bar (ADR 0062): its name on a line of its own, in a larger
+    // A plan's or an athlete's page has a medium app bar (ADR 0062): its name on a line of its own, in a larger
     // size, until the page scrolls and the bar becomes the small one.
     html.header(
       [
@@ -145,7 +145,7 @@ fn nav(current: Route, coaching: Bool, problems: Int) -> Element(msg) {
           ],
           [
             html.span([class("nav-indicator")], [
-              // Material 3: the selected destination's icon is filled, the others outlined.
+              // As in Fluent 2: the selected destination's icon is filled, the others regular.
               case active {
                 True -> icon.filled(tab_icon(target))
                 False -> icon.view(tab_icon(target))
@@ -161,7 +161,7 @@ fn nav(current: Route, coaching: Bool, problems: Int) -> Element(msg) {
   ])
 }
 
-/// A Material 3 badge with the number of sync problems on the Settings tab, so they are seen from anywhere. The
+/// A counter badge with the number of sync problems on the Settings tab, so they are seen from anywhere. The
 /// number is drawn only; `badge_text` reads it out after the tab's name (an `aria-label` on a `span` is not read).
 fn badge(target: Route, problems: Int) -> Element(msg) {
   case target, problems {

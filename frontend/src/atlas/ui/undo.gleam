@@ -1,4 +1,4 @@
-//// Delete now, undo for a few seconds (ADR 0056): Material 3's pattern for an action that can be taken back, in
+//// Delete now, undo for a few seconds (ADR 0056): the pattern for an action that can be taken back, in
 //// place of a confirmation dialog. A page keeps one `Undo`; a delete hides the item at once and shows a snackbar
 //// with Undo, and the page writes the delete only when the snackbar goes (after `seconds`, or when it is closed)
 //// or when a second delete starts. Undo before then cancels it, so nothing was ever written.
@@ -11,7 +11,7 @@ import gleam/option.{type Option, None, Some}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 
-/// How long the snackbar stays before the delete is written: M3's longest, as it has an action (ADR 0124). It
+/// How long the snackbar stays before the delete is written: long, as it has an action (ADR 0124). It
 /// waits on while the snackbar is pointed at or has the focus.
 pub const seconds = 10
 

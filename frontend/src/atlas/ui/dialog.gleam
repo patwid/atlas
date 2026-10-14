@@ -60,7 +60,7 @@ pub fn view(
   )
 }
 
-/// M3's simple dialog (ADR 0062): a headline and a list of `choices`, one of which is taken at once. It opens when
+/// A simple dialog (ADR 0062): a headline and a list of `choices`, one of which is taken at once. It opens when
 /// drawn (`data-open`, see `atlas/ui/interaction`); Escape, a click outside and a submit button in `actions` send
 /// `on_close`. `body` is the list, or a sentence when there is nothing to choose.
 pub fn simple(

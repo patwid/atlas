@@ -12,13 +12,13 @@ pub fn actions(children: List(Element(msg))) -> Element(msg) {
   html.div([class("actions")], children)
 }
 
-/// A Material 3 list (ADR 0047): plans, coaches, shares, athletes, and the like. Each item's link is its
+/// A list of cards (ADR 0047, 0133): plans, coaches, shares, athletes, and the like. Each item's link is its
 /// headline and its paragraphs the supporting text.
 pub fn list(children: List(Element(msg))) -> Element(msg) {
   html.ul([class("list")], children)
 }
 
-/// A section heading under the app bar's title: M3's list subheader (ADR 0069). The app bar holds the page's title,
+/// A section heading under the app bar's title (ADR 0069). The app bar holds the page's title,
 /// so sections are `h2`.
 pub fn subheader(text: String) -> Element(msg) {
   html.h2([class("subheader")], [html.text(text)])

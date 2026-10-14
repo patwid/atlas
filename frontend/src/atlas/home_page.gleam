@@ -462,7 +462,7 @@ fn link_button(key: Key) -> Element(Msg) {
   )
 }
 
-/// Choosing the activity is M3's simple dialog (ADR 0062): the activities are its choices, and a choice is taken
+/// Choosing the activity is a simple dialog (ADR 0062): the activities are its choices, and a choice is taken
 /// at once. It opens when drawn (`data-open`, see `atlas/ui/interaction`); Escape and Cancel close it.
 fn choosing_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
   let candidates = today.candidates(inputs, item)

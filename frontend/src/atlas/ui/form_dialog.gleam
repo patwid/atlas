@@ -1,4 +1,5 @@
-//// A form in a Material 3 full-screen dialog (ADR 0057): on a phone it fills the screen with a top bar holding
+//// A form in a full-screen dialog (ADR 0057), a native `<dialog>` drawn like Fluent's: Fluent's own closes on a click
+//// outside or has the alert role, neither right for a form (ADR 0133). on a phone it fills the screen with a top bar holding
 //// Close, the title and the form's submit button; on wider screens it is a basic dialog in the middle, with its
 //// headline at the top and Cancel and a filled submit button at the bottom (ADR 0085). Both sets of buttons are
 //// drawn and CSS shows the ones that fit, as for a screen's main action (ADR 0068). Create and edit

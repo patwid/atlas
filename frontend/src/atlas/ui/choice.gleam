@@ -1,6 +1,6 @@
-//// Picking one of a few options (ADR 0047), as Material 3 segmented buttons or a set of filter chips. Both are a
-//// group of native radio buttons, so the keyboard and screen readers treat them as one choice, styled as M3
-//// draws them. `options` are `#(value, label)` pairs; `name` must be unique in the page.
+//// Picking one of a few options (ADR 0047), as segmented buttons or a set of filter chips. Both are a group of
+//// native radio buttons, so the keyboard and screen readers treat them as one choice, drawn in Fluent's tokens:
+//// Fluent has neither (ADR 0133). `options` are `#(value, label)` pairs; `name` must be unique in the page.
 ////
 //// Segmented buttons suit two to five short options; chips suit more, wrapping onto several lines.
 

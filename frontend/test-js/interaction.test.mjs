@@ -15,7 +15,7 @@ Object.assign(globalThis, {
 })
 dom.window.HTMLDialogElement.prototype.showModal = function () { this.setAttribute("open", "") }
 dom.window.HTMLDialogElement.prototype.close = function () { this.removeAttribute("open") }
-const { install } = await import("../build/dev/javascript/atlas/atlas/ui/interaction.ffi.mjs")
+const { install, clickedOutside } = await import("../build/dev/javascript/atlas/atlas/ui/interaction.ffi.mjs")
 install()
 install() // a second call adds no second set of listeners
 
@@ -45,23 +45,19 @@ test("a form dialog opens and closes with its data-open attribute", async () => 
   assert.ok(dialog.hasAttribute("open"), "opened again")
 })
 
-test("a basic dialog closes on a click outside it, not on its own padding; a form dialog does not", async () => {
-  const basic = d.createElement("dialog")
-  basic.dataset.open = "true"
+test("a click on a dialog's padding is not a click outside it; a form dialog stays open on either", async () => {
   const form = d.createElement("dialog")
   form.className = "form-dialog"
   form.dataset.open = "true"
-  d.body.append(basic, form)
+  d.body.append(form)
   await new Promise((resolve) => setTimeout(resolve, 0))
-  // jsdom lays nothing out, so the dialogs get a box: a click on the dialog inside it is a click on its padding.
-  const box = { left: 100, right: 400, top: 100, bottom: 300 }
-  basic.getBoundingClientRect = form.getBoundingClientRect = () => box
-  const click = (el, x, y) => el.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true, clientX: x, clientY: y }))
-  click(basic, 110, 110)
-  assert.ok(basic.hasAttribute("open"), "a click on the padding leaves it open")
-  click(basic, 20, 20)
-  click(form, 20, 20)
-  assert.ok(!basic.hasAttribute("open"), "the basic dialog closed")
+  // jsdom lays nothing out, so the dialog gets a box: a click on the dialog inside it is a click on its padding.
+  form.getBoundingClientRect = () => ({ left: 100, right: 400, top: 100, bottom: 300 })
+  const at = (x, y) => new dom.window.MouseEvent("click", { bubbles: true, clientX: x, clientY: y })
+  const event = (x, y) => { const e = at(x, y); Object.defineProperty(e, "target", { value: form }); return e }
+  assert.equal(clickedOutside(form, event(110, 110)), false, "the padding")
+  assert.equal(clickedOutside(form, event(20, 20)), true, "the backdrop")
+  form.dispatchEvent(at(20, 20))
   assert.ok(form.hasAttribute("open"), "the form dialog stays")
 })
 
