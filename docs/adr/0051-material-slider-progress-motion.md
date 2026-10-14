@@ -1,6 +1,6 @@
 # 0051. Material slider and progress, a phone layout for the athlete table, calendar cards, ripple and motion
 
-- Status: Accepted
+- Status: Accepted. The slider's look and the ripple are changed by [0134](0134-native-controls-where-fluent-does-not-fit.md).
 - Date: 2026-10-08
 - Deciders: owner (asked for the remaining Material Design 3 changes); agent (the details below)
 

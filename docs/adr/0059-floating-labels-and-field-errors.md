@@ -1,6 +1,6 @@
 # 0059. Floating labels, units and errors on the field they are about
 
-- Status: Accepted
+- Status: Accepted. The floating labels are changed by [0134](0134-native-controls-where-fluent-does-not-fit.md): labels sit above their field.
 - Date: 2026-10-08
 - Deciders: owner (asked to go ahead with the Material review's next steps); agent (the details below)
 

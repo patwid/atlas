@@ -1,6 +1,6 @@
 # 0053. Adopt Material 3 Expressive's shapes, motion and components where they fit
 
-- Status: Accepted
+- Status: Superseded by [0134](0134-native-controls-where-fluent-does-not-fit.md)
 - Date: 2026-10-08
 - Deciders: owner (asked for Material 3 Expressive); agent (the selection and details below)
 

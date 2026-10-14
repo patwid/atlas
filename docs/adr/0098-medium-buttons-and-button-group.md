@@ -1,6 +1,6 @@
 # 0098. Medium buttons for a screen's only action, and a button group in a plan's app bar
 
-- Status: Accepted
+- Status: Accepted. The button sizes and the widening group are changed by [0134](0134-native-controls-where-fluent-does-not-fit.md).
 - Date: 2026-10-09
 - Deciders: owner (asked for the M3 Expressive items left out by ADR 0095); agent (the details)
 

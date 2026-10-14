@@ -1,6 +1,6 @@
 # 0095. M3 Expressive's navigation bar and rail, progress gap, menus and springs throughout
 
-- Status: Accepted
+- Status: Superseded by [0134](0134-native-controls-where-fluent-does-not-fit.md)
 - Date: 2026-10-09
 - Deciders: owner (asked to look into switching to Material 3 Expressive, then to go ahead with the items below);
   agent (the details)

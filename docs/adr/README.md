@@ -54,15 +54,15 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0048 | [Material back button, progress indicators and status chips](0048-material-navigation-progress-status.md) | Accepted (status chips changed by 0124) |
 | 0049 | [Settings as a list of pages, and banners for offline and sync problems](0049-settings-list-and-banners.md) | Accepted (partly changed by 0055) |
 | 0050 | [Badges with icons, empty states and icons in buttons](0050-chips-empty-states-button-icons.md) | Accepted |
-| 0051 | [Material slider and progress, a phone layout for the athlete table, calendar cards, ripple and motion](0051-material-slider-progress-motion.md) | Accepted |
+| 0051 | [Material slider and progress, a phone layout for the athlete table, calendar cards, ripple and motion](0051-material-slider-progress-motion.md) | Accepted (slider look and ripple changed by 0134) |
 | 0052 | [The plan calendar's sidebar as a bottom sheet on smaller screens](0052-calendar-bottom-sheet.md) | Superseded by 0066 |
-| 0053 | [Adopt Material 3 Expressive's shapes, motion and components where they fit](0053-material-3-expressive.md) | Accepted (navigation, progress, menus and motion extended by 0095; wavy meters replaced by 0111) |
+| 0053 | [Adopt Material 3 Expressive's shapes, motion and components where they fit](0053-material-3-expressive.md) | Superseded by 0134 |
 | 0054 | [Material 3 date and time pickers beside the native fields](0054-material-date-and-time-pickers.md) | Accepted |
 | 0055 | [Material review, quick fixes: titles, dialogs, offline, badges, loading, icons, Settings](0055-material-review-quick-fixes.md) | Accepted (sync row removed by 0113) |
-| 0056 | [Menus for item actions, and Undo instead of confirming deletes](0056-menus-and-undo.md) | Accepted |
+| 0056 | [Menus for item actions, and Undo instead of confirming deletes](0056-menus-and-undo.md) | Accepted (menus drawn by Fluent since 0134) |
 | 0057 | [Create and edit forms in full-screen dialogs](0057-forms-in-full-screen-dialogs.md) | Accepted |
 | 0058 | [The plan page: tabs, actions in the app bar, and floating action buttons](0058-plan-page-tabs-and-app-bar-actions.md) | Accepted (tabs gone: 0110) |
-| 0059 | [Floating labels, units and errors on the field they are about](0059-floating-labels-and-field-errors.md) | Accepted |
+| 0059 | [Floating labels, units and errors on the field they are about](0059-floating-labels-and-field-errors.md) | Accepted (floating labels changed by 0134) |
 | 0060 | [Material window size classes, the FAB in the rail, and Settings as list-detail](0060-window-size-classes-and-list-detail.md) | Accepted (list-detail dropped by 0065, FAB in the rail by 0067) |
 | 0061 | [Harmonized custom colours for training intensity](0061-harmonized-intensity-colours.md) | Accepted |
 | 0062 | [Material review, remaining items: a choice dialog, chips, the phone calendar, the medium app bar](0062-material-review-remaining-items.md) | Accepted |
@@ -98,10 +98,10 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0092 | [Plain HTTP on the server's IP address until there is a domain](0092-plain-http-on-the-ip-until-there-is-a-domain.md) | Superseded by 0099 |
 | 0093 | [Nix files under `nix/`, the flake at the top](0093-nix-files-under-nix.md) | Accepted |
 | 0094 | [Atlas takes over the VPS from nixos-config](0094-atlas-owns-the-vps.md) | Accepted |
-| 0095 | [M3 Expressive's navigation bar and rail, progress gap, menus and springs throughout](0095-expressive-navigation-progress-menus-motion.md) | Accepted |
+| 0095 | [M3 Expressive's navigation bar and rail, progress gap, menus and springs throughout](0095-expressive-navigation-progress-menus-motion.md) | Superseded by 0134 |
 | 0096 | [Google Sans Flex instead of Roboto Flex](0096-google-sans-flex.md) | Superseded by 0133 |
 | 0097 | [A subtitle in a plan's medium app bar](0097-app-bar-subtitle.md) | Accepted |
-| 0098 | [Medium buttons for a screen's only action, and a button group in a plan's app bar](0098-medium-buttons-and-button-group.md) | Accepted |
+| 0098 | [Medium buttons for a screen's only action, and a button group in a plan's app bar](0098-medium-buttons-and-button-group.md) | Accepted (sizes and group changed by 0134) |
 | 0099 | [Serve Atlas over HTTPS on atlas.patwid.ch](0099-https-on-atlas-patwid-ch.md) | Accepted |
 | 0100 | [Import activities from FIT files with a decoder in Gleam](0100-fit-file-import.md) | Accepted |
 | 0101 | [Serve the app shell without dates, so deploys reach installed apps](0101-no-dates-on-the-app-shell.md) | Accepted |
@@ -135,4 +135,5 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0130 | [An interval workout counts the distance and duration of its parts](0130-interval-workout-totals-from-its-parts.md) | Superseded by 0131 |
 | 0131 | [An interval workout's distance and duration are those of its parts, read-only](0131-interval-workout-totals-read-only.md) | Accepted |
 | 0132 | [Draw every page's controls through `atlas/ui`](0132-every-page-draws-through-atlas-ui.md) | Accepted |
-| 0133 | [Fluent UI's web components in place of the hand-written Material 3](0133-fluent-ui-spike.md) | Accepted |
+| 0133 | [Fluent UI's web components in place of the hand-written Material 3](0133-fluent-ui-spike.md) | Accepted (components refined by 0134) |
+| 0134 | [Native controls where Fluent UI's components do not fit, and the rest in Fluent's look](0134-native-controls-where-fluent-does-not-fit.md) | Accepted |

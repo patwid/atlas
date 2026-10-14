@@ -6,7 +6,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 ## [Unreleased]
 
 ### Changed
-- Fluent 2 instead of Material 3 ([ADR 0133](docs/adr/0133-fluent-ui-spike.md)): Fluent UI's web components draw buttons and confirmation dialogs, and every color, corner, shadow and curve is a Fluent token, in light and dark. The bundled Google Sans Flex font is gone; text is in Segoe UI or the system font.
+- Fluent 2 instead of Material 3 ([ADR 0133](docs/adr/0133-fluent-ui-spike.md), [0134](docs/adr/0134-native-controls-where-fluent-does-not-fit.md)): Fluent UI's web components draw buttons, dialogs, text fields, menus, banners, progress, spinners and chips; selects, number, date and time fields, the slider, the form dialog and the pickers stay native, drawn like Fluent's; navigation follows Fluent 2's tab bar and rail. Every color, corner, shadow, curve and size of type is a Fluent token, in light and dark, and the icons are Fluent System Icons. The ripple, M3 Expressive's shapes and springs, floating labels and the bundled Google Sans Flex font are gone; text is in Segoe UI or the system font.
 
 ### Added
 - ADR process and the initial architecture decisions (ADR 0001–0006).

@@ -1,6 +1,6 @@
 # 0133. Fluent UI's web components in place of the hand-written Material 3
 
-- Status: Accepted
+- Status: Accepted. Which components are Fluent's is refined by [0134](0134-native-controls-where-fluent-does-not-fit.md).
 - Date: 2026-10-14
 - Deciders: owner (asked to look into switching to Fluent UI, chose option 1 after the spike); agent (the spike and the details below)
 
