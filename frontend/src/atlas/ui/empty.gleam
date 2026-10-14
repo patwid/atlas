@@ -34,11 +34,14 @@ pub fn compact(symbol: Icon, headline: String, text: String) -> Element(msg) {
   ])
 }
 
-/// A link that reads as the empty state's action: a tonal button of the medium size (ADR 0098), as it is the one
+/// A link that reads as the empty state's action: a large secondary button (ADR 0098, 0133), as it is the one
 /// thing to do there.
 pub fn link(href: String, label: String) -> Element(msg) {
   html.a(
-    [class("md-button md-button-tonal md-button-medium"), attribute.href(href)],
+    [
+      class("link-button link-button-secondary link-button-large"),
+      attribute.href(href),
+    ],
     [
       html.text(label),
     ],

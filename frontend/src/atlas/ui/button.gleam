@@ -136,10 +136,7 @@ pub fn waiting(
 
 /// A link that looks like a text button, such as a dialog's way to another page.
 pub fn text_link(href: String, children: List(Element(msg))) -> Element(msg) {
-  html.a(
-    [attribute.class("md-button md-button-text"), attribute.href(href)],
-    children,
-  )
+  html.a([attribute.class("link-button"), attribute.href(href)], children)
 }
 
 /// A link that looks like an icon button, such as the app bar's back button. `label` names it for screen readers
@@ -152,7 +149,7 @@ pub fn icon_link(
 ) -> Element(msg) {
   html.a(
     [
-      attribute.class("md-icon-button"),
+      attribute.class("link-button link-button-icon"),
       attribute.href(href),
       attribute.aria_label(label),
       attribute.title(label),

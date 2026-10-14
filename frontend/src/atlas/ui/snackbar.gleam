@@ -30,7 +30,7 @@ pub fn view(
       Some(Link(label, href)) ->
         html.a(
           [
-            class("md-button md-button-text snackbar-action"),
+            class("link-button snackbar-action"),
             attribute.href(href),
           ],
           [html.text(label)],

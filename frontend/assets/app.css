@@ -134,48 +134,32 @@ h1, h2, h3 { font-weight: var(--fontWeightRegular); }
 a { color: var(--md-sys-color-primary); text-underline-offset: 0.15em; }
 a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius: 2px; }
 
-/* Buttons: common buttons with a state layer (::before) for hover, focus and press. */
-.md-button {
-  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-  min-height: 2.5rem; padding: 0 1rem; border: 0; border-radius: var(--md-sys-shape-corner-full);
-  font: var(--fontWeightSemibold) var(--fontSizeBase300)/var(--lineHeightBase300) var(--fontFamilyBase); text-align: center;
-  cursor: pointer; user-select: none; isolation: isolate; background: transparent; color: var(--md-sys-color-primary);
-  transition: box-shadow var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects),
-    border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
+/* Links that look like Fluent's buttons (ADR 0133): Fluent UI's buttons draw every other button, but the router only
+   follows a native <a>. Subtle by default, secondary for an empty state's way on, and large or icon-only. */
+.link-button {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem;
+  min-height: 2rem; padding: 0 0.75rem; border: 1px solid transparent; border-radius: var(--borderRadiusMedium);
+  background: var(--colorSubtleBackground); color: var(--colorNeutralForeground2); text-decoration: none;
+  font: var(--fontWeightSemibold) var(--fontSizeBase300)/var(--lineHeightBase300) var(--fontFamilyBase);
   -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--durationFaster) var(--curveEasyEase), color var(--durationFaster) var(--curveEasyEase);
 }
-.md-button::before {
-  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
-  background: currentColor; opacity: 0; transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+.link-button:hover { background: var(--colorSubtleBackgroundHover); color: var(--colorNeutralForeground2Hover); }
+.link-button:active { background: var(--colorSubtleBackgroundPressed); color: var(--colorNeutralForeground2Pressed); }
+.link-button:focus-visible { outline: var(--focus-ring); outline-offset: 1px; border-radius: var(--borderRadiusMedium); }
+.link-button-secondary {
+  background: var(--colorNeutralBackground1); border-color: var(--colorNeutralStroke1); color: var(--colorNeutralForeground1);
 }
-.md-button:not(:disabled):hover::before { opacity: var(--md-sys-state-hover); }
-.md-button:not(:disabled):focus-visible::before { opacity: var(--md-sys-state-focus); }
-.md-button:not(:disabled):active::before { opacity: var(--md-sys-state-pressed); }
-.md-button:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
-.md-button:disabled { cursor: not-allowed; color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent); }
-
-.md-button-filled { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
-.md-button-filled:not(:disabled):hover { box-shadow: var(--md-sys-elevation-1); }
-.md-button-filled:disabled {
-  background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent); box-shadow: none;
-}
-.md-button-outlined { border: 1px solid var(--md-sys-color-outline-variant); color: var(--md-sys-color-on-surface-variant); }
-.md-button-outlined:disabled { border-color: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent); }
-.md-button-text { padding: 0 0.75rem; }
-/* Expressive buttons morph while pressed: the round shape squares off to the small corner (ADR 0053). */
-.md-button:not(:disabled):active, .md-icon-button:active { border-radius: var(--md-sys-shape-corner-small); }
-/* M3 Expressive's medium button (ADR 0098): 56px, 24px side space, title-medium label and 24px icon; it squares off
-   to the medium corner while pressed. */
-.md-button-medium { min-height: 3.5rem; padding: 0 1.5rem; font-size: var(--fontSizeBase400); line-height: var(--lineHeightBase400); }
-.md-button-medium .icon { width: 1.5rem; height: 1.5rem; }
-.md-button-medium:not(:disabled):active { border-radius: var(--md-sys-shape-corner-medium); }
-.md-button-tonal { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
-.md-button-tonal:not(:disabled):hover { box-shadow: var(--md-sys-elevation-1); }
-.md-button-tonal:disabled { background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent); box-shadow: none; }
+.link-button-secondary:hover { background: var(--colorNeutralBackground1Hover); border-color: var(--colorNeutralStroke1Hover); color: var(--colorNeutralForeground1); }
+.link-button-secondary:active { background: var(--colorNeutralBackground1Pressed); border-color: var(--colorNeutralStroke1Pressed); }
+.link-button-large { min-height: 2.5rem; padding: 0 1rem; font-size: var(--fontSizeBase400); line-height: var(--lineHeightBase400); }
+/* Icon-only, the size of Fluent's large icon button, with a 48px touch target (ADR 0124). */
+.link-button-icon { width: 2.5rem; height: 2.5rem; padding: 0; flex: none; }
+.link-button-icon::before { content: ""; position: absolute; inset: -0.25rem; }
+.link-button .icon { width: 1.25rem; height: 1.25rem; }
 .icon { width: 1.5rem; height: 1.5rem; fill: currentColor; flex: none; }
 /* Fluent's buttons and menu items hold 20px icons. */
 :is(fluent-button, fluent-menu-item) .icon { width: 1.25rem; height: 1.25rem; }
-.md-button .icon { width: 1.25rem; height: 1.25rem; margin-left: -0.25rem; }
 
 /* Buttons side by side, such as a plan's Edit and More in the app bar (ADR 0098). */
 .button-group { display: flex; align-items: center; gap: 0.125rem; }
@@ -184,21 +168,6 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 :where(fluent-button.icon-button) { position: relative; flex: none; }
 :where(fluent-button.icon-button)::before { content: ""; position: absolute; inset: -0.25rem; }
 
-/* Icon button (ADR 0047): a 40px circle around a 24px icon. Its touch target is M3's 48px (ADR 0124): ::before
-   reaches 4px past the circle, so the state layer is the button's own background and the ripple grows from its
-   centre, inside the circle, without clipping that would also clip the target. */
-.md-icon-button {
-  text-decoration: none; position: relative; display: inline-grid; place-items: center; width: 2.5rem; height: 2.5rem; flex: none;
-  padding: 0; border: 0; border-radius: var(--md-sys-shape-corner-full); background: transparent;
-  color: var(--md-sys-color-on-surface-variant); cursor: pointer; isolation: isolate;
-  -webkit-tap-highlight-color: transparent;
-  transition: border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
-    background-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
-}
-.md-icon-button::before { content: ""; position: absolute; inset: -0.25rem; border-radius: var(--md-sys-shape-corner-full); }
-.md-icon-button:not(:disabled):hover { background-color: color-mix(in srgb, currentColor calc(var(--md-sys-state-hover) * 100%), transparent); }
-.md-icon-button:not(:disabled):is(:focus-visible, :active) { background-color: color-mix(in srgb, currentColor calc(var(--md-sys-state-focus) * 100%), transparent); }
-.md-icon-button:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
 
 /* Extended FAB (ADR 0047, 0068): a phone's main action, floating at the bottom right above the navigation bar. From
    the medium window class the same action is a button in the app bar instead (.bar-main-action). Fluent has no FAB:
@@ -350,6 +319,7 @@ dialog[open] { animation: dialog-in var(--md-sys-motion-spring-default-spatial-d
 html[data-scrolled] .bar { --bar-background: var(--md-sys-color-surface-container); }
 /* A new page fades in (ADR 0051). Opacity only: a transform would move the FAB and snackbar while it runs. */
 .page { animation: page-in var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects); }
+@media (prefers-reduced-motion: reduce) { .page { animation: none; } }
 @keyframes page-in { from { opacity: 0; } }
 .bar-content {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
@@ -362,9 +332,9 @@ html[data-scrolled] .bar { --bar-background: var(--md-sys-color-surface-containe
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 /* The back button (ADR 0048) sits at the bar's leading edge, its icon lined up with the page's margin. */
-.bar-content > :is(.md-icon-button, .icon-button) { margin: 0 -0.25rem 0 -0.5rem; color: var(--md-sys-color-on-surface); }
+.bar-content > :is(.link-button-icon, .icon-button) { margin: 0 -0.25rem 0 -0.5rem; color: var(--md-sys-color-on-surface); }
 .bar-content > .button-group { margin: 0 -0.25rem 0 -0.5rem; }
-.bar-content > .button-group > :is(.md-icon-button, .icon-button) { color: var(--md-sys-color-on-surface); }
+.bar-content > .button-group > :is(.link-button-icon, .icon-button) { color: var(--md-sys-color-on-surface); }
 /* Fluent's progress bar under the app bar while a sync runs (ADR 0048, 0133). It fades in late, so a quick sync
    does not flicker. */
 .linear-progress {
@@ -433,7 +403,6 @@ main { flex: 1; padding: 0 1rem 1.5rem; max-width: var(--content-max); width: 10
 .empty-compact { padding: 1.5rem 1rem; }
 .empty-compact > .icon { width: 3.5rem; height: 3.5rem; padding: 0.875rem; margin-bottom: 0.25rem; }
 .empty-compact h2 { font: var(--fontWeightSemibold) var(--fontSizeBase400)/var(--lineHeightBase400) var(--fontFamilyBase); }
-a.md-button { text-decoration: none; }
 .signin {
   flex: 1; width: 100%; max-width: 24rem; margin: 0 auto; padding: 4rem 1.5rem;
   display: flex; flex-direction: column;
@@ -442,7 +411,7 @@ a.md-button { text-decoration: none; }
 .signin::before { content: ""; flex: 2; }
 .signin::after { content: ""; flex: 3; }
 .signin h1 { font: var(--fontWeightRegular) var(--fontSizeHero800)/var(--lineHeightHero800) var(--fontFamilyBase); margin: 0 0 0.5rem; }
-.signin .md-button { margin-top: 1rem; }
+.signin fluent-button { margin-top: 1rem; }
 .muted { color: var(--md-sys-color-on-surface-variant); margin-top: 0; }
 form { display: grid; gap: 0.5rem; }
 label {
@@ -466,7 +435,7 @@ label {
 
 /* A list of rows that open other pages, such as Settings (ADR 0049). */
 .link-list { padding: 0; }
-/* A link row's padding is its link's, so the state layer and ripple cover the whole row. `.list.link-list`, not
+/* A link row's padding is its link's, so the state layer covers the whole row. `.list.link-list`, not
    `.link-list`: the list's own item padding comes later in this file and would win otherwise. A row that only shows
    something (the account, Sync) has the same padding itself, so all rows line up. */
 .list.link-list > li { padding: 0; }
@@ -510,7 +479,7 @@ label {
 .link-list li:has(> a):active, .link-list li:has(> a):focus-within { border-radius: var(--md-sys-shape-corner-large); }
 /* A list item's headline is body-large at 400, whether a link, a button or text (ADR 0124). A link drawn as a button,
    such as a dialog's action, keeps the button's look. */
-.list a:where(:not(.md-button)), .list strong { color: var(--md-sys-color-on-surface); font: var(--fontWeightRegular) var(--fontSizeBase400)/var(--lineHeightBase400) var(--fontFamilyBase); text-decoration: none; }
+.list a:where(:not(.link-button)), .list strong { color: var(--md-sys-color-on-surface); font: var(--fontWeightRegular) var(--fontSizeBase400)/var(--lineHeightBase400) var(--fontFamilyBase); text-decoration: none; }
 /* A row that opens a page (ADR 0069): its headline link covers the whole item, with M3's state layer and the
    segmented list's shape change on hover, like the Settings list. */
 .list .row-link::after {
@@ -566,7 +535,7 @@ label {
    A button beside a field is centred on the field's 56px input (0.5rem margin + 3.5rem input, the button 2.5rem). */
 .row { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: start; }
 .row > div { flex: 1 1 8rem; }
-.row > .md-button { margin-top: 1rem; }
+.row > fluent-button { margin-top: 1rem; }
 .coach-form { margin-top: 1rem; }
 .found { padding: 0.75rem 1rem; margin-top: 0.75rem; }
 .found p { margin: 0.25rem 0; }
@@ -815,31 +784,6 @@ a.strava-link { color: var(--md-sys-color-on-surface); font-weight: var(--fontWe
 /* On a phone the bar ends the page right above the navigation bar, with no gap of the page's own bottom padding. */
 @media (max-width: 37.4375rem) { main:has(.zones-form > .actions) { padding-bottom: 0; } }
 
-/* Ripple (ADR 0051): a circle that grows from where the pointer went down and fades. atlas/ui/interaction sets its
-   position and size and flips data-ripple between a and b to restart it. */
-.md-button, .choice-label, .link-list a, .nav-indicator { overflow: hidden; }
-:is(.md-button, .md-icon-button, .choice-label, .link-list a, .nav-indicator)[data-ripple]::after {
-  content: ""; position: absolute; z-index: -1; pointer-events: none;
-  left: var(--ripple-x); top: var(--ripple-y); width: var(--ripple-size); height: var(--ripple-size);
-  border-radius: 50%; background: currentColor; opacity: 0; transform: translate(-50%, -50%) scale(1);
-}
-[data-ripple="a"]::after { animation: ripple-a 0.45s cubic-bezier(0.2, 0, 0, 1); }
-[data-ripple="b"]::after { animation: ripple-b 0.45s cubic-bezier(0.2, 0, 0, 1); }
-/* The ripple is the pressed state layer (ADR 0124): it starts at the pressed opacity, and a rippling element keeps
-   only its hover layer under it while pressed, so the two do not add up. */
-@keyframes ripple-a { from { opacity: var(--md-sys-state-pressed); transform: translate(-50%, -50%) scale(0); } }
-@keyframes ripple-b { from { opacity: var(--md-sys-state-pressed); transform: translate(-50%, -50%) scale(0); } }
-/* A keyboard press (with the focus ring showing) has no ripple, so it keeps the pressed layer. */
-:is(.md-button:not(:disabled), .link-list a)[data-ripple]:active:not(:focus-visible)::before { opacity: var(--md-sys-state-hover); }
-/* An icon button's ripple fills its circle from the centre: the button is not clipped, so its touch target is not. */
-button.md-icon-button[data-ripple]::after, a.md-icon-button[data-ripple]::after {
-  left: 50%; top: 50%; width: 100%; height: 100%; border-radius: inherit;
-}
-.md-icon-button[data-ripple]:active:not(:focus-visible) { background-color: color-mix(in srgb, currentColor calc(var(--md-sys-state-hover) * 100%), transparent); }
-@media (prefers-reduced-motion: reduce) {
-  [data-ripple]::after { animation: none !important; }
-  .page { animation: none; }
-}
 
 /* A field with a picker button at its end (ADR 0054). The browser's own picker button is hidden where it can be
    (Chrome, Edge, Safari); the field still takes typing. */
@@ -964,7 +908,7 @@ dialog .dialog-supporting { margin: 0 0 1.5rem; font-size: var(--fontSizeBase300
 .info-item-supporting {
   font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); color: var(--md-sys-color-on-surface-variant);
 }
-.info-item .md-button { margin-right: -0.5rem; }
+.info-item fluent-button { margin-right: -0.5rem; }
 
 /* Menus (ADR 0056) are Fluent UI's (ADR 0133); their items' icons are Fluent's 20px. In a list item the menu's
    button sits at the item's top end. */
@@ -1136,7 +1080,3 @@ html[data-scrolled] .bar-subtitle { display: none; }
 .plan-meta { display: flex; align-items: flex-start; gap: 0.5rem; }
 .plan-meta .icon { width: 1.125rem; height: 1.125rem; margin-top: 0.0625rem; }
 
-/* Disabled icon buttons (ADR 0124), last so they win over the colours the app bar and snackbar give their buttons. */
-.md-icon-button:disabled, .bar-content .md-icon-button:disabled, .snackbar .md-icon-button:disabled {
-  cursor: default; color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
-}

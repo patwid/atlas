@@ -1,10 +1,8 @@
-// Page-wide interaction that needs the DOM: touch feedback and the app bar's scrolled state (ADR 0051), opening and
-// closing dialogs with data-open (ADR 0057, 0066, 0133), and reading out messages (ADR 0124). Fluent UI's menus place
-// themselves and move between their items (ADR 0133). It only sets attributes, CSS variables and focus and calls the dialogs' own methods; it never
-// adds or removes nodes inside the app, so Lustre's view of the DOM stays right. The one node it adds, the live
-// region, is outside the app's root.
-
-const rippling = ".md-button, .md-icon-button, .choice-label, .link-list a, .tabs a .nav-indicator"
+// Page-wide interaction that needs the DOM: the app bar's scrolled state (ADR 0051), opening and closing dialogs
+// with data-open (ADR 0057, 0066, 0133), and reading out messages (ADR 0124). Fluent UI's menus place themselves and
+// move between their items, and Fluent has no ripple (ADR 0133). It only sets attributes and focus and calls the
+// dialogs' own methods; it never adds or removes nodes inside the app, so Lustre's view of the DOM stays right. The
+// one node it adds, the live region, is outside the app's root.
 
 /** Opens a Fluent UI dialog (ADR 0133). A form with method="dialog" in it cannot close it, as its <dialog> is in its
  * shadow root, so the form's submit closes it instead. */
@@ -31,19 +29,6 @@ export function clickedOutside(dialog, event) {
 export function install() {
   if (typeof document === "undefined" || document.documentElement.dataset.interaction) return
   document.documentElement.dataset.interaction = "on"
-
-  // A ripple grows from where the pointer went down. The two names restart the animation on every press.
-  document.addEventListener("pointerdown", (event) => {
-    const start = event.target instanceof Element ? event.target : null
-    const target = start?.closest(".tabs a")?.querySelector(".nav-indicator") ?? start?.closest(rippling)
-    if (!target || target.matches(":disabled")) return
-    const box = target.getBoundingClientRect()
-    const size = Math.hypot(box.width, box.height) * 2
-    target.style.setProperty("--ripple-x", `${event.clientX - box.left}px`)
-    target.style.setProperty("--ripple-y", `${event.clientY - box.top}px`)
-    target.style.setProperty("--ripple-size", `${size}px`)
-    target.dataset.ripple = target.dataset.ripple === "a" ? "b" : "a"
-  }, { passive: true })
 
   // Form dialogs (ADR 0057) say with data-open whether they should show; this keeps the native modal in step. So do
   // Fluent UI's dialogs (details and choices, ADR 0133), whose own show() and hide() open and close them.
