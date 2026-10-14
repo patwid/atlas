@@ -47,14 +47,47 @@ the owner can choose between 1 and 2 knowing what each costs.
 
 ## Spike
 
-- The bundle is vendored unchanged in `frontend/src/atlas/ui/fluent/` and imported by `atlas/ui/fluent`, which `main`
-  calls before the app starts. esbuild bundles it into `atlas.js`, which grows from 382 KB to 657 KB, all precached.
-- `frontend/assets/fluent-theme.css` holds Fluent 2's web light and dark themes as custom properties, dark under
-  `prefers-color-scheme`, so the theme follows the system without JavaScript (Fluent's own `setTheme` is JavaScript).
-- jsdom defines the elements and draws their shadow DOM, but each form control throws when it connects: jsdom's
-  `ElementInternals` has no form half (`setFormValue`, `setValidity`, `form`). A shim of about 25 lines in
-  `test-js/support.mjs` fills it in; with it the whole-app tests pass with Fluent loaded.
+On the branch `fluent-ui-spike`, Atlas's filled, tonal, outlined and text buttons (`atlas/ui/button`) and its
+confirmation dialog (`dialog.view`) are Fluent UI's. Everything else is still M3, so the branch mixes the two looks.
+All 730 unit tests and all 49 whole-app tests pass.
+
+- **Loading.** The bundle is vendored unchanged in `frontend/src/atlas/ui/fluent/` and imported by `atlas/ui/fluent`,
+  which `main` calls before the app starts, only where there are custom elements: the unit tests import the app in
+  Node, where the bundle cannot run. esbuild bundles it into `atlas.js`, which grows from 382 KB to 657 KB, all
+  precached.
+- **Theme without JavaScript.** `frontend/assets/fluent-theme.css` holds Fluent 2's web light and dark themes from
+  `@fluentui/tokens` as custom properties, dark under `prefers-color-scheme`. Fluent's own `setTheme` is not needed.
+  `createLightTheme` and `createDarkTheme` can make the ramp from Atlas's blue (`#0d6efd`) instead of Fluent's.
+- **jsdom.** It defines the elements and draws their shadow DOM, but each form control throws when it connects:
+  jsdom's `ElementInternals` has no form half (`setFormValue`, `setValidity`, `form`), and it has no
+  `requestSubmit`. A shim of about 30 lines in `test-js/support.mjs` fills them in. The tests' helpers look for
+  `fluent-button` beside `button`, five selectors in the tests did the same, and `openDialog` looks into a Fluent
+  dialog's shadow root. Two unit tests checked M3 class names. So the tests stay in jsdom, unlike under Web Awesome
+  (ADR 0040), but they now run against a shim, which is checked only as far as the app uses it.
+- **Real browser (Chromium).** A `fluent-button` with `form="…"` submits a form it is not in, as the form dialogs'
+  Save needs (ADR 0085). Cancel and Escape close the dialog, and each fires one `toggle` to "closed".
+- **Behaviour that differs from native elements:**
+  - A `fluent-button` without a `type` does not submit the form it is in.
+  - A `<form method="dialog">` cannot close a Fluent dialog, whose `<dialog>` is in its shadow root, so
+    `atlas/ui/dialog.ffi.mjs` closes it on the form's submit. Fluent reports closing as a `toggle` event, not
+    `close`.
+  - Fluent passes `aria-labelledby` and `aria-describedby` on to the `<dialog>` in its shadow root, where the page's
+    ids cannot be found. In Chromium the confirmation dialog had no name and no description. The name now comes
+    from `aria-label`. **The sentence is no longer read out with the headline** (a step back from ADR 0124): Fluent
+    passes on no text form of `aria-describedby` (ARIA 1.3's draft `aria-description`).
+  - An alert dialog has no light-dismiss, so confirmations no longer close on a click outside (ADR 0039 chose that
+    they do).
+- **Fields stay out of the spike.** `fluent-text-input` has no `number`, `date` or `time` type, and `field.text`
+  receives its type inside opaque attributes. So switching the fields needs a change to `field.text`'s signature at
+  its 23 call sites, or a separate constructor for the native types.
 
 ## Consequences
 
-To be written when the owner decides.
+To be written when the owner decides. What the spike suggests:
+
+- Option 1 works in the tests and in Chromium, but every component swap needs this kind of checking (events, forms,
+  ARIA across the shadow root) and a matching change to the shim. Half the components (see Context) would be
+  hand-written anyway.
+- Option 2 gives the same look with none of the above. `fluent-theme.css` is useful for either option.
+- If option 1 is chosen: the next step is the fields, then the menus, and Fluent dialogs for the simple, details and
+  form dialogs (their `data-open` handling in `atlas/ui/interaction`).

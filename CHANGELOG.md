@@ -5,6 +5,9 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 
 ## [Unreleased]
 
+### Changed
+- Spike on the `fluent-ui-spike` branch: filled, tonal, outlined and text buttons and confirmation dialogs are drawn with Fluent UI's web components, themed by Fluent 2's tokens ([ADR 0133](docs/adr/0133-fluent-ui-spike.md), Proposed).
+
 ### Added
 - ADR process and the initial architecture decisions (ADR 0001–0006).
 - Pinned toolchain (`.tool-versions`) and `scripts/install-tools.sh` for Gleam 1.19.0, Erlang/OTP 27 and PocketBase 0.40.4 (ADR 0006).

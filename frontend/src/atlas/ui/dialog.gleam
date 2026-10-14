@@ -48,8 +48,8 @@ pub fn view(
     [
       attribute.id(id),
       attribute.attribute("type", "alert"),
-      // Fluent passes these on to the `<dialog>` in its shadow root, where an id from the page cannot be found, so the
-      // name is given as text. The sentence is not read out with it: ARIA has no text form of `aria-describedby`.
+      // Fluent passes ARIA on to the `<dialog>` in its shadow root, where an id from the page cannot be found, so the
+      // name is given as text. The sentence is not read out with it: Fluent passes on no text form of a description.
       attribute.aria_label(label),
       event.on("toggle", {
         use state <- decode.subfield(["detail", "newState"], decode.string)
