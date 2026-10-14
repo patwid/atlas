@@ -641,7 +641,7 @@ test("a user adds, edits and deletes an activity by hand; the start is stored in
   await waitFor("the Strava activity", () => d.body.textContent.includes("Lunch run"))
   const stravaCard = [...d.querySelectorAll(".list li")].find((li) => li.textContent.includes("Lunch run"))
   assert.ok(stravaCard.textContent.includes("Strava"))
-  assert.equal([...stravaCard.querySelectorAll("button, fluent-button")].length, 0, "Strava activities cannot be changed here")
+  assert.equal([...stravaCard.querySelectorAll("button, fluent-button, fluent-menu-item")].length, 0, "Strava activities cannot be changed here")
 
   click(w, button(w, "Add activity"))
   await waitFor("the form", () => d.querySelector("#activity-date"))
@@ -824,7 +824,7 @@ test("Home shows missed, looks-done and rest days; the user confirms, unlinks, r
   const w = startApp("/", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
   const d = w.document
   const card = (title) => [...d.querySelectorAll(".item")].find((li) => li.textContent.includes(title))
-  const inCard = (title, text) => [...card(title).querySelectorAll("button, fluent-button")].find((b) => b.textContent.trim() === text)
+  const inCard = (title, text) => [...card(title).querySelectorAll("button, fluent-button, fluent-menu-item")].find((b) => b.textContent.trim() === text)
 
   await waitFor("today's tempo workout as a suggestion", () => card("Tempo intervals")?.textContent.includes("Looks done") && card("Tempo intervals").textContent.includes("07:00 · Run · 8.00 km · 45:00"))
   assert.ok(card("Easy shake-out").textContent.includes("Missed"), "yesterday's workout without a run is missed")

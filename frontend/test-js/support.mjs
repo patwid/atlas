@@ -111,8 +111,8 @@ export const waitFor = async (what, check, ms = 8000) => {
 export const click = (w, el) => el.dispatchEvent(new w.MouseEvent("click", { bubbles: true, cancelable: true, button: 0 }))
 export const typeInto = (w, el, value) => { el.value = value; el.dispatchEvent(new w.Event("input", { bubbles: true })) }
 export const submit = (w, form) => form.dispatchEvent(new w.Event("submit", { bubbles: true, cancelable: true }))
-// Buttons are native or Fluent UI's (ADR 0133).
-const buttons = "button, fluent-button"
+// Buttons are native or Fluent UI's (ADR 0133), and so are a menu's items.
+const buttons = "button, fluent-button, fluent-menu-item"
 export const button = (w, text) => [...w.document.querySelectorAll(buttons)].find((b) => b.textContent.trim() === text)
 export const choose = (w, select, value) => { select.value = value; select.dispatchEvent(new w.Event("change", { bubbles: true })) }
 // Segmented buttons and chips (ADR 0047) are radio buttons: picking one is a click on it.

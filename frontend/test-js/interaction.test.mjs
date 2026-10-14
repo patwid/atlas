@@ -9,9 +9,6 @@ const dom = new JSDOM(`<!doctype html><body>
   <button class="md-button" disabled>Off</button>
   <nav class="tabs"><a href="/"><span class="nav-indicator"></span>Home</a></nav>
   <p class="plain">text</p>
-  <div class="md-menu" id="m">
-    <button role="menuitem">Edit</button><button role="menuitem">Delete</button><button role="menuitem">Share</button>
-  </div>
 </body>`, { pretendToBeVisual: true })
 Object.assign(globalThis, {
   document: dom.window.document, window: dom.window, Element: dom.window.Element, MutationObserver: dom.window.MutationObserver,
@@ -54,22 +51,6 @@ test("the page is marked as scrolled once it scrolls, and unmarked at the top", 
   assert.equal(d.documentElement.dataset.scrolled, undefined)
 })
 
-test("the arrow keys, Home and End move between a menu's items, wrapping around", () => {
-  const items = [...d.querySelectorAll('[role="menuitem"]')]
-  const key = (el, k) => el.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: k, bubbles: true }))
-  items[0].focus()
-  key(items[0], "ArrowDown")
-  assert.equal(d.activeElement, items[1])
-  key(items[1], "End")
-  assert.equal(d.activeElement, items[2])
-  key(items[2], "ArrowDown")
-  assert.equal(d.activeElement, items[0])
-  key(items[0], "ArrowUp")
-  assert.equal(d.activeElement, items[2])
-  key(items[2], "Home")
-  assert.equal(d.activeElement, items[0])
-})
-
 test("a form dialog opens and closes with its data-open attribute", async () => {
   const dialog = d.createElement("dialog")
   dialog.dataset.open = "true"
@@ -102,15 +83,6 @@ test("a basic dialog closes on a click outside it, not on its own padding; a for
   click(form, 20, 20)
   assert.ok(!basic.hasAttribute("open"), "the basic dialog closed")
   assert.ok(form.hasAttribute("open"), "the form dialog stays")
-})
-
-test("Tab closes a menu", () => {
-  const menu = d.getElementById("m")
-  let hidden = false
-  menu.hidePopover = () => { hidden = true }
-  const item = menu.querySelector('[role="menuitem"]')
-  item.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Tab", bubbles: true }))
-  assert.ok(hidden)
 })
 
 test("a message is put into the page's one live region, and read again when it comes again", async () => {

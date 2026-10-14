@@ -857,8 +857,8 @@ a.strava-link { color: var(--md-sys-color-on-surface); font-weight: 700; text-de
 
 /* Ripple (ADR 0051): a circle that grows from where the pointer went down and fades. atlas/ui/interaction sets its
    position and size and flips data-ripple between a and b to restart it. */
-.md-button, .choice-label, .link-list a, .md-menu-item, .nav-indicator { overflow: hidden; }
-:is(.md-button, .md-icon-button, .choice-label, .link-list a, .md-menu-item, .nav-indicator)[data-ripple]::after {
+.md-button, .choice-label, .link-list a, .nav-indicator { overflow: hidden; }
+:is(.md-button, .md-icon-button, .choice-label, .link-list a, .nav-indicator)[data-ripple]::after {
   content: ""; position: absolute; z-index: -1; pointer-events: none;
   left: var(--ripple-x); top: var(--ripple-y); width: var(--ripple-size); height: var(--ripple-size);
   border-radius: 50%; background: currentColor; opacity: 0; transform: translate(-50%, -50%) scale(1);
@@ -870,7 +870,7 @@ a.strava-link { color: var(--md-sys-color-on-surface); font-weight: 700; text-de
 @keyframes ripple-a { from { opacity: var(--md-sys-state-pressed); transform: translate(-50%, -50%) scale(0); } }
 @keyframes ripple-b { from { opacity: var(--md-sys-state-pressed); transform: translate(-50%, -50%) scale(0); } }
 /* A keyboard press (with the focus ring showing) has no ripple, so it keeps the pressed layer. */
-:is(.md-button:not(:disabled), .link-list a, .md-menu-item)[data-ripple]:active:not(:focus-visible)::before { opacity: var(--md-sys-state-hover); }
+:is(.md-button:not(:disabled), .link-list a)[data-ripple]:active:not(:focus-visible)::before { opacity: var(--md-sys-state-hover); }
 .tabs a:active:not(:focus-visible) .nav-indicator[data-ripple]::before { opacity: var(--md-sys-state-hover); }
 /* An icon button's ripple fills its circle from the centre: the button is not clipped, so its touch target is not. */
 button.md-icon-button[data-ripple]::after, a.md-icon-button[data-ripple]::after {
@@ -1009,34 +1009,12 @@ dialog .dialog-supporting { margin: 0 0 1.5rem; font-size: 0.875rem; line-height
 }
 .info-item .md-button { margin-right: -0.5rem; }
 
-/* Menus (ADR 0056): a native popover, placed by atlas/ui/interaction under the button that opens it. M3 Expressive's
-   rounder menu (ADR 0095): large corners, and items inset 4px with the medium corner, concentric with the menu's. */
-.md-menu {
-  position: fixed; inset: auto; margin: 0; padding: 0.25rem; min-width: 7rem; max-width: 17.5rem; border: 0;
-  border-radius: var(--md-sys-shape-corner-large); box-shadow: var(--md-sys-elevation-2);
-  background: var(--md-sys-color-surface-container); color: var(--md-sys-color-on-surface);
-}
-.md-menu:popover-open { animation: menu-in var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects); }
-@keyframes menu-in { from { opacity: 0; transform: translateY(-0.25rem); } }
-.md-menu-item {
-  position: relative; display: flex; align-items: center; gap: 0.75rem; width: 100%; height: 3rem; padding: 0 0.75rem;
-  border: 0; border-radius: var(--md-sys-shape-corner-medium); background: none; cursor: pointer; isolation: isolate;
-  text-align: left; white-space: nowrap;
-  color: var(--md-sys-color-on-surface); font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem;
-}
-.md-menu-item::before {
-  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: currentColor; opacity: 0;
-  transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
-}
-.md-menu-item:hover::before { opacity: var(--md-sys-state-hover); }
-.md-menu-item:focus-visible { outline: var(--focus-ring); outline-offset: -3px; }
-.md-menu-item:focus-visible::before, .md-menu-item:active::before { opacity: var(--md-sys-state-focus); }
-.md-menu-item .icon { color: var(--md-sys-color-on-surface-variant); }
-/* In a list row the menu button sits at the row's top end. */
-.list > li:has(.md-menu-button) { padding-right: 3.5rem; }
-.list .md-menu-button { position: absolute; top: 0.5rem; right: 0.25rem; }
-.list .actions:has(> .md-menu-button) { margin: 0; }
-@media (prefers-reduced-motion: reduce) { .md-menu:popover-open { animation: none; } }
+/* Menus (ADR 0056) are Fluent UI's (ADR 0133); their items' icons are Fluent's 20px. In a list item the menu's
+   button sits at the item's top end. */
+fluent-menu-item .icon { width: 1.25rem; height: 1.25rem; }
+.list > li:has(fluent-menu) { padding-right: 3.5rem; }
+.list fluent-menu { position: absolute; top: 0.5rem; right: 0.25rem; }
+.list .actions:has(> fluent-menu) { margin: 0; }
 
 /* Full-screen dialogs for forms (ADR 0057): on a phone the whole screen, with a top bar of Close, the title and
    the submit button; from 600px a dialog in the middle. A click outside does not close it. */

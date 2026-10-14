@@ -1,10 +1,10 @@
-// Page-wide interaction that needs the DOM: touch feedback and the app bar's scrolled state (ADR 0051), placing
-// and moving through menus (ADR 0056), opening and closing dialogs with data-open (ADR 0057, 0066), and reading out
-// messages (ADR 0124). It only sets attributes, CSS variables and focus and calls the dialogs' own methods; it never
+// Page-wide interaction that needs the DOM: touch feedback and the app bar's scrolled state (ADR 0051), opening and
+// closing dialogs with data-open (ADR 0057, 0066, 0133), and reading out messages (ADR 0124). Fluent UI's menus place
+// themselves and move between their items (ADR 0133). It only sets attributes, CSS variables and focus and calls the dialogs' own methods; it never
 // adds or removes nodes inside the app, so Lustre's view of the DOM stays right. The one node it adds, the live
 // region, is outside the app's root.
 
-const rippling = ".md-button, .md-icon-button, .choice-label, .link-list a, .md-menu-item, .tabs a .nav-indicator"
+const rippling = ".md-button, .md-icon-button, .choice-label, .link-list a, .tabs a .nav-indicator"
 
 /** Opens a Fluent UI dialog (ADR 0133). A form with method="dialog" in it cannot close it, as its <dialog> is in its
  * shadow root, so the form's submit closes it instead. */
@@ -44,39 +44,6 @@ export function install() {
     target.style.setProperty("--ripple-size", `${size}px`)
     target.dataset.ripple = target.dataset.ripple === "a" ? "b" : "a"
   }, { passive: true })
-
-  // Menus (ADR 0056) are native popovers. When one opens it is placed under the button that opened it, lined up
-  // with its end (above it when there is no room below), and its first item takes the focus.
-  document.addEventListener("toggle", (event) => {
-    const menu = event.target
-    if (!(menu instanceof Element) || !menu.classList.contains("md-menu") || event.newState !== "open") return
-    const opener = document.querySelector(`[popovertarget="${menu.id}"]:not([role="menuitem"])`)
-    if (opener) {
-      const anchor = opener.getBoundingClientRect()
-      const { offsetWidth: width, offsetHeight: height } = menu
-      const left = Math.max(8, Math.min(anchor.right - width, window.innerWidth - width - 8))
-      const below = anchor.bottom + 4
-      const top = below + height > window.innerHeight - 8 ? Math.max(8, anchor.top - height - 4) : below
-      menu.style.setProperty("left", `${left}px`)
-      menu.style.setProperty("top", `${top}px`)
-    }
-    menu.querySelector('[role="menuitem"]')?.focus()
-  }, true)
-  // The arrow keys, Home and End move between a menu's items; Tab closes the menu and moves on from its button.
-  document.addEventListener("keydown", (event) => {
-    const menu = event.target instanceof Element ? event.target.closest(".md-menu") : null
-    if (!menu) return
-    if (event.key === "Tab") {
-      menu.hidePopover?.()
-      return
-    }
-    const items = [...menu.querySelectorAll('[role="menuitem"]')]
-    const at = items.indexOf(event.target)
-    const next = { ArrowDown: at + 1, ArrowUp: at - 1, Home: 0, End: items.length - 1 }[event.key]
-    if (next === undefined) return
-    event.preventDefault()
-    items[(next + items.length) % items.length]?.focus()
-  })
 
   // Form dialogs (ADR 0057) say with data-open whether they should show; this keeps the native modal in step. So do
   // Fluent UI's dialogs (details and choices, ADR 0133), whose own show() and hide() open and close them.
