@@ -1,4 +1,5 @@
-//// A Material 3 slider with its label and value above it (ADR 0051), such as a week's or a rep's intensity.
+//// A slider with its label and value above it (ADR 0051), such as a week's or a rep's intensity: a native range
+//// input drawn like Fluent UI's (ADR 0133), whose own slider sends `change` also when the page sets its value.
 
 import atlas/ui/field.{type Help}
 import gleam/option.{None, Some}
