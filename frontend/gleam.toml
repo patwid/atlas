@@ -37,6 +37,8 @@ links = [
   { rel = "icon", href = "/icon.svg", type = "image/svg+xml" },
 ]
 stylesheets = [
+  # Fluent 2's design tokens (ADR 0133, spike), before app.css so Atlas's own rules can use them.
+  { href = "/fluent-theme.css" },
   { href = "/app.css" },
 ]
 

@@ -35,6 +35,7 @@ import atlas/timer
 import atlas/today
 import atlas/ui/banner
 import atlas/ui/button
+import atlas/ui/fluent
 import atlas/ui/icon
 import atlas/ui/interaction
 import atlas/ui/layout
@@ -112,6 +113,7 @@ pub type Msg {
 }
 
 pub fn main() -> Nil {
+  fluent.define()
   let app = lustre.application(init, update, view)
   let assert Ok(_) = lustre.start(app, "#app", Nil)
   Nil

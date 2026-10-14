@@ -35,6 +35,32 @@ export const appRunner = (getHarness, fetched = () => {}) => (path, session) => 
     event.preventDefault()
     event.target.closest("dialog")?.close()
   }, true)
+  // jsdom has ElementInternals but not its form half, which Fluent UI's form controls call when they connect
+  // (ADR 0133). A control's form is the one it sits in, and it is always valid: the app checks forms itself.
+  const hostOf = new WeakMap()
+  const attachInternals = w.HTMLElement.prototype.attachInternals
+  w.HTMLElement.prototype.attachInternals = function () {
+    const internals = attachInternals.call(this)
+    hostOf.set(internals, this)
+    return internals
+  }
+  Object.assign(w.ElementInternals.prototype, {
+    setFormValue() {},
+    setValidity() {},
+    checkValidity: () => true,
+    reportValidity: () => true,
+  })
+  for (const [name, get] of Object.entries({
+    form() { return hostOf.get(this)?.closest("form") ?? null },
+    validity: () => ({ valid: true }),
+    validationMessage: () => "",
+    willValidate: () => true,
+    labels: () => [],
+  })) Object.defineProperty(w.ElementInternals.prototype, name, { get, configurable: true })
+  // A Fluent submit button submits its form with requestSubmit(), which jsdom lacks.
+  w.HTMLFormElement.prototype.requestSubmit ??= function () {
+    this.dispatchEvent(new w.Event("submit", { bubbles: true, cancelable: true }))
+  }
   // jsdom's AbortSignal is not Node's, so the signal is left out of the shim.
   // A closed tab does nothing more. jsdom's own close() stops timers but not requests already under way, whose
   // answers would still run the app's code, for example a sync run that finishes and removes records from the
