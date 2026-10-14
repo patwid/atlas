@@ -298,33 +298,33 @@ fluent-button.fab {
   color: var(--md-sys-color-on-surface-variant);
 }
 
-/* Outlined text fields and selects; their labels sit above them. */
+/* Native inputs and selects (number, date and time, which Fluent's text input does not have; ADR 0133), drawn like
+   Fluent's large outline input: a 40px box with a darker bottom edge that turns brand-coloured with focus. */
 .md-text-field {
-  display: block; width: 100%; min-height: 3.5rem; padding: 1rem;
-  font: 400 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
-  color: var(--md-sys-color-on-surface); background: transparent; caret-color: var(--md-sys-color-primary);
-  border: 1px solid var(--md-sys-color-outline); border-radius: var(--md-sys-shape-corner-extra-small);
-  transition: border-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects), box-shadow var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+  display: block; width: 100%; min-height: 2.5rem; padding: 0 0.75rem;
+  font: var(--fontWeightRegular) var(--fontSizeBase400)/var(--lineHeightBase400) var(--fontFamilyBase);
+  color: var(--colorNeutralForeground1); background: var(--colorNeutralBackground1); caret-color: var(--colorBrandForeground1);
+  border: 1px solid var(--colorNeutralStroke1); border-bottom-color: var(--colorNeutralStrokeAccessible);
+  border-radius: var(--borderRadiusMedium);
+  transition: border-color var(--durationFaster) var(--curveEasyEase), box-shadow var(--durationFaster) var(--curveEasyEase);
 }
-textarea.md-text-field { resize: vertical; min-height: 6rem; }
-.md-text-field:hover:not(:disabled):not(:focus) { border-color: var(--md-sys-color-on-surface); }
-.md-text-field:focus { outline: 0; border-color: var(--md-sys-color-primary); box-shadow: inset 0 0 0 1px var(--md-sys-color-primary); }
-.md-text-field[aria-invalid="true"] { border-color: var(--md-sys-color-error); }
-.md-text-field[aria-invalid="true"]:hover:not(:disabled):not(:focus) { border-color: var(--md-sys-color-on-error-container); }
-.md-text-field[aria-invalid="true"]:focus { box-shadow: inset 0 0 0 1px var(--md-sys-color-error); }
+.md-text-field:hover:not(:disabled):not(:focus) { border-color: var(--colorNeutralStroke1Hover); border-bottom-color: var(--colorNeutralStrokeAccessibleHover); }
+.md-text-field:focus { outline: 0; border-bottom-color: var(--colorCompoundBrandStroke); box-shadow: inset 0 -1px 0 var(--colorCompoundBrandStroke); }
+.md-text-field[aria-invalid="true"] { border-color: var(--colorPaletteRedBorder2); }
 .md-text-field:disabled {
-  color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
-  border-color: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent); cursor: not-allowed;
+  color: var(--colorNeutralForegroundDisabled); background: var(--colorTransparentBackground);
+  border-color: var(--colorNeutralStrokeDisabled); cursor: not-allowed;
 }
-.md-text-field::placeholder { color: var(--md-sys-color-on-surface-variant); }
+.md-text-field::placeholder { color: var(--colorNeutralForeground4); }
 select.md-text-field {
-  appearance: none; padding-right: 3rem; cursor: pointer;
-  /* The arrow_drop_down triangle, drawn as two half-squares so it takes the on-surface-variant role. */
+  appearance: none; padding-right: 2.5rem; cursor: pointer;
+  /* A chevron, drawn as two half-squares so it takes the foreground color. */
   background:
-    linear-gradient(45deg, transparent 50%, var(--md-sys-color-on-surface-variant) 50%) no-repeat right 1.25rem center / 0.3125rem 0.3125rem,
-    linear-gradient(135deg, var(--md-sys-color-on-surface-variant) 50%, transparent 50%) no-repeat right 0.9375rem center / 0.3125rem 0.3125rem;
+    linear-gradient(45deg, transparent 50%, var(--colorNeutralForeground3) 50%) no-repeat right 1.125rem center / 0.3125rem 0.3125rem,
+    linear-gradient(135deg, var(--colorNeutralForeground3) 50%, transparent 50%) no-repeat right 0.8125rem center / 0.3125rem 0.3125rem,
+    var(--colorNeutralBackground1);
 }
-select.md-text-field option { background: var(--md-sys-color-surface-container); color: var(--md-sys-color-on-surface); }
+select.md-text-field option { background: var(--colorNeutralBackground1); color: var(--colorNeutralForeground1); }
 input[type="range"] { accent-color: var(--md-sys-color-primary); }
 input[type="checkbox"], input[type="radio"] { accent-color: var(--md-sys-color-primary); width: 1.125rem; height: 1.125rem; }
 
@@ -839,7 +839,7 @@ a.strava-link { color: var(--md-sys-color-on-surface); font-weight: 700; text-de
 /* The value zones are calculated from, with its Calculate button on the line under its help (ADR 0084): beside the
    field, the long label left the field narrow and wrapped on a phone. */
 .zone-source { display: grid; justify-items: start; gap: 0.75rem; }
-.zone-source > .md-field { justify-self: stretch; }
+.zone-source > :is(.field, .md-field) { justify-self: stretch; }
 /* A zone (ADR 0077): an outlined field with its unit, and where the zone ends beside it, lined up with the input. */
 .zones { display: grid; gap: 0.75rem; margin-top: 0.75rem; }
 .zone { display: grid; grid-template-columns: minmax(0, 13rem) 1fr; align-items: start; gap: 1rem; }
@@ -888,14 +888,15 @@ button.md-icon-button[data-ripple]::after, a.md-icon-button[data-ripple]::after 
    collapse through the wrapper (it does not in a flex row). */
 .field-with-trigger { position: relative; margin-top: 0.5rem; }
 .field-with-trigger > .md-field { margin-top: 0; }
-.field-with-trigger .md-text-field { padding-right: 3.5rem; }
+.field-with-trigger .md-text-field { padding-right: 3rem; }
 .field-with-trigger input::-webkit-calendar-picker-indicator { display: none; }
 /* Browsers draw date and time inputs their own way: Safari centres the value and sizes the box to it, Chrome adds
    padding inside. Drawn plainly at a text field's 56px, the button at the end is centred on them (ADR 0086). */
-.field-with-trigger input:is([type="date"], [type="time"]) { -webkit-appearance: none; appearance: none; height: 3.5rem; }
+.field-with-trigger input:is([type="date"], [type="time"]) { -webkit-appearance: none; appearance: none; height: 2.5rem; }
 .field-with-trigger input::-webkit-datetime-edit { padding: 0; }
 .field-with-trigger input::-webkit-date-and-time-value { margin: 0; text-align: start; }
-.field-trigger { position: absolute; right: 0.5rem; top: 0.5rem; }
+/* In the field's box, under its label (a 20px line and 4px). */
+.field-trigger { position: absolute; right: 0; top: 1.5rem; }
 /* The person finder's search turns into a small loading indicator while it looks (ADR 0083). */
 .field-trigger:disabled { cursor: progress; }
 .field-trigger .md-loading-indicator { width: 1.5rem; height: 1.5rem; }
@@ -1062,7 +1063,7 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
 /* The form (ADR 0085): one 16px rhythm between fields, chips and groups, so a floating label never meets the help
    line above it. Pairs of fields stack on a phone and sit side by side, in equal columns, from 600px. */
 .form-dialog-body > form { display: grid; gap: 1rem; padding-top: 0.5rem; }
-.form-dialog-body > form :is(.md-field, .field-with-trigger, .choice, .plan-settings, .interval-part) { margin-top: 0; }
+.form-dialog-body > form :is(.field, .md-field, .field-with-trigger, .choice, .plan-settings, .interval-part) { margin-top: 0; }
 .form-dialog-body > form .row { display: grid; gap: 1rem; }
 .form-dialog-body > form > .supporting { margin-top: -0.75rem; }
 .form-dialog-body > form > .subheader { margin: 0.5rem 0 -0.5rem; }
@@ -1080,7 +1081,6 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
 .interval-add-set, .interval-remove-set { display: flex; }
 .interval-remove-set { justify-content: flex-end; margin-top: -0.5rem; }
 .form-dialog .plan-settings .phases-error { margin-top: -0.75rem; }
-.form-dialog textarea.md-text-field { min-height: 0; }
 /* Cancel and Save at the bottom are for wider screens; a phone has them in the top bar. */
 .form-dialog-actions { display: none; }
 @media (min-width: 37.5rem) {
@@ -1100,45 +1100,24 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
   .form-dialog-body > form .row { grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
 }
 
-/* Outlined text fields with a floating label (ADR 0059): the label sits in the field and moves onto its outline
-   when the field has focus or a value; date, time and select fields always show something, so their label always
-   sits on the outline. The label's background hides the outline behind it: --field-container is the colour of
-   what the field is on. */
-.md-field { position: relative; margin-top: 0.5rem; }
+/* Fields (ADR 0059, 0133): Fluent's text input and textarea in .field, native inputs and selects in .md-field, each
+   with its label above it, as Fluent draws them, and its help or error under it. */
+.field, .md-field { position: relative; display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.5rem; }
+.field > :is(fluent-text-input, fluent-textarea) { width: 100%; }
 .md-field-label {
-  position: absolute; left: 0.75rem; top: 1rem; max-width: calc(100% - 1.5rem); margin: 0; padding: 0 0.25rem;
-  overflow: hidden; white-space: nowrap; text-overflow: ellipsis; pointer-events: none; transform-origin: left top;
-  color: var(--md-sys-color-on-surface-variant); font: 400 1rem/1.5rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
-  transition: transform var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
-    color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+  order: -1; color: var(--colorNeutralForeground1);
+  font: var(--fontWeightRegular) var(--fontSizeBase300)/var(--lineHeightBase300) var(--fontFamilyBase);
 }
-.md-field:focus-within .md-field-label,
-.md-field .md-text-field:not(:placeholder-shown) ~ .md-field-label,
-.md-field:has(select) .md-field-label,
-.md-field:has(input[type="date"], input[type="time"]) .md-field-label {
-  transform: translateY(-1.5625rem) scale(0.75); background: var(--field-container, var(--md-sys-color-surface));
-}
-.md-field:focus-within .md-field-label { color: var(--md-sys-color-primary); }
-.md-field.has-error .md-field-label { color: var(--md-sys-color-error); }
-/* A field's own placeholder (an example) shows only while it has focus, when the label is out of its way. */
-.md-field .md-text-field::placeholder { color: transparent; }
-.md-field .md-text-field:focus::placeholder { color: var(--md-sys-color-on-surface-variant); }
-/* A unit at the end, shown once the label has moved up. */
-.md-field.has-suffix .md-text-field { padding-right: 3.5rem; }
-.md-field-suffix {
-  position: absolute; right: 1rem; top: 1rem; line-height: 1.5rem; pointer-events: none; opacity: 0;
-  color: var(--md-sys-color-on-surface-variant);
-}
-.md-field:focus-within .md-field-suffix, .md-field .md-text-field:not(:placeholder-shown) ~ .md-field-suffix { opacity: 1; }
+.md-field.has-suffix .md-text-field { padding-right: 3rem; }
+.md-field-suffix, .field-suffix { color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase300); }
+.md-field-suffix { position: absolute; right: 0.75rem; bottom: 0.5rem; line-height: 1.5rem; pointer-events: none; }
 .md-field-supporting, .phases-error {
-  margin: 0.25rem 1rem 0; color: var(--md-sys-color-on-surface-variant);
-  font-size: 0.75rem; line-height: 1rem; letter-spacing: 0.025rem;
+  margin: 0; color: var(--colorNeutralForeground3);
+  font: var(--fontWeightRegular) var(--fontSizeBase200)/var(--lineHeightBase200) var(--fontFamilyBase);
 }
-.md-field.has-error .md-field-supporting, .intensity-setting.has-error .md-field-supporting, .phases-error { color: var(--md-sys-color-error); }
-@media (prefers-reduced-motion: reduce) { .md-field-label { transition: none; } }
+:is(.field, .md-field).has-error .md-field-supporting, .intensity-setting.has-error .md-field-supporting, .phases-error { color: var(--colorPaletteRedForeground1); }
 /* What fields sit on. */
 @media (min-width: 37.5rem) {
-  dialog.form-dialog { --field-container: var(--md-sys-color-surface-container-high); }
   /* The gap around a slider's handle is the colour of what it sits on, as in the details dialog. */
   .form-dialog .intensity-control input[type="range"] { --gap-color: var(--md-sys-color-surface-container-high); }
 }

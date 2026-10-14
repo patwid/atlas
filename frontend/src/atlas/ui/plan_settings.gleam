@@ -89,7 +89,7 @@ fn weeks(
   value: String,
   on_input: fn(String) -> msg,
 ) -> Element(msg) {
-  field.text(id, label, field.plain, [
+  field.native(id, label, field.plain, [
     attribute.type_("number"),
     attribute.attribute("min", "0"),
     attribute.attribute("max", "52"),

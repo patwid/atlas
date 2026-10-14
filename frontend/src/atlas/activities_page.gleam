@@ -770,7 +770,7 @@ fn form_fields(form: activity_form.Form) -> Element(Msg) {
     [
       html.div([class("row")], [
         field.with_trigger(
-          field.text("activity-date", "Day", on(field.plain, "date"), [
+          field.native("activity-date", "Day", on(field.plain, "date"), [
             attribute.type_("date"),
             attribute.name("date"),
             attribute.value(form.date),
@@ -780,7 +780,7 @@ fn form_fields(form: activity_form.Form) -> Element(Msg) {
           date_picker.trigger(date_picker_id, DatePickerOpened),
         ),
         field.with_trigger(
-          field.text("activity-time", "Start time", on(field.plain, "time"), [
+          field.native("activity-time", "Start time", on(field.plain, "time"), [
             attribute.type_("time"),
             attribute.name("time"),
             attribute.value(form.time),

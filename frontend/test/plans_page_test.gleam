@@ -10,6 +10,7 @@ import atlas/plans_page.{
   Edit, EditClicked, Editing, ForAthlete, ForMe, FromCoach, GoalChanged, Model,
   NewClicked, PlansRead, PreCompetitionWeeksChanged, Submitted, TitleChanged,
 }
+import field_html
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
@@ -359,7 +360,7 @@ pub fn the_form_is_accessible_and_shows_errors_test() {
       ),
     )
   let html = html_of(list_view(model))
-  assert string.contains(html, "for=\"plan-title\"")
+  assert field_html.labelled(html, "plan-title", "Title")
   assert string.contains(html, "id=\"plan-title\"")
   assert string.contains(html, "maxlength=\"200\"")
   assert string.contains(html, "role=\"alert\"")

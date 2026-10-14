@@ -935,7 +935,7 @@ fn form_fields(
       // The start date, the phases and the goal are a group of their own (ADR 0085, 0108).
       layout.subheader("Schedule"),
       field.with_trigger(
-        field.text(
+        field.native(
           "plan-start",
           "First day",
           on(

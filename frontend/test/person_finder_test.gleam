@@ -4,6 +4,7 @@ import atlas/person_finder.{
   CancelClicked, EmailChanged, Failed, FindClicked, Found, Idle, LookUp, Looking,
   LookupAnswered, Model, Unreachable,
 }
+import field_html
 import gleam/option.{None, Some}
 import gleam/string
 import lustre/element
@@ -168,7 +169,7 @@ fn html_of(model: person_finder.Model) -> String {
 
 pub fn the_form_is_labelled_and_uses_the_screens_wording_test() {
   let html = html_of(Model("", Found(Person("bob", "Bob Coach"))))
-  assert string.contains(html, "for=\"the-email\"")
+  assert field_html.labelled(html, "the-email", "Who?")
   assert string.contains(html, "id=\"the-email\"")
   assert string.contains(html, "class=\"the-form\"")
   assert string.contains(html, "type=\"email\"")

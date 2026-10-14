@@ -10,6 +10,7 @@ import atlas/date.{Date}
 import atlas/outbox
 import atlas/plan
 import atlas/workout_form
+import field_html
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
@@ -356,8 +357,8 @@ pub fn the_form_is_labelled_and_shows_errors_test() {
   assert string.contains(html, "for=\"activity-date\"")
   assert string.contains(html, "type=\"date\"")
   assert string.contains(html, "type=\"time\"")
-  assert string.contains(html, "for=\"activity-distance\"")
-  assert string.contains(html, "for=\"activity-title\"")
+  assert field_html.labelled(html, "activity-distance", "Distance")
+  assert field_html.labelled(html, "activity-title", "Title")
   assert string.contains(html, ">Intervals<")
   assert string.contains(html, ">Race<")
   // Resting is not recorded, and the sports are not offered (ADR 0121).

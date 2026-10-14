@@ -6,6 +6,7 @@ import atlas/grants.{Person}
 import atlas/http.{Response}
 import atlas/outbox
 import atlas/person_finder
+import field_html
 import gleam/dict
 import gleam/option.{None, Some}
 import gleam/string
@@ -159,7 +160,7 @@ pub fn the_form_and_the_confirmation_use_the_coach_wording_test() {
       ),
     )
   let html = html_of(found)
-  assert string.contains(html, "for=\"coach-email\"")
+  assert field_html.labelled(html, "coach-email", "E-mail address")
   assert string.contains(html, "The coach to let see your training")
   assert string.contains(html, "Found Bob Coach. Let them see your training?")
   assert string.contains(html, "Give access")

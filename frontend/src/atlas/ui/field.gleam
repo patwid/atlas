@@ -1,5 +1,5 @@
-//// Small typed wrappers over Atlas's own text-field styling (ADR 0040, 0044), so call sites don't
-//// repeat the `"md-text-field"` CSS class by hand. Named `field`, not `form`,
+//// Atlas's text fields (ADR 0040, 0044): Fluent UI's text input and textarea (ADR 0133), and native inputs for the
+//// types Fluent's text input does not have (number, date, time), styled to match. Named `field`, not `form`,
 //// because `form` is already the usual parameter name for a page's form data (e.g.
 //// `plan_form.Form`), which would shadow a module of that name.
 
@@ -93,9 +93,36 @@ pub fn with_error(
   }
 }
 
-/// An outlined text field whose label sits in the field and moves onto its outline when the field has focus or a
-/// value, as Material 3 draws it.
+/// Fluent UI's text input with its label above it, for text, e-mail, password, telephone and URL fields: the types
+/// it has. The label is inside the element, where Fluent connects it to the input in its shadow root;
+/// `atlas/ui/fluent` copies `aria-describedby`, `aria-invalid` and `inputmode` onto that input, which Fluent does
+/// not (ADR 0133).
 pub fn text(
+  id: String,
+  label: String,
+  help: Help,
+  attributes: List(Attribute(msg)),
+) -> Element(msg) {
+  fluent_field(
+    id,
+    help,
+    element.element("fluent-text-input", fluent_control(id, help, attributes), [
+      html.text(label),
+      case help.suffix {
+        "" -> element.none()
+        unit ->
+          html.span(
+            [attribute.attribute("slot", "end"), class("field-suffix")],
+            [html.text(unit)],
+          )
+      },
+    ]),
+  )
+}
+
+/// A native input with its label on the outline, for the types Fluent's text input does not have: `number`, `date`
+/// and `time`, given in `attributes`. Styled to match Fluent's.
+pub fn native(
   id: String,
   label: String,
   help: Help,
@@ -104,6 +131,8 @@ pub fn text(
   outlined(id, label, help, html.input(control(id, help, attributes)))
 }
 
+/// Fluent UI's textarea. Its label goes in the `label` slot; its text content would be its default value, so
+/// `content` is set as its value instead.
 pub fn area(
   id: String,
   label: String,
@@ -111,11 +140,48 @@ pub fn area(
   attributes: List(Attribute(msg)),
   content: String,
 ) -> Element(msg) {
-  outlined(
+  fluent_field(
     id,
-    label,
     help,
-    html.textarea(control(id, help, attributes), content),
+    element.element(
+      "fluent-textarea",
+      [
+        attribute.value(content),
+        // Full width, and taller as more is written.
+        attribute.attribute("block", ""),
+        attribute.attribute("auto-resize", ""),
+        ..fluent_control(id, help, attributes)
+      ],
+      [html.span([attribute.attribute("slot", "label")], [html.text(label)])],
+    ),
+  )
+}
+
+fn fluent_control(
+  id: String,
+  help: Help,
+  attributes: List(Attribute(msg)),
+) -> List(Attribute(msg)) {
+  [
+    attribute.id(id),
+    attribute.attribute("appearance", "outline"),
+    attribute.attribute("control-size", "large"),
+    case help.error, help.supporting {
+      None, "" -> attribute.none()
+      _, _ -> attribute.attribute("aria-describedby", id <> "-help")
+    },
+    case help.error {
+      Some(_) -> attribute.attribute("aria-invalid", "true")
+      None -> attribute.none()
+    },
+    ..attributes
+  ]
+}
+
+fn fluent_field(id: String, help: Help, control: Element(msg)) -> Element(msg) {
+  html.div(
+    [class("field"), attribute.classes([#("has-error", help.error != None)])],
+    [control, supporting(id, help)],
   )
 }
 
@@ -198,23 +264,28 @@ fn outlined(
             [html.text(unit)],
           )
       },
-      case help.error, help.supporting {
-        // An error is announced when it appears, as the form-level message was (`atlas/ui/error`).
-        Some(message), _ ->
-          html.p(
-            [
-              attribute.id(id <> "-help"),
-              class("md-field-supporting"),
-              attribute.role("alert"),
-            ],
-            [html.text(message)],
-          )
-        None, "" -> element.none()
-        None, text ->
-          html.p([attribute.id(id <> "-help"), class("md-field-supporting")], [
-            html.text(text),
-          ])
-      },
+      supporting(id, help),
     ],
   )
+}
+
+/// The line under a field: its error, announced when it appears as the form-level message was (`atlas/ui/error`),
+/// or else its help.
+fn supporting(id: String, help: Help) -> Element(msg) {
+  case help.error, help.supporting {
+    Some(message), _ ->
+      html.p(
+        [
+          attribute.id(id <> "-help"),
+          class("md-field-supporting"),
+          attribute.role("alert"),
+        ],
+        [html.text(message)],
+      )
+    None, "" -> element.none()
+    None, text ->
+      html.p([attribute.id(id <> "-help"), class("md-field-supporting")], [
+        html.text(text),
+      ])
+  }
 }

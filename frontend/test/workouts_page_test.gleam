@@ -10,6 +10,7 @@ import atlas/workouts_page.{
   SegmentChanged, SetAdded, SetRemoved, Submitted, TitleChanged, Viewing,
   WeekChanged, WeekSelected, WorkoutSelected, WorkoutsRead,
 }
+import field_html
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
@@ -628,8 +629,8 @@ pub fn the_form_is_labelled_and_shows_errors_test() {
       ),
     )
   let html = html_of(model, True)
-  assert string.contains(html, "for=\"workout-title\"")
-  assert string.contains(html, "for=\"workout-distance\"")
+  assert field_html.labelled(html, "workout-title", "Title")
+  assert field_html.labelled(html, "workout-distance", "Distance")
   assert string.contains(html, ">km<")
   assert string.contains(html, "Minutes, or hours and minutes")
   // The error is under the field it is about, which is marked (ADR 0059).
