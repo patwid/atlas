@@ -831,6 +831,7 @@ fn form_fields(form: activity_form.Form) -> Element(Msg) {
             form.session,
             "activity",
             "A distance, a duration or both",
+            False,
             on,
             events,
           )

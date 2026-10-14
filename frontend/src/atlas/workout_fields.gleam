@@ -59,11 +59,14 @@ pub fn kind_field(
 }
 
 /// What is run, for the form's kind: a race's warm-up, the zone, the parts of intervals, the distance and duration,
-/// and a race's cool-down (ADR 0105, 0116, 0119). `distance_help` says whether a distance is needed.
+/// and a race's cool-down (ADR 0105, 0116, 0119). `distance_help` says whether a distance is needed. A planned
+/// interval workout's distance and duration are those of its parts, shown read-only, while an activity's are what
+/// was run (ADR 0130).
 pub fn targets(
   form: Form,
   prefix: String,
   distance_help: String,
+  planned: Bool,
   on: On,
   events: Events(msg),
 ) -> Element(msg) {
@@ -91,7 +94,10 @@ pub fn targets(
       plan.Interval -> interval_fields(form, prefix, on, events)
       _ -> element.none()
     },
-    distance_and_duration(form, prefix, distance_help, on, events),
+    case form.kind, planned {
+      plan.Interval, True -> element.none()
+      _, _ -> distance_and_duration(form, prefix, distance_help, on, events)
+    },
     case form.kind {
       plan.Race ->
         segment_group(

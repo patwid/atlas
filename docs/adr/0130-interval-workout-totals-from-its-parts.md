@@ -1,6 +1,6 @@
 # 0130. An interval workout without a distance or duration of its own counts those of its parts
 
-- Status: Accepted
+- Status: Superseded by [0131](0131-interval-workout-totals-read-only.md)
 - Date: 2026-10-14
 - Deciders: owner (asked that an interval workout's total distance and duration be worked out and count towards the
   weekly goal); agent (the details below)

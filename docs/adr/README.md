@@ -132,4 +132,5 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0127 | [Workouts on the phone calendar as two-line cards, scrolled across](0127-phone-calendar-workouts-as-two-line-cards.md) | Accepted |
 | 0128 | [Dependency update pull requests from Renovate](0128-dependency-updates-with-renovate.md) | Accepted |
 | 0129 | [Today is marked on a dated plan's calendar](0129-today-marked-on-the-plan-calendar.md) | Accepted |
-| 0130 | [An interval workout counts the distance and duration of its parts](0130-interval-workout-totals-from-its-parts.md) | Accepted |
+| 0130 | [An interval workout counts the distance and duration of its parts](0130-interval-workout-totals-from-its-parts.md) | Superseded by 0131 |
+| 0131 | [An interval workout's distance and duration are those of its parts, read-only](0131-interval-workout-totals-read-only.md) | Accepted |

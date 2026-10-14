@@ -1295,7 +1295,7 @@ fn form_fields(
         workout_fields.kind_options(kinds),
         events,
       ),
-      workout_fields.targets(form, "workout", "Optional", on, events),
+      workout_fields.targets(form, "workout", "Optional", True, on, events),
       workout_fields.notes(form, "workout", on, events),
       case form.error, wrong {
         Some(message), "" -> error.message(message)

@@ -390,6 +390,24 @@ pub fn an_interval_workout_carries_its_parts_test() {
   assert valid.zone == 0
 }
 
+pub fn an_interval_workouts_distance_and_duration_are_those_of_its_parts_test() {
+  // A distance and duration typed before the kind was changed, even unusable ones, are not kept (ADR 0130).
+  let assert Ok(valid) =
+    workout_form.validate(
+      Form(..intervals_form(), distance_km: "12", duration: "soon"),
+    )
+  // 6 × 800 m, and 6 × 2:50 + 5 × 1:30.
+  assert valid.distance_m == 4800.0
+  assert valid.duration_s == 1470
+  // Without parts, it has none.
+  let assert Ok(valid) =
+    workout_form.validate(
+      Form(..form(), kind: plan.Interval, distance_km: "12"),
+    )
+  assert valid.distance_m == 0.0
+  assert valid.duration_s == 0
+}
+
 pub fn the_parts_are_optional_and_only_for_intervals_test() {
   let assert Ok(valid) =
     workout_form.validate(Form(..form(), kind: plan.Interval))
@@ -571,7 +589,16 @@ pub fn an_edit_sends_steps_only_when_the_parts_changed_test() {
   let assert Ok(valid) = workout_form.validate(intervals_form())
   let stored =
     Row(
-      Workout("w1", "p1", 0, 0, "Easy run", plan.Interval, None, None),
+      Workout(
+        "w1",
+        "p1",
+        0,
+        0,
+        "Easy run",
+        plan.Interval,
+        Some(4800.0),
+        Some(1470),
+      ),
       "",
       valid.intervals,
       0,
@@ -590,12 +617,21 @@ pub fn an_edit_sends_steps_only_when_the_parts_changed_test() {
     workout_form.validate(
       with_set(fn(set) { workout_form.SetForm(..set, reps: "5") }),
     )
-  assert dict.keys(workout_form.changed_fields(stored, fewer, 0)) == ["steps"]
+  // Fewer reps: the parts, and so the totals, change (ADR 0130).
+  assert workout_form.changed_fields(stored, fewer, 0)
+    == dict.from_list([
+      workout_form.steps_field(fewer.intervals),
+      outbox.field_float("distance_m", 4000.0),
+      outbox.field_int("duration_s", 1210),
+    ])
   let assert Ok(tempo) =
     workout_form.validate(Form(..intervals_form(), kind: plan.Run, zone: "4"))
   assert workout_form.changed_fields(stored, tempo, 0)
     == dict.from_list([
       outbox.field_string("kind", "run"),
+      // No distance or duration typed for the run: the parts' totals go with them.
+      outbox.field_float("distance_m", 0.0),
+      outbox.field_int("duration_s", 0),
       outbox.field_null("steps"),
       outbox.field_int("zone", 4),
     ])

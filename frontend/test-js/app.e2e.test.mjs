@@ -258,6 +258,8 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
   await waitFor("the rep time from the zone", () => d.querySelector("#workout-set1-work-time").value === "4:06")
   assert.equal(d.querySelector("#workout-total-distance").value, "4.8")
   assert.equal(d.querySelector("#workout-total-time").value, "47:06")
+  assert.equal(d.querySelector("#workout-distance"), null, "its distance and duration are its parts' (ADR 0131)")
+  assert.equal(d.querySelector("#workout-duration"), null)
   // A second set, at first a copy of the first.
   click(w, [...d.querySelectorAll(".workout-form button")].find((el) => el.textContent.includes("Add set")))
   await waitFor("the second set", () => d.querySelector("#workout-set2-reps")?.value === "6")
@@ -279,6 +281,9 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
     cooldown: { distance_m: 2000 },
   })
   assert.equal(track.zone, 0, "no zone of its own: its parts have one (ADR 0117)")
+  // 15:00 + 6 × 4:06 + 4 × 1:59 + 9 × 1:30, and 6 × 800 m + 4 × 400 m + 2 km (ADR 0131).
+  assert.equal(track.duration_s, 3662)
+  assert.equal(track.distance_m, 8400)
   await waitFor("the parts on the calendar", () => d.querySelector(".calendar").textContent.includes("15:00 warm-up · 6 × 800 m in 4:06 (Zone 4), 1:30 recovery · 4 × 400 m in 1:59 (Zone 5), 1:30 recovery · 2 km cool-down"))
   click(w, [...d.querySelectorAll(".workout")].find((el) => el.textContent.includes("Track")))
   await waitFor("the parts in the form", () => d.querySelector("#workout-set2-reps")?.value === "4")

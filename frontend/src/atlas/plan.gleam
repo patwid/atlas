@@ -79,21 +79,22 @@ pub type Segment {
 
 pub const no_segment = Segment(0, 0.0, 0, option.None)
 
-/// The workout with, for an interval workout without a distance or duration of its own, those of all its parts
-/// (ADR 0130): what its week's totals, its plan's weekly goal and matching count.
+/// The workout with, for an interval workout, the distance and duration of all its parts (ADR 0130), whatever was
+/// saved as its own: what its week's totals, its plan's weekly goal and matching count. An interval workout without
+/// parts keeps its own.
 pub fn with_totals(workout: Workout, intervals: Option(Intervals)) -> Workout {
   case workout.kind, intervals {
     Interval, option.Some(parts) -> {
       let #(distance_m, duration_s) = interval_totals(parts)
       Workout(
         ..workout,
-        distance_m: case workout.distance_m, distance_m >. 0.0 {
-          option.None, True -> option.Some(distance_m)
-          own, _ -> own
+        distance_m: case distance_m >. 0.0 {
+          True -> option.Some(distance_m)
+          False -> option.None
         },
-        duration_s: case workout.duration_s, duration_s > 0 {
-          option.None, True -> option.Some(duration_s)
-          own, _ -> own
+        duration_s: case duration_s > 0 {
+          True -> option.Some(duration_s)
+          False -> option.None
         },
       )
     }

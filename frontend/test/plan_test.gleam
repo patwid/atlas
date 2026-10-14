@@ -212,18 +212,18 @@ pub fn an_interval_workouts_totals_are_those_of_its_parts_test() {
     == #(0.0, 0)
 }
 
-pub fn an_interval_workout_without_its_own_targets_has_those_of_its_parts_test() {
+pub fn an_interval_workouts_targets_are_those_of_its_parts_test() {
   let w = workout("w", 0, Interval)
-  assert plan.with_totals(w, Some(track()))
-    == Workout(..w, distance_m: Some(5800.0), duration_s: Some(1620))
-  // Its own distance or duration is kept.
-  let own = Workout(..w, distance_m: Some(6000.0))
-  assert plan.with_totals(own, Some(track()))
-    == Workout(..own, duration_s: Some(1620))
+  let totals = Workout(..w, distance_m: Some(5800.0), duration_s: Some(1620))
+  assert plan.with_totals(w, Some(track())) == totals
+  // What was saved as its own, such as before ADR 0130, is not counted.
+  let own = Workout(..w, distance_m: Some(6000.0), duration_s: Some(2400))
+  assert plan.with_totals(own, Some(track())) == totals
   // Parts without a distance or time add none.
   let empty = plan.Intervals(plan.no_segment, [], plan.no_segment)
-  assert plan.with_totals(w, Some(empty)) == w
-  assert plan.with_totals(w, None) == w
+  assert plan.with_totals(own, Some(empty)) == w
+  // Without parts, it keeps its own.
+  assert plan.with_totals(own, None) == own
   // Only intervals: a race's warm-up and cool-down are not the race.
   let race = workout("r", 0, plan.Race)
   assert plan.with_totals(race, Some(track())) == race

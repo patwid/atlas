@@ -161,8 +161,7 @@ pub type Row {
   )
 }
 
-/// The workout as planned: an interval workout without a distance or duration of its own has those of its parts
-/// (ADR 0130).
+/// The workout as planned: an interval workout's distance and duration are those of its parts (ADR 0130).
 pub fn planned(row: Row) -> plan.Workout {
   plan.with_totals(row.workout, row.intervals)
 }
@@ -647,13 +646,22 @@ pub fn validate_fields(form: Form) -> Result(Valid, #(String, String)) {
     _, _, n if n > max_title ->
       Error(#("title", "The title can have at most 200 characters."))
     Ok(week), Ok(day), _ -> {
-      use body <- result.map(validate_body(form))
+      // An interval workout's distance and duration are those of its parts, not asked for (ADR 0130).
+      let checked = case form.kind {
+        plan.Interval -> Form(..form, distance_km: "", duration: "")
+        _ -> form
+      }
+      use body <- result.map(validate_body(checked))
+      let #(distance_m, duration_s) = case form.kind, body.intervals {
+        plan.Interval, Some(parts) -> plan.interval_totals(parts)
+        _, _ -> #(body.distance_m, body.duration_s)
+      }
       Valid(
         day_index: { week - 1 } * 7 + { day - 1 },
         title: title,
         kind: form.kind,
-        distance_m: body.distance_m,
-        duration_s: body.duration_s,
+        distance_m: distance_m,
+        duration_s: duration_s,
         description: body.description,
         intervals: body.intervals,
         zone: body.zone,

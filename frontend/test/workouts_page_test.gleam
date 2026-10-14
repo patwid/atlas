@@ -941,3 +941,30 @@ pub fn an_interval_workouts_parts_count_towards_its_weeks_goal_test() {
   // 8 km + 2 km + 5 × 1 km + 1 km against 80% of a 40 km goal (ADR 0130).
   assert string.contains(html, "16 / 32 km")
 }
+
+pub fn an_interval_workout_asks_for_no_distance_or_duration_of_its_own_test() {
+  let form =
+    workout_form.Form(
+      ..workout_form.empty_for(1, 1),
+      kind: plan.Interval,
+      sets: [
+        workout_form.SetForm(
+          "6",
+          workout_form.SegmentForm(
+            "4",
+            "800",
+            "",
+            workout_form.NeitherTyped,
+            "",
+            "",
+          ),
+          workout_form.blank_segment,
+        ),
+      ],
+    )
+  let html = html_of(Model(..with_rows([]), mode: Adding, form: form), True)
+  // Only the read-only totals of its parts (ADR 0130).
+  assert !string.contains(html, "id=\"workout-distance\"")
+  assert !string.contains(html, "id=\"workout-duration\"")
+  assert string.contains(html, "id=\"workout-total-distance\"")
+}
