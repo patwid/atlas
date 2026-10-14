@@ -662,7 +662,7 @@ fn home_inputs(model: Model, session: Session) -> today.Inputs {
     user_id: session.user_id,
     today: clock.today(),
     assignments: model.assignments.rows,
-    workouts: list.map(model.workouts.rows, fn(row) { row.workout }),
+    workouts: list.map(model.workouts.rows, workout_form.planned),
     plans: model.plans.plans,
     activities: model.activities.rows,
     matches: model.daily.matches,

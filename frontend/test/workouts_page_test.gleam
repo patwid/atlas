@@ -901,7 +901,7 @@ pub fn an_interval_workout_without_a_distance_totals_its_parts_test() {
   let no_distance =
     Row(
       ..base,
-      workout: Workout(..base.workout, distance_m: None),
+      workout: Workout(..base.workout, kind: plan.Interval, distance_m: None),
       intervals: Some(intervals),
     )
   // 2 km + 3 × 800 m + 2 × 200 m + 1 km: no recovery after the last rep.
@@ -909,4 +909,35 @@ pub fn an_interval_workout_without_a_distance_totals_its_parts_test() {
   assert workouts_page.total_distance(Row(..no_distance, intervals: None))
     == None
   assert workouts_page.total_distance(base) == Some(8000.0)
+}
+
+pub fn an_interval_workouts_parts_count_towards_its_weeks_goal_test() {
+  let base = row("b", "p1", 9, 0, "Track")
+  let intervals =
+    plan.Intervals(
+      plan.Segment(1, 2000.0, 600, None),
+      [
+        plan.Set(
+          5,
+          plan.Segment(4, 1000.0, 240, None),
+          plan.Segment(1, 0.0, 120, None),
+        ),
+      ],
+      plan.Segment(1, 1000.0, 300, None),
+    )
+  let track =
+    Row(
+      ..base,
+      workout: Workout(
+        ..base.workout,
+        kind: plan.Interval,
+        distance_m: None,
+        duration_s: None,
+      ),
+      intervals: Some(intervals),
+      zone: 0,
+    )
+  let html = html_of(with_rows([row("a", "p1", 7, 0, "Easy"), track]), False)
+  // 8 km + 2 km + 5 × 1 km + 1 km against 80% of a 40 km goal (ADR 0130).
+  assert string.contains(html, "16 / 32 km")
 }

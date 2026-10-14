@@ -1,6 +1,6 @@
 # 0106. Work distances and times out from the target zone's pace
 
-- Status: Accepted
+- Status: Accepted. An interval workout counts its parts' totals: [0130](0130-interval-workout-totals-from-its-parts.md).
 - Date: 2026-10-11
 - Deciders: owner (asked for the other of distance and time to be filled in from the zone, and for read-only totals of an interval workout); agent (the details below)
 

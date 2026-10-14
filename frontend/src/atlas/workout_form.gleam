@@ -161,6 +161,12 @@ pub type Row {
   )
 }
 
+/// The workout as planned: an interval workout without a distance or duration of its own has those of its parts
+/// (ADR 0130).
+pub fn planned(row: Row) -> plan.Workout {
+  plan.with_totals(row.workout, row.intervals)
+}
+
 pub fn empty_for(week: Int, day: Int) -> Form {
   Form(
     int.to_string(week),

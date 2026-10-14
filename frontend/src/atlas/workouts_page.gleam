@@ -37,7 +37,6 @@ import gleam/float
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/result
 import gleam/string
 import lustre/attribute.{class}
 import lustre/effect.{type Effect}
@@ -152,7 +151,7 @@ pub fn rows_of(model: Model, plan_id: String) -> List(Row) {
 }
 
 fn workouts_of(model: Model, plan_id: String) -> List(Workout) {
-  list.map(rows_of(model, plan_id), fn(row) { row.workout })
+  list.map(rows_of(model, plan_id), workout_form.planned)
 }
 
 /// `on_screen` is the plan on screen. Changes are only made to it, and only when `can_edit`. `goals` are the race goals
@@ -524,7 +523,7 @@ pub fn view(
     plan_schedule.weeks(
       on_screen.phases,
       on_screen.start_date,
-      list.map(rows, fn(row) { row.workout }),
+      list.map(rows, workout_form.planned),
     )
   html.section([class("workouts plan-calendar")], [
     undo.snackbar(model.undo, "Workout deleted", UndoClicked, DeleteExpired),
@@ -860,37 +859,10 @@ fn workout_chip(
   )
 }
 
-/// The workout's distance or, for an interval workout without one, that of all its parts: the warm-up, the reps,
-/// a recovery after every rep but the last, and the cool-down (ADR 0116, 0127). `None` when nothing has a distance.
+/// The workout's distance or, for an interval workout without one, that of all its parts (ADR 0127, 0130). `None`
+/// when nothing has a distance.
 pub fn total_distance(row: Row) -> Option(Float) {
-  case row.workout.distance_m, row.intervals {
-    Some(d), _ -> Some(d)
-    None, None -> None
-    None, Some(intervals) -> {
-      let sets =
-        list.fold(intervals.sets, 0.0, fn(total, set) {
-          total
-          +. int.to_float(set.reps)
-          *. { set.work.distance_m +. set.recovery.distance_m }
-        })
-      // No recovery after the workout's last rep.
-      let last_recovery =
-        intervals.sets
-        |> list.filter(fn(set) { set.reps > 0 })
-        |> list.last
-        |> result.map(fn(set) { set.recovery.distance_m })
-        |> result.unwrap(0.0)
-      let total =
-        intervals.warmup.distance_m
-        +. sets
-        -. last_recovery
-        +. intervals.cooldown.distance_m
-      case total >. 0.0 {
-        True -> Some(total)
-        False -> None
-      }
-    }
-  }
+  { workout_form.planned(row) }.distance_m
 }
 
 /// The saved workout with this ID, if it can be run on a watch (ADR 0122).
@@ -1163,7 +1135,7 @@ fn delete_of(model: Model, id: String) -> List(Action) {
 /// The target zone (ADR 0105) or the parts of an interval workout (ADR 0104, 0116), then its distance and duration.
 /// A race's warm-up comes before its own targets and its cool-down after them (ADR 0119).
 fn targets(row: Row) -> String {
-  let w = row.workout
+  let w = workout_form.planned(row)
   let #(before, parts, after) = case w.kind, row.intervals {
     plan.Race, Some(intervals) -> #(
       workout_form.warmup_summary(intervals),

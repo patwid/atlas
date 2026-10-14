@@ -79,6 +79,59 @@ pub type Segment {
 
 pub const no_segment = Segment(0, 0.0, 0, option.None)
 
+/// The workout with, for an interval workout without a distance or duration of its own, those of all its parts
+/// (ADR 0130): what its week's totals, its plan's weekly goal and matching count.
+pub fn with_totals(workout: Workout, intervals: Option(Intervals)) -> Workout {
+  case workout.kind, intervals {
+    Interval, option.Some(parts) -> {
+      let #(distance_m, duration_s) = interval_totals(parts)
+      Workout(
+        ..workout,
+        distance_m: case workout.distance_m, distance_m >. 0.0 {
+          option.None, True -> option.Some(distance_m)
+          own, _ -> own
+        },
+        duration_s: case workout.duration_s, duration_s > 0 {
+          option.None, True -> option.Some(duration_s)
+          own, _ -> own
+        },
+      )
+    }
+    _, _ -> workout
+  }
+}
+
+/// The distance and time of all the parts of an interval workout: the warm-up, the reps, a recovery after every rep
+/// but the last of the workout, and the cool-down (ADR 0116).
+pub fn interval_totals(intervals: Intervals) -> #(Float, Int) {
+  let sets = list.filter(intervals.sets, fn(set) { set.reps > 0 })
+  // No recovery after the workout's last rep.
+  let last_recovery = case list.last(sets) {
+    Ok(set) -> set.recovery
+    Error(Nil) -> no_segment
+  }
+  let distance_m =
+    list.fold(sets, 0.0, fn(total, set) {
+      total
+      +. int.to_float(set.reps)
+      *. { set.work.distance_m +. set.recovery.distance_m }
+    })
+  let duration_s =
+    list.fold(sets, 0, fn(total, set) {
+      total + set.reps * { set.work.duration_s + set.recovery.duration_s }
+    })
+  #(
+    intervals.warmup.distance_m
+      +. distance_m
+      -. last_recovery.distance_m
+      +. intervals.cooldown.distance_m,
+    intervals.warmup.duration_s
+      + duration_s
+      - last_recovery.duration_s
+      + intervals.cooldown.duration_s,
+  )
+}
+
 /// A share of the speed of a race goal (ADR 0115, 0118): 100 is the goal's own pace. The goal's distance and time
 /// are kept with it, so the pace can still be read when the goal is changed or gone, or not on the device.
 pub type GoalPace {

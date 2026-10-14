@@ -185,3 +185,46 @@ pub fn rest_days_add_no_workouts_test() {
     )
     == [WeekTotal(Date(2026, 10, 5), 0, 0.0, 0)]
 }
+
+fn track() -> plan.Intervals {
+  plan.Intervals(
+    plan.Segment(1, 2000.0, 600, None),
+    [
+      plan.Set(
+        3,
+        plan.Segment(4, 800.0, 180, None),
+        plan.Segment(1, 200.0, 90, None),
+      ),
+      plan.Set(0, plan.no_segment, plan.no_segment),
+    ],
+    plan.Segment(1, 1000.0, 300, None),
+  )
+}
+
+pub fn an_interval_workouts_totals_are_those_of_its_parts_test() {
+  // 2 km + 3 × 800 m + 2 × 200 m + 1 km, and 10 min + 3 × 3 min + 2 × 1:30 + 5 min: no recovery after the last rep.
+  assert plan.interval_totals(track()) == #(5800.0, 1620)
+  assert plan.interval_totals(plan.Intervals(
+      plan.no_segment,
+      [],
+      plan.no_segment,
+    ))
+    == #(0.0, 0)
+}
+
+pub fn an_interval_workout_without_its_own_targets_has_those_of_its_parts_test() {
+  let w = workout("w", 0, Interval)
+  assert plan.with_totals(w, Some(track()))
+    == Workout(..w, distance_m: Some(5800.0), duration_s: Some(1620))
+  // Its own distance or duration is kept.
+  let own = Workout(..w, distance_m: Some(6000.0))
+  assert plan.with_totals(own, Some(track()))
+    == Workout(..own, duration_s: Some(1620))
+  // Parts without a distance or time add none.
+  let empty = plan.Intervals(plan.no_segment, [], plan.no_segment)
+  assert plan.with_totals(w, Some(empty)) == w
+  assert plan.with_totals(w, None) == w
+  // Only intervals: a race's warm-up and cool-down are not the race.
+  let race = workout("r", 0, plan.Race)
+  assert plan.with_totals(race, Some(track())) == race
+}
