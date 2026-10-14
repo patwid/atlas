@@ -13,6 +13,7 @@
 //// (ADR 0027), so every button in the app still goes through this module.
 
 import atlas/ui/icon.{type Icon}
+import atlas/ui/progress
 import gleam/option.{type Option, None, Some}
 import lustre/attribute.{type Attribute}
 import lustre/element.{type Element}
@@ -110,6 +111,26 @@ pub fn icon(
       ..attributes
     ],
     [icon.view(symbol)],
+  )
+}
+
+/// An icon button that waits: disabled, with a spinner in place of its icon, such as a search under way. `label` says
+/// what it is doing ("Looking…").
+pub fn waiting(
+  attributes: List(Attribute(msg)),
+  label: String,
+) -> Element(msg) {
+  fluent(
+    "subtle",
+    [
+      attribute.class("icon-button"),
+      attribute.attribute("icon-only", ""),
+      attribute.attribute("size", "large"),
+      attribute.attribute("aria-label", label),
+      attribute.disabled(True),
+      ..attributes
+    ],
+    [progress.spinner()],
   )
 }
 

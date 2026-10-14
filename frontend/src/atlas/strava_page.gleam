@@ -314,7 +314,8 @@ pub fn view(model: Model) -> Element(Msg) {
 
 fn problem(text: String, action: Element(Msg)) -> Element(Msg) {
   banner.view(
-    [class("banner-error"), attribute.role("alert")],
+    banner.Error,
+    [attribute.role("alert")],
     icon.ErrorOutline,
     [html.text(text)],
     [action],

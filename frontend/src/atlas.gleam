@@ -1365,7 +1365,8 @@ fn storage_banner(sync_state: syncing.State) -> Element(Msg) {
   case sync_state.phase {
     syncing.Unavailable ->
       banner.view(
-        [attribute.class("banner-error"), attribute.role("alert")],
+        banner.Error,
+        [attribute.role("alert")],
         icon.ErrorOutline,
         [
           html.text(
@@ -1384,7 +1385,8 @@ fn sync_banners(sync_state: syncing.State) -> Element(Msg) {
     case sync_state.write_failed {
       True ->
         banner.view(
-          [attribute.class("banner-error"), attribute.role("alert")],
+          banner.Error,
+          [attribute.role("alert")],
           icon.ErrorOutline,
           [
             html.text(
@@ -1400,6 +1402,7 @@ fn sync_banners(sync_state: syncing.State) -> Element(Msg) {
       problems ->
         // Read out through the page's live region (ADR 0124): a status added with its text is often not read.
         banner.view(
+          banner.Warning,
           [
             attribute.class("problems"),
             attribute.attribute("data-announce", string.join(problems, " ")),

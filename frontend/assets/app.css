@@ -82,14 +82,6 @@
   --md-sys-motion-spring-default-effects-duration: var(--durationNormal);
   --md-sys-motion-spring-slow-effects: var(--curveEasyEase);
   --md-sys-motion-spring-slow-effects-duration: var(--durationSlow);
-  /* Shapes from M3 Expressive's shape library (ADR 0053), for the loading indicator and empty states until they
-     move to Fluent's. */
-  --md-shape-soft-burst: polygon(50.0% 9.1%, 53.7% 7.6%, 58.0% 4.5%, 62.8% 2.3%, 67.0% 3.3%, 69.9% 7.4%, 71.6% 12.6%, 73.5% 16.4%, 77.0% 17.8%, 82.1% 17.9%, 87.5% 18.5%, 90.9% 21.4%, 91.3% 26.1%, 89.8% 31.4%, 88.7% 35.9%, 90.1% 39.3%, 94.0% 42.2%, 98.2% 45.8%, 100.0% 50.0%, 98.2% 54.2%, 94.0% 57.8%, 90.1% 60.7%, 88.7% 64.1%, 89.8% 68.6%, 91.3% 73.9%, 90.9% 78.6%, 87.5% 81.5%, 82.1% 82.1%, 77.0% 82.2%, 73.5% 83.6%, 71.6% 87.4%, 69.9% 92.6%, 67.0% 96.7%, 62.8% 97.7%, 58.0% 95.5%, 53.7% 92.4%, 50.0% 90.9%, 46.3% 92.4%, 42.0% 95.5%, 37.2% 97.7%, 33.0% 96.7%, 30.1% 92.6%, 28.4% 87.4%, 26.5% 83.6%, 23.0% 82.2%, 17.9% 82.1%, 12.5% 81.5%, 9.1% 78.6%, 8.7% 73.9%, 10.2% 68.6%, 11.3% 64.1%, 9.9% 60.7%, 6.0% 57.8%, 1.8% 54.2%, 0.0% 50.0%, 1.8% 45.8%, 6.0% 42.2%, 9.9% 39.3%, 11.3% 35.9%, 10.2% 31.4%, 8.7% 26.1%, 9.1% 21.4%, 12.5% 18.5%, 17.9% 17.9%, 23.0% 17.8%, 26.5% 16.4%, 28.4% 12.6%, 30.1% 7.4%, 33.0% 3.3%, 37.2% 2.3%, 42.0% 4.5%, 46.3% 7.6%);
-  --md-shape-cookie-9: polygon(50.0% 3.3%, 54.3% 1.1%, 58.7% 0.8%, 62.7% 2.6%, 66.0% 6.1%, 68.8% 9.7%, 71.7% 12.4%, 75.5% 13.6%, 80.0% 14.2%, 84.7% 15.3%, 88.3% 17.9%, 90.2% 21.9%, 90.5% 26.6%, 90.3% 31.2%, 90.8% 35.1%, 92.9% 38.5%, 96.0% 41.9%, 98.9% 45.7%, 100.0% 50.0%, 98.9% 54.3%, 96.0% 58.1%, 92.9% 61.5%, 90.8% 64.9%, 90.3% 68.8%, 90.5% 73.4%, 90.2% 78.1%, 88.3% 82.1%, 84.7% 84.7%, 80.0% 85.8%, 75.5% 86.4%, 71.7% 87.6%, 68.8% 90.3%, 66.0% 93.9%, 62.7% 97.4%, 58.7% 99.2%, 54.3% 98.9%, 50.0% 96.7%, 46.1% 94.2%, 42.5% 92.8%, 38.5% 92.9%, 34.0% 93.9%, 29.3% 94.4%, 25.0% 93.3%, 21.9% 90.2%, 20.0% 85.8%, 18.6% 81.4%, 16.7% 77.9%, 13.6% 75.5%, 9.5% 73.4%, 5.6% 70.7%, 3.0% 67.1%, 2.6% 62.7%, 4.0% 58.1%, 5.8% 53.9%, 6.5% 50.0%, 5.8% 46.1%, 4.0% 41.9%, 2.6% 37.3%, 3.0% 32.9%, 5.6% 29.3%, 9.5% 26.6%, 13.6% 24.5%, 16.7% 22.1%, 18.6% 18.6%, 20.0% 14.2%, 21.9% 9.8%, 25.0% 6.7%, 29.3% 5.6%, 34.0% 6.1%, 38.5% 7.1%, 42.5% 7.2%, 46.1% 5.8%);
-  --md-shape-pentagon: polygon(50.0% 4.1%, 54.2% 2.6%, 58.5% 1.7%, 62.9% 1.8%, 67.1% 3.1%, 70.8% 5.4%, 74.0% 8.5%, 76.5% 12.1%, 78.6% 15.9%, 80.4% 19.6%, 82.2% 23.0%, 84.2% 26.0%, 86.6% 28.9%, 89.4% 31.6%, 92.4% 34.6%, 95.3% 37.9%, 97.8% 41.6%, 99.4% 45.7%, 100.0% 50.0%, 99.4% 54.3%, 97.8% 58.4%, 95.3% 62.1%, 92.4% 65.4%, 89.4% 68.4%, 86.6% 71.1%, 84.2% 74.0%, 82.2% 77.0%, 80.4% 80.4%, 78.6% 84.1%, 76.5% 87.9%, 74.0% 91.5%, 70.8% 94.6%, 67.1% 96.9%, 62.9% 98.2%, 58.5% 98.3%, 54.2% 97.4%, 50.0% 95.9%, 46.2% 94.0%, 42.6% 92.1%, 39.2% 90.5%, 35.7% 89.3%, 32.0% 88.5%, 28.1% 87.9%, 23.9% 87.3%, 19.6% 86.2%, 15.5% 84.5%, 11.9% 82.0%, 9.1% 78.7%, 7.2% 74.7%, 6.3% 70.4%, 6.2% 65.9%, 6.7% 61.6%, 7.4% 57.5%, 8.0% 53.7%, 8.3% 50.0%, 8.0% 46.3%, 7.4% 42.5%, 6.7% 38.4%, 6.2% 34.1%, 6.3% 29.6%, 7.2% 25.3%, 9.1% 21.3%, 11.9% 18.0%, 15.5% 15.5%, 19.6% 13.8%, 23.9% 12.7%, 28.1% 12.1%, 32.0% 11.5%, 35.7% 10.7%, 39.2% 9.5%, 42.6% 7.9%, 46.2% 6.0%);
-  --md-shape-sunny: polygon(50.0% 0.0%, 54.3% 0.7%, 58.3% 2.7%, 62.0% 5.2%, 65.5% 7.4%, 69.2% 8.9%, 73.2% 9.8%, 77.6% 10.7%, 81.8% 12.1%, 85.4% 14.6%, 87.9% 18.2%, 89.3% 22.4%, 90.2% 26.8%, 91.1% 30.8%, 92.6% 34.5%, 94.8% 38.0%, 97.3% 41.7%, 99.3% 45.7%, 100.0% 50.0%, 99.3% 54.3%, 97.3% 58.3%, 94.8% 62.0%, 92.6% 65.5%, 91.1% 69.2%, 90.2% 73.2%, 89.3% 77.6%, 87.9% 81.8%, 85.4% 85.4%, 81.8% 87.9%, 77.6% 89.3%, 73.2% 90.2%, 69.2% 91.1%, 65.5% 92.6%, 62.0% 94.8%, 58.3% 97.3%, 54.3% 99.3%, 50.0% 100.0%, 45.7% 99.3%, 41.7% 97.3%, 38.0% 94.8%, 34.5% 92.6%, 30.8% 91.1%, 26.8% 90.2%, 22.4% 89.3%, 18.2% 87.9%, 14.6% 85.4%, 12.1% 81.8%, 10.7% 77.6%, 9.8% 73.2%, 8.9% 69.2%, 7.4% 65.5%, 5.2% 62.0%, 2.7% 58.3%, 0.7% 54.3%, 0.0% 50.0%, 0.7% 45.7%, 2.7% 41.7%, 5.2% 38.0%, 7.4% 34.5%, 8.9% 30.8%, 9.8% 26.8%, 10.7% 22.4%, 12.1% 18.2%, 14.6% 14.6%, 18.2% 12.1%, 22.4% 10.7%, 26.8% 9.8%, 30.8% 8.9%, 34.5% 7.4%, 38.0% 5.2%, 41.7% 2.7%, 45.7% 0.7%);
-  --md-shape-cookie-4: polygon(50.0% 0.0%, 54.3% 0.5%, 58.5% 2.0%, 62.2% 4.3%, 65.6% 7.2%, 68.5% 10.4%, 71.0% 13.7%, 73.3% 16.8%, 75.5% 19.7%, 77.8% 22.2%, 80.3% 24.5%, 83.2% 26.7%, 86.3% 29.0%, 89.6% 31.5%, 92.8% 34.4%, 95.7% 37.8%, 98.0% 41.5%, 99.5% 45.7%, 100.0% 50.0%, 99.5% 54.3%, 98.0% 58.5%, 95.7% 62.2%, 92.8% 65.6%, 89.6% 68.5%, 86.3% 71.0%, 83.2% 73.3%, 80.3% 75.5%, 77.8% 77.8%, 75.5% 80.3%, 73.3% 83.2%, 71.0% 86.3%, 68.5% 89.6%, 65.6% 92.8%, 62.2% 95.7%, 58.5% 98.0%, 54.3% 99.5%, 50.0% 100.0%, 45.7% 99.5%, 41.5% 98.0%, 37.8% 95.7%, 34.4% 92.8%, 31.5% 89.6%, 29.0% 86.3%, 26.7% 83.2%, 24.5% 80.3%, 22.2% 77.8%, 19.7% 75.5%, 16.8% 73.3%, 13.7% 71.0%, 10.4% 68.5%, 7.2% 65.6%, 4.3% 62.2%, 2.0% 58.5%, 0.5% 54.3%, 0.0% 50.0%, 0.5% 45.7%, 2.0% 41.5%, 4.3% 37.8%, 7.2% 34.4%, 10.4% 31.5%, 13.7% 29.0%, 16.8% 26.7%, 19.7% 24.5%, 22.2% 22.2%, 24.5% 19.7%, 26.7% 16.8%, 29.0% 13.7%, 31.5% 10.4%, 34.4% 7.2%, 37.8% 4.3%, 41.5% 2.0%, 45.7% 0.5%);
-  --md-shape-oval: polygon(50.0% 11.0%, 53.4% 11.1%, 56.8% 11.4%, 60.2% 11.8%, 63.7% 12.5%, 67.1% 13.3%, 70.5% 14.4%, 74.0% 15.8%, 77.4% 17.4%, 80.8% 19.2%, 84.0% 21.4%, 87.2% 23.9%, 90.2% 26.8%, 92.9% 30.0%, 95.3% 33.5%, 97.3% 37.3%, 98.8% 41.4%, 99.7% 45.7%, 100.0% 50.0%, 99.7% 54.3%, 98.8% 58.6%, 97.3% 62.7%, 95.3% 66.5%, 92.9% 70.0%, 90.2% 73.2%, 87.2% 76.1%, 84.0% 78.6%, 80.8% 80.8%, 77.4% 82.6%, 74.0% 84.2%, 70.5% 85.6%, 67.1% 86.7%, 63.7% 87.5%, 60.2% 88.2%, 56.8% 88.6%, 53.4% 88.9%, 50.0% 89.0%, 46.6% 88.9%, 43.2% 88.6%, 39.8% 88.2%, 36.3% 87.5%, 32.9% 86.7%, 29.5% 85.6%, 26.0% 84.2%, 22.6% 82.6%, 19.2% 80.8%, 16.0% 78.6%, 12.8% 76.1%, 9.8% 73.2%, 7.1% 70.0%, 4.7% 66.5%, 2.7% 62.7%, 1.2% 58.6%, 0.3% 54.3%, 0.0% 50.0%, 0.3% 45.7%, 1.2% 41.4%, 2.7% 37.3%, 4.7% 33.5%, 7.1% 30.0%, 9.8% 26.8%, 12.8% 23.9%, 16.0% 21.4%, 19.2% 19.2%, 22.6% 17.4%, 26.0% 15.8%, 29.5% 14.4%, 32.9% 13.3%, 36.3% 12.5%, 39.8% 11.8%, 43.2% 11.4%, 46.6% 11.1%);
 
   /* Fluent's typeface: Segoe UI where there is one, else the system's. No web font is served. */
   --md-ref-typeface: var(--fontFamilyBase);
@@ -367,42 +359,14 @@ html[data-scrolled] .bar { --bar-background: var(--md-sys-color-surface-containe
 .bar-content > :is(.md-icon-button, .icon-button) { margin: 0 -0.25rem 0 -0.5rem; color: var(--md-sys-color-on-surface); }
 .bar-content > .button-group { margin: 0 -0.25rem 0 -0.5rem; }
 .bar-content > .button-group > :is(.md-icon-button, .icon-button) { color: var(--md-sys-color-on-surface); }
-/* Linear progress under the app bar while a sync runs (ADR 0048). It fades in late, so a quick sync does not
-   flicker. As in M3 Expressive (ADR 0095), a 4px gap in the bar's colour parts the indicator from the track. */
-.md-linear-progress {
-  position: absolute; left: 0; right: 0; bottom: 0; height: 0.25rem; overflow: hidden;
-  background: var(--md-sys-color-secondary-container); opacity: 0;
-  animation: progress-appear 0.2s 0.5s forwards;
-}
-.md-linear-progress::before {
-  content: ""; position: absolute; top: 0; bottom: 0; width: 40%; border-radius: var(--md-sys-shape-corner-full);
-  background: var(--md-sys-color-primary); box-shadow: 0 0 0 0.25rem var(--bar-background);
-  animation: progress-slide 1.6s var(--md-sys-motion-easing) infinite;
+/* Fluent's progress bar under the app bar while a sync runs (ADR 0048, 0133). It fades in late, so a quick sync
+   does not flicker. */
+.linear-progress {
+  position: absolute; left: 0; right: 0; bottom: 0; opacity: 0; animation: progress-appear 0.2s 0.5s forwards;
 }
 @keyframes progress-appear { to { opacity: 1; } }
-@keyframes progress-slide { from { left: -40%; } to { left: 100%; } }
-/* A loading indicator next to a status text (ADR 0048, 0053). */
+/* A spinner next to a status text (ADR 0048). */
 .loading { display: flex; align-items: center; gap: 0.75rem; color: var(--md-sys-color-on-surface-variant); }
-/* M3 Expressive's loading indicator (ADR 0053): a 38px shape in a 48px box that morphs through the shape library
-   while it turns, for waits too short for a progress indicator. */
-.md-loading-indicator { flex: none; display: grid; place-items: center; width: 3rem; height: 3rem; }
-.md-loading-indicator::before {
-  content: ""; width: 2.375rem; height: 2.375rem; background: var(--md-sys-color-primary);
-  clip-path: var(--md-shape-soft-burst); animation: loading-morph 4.2s linear infinite, loading-turn 1.4s linear infinite;
-}
-@keyframes loading-morph {
-  0%, 100% { clip-path: var(--md-shape-soft-burst); }
-  16.6% { clip-path: var(--md-shape-cookie-9); }
-  33.3% { clip-path: var(--md-shape-pentagon); }
-  50% { clip-path: var(--md-shape-sunny); }
-  66.6% { clip-path: var(--md-shape-cookie-4); }
-  83.3% { clip-path: var(--md-shape-oval); }
-}
-@keyframes loading-turn { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) {
-  .md-linear-progress::before { animation-duration: 4s; }
-  .md-loading-indicator::before { animation: loading-turn 4s linear infinite; }
-}
 main { flex: 1; padding: 0 1rem 1.5rem; max-width: var(--content-max); width: 100%; margin: 0 auto; }
 
 .tabs { position: sticky; bottom: 0; z-index: 2; background: var(--md-sys-color-surface-container); }
@@ -445,13 +409,13 @@ main { flex: 1; padding: 0 1rem 1.5rem; max-width: var(--content-max); width: 10
 }
 
 /* Text and small pieces. */
-/* Empty states (ADR 0050): an icon in a tonal circle, a headline, a line of help and maybe an action. */
+/* Empty states (ADR 0050): an icon in a brand-tinted circle, a headline, a line of help and maybe an action. */
 .empty {
   display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.5rem;
   padding: 2.5rem 1rem; color: var(--md-sys-color-on-surface-variant);
 }
 .empty > .icon {
-  width: 5rem; height: 5rem; padding: 1.375rem; margin-bottom: 0.5rem; clip-path: var(--md-shape-cookie-9);
+  width: 5rem; height: 5rem; padding: 1.375rem; margin-bottom: 0.5rem; border-radius: var(--borderRadiusCircular);
   background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container);
 }
 .empty h2 { color: var(--md-sys-color-on-surface); font: 500 1.375rem/1.75rem var(--md-ref-typeface); margin: 0; }
@@ -486,19 +450,10 @@ label {
 /* A section with nothing in it says so in a line that lines up with its subheader, as its items' text would. */
 .group > .muted { margin: 0 1rem; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; }
 .toolbar:empty { display: none; }
-/* Banners (ADR 0049): a message at the top of the content until it is resolved, with an icon and actions. */
-.banner {
-  margin: 0 0 1rem; padding: 1rem 1rem 0.5rem; border-radius: var(--md-sys-shape-corner-medium);
-  background: var(--md-sys-color-surface-container-high); color: var(--md-sys-color-on-surface);
-}
-.banner-body { display: flex; gap: 1rem; align-items: flex-start; padding-bottom: 0.5rem; }
-.banner-body > .icon { color: var(--md-sys-color-on-surface-variant); margin-top: -0.0625rem; }
-.banner-text { flex: 1; min-width: 0; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem; }
+/* Banners (ADR 0049) are Fluent's message bars (ADR 0133), a gap above the content. */
+.banner { margin: 0 0 1rem; }
+.banner .icon { width: 1.25rem; height: 1.25rem; }
 .banner-text ul { margin: 0; padding-left: 1.25rem; }
-.banner-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-right: -0.5rem; }
-.banner-error, .banner.problems { background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); }
-.banner-error .banner-body > .icon, .banner.problems .banner-body > .icon,
-.banner.problems .md-button { color: var(--md-sys-color-on-error-container); }
 
 /* A list of rows that open other pages, such as Settings (ADR 0049). */
 .link-list { padding: 0; }
@@ -568,13 +523,9 @@ label {
 /* An activity's figures are what the row is about: in the body colour, not the supporting text's. */
 .list p.figures { color: var(--md-sys-color-on-surface); }
 .chip-row { margin-left: 0.5rem; }
-.label-chip {
-  gap: 0.25rem; display: inline-flex; align-items: center; height: 1.5rem; padding: 0 0.5rem; margin-right: 0.25rem;
-  border: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-small);
-  color: var(--md-sys-color-on-surface-variant); font: 500 0.75rem/1rem var(--md-ref-typeface); letter-spacing: 0.03125rem;
-  vertical-align: middle;
-}
-.label-chip .icon { width: 1rem; height: 1rem; margin-left: -0.125rem; }
+/* Chips are Fluent's outline badges (ADR 0133). */
+.label-chip { margin-right: 0.25rem; vertical-align: middle; }
+.label-chip .icon { width: 0.75rem; height: 0.75rem; }
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 1rem; }
 /* Today's state of a workout (ADR 0048): an icon and a word in the color of its kind, then details. Not chip-shaped,
    since a chip is something to press (ADR 0124); as high as the text button that may follow it. */
@@ -899,8 +850,6 @@ button.md-icon-button[data-ripple]::after, a.md-icon-button[data-ripple]::after 
 .field-trigger { position: absolute; right: 0; top: 1.5rem; }
 /* The person finder's search turns into a small loading indicator while it looks (ADR 0083). */
 .field-trigger:disabled { cursor: progress; }
-.field-trigger .md-loading-indicator { width: 1.5rem; height: 1.5rem; }
-.field-trigger .md-loading-indicator::before { width: 1.25rem; height: 1.25rem; }
 
 /* M3's modal pickers (ADR 0054): a label, a headline or the time fields, the picking area, and Cancel and OK. */
 dialog.picker { padding: 0; min-width: 0; width: auto; max-width: calc(100% - 2rem); }

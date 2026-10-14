@@ -177,22 +177,9 @@ pub fn view(
         ),
         case model.lookup {
           Looking ->
-            button.button(
-              [
-                attribute.type_("submit"),
-                class("md-icon-button field-trigger"),
-                attribute.attribute("aria-label", "Looking…"),
-                attribute.disabled(True),
-              ],
-              [
-                html.span(
-                  [
-                    class("md-loading-indicator"),
-                    attribute.attribute("aria-hidden", "true"),
-                  ],
-                  [],
-                ),
-              ],
+            button.waiting(
+              [attribute.type_("submit"), class("field-trigger")],
+              "Looking…",
             )
           _ ->
             button.icon(

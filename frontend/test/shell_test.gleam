@@ -61,9 +61,9 @@ pub fn the_medium_app_bar_has_a_subtitle_only_when_given_one_test() {
 pub fn a_running_sync_shows_a_progress_bar_test() {
   assert string.contains(
     html_of(shell.Frame(..frame(route.Home), syncing: True)),
-    "role=\"progressbar\"",
+    "<fluent-progress-bar",
   )
-  assert !string.contains(html_of(frame(route.Home)), "progressbar")
+  assert !string.contains(html_of(frame(route.Home)), "progress-bar")
 }
 
 pub fn being_offline_shows_an_icon_in_the_app_bar_test() {

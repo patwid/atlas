@@ -234,7 +234,7 @@ pub fn checking_and_unavailable_states_are_shown_test() {
       ),
     )
   assert string.contains(off, "You are offline")
-  assert string.contains(off, "banner-error")
+  assert string.contains(off, "intent=\"error\"")
   assert string.contains(off, ">Try again<")
 }
 
