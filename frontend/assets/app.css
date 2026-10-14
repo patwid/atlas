@@ -173,6 +173,8 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 .md-button-tonal:not(:disabled):hover { box-shadow: var(--md-sys-elevation-1); }
 .md-button-tonal:disabled { background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent); box-shadow: none; }
 .icon { width: 1.5rem; height: 1.5rem; fill: currentColor; flex: none; }
+/* Fluent's buttons and menu items hold 20px icons. */
+:is(fluent-button, fluent-menu-item) .icon { width: 1.25rem; height: 1.25rem; }
 .md-button .icon { width: 1.25rem; height: 1.25rem; margin-left: -0.25rem; }
 
 /* Buttons side by side, such as a plan's Edit and More in the app bar (ADR 0098). */
@@ -966,7 +968,6 @@ dialog .dialog-supporting { margin: 0 0 1.5rem; font-size: var(--fontSizeBase300
 
 /* Menus (ADR 0056) are Fluent UI's (ADR 0133); their items' icons are Fluent's 20px. In a list item the menu's
    button sits at the item's top end. */
-fluent-menu-item .icon { width: 1.25rem; height: 1.25rem; }
 .list > li:has(fluent-menu) { padding-right: 3.5rem; }
 .list fluent-menu { position: absolute; top: 0.5rem; right: 0.25rem; }
 .list .actions:has(> fluent-menu) { margin: 0; }
