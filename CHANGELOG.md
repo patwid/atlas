@@ -6,7 +6,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 ## [Unreleased]
 
 ### Changed
-- Spike on the `fluent-ui-spike` branch: filled, tonal, outlined and text buttons and confirmation dialogs are drawn with Fluent UI's web components, themed by Fluent 2's tokens ([ADR 0133](docs/adr/0133-fluent-ui-spike.md), Proposed).
+- Fluent 2 instead of Material 3 ([ADR 0133](docs/adr/0133-fluent-ui-spike.md)): Fluent UI's web components draw buttons and confirmation dialogs, and every color, corner, shadow and curve is a Fluent token, in light and dark. The bundled Google Sans Flex font is gone; text is in Segoe UI or the system font.
 
 ### Added
 - ADR process and the initial architecture decisions (ADR 0001–0006).

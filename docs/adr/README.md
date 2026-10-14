@@ -47,8 +47,8 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0041 | [Run CI on GitHub Actions through the Nix flake](0041-github-actions-ci.md) | Superseded by 0042 |
 | 0042 | [Run the test suites as flake checks](0042-ci-through-flake-checks.md) | Accepted |
 | 0043 | [Plan phases, a weekly distance goal, week intensity and a calendar view](0043-plan-phases-goal-and-calendar.md) | Accepted (sidebar replaced by 0066; weekdays and dates: 0108) |
-| 0044 | [Style the app after Material Design 3, by hand](0044-material-design-3-styling.md) | Accepted (colors superseded by 0045) |
-| 0045 | [Use Material Design 3's baseline colors only](0045-material-baseline-colors.md) | Accepted (intensity changed by 0061, phase bands by 0063) |
+| 0044 | [Style the app after Material Design 3, by hand](0044-material-design-3-styling.md) | Superseded by 0133 |
+| 0045 | [Use Material Design 3's baseline colors only](0045-material-baseline-colors.md) | Superseded by 0133 |
 | 0046 | [Name buttons after Material Design 3 and drop the danger button](0046-material-button-names.md) | Accepted |
 | 0047 | [Use more Material Design 3 components](0047-more-material-components.md) | Accepted |
 | 0048 | [Material back button, progress indicators and status chips](0048-material-navigation-progress-status.md) | Accepted (status chips changed by 0124) |
@@ -99,7 +99,7 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0093 | [Nix files under `nix/`, the flake at the top](0093-nix-files-under-nix.md) | Accepted |
 | 0094 | [Atlas takes over the VPS from nixos-config](0094-atlas-owns-the-vps.md) | Accepted |
 | 0095 | [M3 Expressive's navigation bar and rail, progress gap, menus and springs throughout](0095-expressive-navigation-progress-menus-motion.md) | Accepted |
-| 0096 | [Google Sans Flex instead of Roboto Flex](0096-google-sans-flex.md) | Accepted |
+| 0096 | [Google Sans Flex instead of Roboto Flex](0096-google-sans-flex.md) | Superseded by 0133 |
 | 0097 | [A subtitle in a plan's medium app bar](0097-app-bar-subtitle.md) | Accepted |
 | 0098 | [Medium buttons for a screen's only action, and a button group in a plan's app bar](0098-medium-buttons-and-button-group.md) | Accepted |
 | 0099 | [Serve Atlas over HTTPS on atlas.patwid.ch](0099-https-on-atlas-patwid-ch.md) | Accepted |
@@ -135,4 +135,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0130 | [An interval workout counts the distance and duration of its parts](0130-interval-workout-totals-from-its-parts.md) | Superseded by 0131 |
 | 0131 | [An interval workout's distance and duration are those of its parts, read-only](0131-interval-workout-totals-read-only.md) | Accepted |
 | 0132 | [Draw every page's controls through `atlas/ui`](0132-every-page-draws-through-atlas-ui.md) | Accepted |
-| 0133 | [Try Fluent UI's web components in place of the hand-written Material 3](0133-fluent-ui-spike.md) | Proposed |
+| 0133 | [Fluent UI's web components in place of the hand-written Material 3](0133-fluent-ui-spike.md) | Accepted |

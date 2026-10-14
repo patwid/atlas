@@ -1,6 +1,6 @@
 # 0096. Google Sans Flex instead of Roboto Flex
 
-- Status: Accepted
+- Status: Superseded by [0133](0133-fluent-ui-spike.md)
 - Date: 2026-10-09
 - Deciders: owner (asked for the typeface as part of moving to Material 3 Expressive); agent (the details)
 

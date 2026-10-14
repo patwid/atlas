@@ -6,7 +6,10 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import * as csstree from "css-tree"
 
-const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../assets/app.css"), "utf8")
+const assets = join(dirname(fileURLToPath(import.meta.url)), "../assets")
+const css = readFileSync(join(assets, "app.css"), "utf8")
+// Fluent's design tokens (ADR 0133), which app.css uses, are defined in the stylesheet loaded before it.
+const theme = readFileSync(join(assets, "fluent-theme.css"), "utf8")
 
 test("app.css parses without errors", () => {
   const errors = []
@@ -15,7 +18,7 @@ test("app.css parses without errors", () => {
 })
 
 test("every custom property app.css uses is defined in it", () => {
-  const defined = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]))
+  const defined = new Set([...(css + theme).matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]))
   // Set from code at run time: the ripple's position and size, the slider's fill, and a time picker angle.
   for (const name of ["--ripple-x", "--ripple-y", "--ripple-size", "--fill", "--angle"]) defined.add(name)
   const used = new Set([...css.matchAll(/var\((--[\w-]+)/g)].map((m) => m[1]))

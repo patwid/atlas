@@ -1,8 +1,8 @@
-# 0133. Try Fluent UI's web components in place of the hand-written Material 3
+# 0133. Fluent UI's web components in place of the hand-written Material 3
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-14
-- Deciders: owner (asked to look into switching to Fluent UI); agent (the spike and the details below)
+- Deciders: owner (asked to look into switching to Fluent UI, chose option 1 after the spike); agent (the spike and the details below)
 
 ## Context
 
@@ -42,8 +42,19 @@ ADR 0040 dropped Web Awesome partly because the whole-app tests run in jsdom, wh
 
 ## Decision
 
-Not decided yet. A spike on the branch `fluent-ui-spike` tries option 1 on the parts that decide it (see Spike), so
-the owner can choose between 1 and 2 knowing what each costs.
+We will move Atlas to Fluent 2 with Fluent UI's web components (option 1), on the branch `fluent-ui` until the move
+is done, one part at a time behind `atlas/ui`.
+
+- **Tokens.** `fluent-theme.css` (Fluent 2's web light and dark themes) is loaded before `app.css`, and every color,
+  corner, shadow, curve and the typeface in `app.css` is a Fluent token. The brand is Fluent's own blue (`#0f6cbd`),
+  close to the blue Atlas started with (ADR 0040); the intensity colours are Fluent's green, marigold and red. During
+  the move the rules keep their M3 variable names (`--md-sys-color-*`), each now a Fluent token, and are renamed when
+  the move is done. The bundled Google Sans Flex font (ADR 0096) is dropped for Fluent's Segoe UI or the system font.
+- **Components.** Where Fluent has a component, `atlas/ui` draws it: buttons, dialogs, text fields, selects, menus,
+  radio groups, sliders, progress, spinners, message bars and badges. Where it has none (see Context), the part stays
+  Atlas's own and is restyled with Fluent's tokens.
+- **Tests.** The whole-app tests stay in jsdom, with the shim in `test-js/support.mjs`; a component that needs more
+  of the browser than the shim gives is checked in Chromium as in the spike.
 
 ## Spike
 
@@ -83,11 +94,10 @@ All 730 unit tests and all 49 whole-app tests pass.
 
 ## Consequences
 
-To be written when the owner decides. What the spike suggests:
-
-- Option 1 works in the tests and in Chromium, but every component swap needs this kind of checking (events, forms,
-  ARIA across the shadow root) and a matching change to the shim. Half the components (see Context) would be
-  hand-written anyway.
-- Option 2 gives the same look with none of the above. `fluent-theme.css` is useful for either option.
-- If option 1 is chosen: the next step is the fields, then the menus, and Fluent dialogs for the simple, details and
-  form dialogs (their `data-open` handling in `atlas/ui/interaction`).
+- Every component swap needs the checks the spike made (events, forms, ARIA across the shadow root) and may need more
+  of the shim. Half the components stay hand-written, now in Fluent's tokens.
+- The app grows by Fluent's bundle (275 KB, 66 KB gzipped) and loses the font (50 KB).
+- Upgrading Fluent means replacing the vendored bundle and regenerating `fluent-theme.css` from `@fluentui/tokens`;
+  both name their version.
+- ADR 0044, 0045 and 0096 are superseded. The M3 Expressive component ADRs (0053, 0095 and those of single
+  components) are marked as their parts move.

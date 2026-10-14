@@ -1,6 +1,6 @@
 # 0044. Style the app after Material Design 3, by hand
 
-- Status: Accepted. The color scheme is superseded by [0045](0045-material-baseline-colors.md).
+- Status: Superseded by [0133](0133-fluent-ui-spike.md). The color scheme was superseded by [0045](0045-material-baseline-colors.md).
 - Date: 2026-10-08
 - Deciders: owner (asked to switch the design to the latest Material Design, version 3); agent (the details below)
 
