@@ -28,7 +28,7 @@ pub fn filled(
   attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  variant("md-button md-button-filled", attributes, children)
+  fluent("primary", attributes, children)
 }
 
 /// A filled tonal button: between filled and outlined, for an action that moves things forward but is not the
@@ -37,7 +37,7 @@ pub fn tonal(
   attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  variant("md-button md-button-tonal", attributes, children)
+  fluent("", attributes, children)
 }
 
 /// An outlined button: an action next to the main one, such as Cancel or Delete.
@@ -45,7 +45,7 @@ pub fn outlined(
   attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  variant("md-button md-button-outlined", attributes, children)
+  fluent("outline", attributes, children)
 }
 
 /// A text button: the lowest emphasis, for dialog actions and inline actions such as Clear.
@@ -53,7 +53,7 @@ pub fn text(
   attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  variant("md-button md-button-text", attributes, children)
+  fluent("subtle", attributes, children)
 }
 
 /// An extended floating action button: the one main action of a screen on a phone, such as New plan, floating at the
@@ -125,12 +125,24 @@ pub fn icon_link(
   )
 }
 
-fn variant(
-  class_names: String,
+/// Fluent UI's button (ADR 0133, spike) in one of its `appearance`s; "" is its default, secondary look. Unlike a native
+/// button, a `fluent-button` without a `type` does not submit the form it is in.
+fn fluent(
+  appearance: String,
   attributes: List(Attribute(msg)),
   children: List(Element(msg)),
 ) -> Element(msg) {
-  button([attribute.class(class_names), ..attributes], children)
+  element.element(
+    "fluent-button",
+    [
+      case appearance {
+        "" -> attribute.none()
+        _ -> attribute.attribute("appearance", appearance)
+      },
+      ..attributes
+    ],
+    children,
+  )
 }
 
 /// A screen's main action (ADR 0068), such as New plan: on a phone a floating action button (`fab_for`), on wider

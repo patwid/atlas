@@ -74,7 +74,7 @@ test("connect, import, import again and disconnect", skip, async () => {
   await waitFor("the imported activities", () => d.body.textContent.includes("Lunch run") && d.body.textContent.includes("Hill repeats"))
   const card = [...d.querySelectorAll(".list li")].find((li) => li.textContent.includes("Lunch run"))
   assert.ok(card.textContent.includes("Strava"))
-  assert.equal(card.querySelectorAll("button").length, 0, "Strava activities are read-only")
+  assert.equal(card.querySelectorAll("button, fluent-button").length, 0, "Strava activities are read-only")
   // Strava's rules: wherever its data is shown, a link back that says "View on Strava".
   const viewLink = card.querySelector("a.strava-link")
   assert.equal(viewLink.textContent, "View on Strava")

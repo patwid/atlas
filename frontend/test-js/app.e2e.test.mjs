@@ -261,7 +261,7 @@ test("the owner builds a plan's workouts: add, add to the same day, move, delete
   assert.equal(d.querySelector("#workout-distance"), null, "its distance and duration are its parts' (ADR 0131)")
   assert.equal(d.querySelector("#workout-duration"), null)
   // A second set, at first a copy of the first.
-  click(w, [...d.querySelectorAll(".workout-form button")].find((el) => el.textContent.includes("Add set")))
+  click(w, [...d.querySelectorAll(".workout-form button, .workout-form fluent-button")].find((el) => el.textContent.includes("Add set")))
   await waitFor("the second set", () => d.querySelector("#workout-set2-reps")?.value === "6")
   typeInto(w, d.querySelector("#workout-set2-reps"), "4")
   typeInto(w, d.querySelector("#workout-set2-work-distance"), "")
@@ -641,7 +641,7 @@ test("a user adds, edits and deletes an activity by hand; the start is stored in
   await waitFor("the Strava activity", () => d.body.textContent.includes("Lunch run"))
   const stravaCard = [...d.querySelectorAll(".list li")].find((li) => li.textContent.includes("Lunch run"))
   assert.ok(stravaCard.textContent.includes("Strava"))
-  assert.equal([...stravaCard.querySelectorAll("button")].length, 0, "Strava activities cannot be changed here")
+  assert.equal([...stravaCard.querySelectorAll("button, fluent-button")].length, 0, "Strava activities cannot be changed here")
 
   click(w, button(w, "Add activity"))
   await waitFor("the form", () => d.querySelector("#activity-date"))
@@ -824,7 +824,7 @@ test("Home shows missed, looks-done and rest days; the user confirms, unlinks, r
   const w = startApp("/", { token: alice.token, user_id: alice.id, name: "alice", email: alice.email })
   const d = w.document
   const card = (title) => [...d.querySelectorAll(".item")].find((li) => li.textContent.includes(title))
-  const inCard = (title, text) => [...card(title).querySelectorAll("button")].find((b) => b.textContent.trim() === text)
+  const inCard = (title, text) => [...card(title).querySelectorAll("button, fluent-button")].find((b) => b.textContent.trim() === text)
 
   await waitFor("today's tempo workout as a suggestion", () => card("Tempo intervals")?.textContent.includes("Looks done") && card("Tempo intervals").textContent.includes("07:00 · Run · 8.00 km · 45:00"))
   assert.ok(card("Easy shake-out").textContent.includes("Missed"), "yesterday's workout without a run is missed")
@@ -1043,7 +1043,7 @@ test("a coach sees an athlete's weeks, plans and activities read-only, and loses
   assert.ok(d.body.textContent.includes("Spring base"), "the plan they follow, which the coach can read")
   assert.ok(d.body.textContent.includes("Recent activities") && d.body.textContent.includes("Tempo morning"))
   assert.ok(d.body.textContent.includes("You can see this because alice gave you access. It is read-only."))
-  assert.equal(d.querySelectorAll(".athlete button").length, 0, "nothing can be changed here")
+  assert.equal(d.querySelectorAll(".athlete button, .athlete fluent-button").length, 0, "nothing can be changed here")
   const stats = [...d.querySelectorAll(".stat")].map((stat) => stat.textContent)
   assert.ok(stats.includes("Missed1 in the last 6 weeks"), `the missed workouts: ${stats}`)
 

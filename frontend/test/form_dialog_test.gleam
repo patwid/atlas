@@ -18,7 +18,7 @@ pub fn both_sets_of_buttons_submit_the_form_test() {
   assert string.contains(html, "class=\"form-dialog-close\"")
   assert string.contains(html, "form-dialog-submit")
   assert string.contains(html, "form-dialog-actions")
-  assert string.contains(html, "md-button-filled")
+  assert string.contains(html, "appearance=\"primary\"")
   assert list.length(string.split(html, "form=\"the-form\"")) == 3
 }
 

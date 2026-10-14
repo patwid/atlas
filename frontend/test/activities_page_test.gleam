@@ -422,7 +422,7 @@ pub fn the_undo_button_reads_as_the_snackbars_action_test() {
   let #(waiting, _) = update(model, DeleteClicked("a"))
   assert string.contains(
     html_of(waiting),
-    "class=\"md-button md-button-text snackbar-action\"",
+    "<fluent-button appearance=\"subtle\" class=\"snackbar-action\"",
   )
 }
 

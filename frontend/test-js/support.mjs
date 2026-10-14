@@ -36,7 +36,7 @@ export const appRunner = (getHarness, fetched = () => {}) => (path, session) => 
     event.target.closest("dialog")?.close()
   }, true)
   // jsdom has ElementInternals but not its form half, which Fluent UI's form controls call when they connect
-  // (ADR 0133). A control's form is the one it sits in, and it is always valid: the app checks forms itself.
+  // (ADR 0133). A control's form is the one its form attribute names, else the one it sits in, and it is always valid: the app checks forms itself.
   const hostOf = new WeakMap()
   const attachInternals = w.HTMLElement.prototype.attachInternals
   w.HTMLElement.prototype.attachInternals = function () {
@@ -51,7 +51,11 @@ export const appRunner = (getHarness, fetched = () => {}) => (path, session) => 
     reportValidity: () => true,
   })
   for (const [name, get] of Object.entries({
-    form() { return hostOf.get(this)?.closest("form") ?? null },
+    form() {
+      const host = hostOf.get(this)
+      const id = host?.getAttribute("form")
+      return (id ? host.ownerDocument.getElementById(id) : host?.closest("form")) ?? null
+    },
     validity: () => ({ valid: true }),
     validationMessage: () => "",
     willValidate: () => true,
@@ -107,16 +111,18 @@ export const waitFor = async (what, check, ms = 8000) => {
 export const click = (w, el) => el.dispatchEvent(new w.MouseEvent("click", { bubbles: true, cancelable: true, button: 0 }))
 export const typeInto = (w, el, value) => { el.value = value; el.dispatchEvent(new w.Event("input", { bubbles: true })) }
 export const submit = (w, form) => form.dispatchEvent(new w.Event("submit", { bubbles: true, cancelable: true }))
-export const button = (w, text) => [...w.document.querySelectorAll("button")].find((b) => b.textContent.trim() === text)
+// Buttons are native or Fluent UI's (ADR 0133).
+const buttons = "button, fluent-button"
+export const button = (w, text) => [...w.document.querySelectorAll(buttons)].find((b) => b.textContent.trim() === text)
 export const choose = (w, select, value) => { select.value = value; select.dispatchEvent(new w.Event("change", { bubbles: true })) }
 // Segmented buttons and chips (ADR 0047) are radio buttons: picking one is a click on it.
 export const pick = (w, name, value) => click(w, w.document.querySelector(`input[type="radio"][name="${name}"][value="${value}"]`))
 // Every confirmation <dialog> stays in the page, closed ones too, so a question or its buttons are only looked
 // up in the open one: elsewhere they would match another item's closed dialog.
 export const openDialog = (w) => w.document.querySelector("dialog[open]")
-export const dialogButton = (w, text) => [...(openDialog(w)?.querySelectorAll("button") ?? [])].find((b) => b.textContent.trim() === text)
+export const dialogButton = (w, text) => [...(openDialog(w)?.querySelectorAll(buttons) ?? [])].find((b) => b.textContent.trim() === text)
 export const location = (w) => w.location.pathname
-export const byLabel = (w, label) => [...w.document.querySelectorAll("button")].find((b) => b.getAttribute("aria-label") === label)
+export const byLabel = (w, label) => [...w.document.querySelectorAll(buttons)].find((b) => b.getAttribute("aria-label") === label)
 
 // Setup calls must work: a silent 400 (for example an ID of the wrong length) would only show up later as a timeout.
 export const setup = async (request) => {
