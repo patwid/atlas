@@ -7,6 +7,7 @@ import atlas/ui/button
 import atlas/ui/choice
 import atlas/ui/field
 import atlas/ui/icon
+import atlas/ui/slider
 import atlas/workout_form.{type Form, type Part}
 import gleam/int
 import gleam/list
@@ -402,59 +403,15 @@ fn intensity_slider(
       }
       let text = int.to_string(level) <> " %"
       let help = on(field.help("100 % is the goal's pace"), name)
-      html.div(
-        [
-          class("intensity-setting"),
-          attribute.classes([#("has-error", help.error != None)]),
-        ],
-        [
-          html.div([class("intensity-heading")], [
-            html.label([attribute.for(id)], [html.text("Rep intensity")]),
-            html.output([attribute.for(id), class("intensity-value")], [
-              html.text(text),
-            ]),
-          ]),
-          html.div([class("intensity-control")], [
-            html.input([
-              attribute.id(id),
-              attribute.type_("range"),
-              attribute.name(name),
-              attribute.attribute("min", "1"),
-              attribute.attribute("max", "100"),
-              attribute.attribute("step", "1"),
-              attribute.value(int.to_string(level)),
-              attribute.attribute("aria-valuetext", text),
-              attribute.attribute("aria-describedby", id <> "-help"),
-              // How far the active track reaches, for browsers that cannot draw it themselves (ADR 0051).
-              attribute.style(
-                "--fill",
-                int.to_string({ level - 1 } * 100 / 99) <> "%",
-              ),
-              event.on_input(events.segment(
-                part,
-                workout_form.IntensityField,
-                _,
-              )),
-            ]),
-          ]),
-          html.p(
-            [
-              attribute.id(id <> "-help"),
-              class("md-field-supporting"),
-              ..case help.error {
-                Some(_) -> [attribute.role("alert")]
-                None -> []
-              }
-            ],
-            [
-              html.text(case help.error {
-                Some(message) -> message
-                None -> help.supporting
-              }),
-            ],
-          ),
-        ],
-      )
+      let fill = int.to_string({ level - 1 } * 100 / 99) <> "%"
+      slider.view(id, "Rep intensity", text, fill, help, [
+        attribute.name(name),
+        attribute.attribute("min", "1"),
+        attribute.attribute("max", "100"),
+        attribute.attribute("step", "1"),
+        attribute.value(int.to_string(level)),
+        event.on_input(events.segment(part, workout_form.IntensityField, _)),
+      ])
     }
     _ -> element.none()
   }

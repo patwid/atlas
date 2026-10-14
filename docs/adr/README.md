@@ -134,3 +134,4 @@ The process is described in [0001](0001-record-architecture-decisions.md). Copy 
 | 0129 | [Today is marked on a dated plan's calendar](0129-today-marked-on-the-plan-calendar.md) | Accepted |
 | 0130 | [An interval workout counts the distance and duration of its parts](0130-interval-workout-totals-from-its-parts.md) | Superseded by 0131 |
 | 0131 | [An interval workout's distance and duration are those of its parts, read-only](0131-interval-workout-totals-read-only.md) | Accepted |
+| 0132 | [Draw every page's controls through `atlas/ui`](0132-every-page-draws-through-atlas-ui.md) | Accepted |

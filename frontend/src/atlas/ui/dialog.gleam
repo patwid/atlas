@@ -9,6 +9,7 @@
 //// the `close` event `on_hide` is wired to — so the page's `Model` and the dialog's actual state
 //// can't drift apart, regardless of how it was closed.
 
+import atlas/ui/icon.{type Icon}
 import gleam/dynamic/decode
 import gleam/list
 import lustre/attribute
@@ -63,6 +64,57 @@ pub fn view(
       ),
     ],
   )
+}
+
+/// M3's simple dialog (ADR 0062): a headline and a list of `choices`, one of which is taken at once. It opens when
+/// drawn (`data-open`, see `atlas/ui/interaction`); Escape, a click outside and a submit button in `actions` send
+/// `on_close`. `body` is the list, or a sentence when there is nothing to choose.
+pub fn simple(
+  id: String,
+  headline: String,
+  on_close: msg,
+  body: Element(msg),
+  actions: List(Element(msg)),
+) -> Element(msg) {
+  let headline_id = id <> "-headline"
+  html.dialog(
+    [
+      attribute.id(id),
+      attribute.class("choice-dialog"),
+      attribute.attribute("data-open", "true"),
+      attribute.attribute("aria-labelledby", headline_id),
+      event.on("close", decode.success(on_close)),
+    ],
+    [
+      html.h2([attribute.class("dialog-headline"), attribute.id(headline_id)], [
+        html.text(headline),
+      ]),
+      body,
+      html.form(
+        [attribute.attribute("method", "dialog"), attribute.class("actions")],
+        actions,
+      ),
+    ],
+  )
+}
+
+/// The choices of a `simple` dialog.
+pub fn choices(items: List(Element(msg))) -> Element(msg) {
+  html.ul([attribute.class("choices")], items)
+}
+
+/// One of a `simple` dialog's `choices`: an icon and what it is.
+pub fn choice(symbol: Icon, label: String, on_click: msg) -> Element(msg) {
+  html.li([], [
+    html.button(
+      [
+        attribute.type_("button"),
+        attribute.class("choice-row"),
+        event.on_click(on_click),
+      ],
+      [icon.view(symbol), html.text(label)],
+    ),
+  ])
 }
 
 /// A basic dialog that shows something, such as a workout or a week (ADR 0066): a headline, the content, the

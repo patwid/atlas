@@ -16,6 +16,7 @@ import atlas/timer
 import atlas/today.{type Inputs, type Item}
 import atlas/ui/button
 import atlas/ui/chip
+import atlas/ui/dialog
 import atlas/ui/empty
 import atlas/ui/icon
 import atlas/ui/layout
@@ -26,7 +27,6 @@ import atlas/units
 import atlas/workout_form
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
-import gleam/dynamic/decode
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -466,61 +466,39 @@ fn link_button(key: Key) -> Element(Msg) {
 /// at once. It opens when drawn (`data-open`, see `atlas/ui/interaction`); Escape and Cancel close it.
 fn choosing_view(item: Item, key: Key, inputs: Inputs) -> Element(Msg) {
   let candidates = today.candidates(inputs, item)
-  let headline_id = "choose-" <> key.assignment_id <> "-" <> key.workout_id
-  html.dialog(
+  dialog.simple(
+    "choose-" <> key.assignment_id <> "-" <> key.workout_id,
+    "Which activity was it?",
+    CancelClicked,
+    case candidates {
+      [] ->
+        html.p([class("dialog-supporting")], [
+          html.text(
+            "You have no activity on "
+            <> date.format(item.scheduled.date)
+            <> ". Add it in Activities, then link it here.",
+          ),
+        ])
+      _ ->
+        dialog.choices(
+          list.map(candidates, fn(row) {
+            dialog.choice(
+              icon.DirectionsRun,
+              describe(row, inputs),
+              PickClicked(key, row.activity.id),
+            )
+          }),
+        )
+    },
     [
-      class("choice-dialog"),
-      attribute.attribute("data-open", "true"),
-      attribute.attribute("aria-labelledby", headline_id),
-      event.on("close", decode.success(CancelClicked)),
-    ],
-    [
-      html.h2([class("dialog-headline"), attribute.id(headline_id)], [
-        html.text("Which activity was it?"),
-      ]),
       case candidates {
         [] ->
-          html.p([class("dialog-supporting")], [
-            html.text(
-              "You have no activity on "
-              <> date.format(item.scheduled.date)
-              <> ". Add it in Activities, then link it here.",
-            ),
+          button.text_link(route.to_path(route.Activities), [
+            html.text("Go to activities"),
           ])
-        _ ->
-          html.ul(
-            [class("choices")],
-            list.map(candidates, fn(row) {
-              html.li([], [
-                html.button(
-                  [
-                    attribute.type_("button"),
-                    class("choice-row"),
-                    event.on_click(PickClicked(key, row.activity.id)),
-                  ],
-                  [
-                    icon.view(icon.DirectionsRun),
-                    html.text(describe(row, inputs)),
-                  ],
-                ),
-              ])
-            }),
-          )
+        _ -> element.none()
       },
-      html.form([attribute.attribute("method", "dialog"), class("actions")], [
-        case candidates {
-          [] ->
-            html.a(
-              [
-                class("md-button md-button-text"),
-                attribute.href(route.to_path(route.Activities)),
-              ],
-              [html.text("Go to activities")],
-            )
-          _ -> element.none()
-        },
-        button.text([attribute.type_("submit")], [html.text("Cancel")]),
-      ]),
+      button.text([attribute.type_("submit")], [html.text("Cancel")]),
     ],
   )
 }

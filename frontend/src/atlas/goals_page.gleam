@@ -253,15 +253,7 @@ pub fn view(model: Model, me: String) -> Element(Msg) {
 fn row_view(g: Goal) -> Element(Msg) {
   html.li([], [
     // A goal opens in its form from anywhere on its row (ADR 0080).
-    html.button(
-      [
-        attribute.type_("button"),
-        class("row-link"),
-        attribute.attribute("aria-haspopup", "dialog"),
-        event.on_click(EditClicked(g.id)),
-      ],
-      [html.text(goal.distance(g))],
-    ),
+    layout.row_button(goal.distance(g), EditClicked(g.id)),
     html.p([class("muted")], [html.text(goal.time_and_pace(g))]),
   ])
 }

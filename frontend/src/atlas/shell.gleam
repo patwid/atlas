@@ -2,8 +2,10 @@
 //// The pages are empty states until the data layer (ADR 0004) is in place.
 
 import atlas/route.{type Route}
+import atlas/ui/button
 import atlas/ui/empty as ui_empty
 import atlas/ui/icon
+import atlas/ui/progress
 import gleam/int
 import gleam/list
 import gleam/option.{None}
@@ -67,28 +69,20 @@ pub fn view(frame: Frame(msg), page: Element(msg)) -> Element(msg) {
             // An icon rather than a banner (ADR 0055): being offline is ordinary for this app, so it is shown
             // quietly, and a snackbar says what it means when it happens or when the icon is pressed.
             False ->
-              html.button(
+              button.icon(
                 [
                   attribute.type_("button"),
-                  class("md-icon-button offline-indicator"),
-                  attribute.aria_label("Offline. What does this mean?"),
+                  class("offline-indicator"),
                   attribute.title("Offline"),
                   event.on_click(frame.on_offline_info),
                 ],
-                [icon.view(icon.CloudOff)],
+                icon.CloudOff,
+                "Offline. What does this mean?",
               )
           },
         ]),
         case frame.syncing {
-          True ->
-            html.div(
-              [
-                class("md-linear-progress"),
-                attribute.role("progressbar"),
-                attribute.aria_label("Syncing"),
-              ],
-              [],
-            )
+          True -> progress.linear("Syncing")
           False -> element.none()
         },
       ],
@@ -112,14 +106,11 @@ fn up(current: Route) -> Element(msg) {
 }
 
 fn up_link(target: Route, label: String) -> Element(msg) {
-  html.a(
-    [
-      class("md-icon-button up-link"),
-      attribute.href(route.to_path(target)),
-      attribute.aria_label(label),
-      attribute.title(label),
-    ],
-    [icon.view(icon.ArrowBack)],
+  button.icon_link(
+    [class("up-link")],
+    route.to_path(target),
+    icon.ArrowBack,
+    label,
   )
 }
 

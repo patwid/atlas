@@ -3,11 +3,13 @@
 //// because `form` is already the usual parameter name for a page's form data (e.g.
 //// `plan_form.Form`), which would shadow a module of that name.
 
+import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import lustre/attribute.{type Attribute, class}
 import lustre/element.{type Element}
 import lustre/element/html
+import lustre/event
 
 pub fn input(attributes: List(Attribute(msg))) -> Element(msg) {
   html.input([class("md-text-field"), ..attributes])
@@ -46,6 +48,18 @@ pub fn with_trigger(
   trigger: Element(msg),
 ) -> Element(msg) {
   html.div([class("field-with-trigger")], [field, trigger])
+}
+
+/// A hidden file input, opened by a button of its own through `atlas/file` (ADR 0100). `on_chosen` fires when a file
+/// is picked.
+pub fn file(id: String, on_chosen: msg) -> Element(msg) {
+  html.input([
+    attribute.type_("file"),
+    attribute.id(id),
+    attribute.hidden(True),
+    attribute.attribute("tabindex", "-1"),
+    event.on("change", decode.success(on_chosen)),
+  ])
 }
 
 // OUTLINED FIELDS WITH A FLOATING LABEL (ADR 0059) -------------------------------------------------

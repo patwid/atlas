@@ -144,6 +144,7 @@ Design decisions live in [docs/adr](docs/adr/README.md). Entries link to the rel
 - The sign-in form is centred vertically on the screen.
 - The e-mail field on the sign-in page has the focus when the page opens.
 - A workout's week choice offers only the plan's weeks, no longer one more after its last phase.
+- Home, the plan calendar, the workout form, goals, activities and the app frame draw their controls through `atlas/ui`, which gains a slider, a simple dialog, row and link buttons, a file input and a linear progress bar ([ADR 0132](docs/adr/0132-every-page-draws-through-atlas-ui.md)).
 
 ### Removed
 - The workout kinds tempo run, cross-training and strength (ADR 0114).

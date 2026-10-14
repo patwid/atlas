@@ -32,7 +32,6 @@ import atlas/workout_fields
 import atlas/workout_form
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
-import gleam/dynamic/decode
 import gleam/float
 import gleam/int
 import gleam/list
@@ -546,16 +545,7 @@ fn row_view(row: Row, context: Context) -> Element(Msg) {
     html.div([], [
       // An activity the user can change opens in its form from anywhere on its row (ADR 0080).
       case editable(row, context.user_id) {
-        True ->
-          html.button(
-            [
-              attribute.type_("button"),
-              class("row-link"),
-              attribute.attribute("aria-haspopup", "dialog"),
-              event.on_click(EditClicked(a.id)),
-            ],
-            [html.text(title(row))],
-          )
+        True -> layout.row_button(title(row), EditClicked(a.id))
         False -> html.strong([], [html.text(title(row))])
       },
       chip.row([
@@ -751,13 +741,7 @@ fn import_view(model: Model) -> Element(Msg) {
       icon.view(icon.UploadFile),
       html.text("Import a .fit file"),
     ]),
-    html.input([
-      attribute.type_("file"),
-      attribute.id(file_input_id),
-      attribute.hidden(True),
-      attribute.attribute("tabindex", "-1"),
-      event.on("change", decode.success(FileChosen)),
-    ]),
+    field.file(file_input_id, FileChosen),
     case model.import_error, model.imported {
       Some(message), _ -> error.message(message)
       None, Some(imported) ->

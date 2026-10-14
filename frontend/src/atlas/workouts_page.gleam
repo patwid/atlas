@@ -26,6 +26,7 @@ import atlas/ui/focus
 import atlas/ui/form_dialog
 import atlas/ui/icon
 import atlas/ui/progress
+import atlas/ui/slider
 import atlas/ui/undo.{type Undo}
 import atlas/units
 import atlas/watch_workout
@@ -636,7 +637,7 @@ fn week_row(
       attribute.classes([#("selected", selected)]),
     ],
     [
-      html.button(
+      button.button(
         [
           attribute.type_("button"),
           class("week-label"),
@@ -780,7 +781,7 @@ fn day_cell(
       // Beside the day's workouts rather than under them, so on a phone it keeps the row's trailing edge (ADR 0107).
       case can_edit && !day.before_start {
         True ->
-          html.button(
+          button.button(
             [
               attribute.type_("button"),
               class("add-here"),
@@ -816,7 +817,7 @@ fn workout_chip(
     _ -> False
   }
   let kind = workout_form.kind_label(w.kind)
-  html.button(
+  button.button(
     [
       attribute.type_("button"),
       class("workout kind-" <> plan.kind_to_string(w.kind)),
@@ -1011,53 +1012,38 @@ fn intensity_view(
     Ok(value) -> plan.intensity_percent(value)
     Error(Nil) -> "Not set"
   }
-  html.div([class("intensity-setting")], [
-    // Only the slider can be labelled: someone who cannot edit sees the words and a bar.
-    html.div([class("intensity-heading")], case can_edit {
-      True -> [
-        html.label([attribute.for("week-intensity")], [html.text("Intensity")]),
-        html.output(
-          [attribute.for("week-intensity"), class("intensity-value")],
-          [html.text(text)],
-        ),
-      ]
-      False -> [
-        html.span([], [html.text("Intensity")]),
-        html.span([class("intensity-value")], [html.text(text)]),
-      ]
-    }),
-    case can_edit {
-      False ->
+  // Only the slider can be labelled: someone who cannot edit sees the words and a bar.
+  case can_edit {
+    False ->
+      slider.read_only("Intensity", text, case shown {
+        Ok(value) -> intensity_bar(value)
+        Error(Nil) -> element.none()
+      })
+    True ->
+      slider.view(
+        "week-intensity",
+        "Intensity",
+        text,
         case shown {
-          Ok(value) -> intensity_bar(value)
-          Error(Nil) -> element.none()
-        }
-      True ->
-        html.div([class("intensity-control")], [
-          html.input([
-            attribute.id("week-intensity"),
-            attribute.type_("range"),
-            attribute.name("intensity"),
-            attribute.attribute("min", "0"),
-            attribute.attribute("max", "1"),
-            attribute.attribute("step", "0.05"),
-            attribute.value(case shown {
-              Ok(value) -> float.to_string(value)
-              Error(Nil) -> "0"
-            }),
-            attribute.attribute("aria-valuetext", text),
-            attribute.classes([#("unset", shown == Error(Nil))]),
-            // How far the active track reaches, for browsers that cannot draw it themselves (ADR 0051).
-            attribute.style("--fill", case shown {
-              Ok(value) -> plan.intensity_percent(value)
-              Error(Nil) -> "0%"
-            }),
-            event.on_input(IntensityInput),
-            event.on_change(IntensityChanged),
-          ]),
-        ])
-    },
-  ])
+          Ok(value) -> plan.intensity_percent(value)
+          Error(Nil) -> "0%"
+        },
+        field.plain,
+        [
+          attribute.name("intensity"),
+          attribute.attribute("min", "0"),
+          attribute.attribute("max", "1"),
+          attribute.attribute("step", "0.05"),
+          attribute.value(case shown {
+            Ok(value) -> float.to_string(value)
+            Error(Nil) -> "0"
+          }),
+          attribute.classes([#("unset", shown == Error(Nil))]),
+          event.on_input(IntensityInput),
+          event.on_change(IntensityChanged),
+        ],
+      )
+  }
 }
 
 fn intensity_bar(value: Float) -> Element(Msg) {

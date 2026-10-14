@@ -5,6 +5,7 @@ import atlas/ui/icon.{type Icon}
 import lustre/attribute.{class}
 import lustre/element.{type Element}
 import lustre/element/html
+import lustre/event
 
 /// A row of action buttons: Edit/Delete, Save/Cancel, and the like.
 pub fn actions(children: List(Element(msg))) -> Element(msg) {
@@ -27,6 +28,20 @@ pub fn subheader(text: String) -> Element(msg) {
 /// such as chips and supporting text, opens it too.
 pub fn row_link(href: String, headline: String) -> Element(msg) {
   html.a([class("row-link"), attribute.href(href)], [html.text(headline)])
+}
+
+/// The headline of a `list` item that opens in a dialog rather than a page, such as a goal's form (ADR 0080). Like
+/// `row_link`, the whole item is the button.
+pub fn row_button(headline: String, on_click: msg) -> Element(msg) {
+  html.button(
+    [
+      attribute.type_("button"),
+      class("row-link"),
+      attribute.attribute("aria-haspopup", "dialog"),
+      event.on_click(on_click),
+    ],
+    [html.text(headline)],
+  )
 }
 
 /// A list item that opens another page (ADR 0049): a leading icon, a headline, supporting text and a chevron.

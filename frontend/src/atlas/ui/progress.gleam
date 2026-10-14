@@ -4,6 +4,19 @@ import lustre/attribute.{class}
 import lustre/element.{type Element}
 import lustre/element/html
 
+/// M3's linear progress indicator, indeterminate, for work going on in the background such as syncing. `label` names
+/// it for screen readers.
+pub fn linear(label: String) -> Element(msg) {
+  html.div(
+    [
+      class("md-linear-progress"),
+      attribute.role("progressbar"),
+      attribute.aria_label(label),
+    ],
+    [],
+  )
+}
+
 /// M3 Expressive's loading indicator, a shape that morphs as it turns, with what is going on next to it, such as
 /// "Copying…", for a wait of a few seconds. The text is read out through the page's live region (`data-announce`,
 /// ADR 0124); the shape is decorative.
