@@ -119,7 +119,9 @@ export const choose = (w, select, value) => { select.value = value; select.dispa
 export const pick = (w, name, value) => click(w, w.document.querySelector(`input[type="radio"][name="${name}"][value="${value}"]`))
 // Every confirmation <dialog> stays in the page, closed ones too, so a question or its buttons are only looked
 // up in the open one: elsewhere they would match another item's closed dialog.
+// A Fluent UI dialog (ADR 0133) is open when the <dialog> in its shadow root is.
 export const openDialog = (w) => w.document.querySelector("dialog[open]")
+  ?? [...w.document.querySelectorAll("fluent-dialog")].find((d) => d.shadowRoot?.querySelector("dialog[open]"))
 export const dialogButton = (w, text) => [...(openDialog(w)?.querySelectorAll(buttons) ?? [])].find((b) => b.textContent.trim() === text)
 export const location = (w) => w.location.pathname
 export const byLabel = (w, label) => [...w.document.querySelectorAll(buttons)].find((b) => b.getAttribute("aria-label") === label)

@@ -40,28 +40,49 @@ pub fn view(
 ) -> Element(msg) {
   let label_id = id <> "-label"
   let supporting_id = id <> "-supporting"
-  // An alert dialog (ADR 0124): it asks before something that cannot be taken back, and its sentence is read out
-  // with its headline.
-  html.dialog(
+  // Fluent UI's alert dialog (ADR 0124, 0133 spike): it asks before something that cannot be taken back, so a click
+  // outside does not close it. The native `<dialog>` is in its shadow root; `show` opens it, and Fluent reports any
+  // way it closes as a `toggle` to "closed".
+  element.element(
+    "fluent-dialog",
     [
       attribute.id(id),
-      attribute.role("alertdialog"),
+      attribute.attribute("type", "alert"),
       attribute.attribute("aria-labelledby", label_id),
       attribute.attribute("aria-describedby", supporting_id),
-      event.on("close", decode.success(on_hide)),
+      event.on("toggle", {
+        use state <- decode.subfield(["detail", "newState"], decode.string)
+        case state {
+          "closed" -> decode.success(on_hide)
+          _ -> decode.failure(on_hide, "a dialog closing")
+        }
+      }),
     ],
     [
-      html.h2([attribute.id(label_id), attribute.class("dialog-headline")], [
-        html.text(label),
+      element.element("fluent-dialog-body", [], [
+        html.h2(
+          [
+            attribute.id(label_id),
+            attribute.class("dialog-headline"),
+            attribute.attribute("slot", "title"),
+          ],
+          [html.text(label)],
+        ),
+        html.p(
+          [attribute.id(supporting_id), attribute.class("dialog-supporting")],
+          [html.text(supporting)],
+        ),
+        // A form with method="dialog" closes the `<dialog>` it is in, but here that one is in the shadow root, out of
+        // its reach: `show` closes the dialog on the form's submit instead.
+        html.form(
+          [
+            attribute.attribute("method", "dialog"),
+            attribute.class("actions"),
+            attribute.attribute("slot", "action"),
+          ],
+          footer,
+        ),
       ]),
-      html.p(
-        [attribute.id(supporting_id), attribute.class("dialog-supporting")],
-        [html.text(supporting)],
-      ),
-      html.form(
-        [attribute.attribute("method", "dialog"), attribute.class("actions")],
-        footer,
-      ),
     ],
   )
 }
