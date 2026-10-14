@@ -1,6 +1,9 @@
-//// Atlas's buttons, named after Material Design 3's common buttons (ADR 0040, 0044, 0046, 0047): a constructor per
-//// M3 button instead of a raw CSS class string typed out at every call site, where a typo
-//// (`"md-button md-button-filed"`) would silently render an unstyled button.
+//// Atlas's buttons, named after Material Design 3's common buttons (ADR 0040, 0044, 0046, 0047) and drawn as Fluent
+//// UI's (ADR 0133): a constructor per kind of button instead of an element and its appearance typed out at every
+//// call site.
+////
+//// Links that look like buttons (`text_link`, `icon_link`) stay native `<a>` elements styled like Fluent's buttons:
+//// the router (modem) only follows a click on an `<a>` in the page, not one in a `fluent-anchor-button`'s shadow root.
 ////
 //// M3 has no "danger" button: a destructive action is confirmed in a dialog, whose actions are both text
 //// buttons, the dismissive one first.
@@ -63,16 +66,26 @@ pub fn fab(
   symbol: Icon,
   label: String,
 ) -> Element(msg) {
-  button([attribute.class("md-fab"), ..attributes], [
-    icon.view(symbol),
-    html.span([attribute.class("fab-label")], [html.text(label)]),
-  ])
+  // Fluent has no floating action button: a large, round primary button, raised and placed by `.fab`.
+  fluent(
+    "primary",
+    [
+      attribute.class("fab"),
+      attribute.attribute("size", "large"),
+      attribute.attribute("shape", "circular"),
+      ..attributes
+    ],
+    [
+      icon.view(symbol),
+      html.span([attribute.class("fab-label")], [html.text(label)]),
+    ],
+  )
 }
 
-/// M3 Expressive's medium button size (ADR 0098), 56px high, for an action that is all a screen offers, such as
-/// signing in or an empty state's way on. Add it to a common button's attributes; buttons are small otherwise.
+/// Fluent's large button, for an action that is all a screen offers, such as signing in or an empty state's way on
+/// (ADR 0098). Add it to a common button's attributes; buttons are medium otherwise.
 pub fn medium() -> Attribute(msg) {
-  attribute.class("md-button-medium")
+  attribute.attribute("size", "large")
 }
 
 /// M3 Expressive's standard button group (ADR 0098): buttons side by side, the one pressed widening while its
@@ -87,9 +100,12 @@ pub fn icon(
   symbol: Icon,
   label: String,
 ) -> Element(msg) {
-  button(
+  fluent(
+    "subtle",
     [
-      attribute.class("md-icon-button"),
+      attribute.class("icon-button"),
+      attribute.attribute("icon-only", ""),
+      attribute.attribute("size", "large"),
       attribute.attribute("aria-label", label),
       ..attributes
     ],
@@ -162,9 +178,10 @@ pub fn fab_for(main: Option(Main(msg))) -> Element(msg) {
 pub fn app_bar_for(main: Option(Main(msg))) -> Element(msg) {
   case main {
     Some(Main(symbol, label, msg)) ->
-      button(
+      fluent(
+        "primary",
         [
-          attribute.class("md-button md-button-filled bar-main-action"),
+          attribute.class("bar-main-action"),
           attribute.type_("button"),
           event.on_click(msg),
         ],

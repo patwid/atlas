@@ -174,7 +174,7 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 .md-button-outlined:disabled { border-color: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent); }
 .md-button-text { padding: 0 0.75rem; }
 /* Expressive buttons morph while pressed: the round shape squares off to the small corner (ADR 0053). */
-.md-button:not(:disabled):active, .md-fab:active, .md-icon-button:active { border-radius: var(--md-sys-shape-corner-small); }
+.md-button:not(:disabled):active, .md-icon-button:active { border-radius: var(--md-sys-shape-corner-small); }
 /* M3 Expressive's medium button (ADR 0098): 56px, 24px side space, title-medium label and 24px icon; it squares off
    to the medium corner while pressed. */
 .md-button-medium { min-height: 3.5rem; padding: 0 1.5rem; font-size: 1rem; line-height: 1.5rem; letter-spacing: 0.009375rem; }
@@ -186,17 +186,12 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 .icon { width: 1.5rem; height: 1.5rem; fill: currentColor; flex: none; }
 .md-button .icon { width: 1.25rem; height: 1.25rem; margin-left: -0.25rem; }
 
-/* M3 Expressive's standard button group (ADR 0098): the pressed button widens by 15% on the fast spatial spring and
-   the buttons next to it narrow to make room. */
+/* Buttons side by side, such as a plan's Edit and More in the app bar (ADR 0098). */
 .button-group { display: flex; align-items: center; gap: 0.125rem; }
-.button-group > .md-icon-button {
-  width: 2.5rem; transition: width var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
-    border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
-    background-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
-}
-.button-group > .md-icon-button:active { width: 2.875rem; }
-.button-group > .md-icon-button:has(+ .md-icon-button:active), .button-group > .md-icon-button:active + .md-icon-button { width: 2.125rem; }
-@media (prefers-reduced-motion: reduce) { .button-group > .md-icon-button { transition: none; } }
+
+/* Fluent's icon button (ADR 0133), large: 40px. Its touch target is 48px (ADR 0124): ::before reaches 4px past it. */
+:where(fluent-button.icon-button) { position: relative; flex: none; }
+:where(fluent-button.icon-button)::before { content: ""; position: absolute; inset: -0.25rem; }
 
 /* Icon button (ADR 0047): a 40px circle around a 24px icon. Its touch target is M3's 48px (ADR 0124): ::before
    reaches 4px past the circle, so the state layer is the button's own background and the ripple grows from its
@@ -215,31 +210,18 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
 .md-icon-button:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
 
 /* Extended FAB (ADR 0047, 0068): a phone's main action, floating at the bottom right above the navigation bar. From
-   the medium window class the same action is a button in the app bar instead (.bar-main-action). */
-.md-fab {
+   the medium window class the same action is a button in the app bar instead (.bar-main-action). Fluent has no FAB:
+   it is Fluent's large, round primary button (ADR 0133), 56px high and raised. */
+fluent-button.fab {
   position: fixed; z-index: 3; bottom: calc(var(--nav-bar-height) + 1rem); right: max(1rem, env(safe-area-inset-right));
-  display: inline-flex; align-items: center; gap: 0.75rem; height: 3.5rem; padding: 0 1.25rem 0 1rem; isolation: isolate;
-  border: 0; border-radius: var(--md-sys-shape-corner-large); cursor: pointer;
-  background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container);
-  font: 500 0.875rem/1.25rem var(--md-ref-typeface); letter-spacing: 0.00625rem;
-  box-shadow: var(--md-sys-elevation-3); -webkit-tap-highlight-color: transparent;
-  transition: border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
-    box-shadow var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+  height: 3.5rem; padding: 0 1.5rem 0 1.25rem; gap: 0.5rem; box-shadow: var(--shadow8);
 }
-.md-fab::before {
-  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
-  background: currentColor; opacity: 0; transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
-}
-.md-fab:hover::before { opacity: var(--md-sys-state-hover); }
-.md-fab:hover { box-shadow: var(--md-sys-elevation-4); }
-.md-fab:focus-visible::before, .md-fab:active::before { opacity: var(--md-sys-state-focus); }
-.md-fab:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
 /* Room under the last item, so the FAB does not cover it. */
 @media (max-width: 37.4375rem) {
-  main:has(.md-fab) { padding-bottom: 6rem; }
+  main:has(.fab) { padding-bottom: 6rem; }
   .bar-main-action { display: none; }
 }
-@media (min-width: 37.5rem) { .md-fab { display: none; } }
+@media (min-width: 37.5rem) { .fab { display: none; } }
 .bar-main-action { flex: none; }
 
 /* Snackbar (ADR 0047): a short message at the bottom, above the FAB when there is one. */
@@ -252,11 +234,11 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius
   font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.015625rem;
   animation: snackbar-in var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial);
 }
-@media (max-width: 37.4375rem) { body:has(.md-fab) .snackbar { bottom: calc(var(--nav-bar-height) + 5.5rem); } }
+@media (max-width: 37.4375rem) { body:has(.fab) .snackbar { bottom: calc(var(--nav-bar-height) + 5.5rem); } }
 @media (min-width: 37.5rem) { .snackbar { left: calc(50% + var(--nav-rail-width) / 2); } }
 .snackbar-text { flex: 1; padding: 0.5rem 0; }
 .snackbar .snackbar-action { color: var(--md-sys-color-inverse-primary); text-decoration: none; }
-.snackbar .md-icon-button { color: var(--md-sys-color-inverse-on-surface); }
+.snackbar .icon-button { color: var(--md-sys-color-inverse-on-surface); }
 @keyframes snackbar-in { from { opacity: 0; transform: translate(-50%, 0.5rem); } }
 @media (prefers-reduced-motion: reduce) { .snackbar { animation: none; } }
 
@@ -382,9 +364,9 @@ html[data-scrolled] .bar { --bar-background: var(--md-sys-color-surface-containe
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 /* The back button (ADR 0048) sits at the bar's leading edge, its icon lined up with the page's margin. */
-.bar-content > .md-icon-button { margin: 0 -0.25rem 0 -0.5rem; color: var(--md-sys-color-on-surface); }
+.bar-content > :is(.md-icon-button, .icon-button) { margin: 0 -0.25rem 0 -0.5rem; color: var(--md-sys-color-on-surface); }
 .bar-content > .button-group { margin: 0 -0.25rem 0 -0.5rem; }
-.bar-content > .button-group > .md-icon-button { color: var(--md-sys-color-on-surface); }
+.bar-content > .button-group > :is(.md-icon-button, .icon-button) { color: var(--md-sys-color-on-surface); }
 /* Linear progress under the app bar while a sync runs (ADR 0048). It fades in late, so a quick sync does not
    flicker. As in M3 Expressive (ADR 0095), a 4px gap in the bar's colour parts the indicator from the track. */
 .md-linear-progress {
@@ -875,8 +857,8 @@ a.strava-link { color: var(--md-sys-color-on-surface); font-weight: 700; text-de
 
 /* Ripple (ADR 0051): a circle that grows from where the pointer went down and fades. atlas/ui/interaction sets its
    position and size and flips data-ripple between a and b to restart it. */
-.md-button, .md-fab, .choice-label, .link-list a, .md-menu-item, .nav-indicator { overflow: hidden; }
-:is(.md-button, .md-fab, .md-icon-button, .choice-label, .link-list a, .md-menu-item, .nav-indicator)[data-ripple]::after {
+.md-button, .choice-label, .link-list a, .md-menu-item, .nav-indicator { overflow: hidden; }
+:is(.md-button, .md-icon-button, .choice-label, .link-list a, .md-menu-item, .nav-indicator)[data-ripple]::after {
   content: ""; position: absolute; z-index: -1; pointer-events: none;
   left: var(--ripple-x); top: var(--ripple-y); width: var(--ripple-size); height: var(--ripple-size);
   border-radius: 50%; background: currentColor; opacity: 0; transform: translate(-50%, -50%) scale(1);
@@ -888,7 +870,7 @@ a.strava-link { color: var(--md-sys-color-on-surface); font-weight: 700; text-de
 @keyframes ripple-a { from { opacity: var(--md-sys-state-pressed); transform: translate(-50%, -50%) scale(0); } }
 @keyframes ripple-b { from { opacity: var(--md-sys-state-pressed); transform: translate(-50%, -50%) scale(0); } }
 /* A keyboard press (with the focus ring showing) has no ripple, so it keeps the pressed layer. */
-:is(.md-button:not(:disabled), .md-fab, .link-list a, .md-menu-item)[data-ripple]:active:not(:focus-visible)::before { opacity: var(--md-sys-state-hover); }
+:is(.md-button:not(:disabled), .link-list a, .md-menu-item)[data-ripple]:active:not(:focus-visible)::before { opacity: var(--md-sys-state-hover); }
 .tabs a:active:not(:focus-visible) .nav-indicator[data-ripple]::before { opacity: var(--md-sys-state-hover); }
 /* An icon button's ripple fills its circle from the centre: the button is not clipped, so its touch target is not. */
 button.md-icon-button[data-ripple]::after, a.md-icon-button[data-ripple]::after {

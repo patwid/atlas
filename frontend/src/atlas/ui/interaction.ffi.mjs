@@ -4,7 +4,7 @@
 // adds or removes nodes inside the app, so Lustre's view of the DOM stays right. The one node it adds, the live
 // region, is outside the app's root.
 
-const rippling = ".md-button, .md-fab, .md-icon-button, .choice-label, .link-list a, .md-menu-item, .tabs a .nav-indicator"
+const rippling = ".md-button, .md-icon-button, .choice-label, .link-list a, .md-menu-item, .tabs a .nav-indicator"
 
 /** Whether a click on a dialog fell outside its box, on the backdrop. A click on the dialog's own padding also has
  * the dialog as its target, so the target alone does not tell (ADR 0124). */
