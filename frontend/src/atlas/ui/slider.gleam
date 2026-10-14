@@ -50,7 +50,7 @@ pub fn view(
           html.p(
             [
               attribute.id(id <> "-help"),
-              class("md-field-supporting"),
+              class("field-help"),
               ..case help.error {
                 Some(_) -> [attribute.role("alert")]
                 None -> []

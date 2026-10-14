@@ -12,14 +12,14 @@ import lustre/element/html
 import lustre/event
 
 pub fn input(attributes: List(Attribute(msg))) -> Element(msg) {
-  html.input([class("md-text-field"), ..attributes])
+  html.input([class("native-control"), ..attributes])
 }
 
 pub fn textarea(
   attributes: List(Attribute(msg)),
   content: String,
 ) -> Element(msg) {
-  html.textarea([class("md-text-field"), ..attributes], content)
+  html.textarea([class("native-control"), ..attributes], content)
 }
 
 /// `options` are `#(value, label)` pairs. The current value is marked `selected` on its option
@@ -32,7 +32,7 @@ pub fn select(
   options: List(#(String, String)),
 ) -> Element(msg) {
   html.select(
-    [class("md-text-field"), ..attributes],
+    [class("native-control"), ..attributes],
     list.map(options, fn(option) {
       html.option(
         [attribute.value(option.0), attribute.selected(option.0 == value)],
@@ -218,7 +218,7 @@ fn control(
 ) -> List(Attribute(msg)) {
   [
     attribute.id(id),
-    class("md-text-field"),
+    class("native-control"),
     // A blank placeholder lets CSS tell an empty field (`:placeholder-shown`) from a filled one; a field's own
     // placeholder, given in `attributes`, takes its place.
     attribute.placeholder(" "),
@@ -242,7 +242,7 @@ fn outlined(
 ) -> Element(msg) {
   html.div(
     [
-      class("md-field"),
+      class("native-field"),
       attribute.classes([
         #("has-error", help.error != None),
         #("has-suffix", help.suffix != ""),
@@ -250,7 +250,7 @@ fn outlined(
     ],
     [
       input,
-      html.label([attribute.for(id), class("md-field-label")], [
+      html.label([attribute.for(id), class("field-label")], [
         html.text(label),
       ]),
       case help.suffix {
@@ -258,7 +258,7 @@ fn outlined(
         unit ->
           html.span(
             [
-              class("md-field-suffix"),
+              class("native-suffix"),
               attribute.attribute("aria-hidden", "true"),
             ],
             [html.text(unit)],
@@ -277,14 +277,14 @@ fn supporting(id: String, help: Help) -> Element(msg) {
       html.p(
         [
           attribute.id(id <> "-help"),
-          class("md-field-supporting"),
+          class("field-help"),
           attribute.role("alert"),
         ],
         [html.text(message)],
       )
     None, "" -> element.none()
     None, text ->
-      html.p([attribute.id(id <> "-help"), class("md-field-supporting")], [
+      html.p([attribute.id(id <> "-help"), class("field-help")], [
         html.text(text),
       ])
   }

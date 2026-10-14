@@ -637,7 +637,7 @@ pub fn the_form_is_labelled_and_shows_errors_test() {
   assert string.contains(html, "aria-invalid=\"true\"")
   assert string.contains(
     html,
-    "class=\"md-field-supporting\" id=\"workout-title-help\" role=\"alert\">Give the workout a title.",
+    "class=\"field-help\" id=\"workout-title-help\" role=\"alert\">Give the workout a title.",
   )
   assert string.contains(html, ">Run<")
   assert string.contains(html, "Rest day")

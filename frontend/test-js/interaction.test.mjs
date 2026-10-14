@@ -5,8 +5,8 @@ import assert from "node:assert/strict"
 import { JSDOM } from "jsdom"
 
 const dom = new JSDOM(`<!doctype html><body>
-  <button class="md-button">Save</button>
-  <button class="md-button" disabled>Off</button>
+  <button class="link-button">Save</button>
+  <button class="link-button" disabled>Off</button>
   <nav class="tabs"><a href="/"><span class="nav-indicator"></span>Home</a></nav>
   <p class="plain">text</p>
 </body>`, { pretendToBeVisual: true })

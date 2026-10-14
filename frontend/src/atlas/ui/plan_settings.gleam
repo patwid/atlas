@@ -51,12 +51,9 @@ pub fn inputs(
     ]),
     case wrong, error {
       "phases", Some(message) ->
-        html.p(
-          [class("md-field-supporting phases-error"), attribute.role("alert")],
-          [
-            html.text(message),
-          ],
-        )
+        html.p([class("field-help phases-error"), attribute.role("alert")], [
+          html.text(message),
+        ])
       _, _ -> element.none()
     },
     field.text(

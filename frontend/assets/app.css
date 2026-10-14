@@ -2,102 +2,25 @@
    (52.5rem), large from 1200px (75rem). Media queries use these widths only.
 
    Fluent 2 (ADR 0133): Fluent UI's web components draw the controls, and fluent-theme.css, loaded before this file,
-   holds Fluent's design tokens for light and dark. The --md-* names below are the Material 3 roles the rest of this
-   file was written with (ADR 0044), now each one a Fluent token, until the rules are moved onto Fluent's names. Every
-   color in the app is one of these, except Strava's brand orange (ADR 0027). */
+   holds Fluent's design tokens for light and dark. Every color, corner, shadow, curve and size of type here is one of
+   those tokens, except Strava's brand orange (ADR 0027); this file draws what Fluent's components do not have. */
+
+/* Plan calendar (ADR 0043, 0063): the phases and the training intensity. Every phase band has the same card color;
+   the band titles tell them apart. */
 :root {
-  --md-sys-color-primary: var(--colorBrandForeground1);
-  --md-sys-color-on-primary: var(--colorNeutralForegroundInverted);
-  --md-sys-color-primary-container: var(--colorBrandBackground2);
-  --md-sys-color-on-primary-container: var(--colorBrandForeground2);
-  --md-sys-color-secondary: var(--colorNeutralForeground2);
-  --md-sys-color-on-secondary: var(--colorNeutralForegroundInverted);
-  --md-sys-color-secondary-container: var(--colorBrandBackground2);
-  --md-sys-color-on-secondary-container: var(--colorBrandForeground2);
-  --md-sys-color-tertiary: var(--colorPaletteBerryForeground1);
-  --md-sys-color-on-tertiary: var(--colorNeutralForegroundInverted);
-  --md-sys-color-tertiary-container: var(--colorPaletteBerryBackground1);
-  --md-sys-color-on-tertiary-container: var(--colorPaletteBerryForeground1);
-  --md-sys-color-error: var(--colorStatusDangerForeground1);
-  --md-sys-color-on-error: var(--colorNeutralForegroundInverted);
-  --md-sys-color-error-container: var(--colorStatusDangerBackground1);
-  --md-sys-color-on-error-container: var(--colorStatusDangerForeground1);
-  /* The page is Fluent's canvas and what sits on it its card color, raised in light and in dark. */
-  --md-sys-color-surface: var(--colorNeutralBackground2);
-  --md-sys-color-on-surface: var(--colorNeutralForeground1);
-  --md-sys-color-on-surface-variant: var(--colorNeutralForeground3);
-  --md-sys-color-surface-container-lowest: var(--colorNeutralBackground1);
-  --md-sys-color-surface-container-low: var(--colorNeutralBackground1);
-  --md-sys-color-surface-container: var(--colorNeutralBackground1);
-  --md-sys-color-surface-container-high: var(--colorNeutralBackground1Hover);
-  --md-sys-color-surface-container-highest: var(--colorNeutralBackground1Selected);
-  --md-sys-color-outline: var(--colorNeutralStroke1);
-  --md-sys-color-outline-variant: var(--colorNeutralStroke2);
-  --md-sys-color-inverse-surface: var(--colorNeutralBackgroundInverted);
-  --md-sys-color-inverse-on-surface: var(--colorNeutralForegroundInverted2);
-  --md-sys-color-inverse-primary: var(--colorBrandForegroundInverted);
-  /* Training intensity (ADR 0061): Fluent's green, marigold and red. Not the danger status: hard is not wrong. */
-  --md-custom-color-low: var(--colorPaletteGreenForeground1);
-  --md-custom-color-low-container: var(--colorPaletteGreenBackground1);
-  --md-custom-color-on-low-container: var(--colorPaletteGreenForeground1);
-  --md-custom-color-medium: var(--colorPaletteMarigoldForeground1);
-  --md-custom-color-medium-container: var(--colorPaletteMarigoldBackground1);
-  --md-custom-color-on-medium-container: var(--colorPaletteMarigoldForeground1);
-  --md-custom-color-high: var(--colorPaletteRedForeground1);
-  --md-custom-color-high-container: var(--colorPaletteRedBackground1);
-  --md-custom-color-on-high-container: var(--colorPaletteRedForeground1);
-  --md-sys-color-scrim: #000000;
-  --md-sys-color-shadow: #000000;
-
-  /* Fluent's corners: 4px for controls, 8px for cards, dialogs and menus. */
-  --md-sys-shape-corner-extra-small: var(--borderRadiusMedium);
-  --md-sys-shape-corner-small: var(--borderRadiusMedium);
-  --md-sys-shape-corner-medium: var(--borderRadiusLarge);
-  --md-sys-shape-corner-large: var(--borderRadiusXLarge);
-  --md-sys-shape-corner-extra-large: var(--borderRadiusXLarge);
-  --md-sys-shape-corner-large-increased: var(--borderRadiusXLarge);
-  --md-sys-shape-corner-extra-large-increased: var(--borderRadiusXLarge);
-  --md-sys-shape-corner-extra-extra-large: var(--borderRadiusXLarge);
-  --md-sys-shape-corner-full: var(--borderRadiusCircular);
-
-  --md-sys-elevation-1: var(--shadow2);
-  --md-sys-elevation-2: var(--shadow4);
-  --md-sys-elevation-3: var(--shadow8);
-  --md-sys-elevation-4: var(--shadow16);
-
-  --md-sys-state-hover: 0.08;
-  --md-sys-state-focus: 0.1;
-  --md-sys-state-pressed: 0.1;
-  /* Fluent's motion: things that move or resize decelerate, things that fade or recolor ease; nothing overshoots. */
-  --md-sys-motion-easing: var(--curveEasyEase);
-  --md-sys-motion-spring-fast-spatial: var(--curveDecelerateMid);
-  --md-sys-motion-spring-fast-spatial-duration: var(--durationFast);
-  --md-sys-motion-spring-default-spatial: var(--curveDecelerateMid);
-  --md-sys-motion-spring-default-spatial-duration: var(--durationNormal);
-  --md-sys-motion-spring-slow-spatial: var(--curveDecelerateMid);
-  --md-sys-motion-spring-slow-spatial-duration: var(--durationSlow);
-  --md-sys-motion-spring-fast-effects: var(--curveEasyEase);
-  --md-sys-motion-spring-fast-effects-duration: var(--durationFaster);
-  --md-sys-motion-spring-default-effects: var(--curveEasyEase);
-  --md-sys-motion-spring-default-effects-duration: var(--durationNormal);
-  --md-sys-motion-spring-slow-effects: var(--curveEasyEase);
-  --md-sys-motion-spring-slow-effects-duration: var(--durationSlow);
-
-  color-scheme: light dark;
-}
-
-/* Plan calendar (ADR 0043, 0045, 0063): M3 roles for the phases and the training intensity, which M3 has no roles
-   of its own for. Every phase band has the same light container; the band titles tell them apart. */
-:root {
-  --phase-base: var(--md-sys-color-surface-container-low);
-  --phase-pre: var(--md-sys-color-surface-container-low);
-  --phase-competition: var(--md-sys-color-surface-container-low);
-  --selected: var(--md-sys-color-secondary-container);
-  /* Training intensity has colours of its own (ADR 0061): M3 custom colours, green, amber and red, harmonized toward
-     the primary by Google's material-color-utilities (customColor, blend). Not the error role: hard is not wrong. */
-  --intensity-low: var(--md-custom-color-low);
-  --intensity-medium: var(--md-custom-color-medium);
-  --intensity-high: var(--md-custom-color-high);
+  --phase-base: var(--colorNeutralBackground1);
+  --phase-pre: var(--colorNeutralBackground1);
+  --phase-competition: var(--colorNeutralBackground1);
+  --selected: var(--colorBrandBackground2);
+  /* Training intensity has colours of its own (ADR 0061, 0133): Fluent's green, marigold and red. Not the danger
+     status: hard is not wrong. */
+  --intensity-low: var(--colorPaletteGreenForeground1);
+  --intensity-medium: var(--colorPaletteMarigoldForeground1);
+  --intensity-high: var(--colorPaletteRedForeground1);
+  /* How strongly a state layer tints what it covers, on Atlas's own controls: hover, focus and press. */
+  --state-hover: 0.08;
+  --state-focus: 0.1;
+  --state-pressed: 0.1;
   /* Fluent's focus indicator (ADR 0133). */
   --focus-ring: 2px solid var(--colorStrokeFocus2);
   /* The navigation bar's height, which floating things (FAB, snackbar) keep clear of; 0 next to the rail. */
@@ -119,7 +42,7 @@
   white-space: nowrap; border: 0;
 }
 html, body {
-  margin: 0; background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface);
+  margin: 0; background: var(--colorNeutralBackground2); color: var(--colorNeutralForeground1);
   font: var(--fontWeightRegular) var(--fontSizeBase400)/var(--lineHeightBase400) var(--fontFamilyBase);
   -webkit-font-smoothing: antialiased;
 }
@@ -131,7 +54,7 @@ body { min-height: 100%; }
 #app { flex: 1; }
 h1, h2, h3 { font-weight: var(--fontWeightRegular); }
 
-a { color: var(--md-sys-color-primary); text-underline-offset: 0.15em; }
+a { color: var(--colorBrandForeground1); text-underline-offset: 0.15em; }
 a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; border-radius: 2px; }
 
 /* Links that look like Fluent's buttons (ADR 0133): Fluent UI's buttons draw every other button, but the router only
@@ -193,7 +116,7 @@ fluent-button.fab {
   border-radius: var(--borderRadiusMedium); box-shadow: var(--shadow16);
   background: var(--colorNeutralBackground1); color: var(--colorNeutralForeground1);
   font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300);
-  animation: snackbar-in var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial);
+  animation: snackbar-in var(--durationNormal) var(--curveDecelerateMid);
 }
 @media (max-width: 37.4375rem) { body:has(.fab) .snackbar { bottom: calc(var(--nav-bar-height) + 5.5rem); } }
 @media (min-width: 37.5rem) { .snackbar { left: calc(50% + var(--nav-rail-width) / 2); } }
@@ -207,7 +130,7 @@ fluent-button.fab {
 .choice { border: 0; padding: 0; margin: 0.75rem 0 0; min-width: 0; }
 .choice legend {
   padding: 0; margin-bottom: 0.5rem;
-  font: var(--fontWeightSemibold) var(--fontSizeBase200)/var(--lineHeightBase200) var(--fontFamilyBase); color: var(--md-sys-color-on-surface-variant);
+  font: var(--fontWeightSemibold) var(--fontSizeBase200)/var(--lineHeightBase200) var(--fontFamilyBase); color: var(--colorNeutralForeground3);
 }
 /* 16px between wrapped rows, so the chips' 48px targets meet without overlapping (ADR 0124). */
 .choice-options { display: flex; flex-wrap: wrap; gap: 1rem 0.5rem; }
@@ -217,19 +140,19 @@ fluent-button.fab {
 .choice-option input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
 .choice-label {
   position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; isolation: isolate;
-  height: 2rem; padding: 0 1rem; cursor: pointer; user-select: none; color: var(--md-sys-color-on-surface-variant);
-  border: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-small);
+  height: 2rem; padding: 0 1rem; cursor: pointer; user-select: none; color: var(--colorNeutralForeground3);
+  border: 1px solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusMedium);
   font: var(--fontWeightSemibold) var(--fontSizeBase300)/var(--lineHeightBase300) var(--fontFamilyBase);
   -webkit-tap-highlight-color: transparent;
 }
 .choice-label::before {
   content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
-  background: currentColor; opacity: 0; transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+  background: currentColor; opacity: 0; transition: opacity var(--durationFaster) var(--curveEasyEase);
 }
-.choice-label:hover::before { opacity: var(--md-sys-state-hover); }
+.choice-label:hover::before { opacity: var(--state-hover); }
 .choice-label .icon { display: none; width: 1.125rem; height: 1.125rem; margin-left: -0.5rem; }
 .choice-option input:checked + .choice-label {
-  background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); border-color: transparent;
+  background: var(--colorBrandBackground2); color: var(--colorBrandForeground2); border-color: transparent;
 }
 .choice-option input:checked + .choice-label .icon { display: block; }
 .choice-option input:focus-visible + .choice-label { outline: var(--focus-ring); outline-offset: 2px; }
@@ -238,30 +161,30 @@ fluent-button.fab {
 .segmented .choice-options { flex-wrap: nowrap; gap: 2px; }
 .segmented .choice-option { flex: 1; display: flex; }
 .segmented .choice-label {
-  --outer: var(--md-sys-shape-corner-full); --inner: var(--md-sys-shape-corner-small);
+  --outer: var(--borderRadiusCircular); --inner: var(--borderRadiusMedium);
   flex: 1; height: 2.5rem; padding: 0 0.75rem; border: 0; border-radius: var(--inner);
-  background: var(--md-sys-color-surface-container-high); color: var(--md-sys-color-on-surface-variant);
-  transition: border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
-    background-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+  background: var(--colorNeutralBackground1Hover); color: var(--colorNeutralForeground3);
+  transition: border-radius var(--durationFast) var(--curveDecelerateMid),
+    background-color var(--durationFaster) var(--curveEasyEase);
 }
 .segmented .choice-option:first-child .choice-label { border-radius: var(--outer) var(--inner) var(--inner) var(--outer); }
 .segmented .choice-option:last-child .choice-label { border-radius: var(--inner) var(--outer) var(--outer) var(--inner); }
-.segmented .choice-label:active { --inner: var(--md-sys-shape-corner-extra-small); }
+.segmented .choice-label:active { --inner: var(--borderRadiusMedium); }
 .segmented .choice-option input:checked + .choice-label {
-  border-radius: var(--md-sys-shape-corner-full);
-  background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container);
+  border-radius: var(--borderRadiusCircular);
+  background: var(--colorBrandBackground2); color: var(--colorBrandForeground2);
 }
 /* Chips square off a little when selected, the Expressive toggle shape. */
-.chips .choice-label { transition: border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial); }
-.chips .choice-option input:checked + .choice-label { border-radius: var(--md-sys-shape-corner-medium); }
+.chips .choice-label { transition: border-radius var(--durationFast) var(--curveDecelerateMid); }
+.chips .choice-option input:checked + .choice-label { border-radius: var(--borderRadiusLarge); }
 .supporting {
   margin: 0.25rem 1rem 0; font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200);
-  color: var(--md-sys-color-on-surface-variant);
+  color: var(--colorNeutralForeground3);
 }
 
 /* Native inputs and selects (number, date and time, which Fluent's text input does not have; ADR 0133), drawn like
    Fluent's large outline input: a 40px box with a darker bottom edge that turns brand-coloured with focus. */
-.md-text-field {
+.native-control {
   display: block; width: 100%; min-height: 2.5rem; padding: 0 0.75rem;
   font: var(--fontWeightRegular) var(--fontSizeBase400)/var(--lineHeightBase400) var(--fontFamilyBase);
   color: var(--colorNeutralForeground1); background: var(--colorNeutralBackground1); caret-color: var(--colorBrandForeground1);
@@ -269,15 +192,15 @@ fluent-button.fab {
   border-radius: var(--borderRadiusMedium);
   transition: border-color var(--durationFaster) var(--curveEasyEase), box-shadow var(--durationFaster) var(--curveEasyEase);
 }
-.md-text-field:hover:not(:disabled):not(:focus) { border-color: var(--colorNeutralStroke1Hover); border-bottom-color: var(--colorNeutralStrokeAccessibleHover); }
-.md-text-field:focus { outline: 0; border-bottom-color: var(--colorCompoundBrandStroke); box-shadow: inset 0 -1px 0 var(--colorCompoundBrandStroke); }
-.md-text-field[aria-invalid="true"] { border-color: var(--colorPaletteRedBorder2); }
-.md-text-field:disabled {
+.native-control:hover:not(:disabled):not(:focus) { border-color: var(--colorNeutralStroke1Hover); border-bottom-color: var(--colorNeutralStrokeAccessibleHover); }
+.native-control:focus { outline: 0; border-bottom-color: var(--colorCompoundBrandStroke); box-shadow: inset 0 -1px 0 var(--colorCompoundBrandStroke); }
+.native-control[aria-invalid="true"] { border-color: var(--colorPaletteRedBorder2); }
+.native-control:disabled {
   color: var(--colorNeutralForegroundDisabled); background: var(--colorTransparentBackground);
   border-color: var(--colorNeutralStrokeDisabled); cursor: not-allowed;
 }
-.md-text-field::placeholder { color: var(--colorNeutralForeground4); }
-select.md-text-field {
+.native-control::placeholder { color: var(--colorNeutralForeground4); }
+select.native-control {
   appearance: none; padding-right: 2.5rem; cursor: pointer;
   /* A chevron, drawn as two half-squares so it takes the foreground color. */
   background:
@@ -285,9 +208,9 @@ select.md-text-field {
     linear-gradient(135deg, var(--colorNeutralForeground3) 50%, transparent 50%) no-repeat right 0.8125rem center / 0.3125rem 0.3125rem,
     var(--colorNeutralBackground1);
 }
-select.md-text-field option { background: var(--colorNeutralBackground1); color: var(--colorNeutralForeground1); }
-input[type="range"] { accent-color: var(--md-sys-color-primary); }
-input[type="checkbox"], input[type="radio"] { accent-color: var(--md-sys-color-primary); width: 1.125rem; height: 1.125rem; }
+select.native-control option { background: var(--colorNeutralBackground1); color: var(--colorNeutralForeground1); }
+input[type="range"] { accent-color: var(--colorBrandForeground1); }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--colorBrandForeground1); width: 1.125rem; height: 1.125rem; }
 
 /* Dialogs: basic dialog, extra-large corners, actions at the end. */
 /* Native dialogs (the form dialog and the pickers) drawn like Fluent's, which draws the others (ADR 0133). */
@@ -304,21 +227,21 @@ dialog .dialog-headline { margin: 0 0 1rem; }
 }
 fluent-dialog .dialog-headline { margin: 0; }
 dialog .actions, .list dialog .actions { justify-content: flex-end; margin-top: 0; }
-dialog[open] { animation: dialog-in var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial); }
+dialog[open] { animation: dialog-in var(--durationNormal) var(--curveDecelerateMid); }
 @keyframes dialog-in { from { opacity: 0; transform: translateY(-1rem) scale(0.97); } }
 @media (prefers-reduced-motion: reduce) { dialog[open] { animation: none; } }
 
 /* The frame: a small top app bar, the page, and a navigation bar (a navigation rail on wide screens). */
 .shell { flex: 1; display: flex; flex-direction: column; }
 .bar {
-  --bar-background: var(--md-sys-color-surface);
+  --bar-background: var(--colorNeutralBackground2);
   background: var(--bar-background); position: sticky; top: 0; z-index: 2;
-  transition: background-color var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects);
+  transition: background-color var(--durationNormal) var(--curveEasyEase);
 }
 /* Once the page scrolls under it, the app bar takes a container color (ADR 0051; set by atlas/ui/interaction). */
-html[data-scrolled] .bar { --bar-background: var(--md-sys-color-surface-container); }
+html[data-scrolled] .bar { --bar-background: var(--colorNeutralBackground1); }
 /* A new page fades in (ADR 0051). Opacity only: a transform would move the FAB and snackbar while it runs. */
-.page { animation: page-in var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects); }
+.page { animation: page-in var(--durationNormal) var(--curveEasyEase); }
 @media (prefers-reduced-motion: reduce) { .page { animation: none; } }
 @keyframes page-in { from { opacity: 0; } }
 .bar-content {
@@ -332,9 +255,9 @@ html[data-scrolled] .bar { --bar-background: var(--md-sys-color-surface-containe
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 /* The back button (ADR 0048) sits at the bar's leading edge, its icon lined up with the page's margin. */
-.bar-content > :is(.link-button-icon, .icon-button) { margin: 0 -0.25rem 0 -0.5rem; color: var(--md-sys-color-on-surface); }
+.bar-content > :is(.link-button-icon, .icon-button) { margin: 0 -0.25rem 0 -0.5rem; color: var(--colorNeutralForeground1); }
 .bar-content > .button-group { margin: 0 -0.25rem 0 -0.5rem; }
-.bar-content > .button-group > :is(.link-button-icon, .icon-button) { color: var(--md-sys-color-on-surface); }
+.bar-content > .button-group > :is(.link-button-icon, .icon-button) { color: var(--colorNeutralForeground1); }
 /* Fluent's progress bar under the app bar while a sync runs (ADR 0048, 0133). It fades in late, so a quick sync
    does not flicker. */
 .linear-progress {
@@ -342,7 +265,7 @@ html[data-scrolled] .bar { --bar-background: var(--md-sys-color-surface-containe
 }
 @keyframes progress-appear { to { opacity: 1; } }
 /* A spinner next to a status text (ADR 0048). */
-.loading { display: flex; align-items: center; gap: 0.75rem; color: var(--md-sys-color-on-surface-variant); }
+.loading { display: flex; align-items: center; gap: 0.75rem; color: var(--colorNeutralForeground3); }
 main { flex: 1; padding: 0 1rem 1.5rem; max-width: var(--content-max); width: 100%; margin: 0 auto; }
 
 /* Navigation (ADR 0044, 0133). Fluent's web components have none, so it follows Fluent 2's patterns: on a phone a tab
@@ -391,13 +314,13 @@ main { flex: 1; padding: 0 1rem 1.5rem; max-width: var(--content-max); width: 10
 /* Empty states (ADR 0050): an icon in a brand-tinted circle, a headline, a line of help and maybe an action. */
 .empty {
   display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.5rem;
-  padding: 2.5rem 1rem; color: var(--md-sys-color-on-surface-variant);
+  padding: 2.5rem 1rem; color: var(--colorNeutralForeground3);
 }
 .empty > .icon {
   width: 5rem; height: 5rem; padding: 1.375rem; margin-bottom: 0.5rem; border-radius: var(--borderRadiusCircular);
-  background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container);
+  background: var(--colorBrandBackground2); color: var(--colorBrandForeground2);
 }
-.empty h2 { color: var(--md-sys-color-on-surface); font: var(--fontWeightSemibold) var(--fontSizeBase500)/var(--lineHeightBase500) var(--fontFamilyBase); margin: 0; }
+.empty h2 { color: var(--colorNeutralForeground1); font: var(--fontWeightSemibold) var(--fontSizeBase500)/var(--lineHeightBase500) var(--fontFamilyBase); margin: 0; }
 .empty p { margin: 0 0 0.5rem; max-width: 28rem; font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); }
 /* A compact one (ADR 0069), for a list with a form under it: the form stays in view on a phone. */
 .empty-compact { padding: 1.5rem 1rem; }
@@ -412,17 +335,17 @@ main { flex: 1; padding: 0 1rem 1.5rem; max-width: var(--content-max); width: 10
 .signin::after { content: ""; flex: 3; }
 .signin h1 { font: var(--fontWeightRegular) var(--fontSizeHero800)/var(--lineHeightHero800) var(--fontFamilyBase); margin: 0 0 0.5rem; }
 .signin fluent-button { margin-top: 1rem; }
-.muted { color: var(--md-sys-color-on-surface-variant); margin-top: 0; }
+.muted { color: var(--colorNeutralForeground3); margin-top: 0; }
 form { display: grid; gap: 0.5rem; }
 label {
   font: var(--fontWeightSemibold) var(--fontSizeBase200)/var(--lineHeightBase200) var(--fontFamilyBase);
-  color: var(--md-sys-color-on-surface-variant); margin-top: 0.75rem;
+  color: var(--colorNeutralForeground3); margin-top: 0.75rem;
 }
-.error { color: var(--md-sys-color-error); margin: 0.25rem 0 0; font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); }
+.error { color: var(--colorStatusDangerForeground1); margin: 0.25rem 0 0; font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); }
 /* Sections are list subheaders (ADR 0055, 0069): the app bar holds the page's title. Their text lines up with the
    list items' text. */
 .subheader {
-  margin: 1.25rem 1rem 0.5rem; color: var(--md-sys-color-on-surface-variant);
+  margin: 1.25rem 1rem 0.5rem; color: var(--colorNeutralForeground3);
   font: var(--fontWeightSemibold) var(--fontSizeBase300)/var(--lineHeightBase300) var(--fontFamilyBase);
 }
 /* A section with nothing in it says so in a line that lines up with its subheader, as its items' text would. */
@@ -442,21 +365,21 @@ label {
 .list.link-list > li.info-item { padding: 0.75rem 1rem; }
 .link-list a {
   position: relative; display: flex; align-items: center; gap: 1rem; min-height: 4.5rem; padding: 0.75rem 1rem 0.75rem 1rem;
-  color: var(--md-sys-color-on-surface); text-decoration: none; isolation: isolate;
+  color: var(--colorNeutralForeground1); text-decoration: none; isolation: isolate;
 }
 .link-list a::before {
-  content: ""; position: absolute; inset: 0; z-index: -1; background: var(--md-sys-color-on-surface);
-  opacity: 0; transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+  content: ""; position: absolute; inset: 0; z-index: -1; background: var(--colorNeutralForeground1);
+  opacity: 0; transition: opacity var(--durationFaster) var(--curveEasyEase);
 }
 .link-list a:hover { text-decoration: none; }
-.link-list a:hover::before { opacity: var(--md-sys-state-hover); }
-.link-list a:active::before { opacity: var(--md-sys-state-pressed); }
+.link-list a:hover::before { opacity: var(--state-hover); }
+.link-list a:active::before { opacity: var(--state-pressed); }
 .link-list a:focus-visible { outline: var(--focus-ring); outline-offset: -3px; }
-.link-list .icon { color: var(--md-sys-color-on-surface-variant); }
+.link-list .icon { color: var(--colorNeutralForeground3); }
 .link-item-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .link-item-headline { font: var(--fontWeightRegular) var(--fontSizeBase400)/var(--lineHeightBase400) var(--fontFamilyBase); }
 .link-item-supporting {
-  font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); color: var(--colorNeutralForeground3);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
@@ -467,39 +390,39 @@ label {
 .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .list > li {
   position: relative; padding: 0.75rem 1rem; min-height: 3.5rem; overflow: hidden;
-  background: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-extra-small);
-  transition: border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
+  background: var(--colorNeutralBackground1); border-radius: var(--borderRadiusMedium);
+  transition: border-radius var(--durationFast) var(--curveDecelerateMid);
 }
 /* The item's lines are centred in it, so a one-line item is as high as M3's 56px with its text in the middle. */
 .list > li:not(.info-item) { display: flex; flex-direction: column; justify-content: center; }
-.list > li:first-child { border-top-left-radius: var(--md-sys-shape-corner-large); border-top-right-radius: var(--md-sys-shape-corner-large); }
-.list > li:last-child { border-bottom-left-radius: var(--md-sys-shape-corner-large); border-bottom-right-radius: var(--md-sys-shape-corner-large); }
+.list > li:first-child { border-top-left-radius: var(--borderRadiusXLarge); border-top-right-radius: var(--borderRadiusXLarge); }
+.list > li:last-child { border-bottom-left-radius: var(--borderRadiusXLarge); border-bottom-right-radius: var(--borderRadiusXLarge); }
 /* Only rows that open something change shape when pointed at. */
-.link-list li:has(> a):hover { border-radius: var(--md-sys-shape-corner-medium); }
-.link-list li:has(> a):active, .link-list li:has(> a):focus-within { border-radius: var(--md-sys-shape-corner-large); }
+.link-list li:has(> a):hover { border-radius: var(--borderRadiusLarge); }
+.link-list li:has(> a):active, .link-list li:has(> a):focus-within { border-radius: var(--borderRadiusXLarge); }
 /* A list item's headline is body-large at 400, whether a link, a button or text (ADR 0124). A link drawn as a button,
    such as a dialog's action, keeps the button's look. */
-.list a:where(:not(.link-button)), .list strong { color: var(--md-sys-color-on-surface); font: var(--fontWeightRegular) var(--fontSizeBase400)/var(--lineHeightBase400) var(--fontFamilyBase); text-decoration: none; }
+.list a:where(:not(.link-button)), .list strong { color: var(--colorNeutralForeground1); font: var(--fontWeightRegular) var(--fontSizeBase400)/var(--lineHeightBase400) var(--fontFamilyBase); text-decoration: none; }
 /* A row that opens a page (ADR 0069): its headline link covers the whole item, with M3's state layer and the
    segmented list's shape change on hover, like the Settings list. */
 .list .row-link::after {
-  content: ""; position: absolute; inset: 0; background: var(--md-sys-color-on-surface);
-  opacity: 0; transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+  content: ""; position: absolute; inset: 0; background: var(--colorNeutralForeground1);
+  opacity: 0; transition: opacity var(--durationFaster) var(--curveEasyEase);
 }
 /* A row that opens a dialog has a button for its headline (ADR 0080), drawn like the link. */
 .list button.row-link {
   padding: 0; border: 0; background: none; cursor: pointer; text-align: left;
-  color: var(--md-sys-color-on-surface); font: var(--fontWeightRegular) var(--fontSizeBase400)/var(--lineHeightBase400) var(--fontFamilyBase);
+  color: var(--colorNeutralForeground1); font: var(--fontWeightRegular) var(--fontSizeBase400)/var(--lineHeightBase400) var(--fontFamilyBase);
 }
-.list > li:has(.row-link):hover .row-link::after { opacity: var(--md-sys-state-hover); }
-.list > li:has(.row-link):active .row-link::after { opacity: var(--md-sys-state-pressed); }
-.list > li:has(.row-link):hover { border-radius: var(--md-sys-shape-corner-medium); }
+.list > li:has(.row-link):hover .row-link::after { opacity: var(--state-hover); }
+.list > li:has(.row-link):active .row-link::after { opacity: var(--state-pressed); }
+.list > li:has(.row-link):hover { border-radius: var(--borderRadiusLarge); }
 .list .row-link:focus-visible { outline: 0; }
 .list .row-link:focus-visible::after { outline: var(--focus-ring); outline-offset: -3px; }
-.list p { margin: 0.125rem 0 0; font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); color: var(--md-sys-color-on-surface-variant); }
+.list p { margin: 0.125rem 0 0; font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); color: var(--colorNeutralForeground3); }
 .list .actions { margin-top: 0.5rem; }
 /* An activity's figures are what the row is about: in the body colour, not the supporting text's. */
-.list p.figures { color: var(--md-sys-color-on-surface); }
+.list p.figures { color: var(--colorNeutralForeground1); }
 .chip-row { margin-left: 0.5rem; }
 /* Chips are Fluent's outline badges (ADR 0133). */
 .label-chip { margin-right: 0.25rem; vertical-align: middle; }
@@ -510,13 +433,13 @@ label {
 .status { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; margin: 0.25rem 0 0; }
 .status-chip {
   display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.5rem;
-  font: var(--fontWeightSemibold) var(--fontSizeBase300)/var(--lineHeightBase300) var(--fontFamilyBase); color: var(--md-sys-color-on-surface-variant);
+  font: var(--fontWeightSemibold) var(--fontSizeBase300)/var(--lineHeightBase300) var(--fontFamilyBase); color: var(--colorNeutralForeground3);
 }
 .status-chip .icon { width: 1.25rem; height: 1.25rem; }
-.status-missed { color: var(--md-sys-color-error); }
-.status-suggested .icon { color: var(--md-sys-color-tertiary); }
-.status-done .icon { color: var(--md-sys-color-primary); }
-.status-details { color: var(--md-sys-color-on-surface-variant); font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); }
+.status-missed { color: var(--colorStatusDangerForeground1); }
+.status-suggested .icon { color: var(--colorPaletteBerryForeground1); }
+.status-done .icon { color: var(--colorBrandForeground1); }
+.status-details { color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); }
 /* The status's action follows it on its line (ADR 0081); the text button's own padding lines its label up. */
 .status .status-action { margin-left: -0.25rem; }
 .description { white-space: pre-wrap; }
@@ -528,7 +451,7 @@ label {
 .description-toggle { margin-left: -0.75rem; }
 /* Panels: filled containers on the page surface. */
 .plan-form, .found {
-  background: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-large);
+  background: var(--colorNeutralBackground1); border-radius: var(--borderRadiusXLarge);
 }
 .plan-form { padding: 1rem 1rem 1.25rem; margin-bottom: 1rem; }
 /* Fields side by side line up at the top, where their inputs are: help text under one of them must not move it.
@@ -539,73 +462,73 @@ label {
 .coach-form { margin-top: 1rem; }
 .found { padding: 0.75rem 1rem; margin-top: 0.75rem; }
 .found p { margin: 0.25rem 0; }
-.totals { color: var(--md-sys-color-on-surface-variant); font: var(--fontWeightRegular) var(--fontSizeBase300)/var(--lineHeightBase300) var(--fontFamilyBase); margin-left: 0.5rem; }
+.totals { color: var(--colorNeutralForeground3); font: var(--fontWeightRegular) var(--fontSizeBase300)/var(--lineHeightBase300) var(--fontFamilyBase); margin-left: 0.5rem; }
 
 /* Plan calendar (ADR 0043, 0066): weeks as rows, days as columns, bands per phase, the full width at every size. On
    a phone the days of a week stack. A week and a workout open in dialogs. */
 /* The header lines up with the wider page. */
 .calendar { min-width: 0; }
 .calendar-head { display: none; }
-.phase-band { border-radius: var(--md-sys-shape-corner-large); padding: 0.25rem 0.5rem 0.5rem; margin-bottom: 0.75rem; }
+.phase-band { border-radius: var(--borderRadiusXLarge); padding: 0.25rem 0.5rem 0.5rem; margin-bottom: 0.75rem; }
 .phase-base { background: var(--phase-base); }
 .phase-pre { background: var(--phase-pre); }
 .phase-competition { background: var(--phase-competition); }
-.phase-none { border: 1px dashed var(--md-sys-color-outline-variant); }
-.band-title { color: var(--md-sys-color-on-surface-variant); }
+.phase-none { border: 1px dashed var(--colorNeutralStroke2); }
+.band-title { color: var(--colorNeutralForeground3); }
 .band-title { font: var(--fontWeightSemibold) var(--fontSizeBase300)/var(--lineHeightBase300) var(--fontFamilyBase); margin: 0.375rem 0.25rem 0.5rem; }
 .calendar-week {
-  display: grid; grid-template-columns: 1fr; gap: 1px; background: var(--md-sys-color-outline-variant);
-  border: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-medium);
+  display: grid; grid-template-columns: 1fr; gap: 1px; background: var(--colorNeutralStroke2);
+  border: 1px solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusLarge);
   overflow: clip; margin-bottom: 0.375rem; /* clip, not hidden: hidden would stop the sticky week label */
 }
-.calendar-week.selected { border-color: var(--md-sys-color-primary); box-shadow: 0 0 0 1px var(--md-sys-color-primary); }
+.calendar-week.selected { border-color: var(--colorBrandForeground1); box-shadow: 0 0 0 1px var(--colorBrandForeground1); }
 .week-label {
-  font: inherit; text-align: left; cursor: pointer; border: 0; background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface);
+  font: inherit; text-align: left; cursor: pointer; border: 0; background: var(--colorNeutralBackground2); color: var(--colorNeutralForeground1);
   padding: 0.375rem 0.5rem; display: flex; flex-wrap: wrap; gap: 0.25rem 0.5rem; align-items: baseline;
 }
-.week-label:hover { background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, var(--md-sys-color-surface)); }
-.calendar-week.selected .week-label { background: var(--selected); color: var(--md-sys-color-on-secondary-container); }
+.week-label:hover { background: color-mix(in srgb, var(--colorNeutralForeground1) 8%, var(--colorNeutralBackground2)); }
+.calendar-week.selected .week-label { background: var(--selected); color: var(--colorBrandForeground2); }
 .week-label:focus-visible, .workout:focus-visible { outline: var(--focus-ring); outline-offset: -3px; }
 .add-here:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
-.week-distance { color: var(--md-sys-color-on-surface-variant); font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); }
+.week-distance { color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); }
 /* On a phone a day is a row: its name, its workouts, and the add button at the trailing edge (ADR 0107). The name
    lines up with the first workout's title, or with the button on a day without workouts. */
 .calendar-day {
-  background: var(--md-sys-color-surface); padding: 0.25rem 0.375rem; display: grid; grid-template-columns: 3.5rem 1fr;
+  background: var(--colorNeutralBackground2); padding: 0.25rem 0.375rem; display: grid; grid-template-columns: 3.5rem 1fr;
   gap: 0.5rem; align-items: start; min-height: 2.25rem;
 }
 .calendar-day:has(> .add-here) { grid-template-columns: 3.5rem 1fr auto; }
 /* The calendar's small text is M3's body-small, 12/16 (ADR 0124). */
-.day-name { color: var(--md-sys-color-on-surface-variant); font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); padding-top: 0.375rem; }
+.day-name { color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); padding-top: 0.375rem; }
 .day-name > span { display: block; }
-.day-date, .week-dates { color: var(--md-sys-color-on-surface-variant); font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); font-weight: var(--fontWeightRegular); }
+.day-date, .week-dates { color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); font-weight: var(--fontWeightRegular); }
 /* A day of week 1 before the plan starts (ADR 0108): dimmed by its container and quieter colours, not by opacity,
    which took its text below 4.5:1 (ADR 0124); nothing to add. */
-.calendar-day.before-start { background: var(--md-sys-color-surface-container); }
-.calendar-day.before-start .workout { --kind: var(--md-sys-color-outline-variant); color: var(--md-sys-color-on-surface-variant); background: var(--md-sys-color-surface-container-highest); }
+.calendar-day.before-start { background: var(--colorNeutralBackground1); }
+.calendar-day.before-start .workout { --kind: var(--colorNeutralStroke2); color: var(--colorNeutralForeground3); background: var(--colorNeutralBackground1Selected); }
 /* Today, on a dated plan (ADR 0129): its weekday in the primary colour and its date on a filled primary pill, as a
    calendar marks it, in both layouts. */
-.calendar-day.today .day-weekday { color: var(--md-sys-color-primary); font-weight: var(--fontWeightSemibold); }
+.calendar-day.today .day-weekday { color: var(--colorBrandForeground1); font-weight: var(--fontWeightSemibold); }
 .calendar-day.today .day-date {
-  display: inline-block; min-width: 1.5rem; padding: 0 0.375rem; border-radius: var(--md-sys-shape-corner-full); box-sizing: border-box;
-  text-align: center; background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); font-weight: var(--fontWeightSemibold);
+  display: inline-block; min-width: 1.5rem; padding: 0 0.375rem; border-radius: var(--borderRadiusCircular); box-sizing: border-box;
+  text-align: center; background: var(--colorBrandForeground1); color: var(--colorNeutralForegroundInverted); font-weight: var(--fontWeightSemibold);
 }
 .day-body { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
 /* A workout is a small filled card (ADR 0051), its kind a bar along the leading edge. */
 .workout {
-  --kind: var(--md-sys-color-outline);
+  --kind: var(--colorNeutralStroke1);
   font: inherit; font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); text-align: left; cursor: pointer; width: 100%;
-  border: 0; border-radius: var(--md-sys-shape-corner-small); box-shadow: inset 0.25rem 0 0 var(--kind);
-  padding: 0.375rem 0.5rem 0.375rem 0.75rem; background: var(--md-sys-color-surface-container-high); color: var(--md-sys-color-on-surface);
+  border: 0; border-radius: var(--borderRadiusMedium); box-shadow: inset 0.25rem 0 0 var(--kind);
+  padding: 0.375rem 0.5rem 0.375rem 0.75rem; background: var(--colorNeutralBackground1Hover); color: var(--colorNeutralForeground1);
   display: flex; flex-direction: column; overflow-wrap: break-word; hyphens: auto;
-  transition: background-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+  transition: background-color var(--durationFaster) var(--curveEasyEase);
 }
-.workout:hover { background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, var(--md-sys-color-surface-container-high)); }
-.workout.open { background: var(--selected); color: var(--md-sys-color-on-secondary-container); }
+.workout:hover { background: color-mix(in srgb, var(--colorNeutralForeground1) 8%, var(--colorNeutralBackground1Hover)); }
+.workout.open { background: var(--selected); color: var(--colorBrandForeground2); }
 .workout.kind-run { --kind: var(--intensity-low); }
 .workout.kind-interval { --kind: var(--intensity-medium); }
 .workout.kind-race { --kind: var(--intensity-high); }
-.workout.kind-rest { --kind: var(--md-sys-color-outline-variant); color: var(--md-sys-color-on-surface-variant); }
+.workout.kind-rest { --kind: var(--colorNeutralStroke2); color: var(--colorNeutralForeground3); }
 /* A long title wraps between words, hyphenated, and stops after two lines; the dialog has all of it (ADR 0075). */
 .workout-title {
   font-weight: var(--fontWeightSemibold); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
@@ -613,27 +536,27 @@ label {
 }
 /* The kind in words (ADR 0070): the bar's colour alone would not tell easy from long, or tempo from intervals. */
 .workout-kind {
-  color: var(--md-sys-color-on-surface-variant); font: var(--fontWeightSemibold) var(--fontSizeBase100)/var(--lineHeightBase100) var(--fontFamilyBase);
+  color: var(--colorNeutralForeground3); font: var(--fontWeightSemibold) var(--fontSizeBase100)/var(--lineHeightBase100) var(--fontFamilyBase);
  
 }
 .workout.open .workout-kind { color: inherit; }
-.workout-targets { color: var(--md-sys-color-on-surface-variant); }
+.workout-targets { color: var(--colorNeutralForeground3); }
 .workout-distance { display: none; }
 /* Adding a workout to a day: an icon button, 40px, with M3's 48px touch target around it (ADR 0075, 0124). */
 .add-here {
   position: relative; display: grid; place-items: center; width: 2.5rem; height: 2.5rem; padding: 0; cursor: pointer; align-self: flex-start;
-  border: 0; border-radius: var(--md-sys-shape-corner-full);
-  background: none; color: var(--md-sys-color-on-surface-variant);
-  transition: background-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+  border: 0; border-radius: var(--borderRadiusCircular);
+  background: none; color: var(--colorNeutralForeground3);
+  transition: background-color var(--durationFaster) var(--curveEasyEase);
 }
-.add-here::before { content: ""; position: absolute; inset: -0.25rem; border-radius: var(--md-sys-shape-corner-full); }
+.add-here::before { content: ""; position: absolute; inset: -0.25rem; border-radius: var(--borderRadiusCircular); }
 .add-here .icon { width: 1.25rem; height: 1.25rem; }
-.add-here:hover { color: var(--md-sys-color-on-secondary-container); background: var(--md-sys-color-secondary-container); }
-.intensity { font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); font-weight: var(--fontWeightSemibold); padding: 0 0.375rem; border-radius: var(--md-sys-shape-corner-small); border: 1px solid currentColor; }
+.add-here:hover { color: var(--colorBrandForeground2); background: var(--colorBrandBackground2); }
+.intensity { font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); font-weight: var(--fontWeightSemibold); padding: 0 0.375rem; border-radius: var(--borderRadiusMedium); border: 1px solid currentColor; }
 /* An intensity chip is filled with its custom colour's container (ADR 0061). */
-.intensity-low { border-color: transparent; background: var(--md-custom-color-low-container); color: var(--md-custom-color-on-low-container); }
-.intensity-medium { border-color: transparent; background: var(--md-custom-color-medium-container); color: var(--md-custom-color-on-medium-container); }
-.intensity-high { border-color: transparent; background: var(--md-custom-color-high-container); color: var(--md-custom-color-on-high-container); }
+.intensity-low { border-color: transparent; background: var(--colorPaletteGreenBackground1); color: var(--colorPaletteGreenForeground1); }
+.intensity-medium { border-color: transparent; background: var(--colorPaletteMarigoldBackground1); color: var(--colorPaletteMarigoldForeground1); }
+.intensity-high { border-color: transparent; background: var(--colorPaletteRedBackground1); color: var(--colorPaletteRedForeground1); }
 .intensity-setting { margin-top: 0.5rem; }
 .intensity-heading { display: flex; justify-content: space-between; align-items: baseline; }
 .intensity-heading label { margin: 0; }
@@ -674,7 +597,7 @@ label {
 .intensity-control input[type="range"].unset::-moz-range-thumb { box-shadow: inset 0 0 0 0.25rem var(--colorNeutralForeground3), 0 0 0 1px var(--colorNeutralStroke1); }
 .intensity-meter { margin-top: 0.25rem; }
 .facts { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 0.75rem; margin: 0.5rem 0 0; align-items: center; }
-.facts dt { color: var(--md-sys-color-on-surface-variant); font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); }
+.facts dt { color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); }
 .facts dt label { margin: 0; }
 .facts dd { margin: 0; }
 /* A determinate linear progress indicator as Material 3 draws it (ADR 0051): the indicator, a gap, the rest of the
@@ -683,12 +606,12 @@ label {
 /* The active indicator is a flat bar, not Expressive's wave (ADR 0111): these meters are readings, not activity. */
 .goal-meter span {
   flex: none; display: block; height: 0.25rem; max-width: calc(100% - 0.25rem);
-  border-radius: var(--md-sys-shape-corner-full); background: var(--md-sys-color-primary);
+  border-radius: var(--borderRadiusCircular); background: var(--colorBrandForeground1);
 }
-.goal-meter::after { content: ""; flex: 1; height: 0.25rem; border-radius: var(--md-sys-shape-corner-full); background: var(--md-sys-color-secondary-container); }
+.goal-meter::after { content: ""; flex: 1; height: 0.25rem; border-radius: var(--borderRadiusCircular); background: var(--colorBrandBackground2); }
 .goal-meter::before {
   content: ""; position: absolute; right: 0; top: 50%; width: 0.25rem; height: 0.25rem; transform: translateY(-50%);
-  border-radius: 50%; background: var(--md-sys-color-primary);
+  border-radius: 50%; background: var(--colorBrandForeground1);
 }
 .goal-meter.over span { background: var(--intensity-medium); }
 .plan-settings, .interval-part { border: 0; padding: 0; margin: 0.75rem 0 0; min-width: 0; }
@@ -697,7 +620,7 @@ label {
   .calendar-head, .calendar-week { grid-template-columns: 6rem repeat(7, minmax(0, 1fr)); }
   .calendar-head {
     display: grid; gap: 1px; padding: 0 0.5rem 0.25rem; text-align: center;
-    color: var(--md-sys-color-on-surface-variant); font: var(--fontWeightSemibold) var(--fontSizeBase200)/var(--lineHeightBase200) var(--fontFamilyBase);
+    color: var(--colorNeutralForeground3); font: var(--fontWeightSemibold) var(--fontSizeBase200)/var(--lineHeightBase200) var(--fontFamilyBase);
   }
   .calendar-week .week-label { flex-direction: column; gap: 0.125rem; }
   .calendar-day { display: block; min-height: 4.5rem; }
@@ -715,37 +638,37 @@ label {
    counts, and for this week a meter of the workouts done. */
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.5rem; margin: 1rem 0 1.5rem; }
 .stat {
-  padding: 1rem; border-radius: var(--md-sys-shape-corner-medium);
-  background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface);
+  padding: 1rem; border-radius: var(--borderRadiusLarge);
+  background: var(--colorNeutralBackground1Selected); color: var(--colorNeutralForeground1);
 }
 .stat-label {
-  margin: 0; color: var(--md-sys-color-on-surface-variant);
+  margin: 0; color: var(--colorNeutralForeground3);
   font: var(--fontWeightSemibold) var(--fontSizeBase300)/var(--lineHeightBase300) var(--fontFamilyBase);
 }
 .stat-value { margin: 0.25rem 0 0; font: var(--fontWeightRegular) var(--fontSizeHero700)/var(--lineHeightHero700) var(--fontFamilyBase); font-variant-numeric: tabular-nums; }
 .stat-supporting {
-  display: block; color: var(--md-sys-color-on-surface-variant);
+  display: block; color: var(--colorNeutralForeground3);
   font: var(--fontWeightRegular) var(--fontSizeBase300)/var(--lineHeightBase300) var(--fontFamilyBase);
 }
 .table-wrap { overflow-x: auto; }
 table.progress { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); }
-table.progress caption { text-align: left; color: var(--md-sys-color-on-surface-variant); font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); padding-bottom: 0.25rem; }
+table.progress caption { text-align: left; color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); padding-bottom: 0.25rem; }
 table.progress th, table.progress td {
-  padding: 0.75rem 0.5rem; border-bottom: 1px solid var(--md-sys-color-outline-variant); text-align: right; white-space: nowrap;
+  padding: 0.75rem 0.5rem; border-bottom: 1px solid var(--colorNeutralStroke2); text-align: right; white-space: nowrap;
 }
-table.progress thead th { color: var(--md-sys-color-on-surface-variant); font-weight: var(--fontWeightSemibold); }
+table.progress thead th { color: var(--colorNeutralForeground3); font-weight: var(--fontWeightSemibold); }
 table.progress th[scope="row"], table.progress th:first-child { text-align: left; font-weight: var(--fontWeightSemibold); }
 /* On a phone each week is a card of label and value pairs (ADR 0051); the table stays a table for screen readers. */
 @media (max-width: 37.4375rem) {
   table.progress thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   table.progress, table.progress caption, table.progress tbody, table.progress tr, table.progress th, table.progress td { display: block; }
   table.progress tr {
-    margin-bottom: 0.5rem; padding: 0.75rem 1rem; border-radius: var(--md-sys-shape-corner-medium);
-    background: var(--md-sys-color-surface-container-low);
+    margin-bottom: 0.5rem; padding: 0.75rem 1rem; border-radius: var(--borderRadiusLarge);
+    background: var(--colorNeutralBackground1);
   }
   table.progress th[scope="row"] { padding: 0 0 0.25rem; border: 0; font: var(--fontWeightSemibold) var(--fontSizeBase300)/var(--lineHeightBase300) var(--fontFamilyBase); }
   table.progress td { display: flex; justify-content: space-between; padding: 0.125rem 0; border: 0; }
-  table.progress td::before { content: attr(data-label); color: var(--md-sys-color-on-surface-variant); }
+  table.progress td::before { content: attr(data-label); color: var(--colorNeutralForeground3); }
 }
 
 /* Strava's brand rules: their button image is shown as it is, with no background, border or padding of ours. */
@@ -760,7 +683,7 @@ button.strava-connect:disabled { opacity: 0.6; cursor: progress; }
 /* "View on Strava" must be identifiable as a link: bold and underlined, which Strava's rules allow in place of its
    orange. On a light surface #FC5200 is about 3.2:1, below 4.5:1, so it is in the text colour there; in the dark
    scheme the orange is legible and kept (ADR 0124). */
-a.strava-link { color: var(--md-sys-color-on-surface); font-weight: var(--fontWeightBold); text-decoration: underline; }
+a.strava-link { color: var(--colorNeutralForeground1); font-weight: var(--fontWeightBold); text-decoration: underline; }
 @media (prefers-color-scheme: dark) { a.strava-link { color: #FC5200; } }
 /* Training zones in Settings (ADR 0034, 0035) */
 .zones-form .subheader { margin: 1.25rem 0 0; }
@@ -768,18 +691,18 @@ a.strava-link { color: var(--md-sys-color-on-surface); font-weight: var(--fontWe
 /* The value zones are calculated from, with its Calculate button on the line under its help (ADR 0084): beside the
    field, the long label left the field narrow and wrapped on a phone. */
 .zone-source { display: grid; justify-items: start; gap: 0.75rem; }
-.zone-source > :is(.field, .md-field) { justify-self: stretch; }
+.zone-source > :is(.field, .native-field) { justify-self: stretch; }
 /* A zone (ADR 0077): an outlined field with its unit, and where the zone ends beside it, lined up with the input. */
 .zones { display: grid; gap: 0.75rem; margin-top: 0.75rem; }
 .zone { display: grid; grid-template-columns: minmax(0, 13rem) 1fr; align-items: start; gap: 1rem; }
 .zone-end {
-  padding-top: 1rem; color: var(--md-sys-color-on-surface-variant);
+  padding-top: 1rem; color: var(--colorNeutralForeground3);
   font-size: var(--fontSizeBase300); line-height: 1.5rem;
 }
 /* Save stays in view above the navigation bar while the form scrolls. */
 .zones-form > .actions {
   position: sticky; bottom: var(--nav-bar-height); z-index: 1; margin: 1rem -1rem 0; padding: 0.75rem 1rem;
-  background: var(--md-sys-color-surface); border-top: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--colorNeutralBackground2); border-top: 1px solid var(--colorNeutralStroke2);
 }
 /* On a phone the bar ends the page right above the navigation bar, with no gap of the page's own bottom padding. */
 @media (max-width: 37.4375rem) { main:has(.zones-form > .actions) { padding-bottom: 0; } }
@@ -790,8 +713,8 @@ a.strava-link { color: var(--md-sys-color-on-surface); font-weight: var(--fontWe
 /* The wrapper takes the field's top margin, so the button lines up with the input whether or not that margin would
    collapse through the wrapper (it does not in a flex row). */
 .field-with-trigger { position: relative; margin-top: 0.5rem; }
-.field-with-trigger > .md-field { margin-top: 0; }
-.field-with-trigger .md-text-field { padding-right: 3rem; }
+.field-with-trigger > .native-field { margin-top: 0; }
+.field-with-trigger .native-control { padding-right: 3rem; }
 .field-with-trigger input::-webkit-calendar-picker-indicator { display: none; }
 /* Browsers draw date and time inputs their own way: Safari centres the value and sizes the box to it, Chrome adds
    padding inside. Drawn plainly at a text field's 56px, the button at the end is centred on them (ADR 0086). */
@@ -806,12 +729,12 @@ a.strava-link { color: var(--md-sys-color-on-surface); font-weight: var(--fontWe
 /* M3's modal pickers (ADR 0054): a label, a headline or the time fields, the picking area, and Cancel and OK. */
 dialog.picker { padding: 0; min-width: 0; width: auto; max-width: calc(100% - 2rem); }
 .picker-label {
-  margin: 0; padding: 1rem 1.5rem 0; color: var(--md-sys-color-on-surface-variant);
+  margin: 0; padding: 1rem 1.5rem 0; color: var(--colorNeutralForeground3);
   font: var(--fontWeightSemibold) var(--fontSizeBase300)/var(--lineHeightBase300) var(--fontFamilyBase);
 }
 .picker-headline {
-  margin: 0; padding: 2.25rem 1.5rem 0.75rem; color: var(--md-sys-color-on-surface);
-  font: var(--fontWeightRegular) var(--fontSizeHero800)/var(--lineHeightHero800) var(--fontFamilyBase); border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  margin: 0; padding: 2.25rem 1.5rem 0.75rem; color: var(--colorNeutralForeground1);
+  font: var(--fontWeightRegular) var(--fontSizeHero800)/var(--lineHeightHero800) var(--fontFamilyBase); border-bottom: 1px solid var(--colorNeutralStroke2);
 }
 .picker-actions { justify-content: flex-end; margin: 0; padding: 0.5rem 0.75rem 0.75rem; }
 
@@ -819,12 +742,12 @@ dialog.picker { padding: 0; min-width: 0; width: auto; max-width: calc(100% - 2r
 dialog.date-picker { width: 22.5rem; }
 .date-picker-month { display: flex; align-items: center; gap: 0.25rem; padding: 0.5rem 0.75rem 0 1.5rem; }
 .date-picker-title {
-  flex: 1; color: var(--md-sys-color-on-surface-variant);
+  flex: 1; color: var(--colorNeutralForeground3);
   font: var(--fontWeightSemibold) var(--fontSizeBase300)/var(--lineHeightBase300) var(--fontFamilyBase);
 }
 .date-picker-grid { border-collapse: collapse; margin: 0 auto; table-layout: fixed; }
 .date-picker-grid th {
-  width: 3rem; height: 3rem; color: var(--md-sys-color-on-surface);
+  width: 3rem; height: 3rem; color: var(--colorNeutralForeground1);
   font: var(--fontWeightRegular) var(--fontSizeBase400)/var(--lineHeightBase400) var(--fontFamilyBase);
 }
 .date-picker-grid td { width: 3rem; height: 3rem; padding: 0; text-align: center; }
@@ -833,59 +756,59 @@ dialog.date-picker { width: 22.5rem; }
 .date-picker-day {
   position: relative; width: 3rem; height: 3rem; padding: 0; border: 0.25rem solid transparent; background-clip: padding-box;
   isolation: isolate; overflow: hidden;
-  border-radius: var(--md-sys-shape-corner-full); background-color: transparent; cursor: pointer;
-  color: var(--md-sys-color-on-surface); font: var(--fontWeightRegular) var(--fontSizeBase400)/var(--lineHeightBase400) var(--fontFamilyBase);
+  border-radius: var(--borderRadiusCircular); background-color: transparent; cursor: pointer;
+  color: var(--colorNeutralForeground1); font: var(--fontWeightRegular) var(--fontSizeBase400)/var(--lineHeightBase400) var(--fontFamilyBase);
   font-variant-numeric: tabular-nums; -webkit-tap-highlight-color: transparent;
 }
 .date-picker-day::before {
   content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
-  background: currentColor; opacity: 0; transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+  background: currentColor; opacity: 0; transition: opacity var(--durationFaster) var(--curveEasyEase);
 }
-.date-picker-day:hover::before { opacity: var(--md-sys-state-hover); }
+.date-picker-day:hover::before { opacity: var(--state-hover); }
 .date-picker-day:focus-visible { outline: var(--focus-ring); outline-offset: -0.125rem; }
-.date-picker-day.today { color: var(--md-sys-color-primary); box-shadow: inset 0 0 0 1px var(--md-sys-color-primary); }
-.date-picker-day.selected { background-color: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); box-shadow: none; }
+.date-picker-day.today { color: var(--colorBrandForeground1); box-shadow: inset 0 0 0 1px var(--colorBrandForeground1); }
+.date-picker-day.selected { background-color: var(--colorBrandForeground1); color: var(--colorNeutralForegroundInverted); box-shadow: none; }
 
 /* Time picker: the hour and minute as large fields, then a 256px dial with the hand. 24-hour: the inner ring holds
    00 and 13 to 23. */
 dialog.time-picker { width: 20.5rem; }
 .time-picker-fields { display: flex; align-items: center; justify-content: center; gap: 0.25rem; padding: 1.25rem 1.5rem 0; }
 .time-picker-part {
-  width: 6rem; height: 5rem; padding: 0; border: 0; cursor: pointer; border-radius: var(--md-sys-shape-corner-small);
-  background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface);
+  width: 6rem; height: 5rem; padding: 0; border: 0; cursor: pointer; border-radius: var(--borderRadiusMedium);
+  background: var(--colorNeutralBackground1Selected); color: var(--colorNeutralForeground1);
   font: var(--fontWeightRegular) var(--fontSizeHero900)/var(--lineHeightHero900) var(--fontFamilyBase); font-variant-numeric: tabular-nums;
-  transition: background-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+  transition: background-color var(--durationFaster) var(--curveEasyEase);
 }
-.time-picker-part.active { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+.time-picker-part.active { background: var(--colorBrandBackground2); color: var(--colorBrandForeground2); }
 .time-picker-part:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
-.time-picker-colon { width: 1.5rem; text-align: center; color: var(--md-sys-color-on-surface); font: var(--fontWeightRegular) var(--fontSizeHero900)/var(--lineHeightHero900) var(--fontFamilyBase); }
+.time-picker-colon { width: 1.5rem; text-align: center; color: var(--colorNeutralForeground1); font: var(--fontWeightRegular) var(--fontSizeHero900)/var(--lineHeightHero900) var(--fontFamilyBase); }
 .time-picker-dial {
   --outer: 6.25rem; --inner: 4.25rem;
   position: relative; width: 16rem; height: 16rem; margin: 2.25rem auto 1.5rem; border-radius: 50%;
-  background: var(--md-sys-color-surface-container-highest);
+  background: var(--colorNeutralBackground1Selected);
 }
 .time-picker-dial::before {
   content: ""; position: absolute; left: 50%; top: 50%; width: 0.5rem; height: 0.5rem; margin: -0.25rem;
-  border-radius: 50%; background: var(--md-sys-color-primary);
+  border-radius: 50%; background: var(--colorBrandForeground1);
 }
 .time-picker-hand {
   --r: var(--outer);
   position: absolute; left: calc(50% - 1px); bottom: 50%; width: 2px; height: var(--r);
-  background: var(--md-sys-color-primary); transform-origin: 50% 100%; transform: rotate(var(--angle));
-  transition: transform var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial),
-    height var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial);
+  background: var(--colorBrandForeground1); transform-origin: 50% 100%; transform: rotate(var(--angle));
+  transition: transform var(--durationNormal) var(--curveDecelerateMid),
+    height var(--durationNormal) var(--curveDecelerateMid);
 }
 .time-picker-hand.inner { --r: var(--inner); }
 .time-picker-number {
   --r: var(--outer);
   position: absolute; left: 50%; top: 50%; width: 3rem; height: 3rem; margin: -1.5rem; padding: 0; border: 0;
-  border-radius: 50%; background: none; cursor: pointer; color: var(--md-sys-color-on-surface);
+  border-radius: 50%; background: none; cursor: pointer; color: var(--colorNeutralForeground1);
   font: var(--fontWeightRegular) var(--fontSizeBase400)/var(--lineHeightBase400) var(--fontFamilyBase); font-variant-numeric: tabular-nums;
   transform: rotate(var(--angle)) translateY(calc(-1 * var(--r))) rotate(calc(-1 * var(--angle)));
 }
 .time-picker-number.inner { --r: var(--inner); font-size: var(--fontSizeBase300); }
-.time-picker-number:hover:not(.selected) { background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent); }
-.time-picker-number.selected { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
+.time-picker-number:hover:not(.selected) { background: color-mix(in srgb, var(--colorNeutralForeground1) 8%, transparent); }
+.time-picker-number.selected { background: var(--colorBrandForeground1); color: var(--colorNeutralForegroundInverted); }
 .time-picker-number:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .time-picker-hand { transition: none; } }
 
@@ -893,7 +816,7 @@ dialog.time-picker { width: 20.5rem; }
 dialog .dialog-supporting { margin: 0 0 1.5rem; font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); }
 
 /* The app bar's offline icon (ADR 0055): pressing it explains being offline. */
-.bar-content > .offline-indicator { margin: 0 -0.5rem 0 0; color: var(--md-sys-color-on-surface-variant); }
+.bar-content > .offline-indicator { margin: 0 -0.5rem 0 0; color: var(--colorNeutralForeground3); }
 
 /* A count on a navigation item (ADR 0055), like Fluent's counter badge: the number of sync problems on Settings. */
 .nav-badge {
@@ -904,9 +827,9 @@ dialog .dialog-supporting { margin: 0 0 1.5rem; font-size: var(--fontSizeBase300
 
 /* A list row that shows something instead of opening a page, such as the account in Settings (ADR 0055). */
 .info-item { display: flex; align-items: center; gap: 1rem; min-height: 4.5rem; }
-.info-item > .icon { color: var(--md-sys-color-on-surface-variant); }
+.info-item > .icon { color: var(--colorNeutralForeground3); }
 .info-item-supporting {
-  font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); color: var(--colorNeutralForeground3);
 }
 .info-item fluent-button { margin-right: -0.5rem; }
 
@@ -920,14 +843,14 @@ dialog .dialog-supporting { margin: 0 0 1.5rem; font-size: var(--fontSizeBase300
    the submit button; from 600px a dialog in the middle. A click outside does not close it. */
 dialog.form-dialog {
   width: 100%; height: 100%; max-width: none; max-height: none; min-width: 0; margin: 0; padding: 0;
-  border-radius: 0; background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface);
+  border-radius: 0; background: var(--colorNeutralBackground2); color: var(--colorNeutralForeground1);
   box-shadow: none;
 }
 dialog.form-dialog[open] { display: flex; flex-direction: column; }
 .form-dialog-bar {
   position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 0.25rem;
   min-height: 3.5rem; padding: max(0.25rem, env(safe-area-inset-top)) 0.5rem 0.25rem 0.25rem;
-  background: var(--md-sys-color-surface);
+  background: var(--colorNeutralBackground2);
 }
 .form-dialog-bar form { display: contents; }
 .form-dialog-bar h2 {
@@ -941,7 +864,7 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
 /* The form (ADR 0085): one 16px rhythm between fields, chips and groups, so a floating label never meets the help
    line above it. Pairs of fields stack on a phone and sit side by side, in equal columns, from 600px. */
 .form-dialog-body > form { display: grid; gap: 1rem; padding-top: 0.5rem; }
-.form-dialog-body > form :is(.field, .md-field, .field-with-trigger, .choice, .plan-settings, .interval-part) { margin-top: 0; }
+.form-dialog-body > form :is(.field, .native-field, .field-with-trigger, .choice, .plan-settings, .interval-part) { margin-top: 0; }
 .form-dialog-body > form .row { display: grid; gap: 1rem; }
 .form-dialog-body > form > .supporting { margin-top: -0.75rem; }
 .form-dialog-body > form > .subheader { margin: 0.5rem 0 -0.5rem; }
@@ -950,7 +873,7 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
    below plus the form's own 8px top padding, which the Day field's floating label needs. */
 .form-dialog-body > .activity-import {
   display: grid; justify-items: start; gap: 0.5rem; padding: 0.5rem 0 1rem; margin-bottom: 0.5rem;
-  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  border-bottom: 1px solid var(--colorNeutralStroke2);
 }
 .activity-import > :is(.muted, .error) { margin: 0; font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); }
 .form-dialog :is(.plan-settings, .interval-part) { display: grid; gap: 1rem; }
@@ -966,8 +889,8 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
     /* As high as its form, so it scrolls only on a screen too short for it, between its headline and its buttons
        (ADR 0087). */
     width: calc(100% - 3rem); max-width: 35rem; height: fit-content; max-height: calc(100dvh - 4rem); margin: auto;
-    border-radius: var(--md-sys-shape-corner-extra-large); background: var(--md-sys-color-surface-container-high);
-    box-shadow: var(--md-sys-elevation-3);
+    border-radius: var(--borderRadiusXLarge); background: var(--colorNeutralBackground1Hover);
+    box-shadow: var(--shadow8);
   }
   /* A basic dialog: the headline at the top, lined up with the fields, and the buttons at the bottom. */
   .form-dialog-bar { min-height: 0; padding: 1.5rem 1rem 0.5rem 1.5rem; background: inherit; }
@@ -978,34 +901,34 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
   .form-dialog-body > form .row { grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
 }
 
-/* Fields (ADR 0059, 0133): Fluent's text input and textarea in .field, native inputs and selects in .md-field, each
+/* Fields (ADR 0059, 0133): Fluent's text input and textarea in .field, native inputs and selects in .native-field, each
    with its label above it, as Fluent draws them, and its help or error under it. */
-.field, .md-field { position: relative; display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.5rem; }
+.field, .native-field { position: relative; display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.5rem; }
 .field > :is(fluent-text-input, fluent-textarea) { width: 100%; }
-.md-field-label {
+.field-label {
   order: -1; color: var(--colorNeutralForeground1);
   font: var(--fontWeightRegular) var(--fontSizeBase300)/var(--lineHeightBase300) var(--fontFamilyBase);
 }
-.md-field.has-suffix .md-text-field { padding-right: 3rem; }
-.md-field-suffix, .field-suffix { color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase300); }
-.md-field-suffix { position: absolute; right: 0.75rem; bottom: 0.5rem; line-height: 1.5rem; pointer-events: none; }
-.md-field-supporting, .phases-error {
+.native-field.has-suffix .native-control { padding-right: 3rem; }
+.field-suffix, .native-suffix { color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase300); }
+.native-suffix { position: absolute; right: 0.75rem; bottom: 0.5rem; line-height: 1.5rem; pointer-events: none; }
+.field-help, .phases-error {
   margin: 0; color: var(--colorNeutralForeground3);
   font: var(--fontWeightRegular) var(--fontSizeBase200)/var(--lineHeightBase200) var(--fontFamilyBase);
 }
-:is(.field, .md-field).has-error .md-field-supporting, .intensity-setting.has-error .md-field-supporting, .phases-error { color: var(--colorPaletteRedForeground1); }
+:is(.field, .native-field).has-error .field-help, .intensity-setting.has-error .field-help, .phases-error { color: var(--colorPaletteRedForeground1); }
 
 /* A simple dialog of choices (ADR 0062): each row is a choice, taken at once. */
 .choice-dialog .choices { list-style: none; margin: 0 -1.5rem 1rem; padding: 0; }
 .choice-row {
   position: relative; display: flex; align-items: center; gap: 1rem; width: 100%; min-height: 3.5rem; padding: 0.5rem 1.5rem;
   border: 0; background: none; cursor: pointer; text-align: left; isolation: isolate;
-  color: var(--md-sys-color-on-surface); font: var(--fontWeightRegular) var(--fontSizeBase400)/var(--lineHeightBase400) var(--fontFamilyBase);
+  color: var(--colorNeutralForeground1); font: var(--fontWeightRegular) var(--fontSizeBase400)/var(--lineHeightBase400) var(--fontFamilyBase);
 }
 .choice-row::before { content: ""; position: absolute; inset: 0; z-index: -1; background: currentColor; opacity: 0; }
-.choice-row:hover::before { opacity: var(--md-sys-state-hover); }
+.choice-row:hover::before { opacity: var(--state-hover); }
 .choice-row:focus-visible { outline: var(--focus-ring); outline-offset: -3px; }
-.choice-row .icon { color: var(--md-sys-color-on-surface-variant); }
+.choice-row .icon { color: var(--colorNeutralForeground3); }
 
 /* With a mouse, the many add buttons of a wide calendar stay faint until their day is pointed at; a
    touch screen has no pointing, so there they are always in full (ADR 0075). */
@@ -1032,7 +955,7 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
   .day-body:has(> .workout + .workout) > .workout { flex-basis: 85%; }
   .day-body .workout-kind, .day-body .workout-targets { display: none; }
   .day-body .workout-title { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .day-body .workout-distance { display: block; min-height: 1rem; color: var(--md-sys-color-on-surface-variant); }
+  .day-body .workout-distance { display: block; min-height: 1rem; color: var(--colorNeutralForeground3); }
   .day-body .workout.open .workout-distance { color: inherit; }
 }
 
@@ -1042,7 +965,7 @@ dialog.form-dialog[open] { display: flex; flex-direction: column; }
 .bar-medium h1 {
   order: 1; flex-basis: 100%; padding: 0.25rem 0 0.5rem; white-space: normal;
   font-size: var(--fontSizeHero700); line-height: var(--lineHeightHero700);
-  transition: font-size var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial);
+  transition: font-size var(--durationNormal) var(--curveDecelerateMid);
 }
 /* The back button keeps the left; whatever follows it on the first row goes to the right. */
 .bar-medium .bar-content > .up-link { margin-right: auto; }
@@ -1052,7 +975,7 @@ html[data-scrolled] .bar-medium h1 { order: 0; flex-basis: auto; padding: 0; fon
 /* M3 Expressive's medium flexible app bar (ADR 0097): a subtitle under the name, such as a plan's length and goal. The
    small bar it becomes on scrolling has the name only. */
 .bar-subtitle {
-  order: 2; flex-basis: 100%; margin: 0 0 0.5rem; color: var(--md-sys-color-on-surface-variant);
+  order: 2; flex-basis: 100%; margin: 0 0 0.5rem; color: var(--colorNeutralForeground3);
   font: var(--fontWeightRegular) var(--fontSizeBase400)/var(--lineHeightBase400) var(--fontFamilyBase);
 }
 .bar-medium h1:has(+ .bar-subtitle) { padding-bottom: 0; }
@@ -1074,7 +997,7 @@ html[data-scrolled] .bar-subtitle { display: none; }
 .plan-header > *, .plan-header p { margin: 0; }
 .plan-header > .chip-row { margin-left: 0; }
 .plan-header > .chip-row:empty { display: none; }
-.plan-meta { color: var(--md-sys-color-on-surface-variant); }
+.plan-meta { color: var(--colorNeutralForeground3); }
 .plan-phases { display: flex; flex-wrap: wrap; gap: 0.25rem; }
 .plan-phases .label-chip { margin-right: 0; }
 .plan-meta { display: flex; align-items: flex-start; gap: 0.5rem; }
