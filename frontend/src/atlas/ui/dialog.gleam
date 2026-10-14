@@ -48,8 +48,9 @@ pub fn view(
     [
       attribute.id(id),
       attribute.attribute("type", "alert"),
-      attribute.attribute("aria-labelledby", label_id),
-      attribute.attribute("aria-describedby", supporting_id),
+      // Fluent passes these on to the `<dialog>` in its shadow root, where an id from the page cannot be found, so the
+      // name is given as text. The sentence is not read out with it: ARIA has no text form of `aria-describedby`.
+      attribute.aria_label(label),
       event.on("toggle", {
         use state <- decode.subfield(["detail", "newState"], decode.string)
         case state {
