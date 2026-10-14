@@ -1,0 +1,56 @@
+// Dependency update pull requests (ADR 0128). Every PR runs CI; none are merged automatically, because a merge
+// to master deploys to production (ADR 0091).
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: ['config:recommended', ':dependencyDashboard', ':semanticCommitsDisabled'],
+  timezone: 'Europe/Zurich',
+  schedule: ['before 6am on monday'],
+  prConcurrentLimit: 5,
+
+  // flake.lock: nixpkgs unstable gives CI, the dev shell and the production server their tools (ADR 0032, 0090).
+  nix: {
+    enabled: true,
+  },
+  // Also refreshes flake.lock, frontend/manifest.toml and frontend/test-js/package-lock.json within their ranges.
+  lockFileMaintenance: {
+    enabled: true,
+    schedule: ['before 6am on monday'],
+  },
+
+  customManagers: [
+    {
+      // Renovate's asdf manager does not know PocketBase.
+      customType: 'regex',
+      managerFilePatterns: ['/^\\.tool-versions$/'],
+      matchStrings: ['(^|\\n)pocketbase (?<currentValue>\\S+)'],
+      depNameTemplate: 'pocketbase',
+      packageNameTemplate: 'pocketbase/pocketbase',
+      datasourceTemplate: 'github-releases',
+      extractVersionTemplate: '^v(?<version>.+)$',
+    },
+  ],
+
+  packageRules: [
+    {
+      // Erlang's major follows beam27Packages in flake.nix and the apt packages; change them together by hand.
+      matchManagers: ['asdf'],
+      matchDepNames: ['erlang'],
+      enabled: false,
+    },
+    {
+      matchManagers: ['github-actions'],
+      matchUpdateTypes: ['minor', 'patch', 'digest'],
+      groupName: 'GitHub Actions',
+    },
+    {
+      matchManagers: ['npm'],
+      matchUpdateTypes: ['minor', 'patch'],
+      groupName: 'test npm packages',
+    },
+    {
+      matchManagers: ['gleam'],
+      matchUpdateTypes: ['minor', 'patch'],
+      groupName: 'Gleam packages',
+    },
+  ],
+}
